@@ -79,10 +79,13 @@ export const WebSocketProvider: React.FC<{ children: ReactNode }> = ({ children 
             if (message.type === 'flash' && message.data) {
                 // Type guard to ensure all required properties exist
                 const newsData = message.data;
-                if (!newsData.id || !newsData.data || !newsData.data.title || !newsData.data.content) {
+                if (!newsData.id || !newsData.data || !newsData.data.content) {
                     console.warn('Received incomplete news data', newsData);
                     return;
                 }
+
+                // Log the news data for debugging
+                console.log('Received news data', newsData);
 
                 setNewsItems((prev) => {
                     // Check if we already have this news item
@@ -99,11 +102,11 @@ export const WebSocketProvider: React.FC<{ children: ReactNode }> = ({ children 
                         action: newsData.action,
                         category: newsData.category,
                         data: {
-                            title: sanitizeText(newsData.data.title),
+                            title: newsData.data.title ? sanitizeText(newsData.data.title) : '',
                             content: sanitizeText(newsData.data.content),
-                            pic: newsData.data.pic
+                            pic: newsData.data.pic || ''
                         },
-                        remark: newsData.remark
+                        remark: newsData.remark || []
                     };
 
                     // Add sanitized item to the beginning of the array

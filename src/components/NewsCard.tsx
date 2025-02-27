@@ -30,7 +30,9 @@ export function NewsCard({ news }: NewsCardProps) {
             <CardHeader className="pb-2">
                 <div className="flex justify-between items-start">
                     <div>
-                        <CardTitle className="text-lg font-bold">{news.data.title || 'Breaking News'}</CardTitle>
+                        {news.data.title && news.data.title.trim() !== '' ? (
+                            <CardTitle className="text-lg font-bold">{news.data.title}</CardTitle>
+                        ) : null}
                         <CardDescription>{formattedDate}</CardDescription>
                     </div>
                     {news.important === 1 && (
@@ -49,7 +51,7 @@ export function NewsCard({ news }: NewsCardProps) {
                     </div>
                 )}
                 <div
-                    className="text-sm text-card-foreground prose prose-sm max-w-none dark:prose-invert"
+                    className={`text-sm ${!news.data.title || news.data.title.trim() === '' ? 'font-bold text-lg' : ''} text-card-foreground prose prose-sm max-w-none dark:prose-invert`}
                     dangerouslySetInnerHTML={createMarkup(news.data.content)}
                 />
             </CardContent>
