@@ -1,5 +1,4 @@
 import { WebSocketProvider } from "@/app/contexts/WebSocketContext";
-import { ThemeProvider } from "@/components/ThemeProvider";
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
@@ -25,11 +24,9 @@ export default function RootLayout({
         />
       </head>
       <body className={inter.className}>
-        <ThemeProvider defaultTheme="dark">
-          <WebSocketProvider>
-            {children}
-          </WebSocketProvider>
-        </ThemeProvider>
+        <WebSocketProvider>
+          {children}
+        </WebSocketProvider>
       </body>
     </html>
   );

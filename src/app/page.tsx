@@ -1,18 +1,16 @@
 import { NewsFeed } from "@/components/NewsFeed";
-import { ThemeToggle } from "@/components/ThemeToggle";
 
 export default function Home() {
   return (
     <main className="min-h-screen bg-background">
       <div className="container mx-auto py-8 px-4 sm:px-6 lg:px-8">
-        <header className="mb-8 flex justify-between items-center">
+        <header className="mb-8">
           <div>
             <h1 className="text-3xl font-bold text-foreground">AI World News</h1>
             <p className="text-muted-foreground mt-2">
               Real-time financial and market news from around the world
             </p>
           </div>
-          <ThemeToggle />
         </header>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
