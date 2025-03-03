@@ -1,11 +1,11 @@
 {
   "name": "news.aiworld.com.br",
   "version": "1.0.0",
-  "description": "Test page for news.aiworld.com.br",
+  "description": "Gamified news experience for news.aiworld.com.br",
   "scripts": {
-    "build": "mkdir -p out && cp index.html out/"
+    "build": "mkdir -p out/assets && cp index.html out/ && cp -r assets/* out/assets/ 2>/dev/null || true"
   },
-  "keywords": [],
+  "keywords": ["news", "gamification", "ai"],
   "author": "",
   "license": "ISC"
 }
