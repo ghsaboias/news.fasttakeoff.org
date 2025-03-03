@@ -3,10 +3,6 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link
-      rel="icon"
-      href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📰</text></svg>"
-    />
     <title>AIWorld News - Propaganda Detector</title>
     <style>
       :root {
@@ -287,41 +283,6 @@
       .community-rating-value.high {
         color: var(--danger);
       }
-
-      /* Search form styles */
-      .search-form {
-        margin: 2rem 0;
-      }
-
-      .search-form input {
-        background-color: var(--card-bg);
-        border: 1px solid #4d5656;
-        color: var(--text);
-        padding: 0.5rem 1rem;
-        border-radius: 4px;
-        width: 70%;
-        font-size: 1rem;
-      }
-
-      .search-form input:focus {
-        outline: none;
-        border-color: var(--primary);
-      }
-
-      .search-form button {
-        margin-left: 0.5rem;
-      }
-
-      /* News container */
-      .news-container {
-        margin-top: 2rem;
-      }
-
-      /* Disabled button */
-      .btn:disabled {
-        opacity: 0.6;
-        cursor: not-allowed;
-      }
     </style>
   </head>
   <body>
@@ -356,22 +317,196 @@
       </div>
     </div>
 
-    <!-- Search form -->
-    <form id="news-search-form" class="search-form">
-      <input
-        type="text"
-        id="news-search-input"
-        placeholder="Search for news topics..."
-        required
-      />
-      <button type="submit" class="btn">Search</button>
-    </form>
+    <h2>Rate These News Sources</h2>
 
-    <h2>News Sources</h2>
+    <div class="card news-source" id="source-1">
+      <div class="source-header">
+        <h2>CNN</h2>
+        <div class="source-logo">CNN</div>
+      </div>
+      <p>
+        "President announces new climate initiative, critics call it
+        insufficient"
+      </p>
+      <div class="propaganda-meter">
+        <div
+          class="propaganda-level"
+          style="width: 45%; background-color: var(--warning)"
+        ></div>
+      </div>
+      <div class="rating-container">
+        <span>Propaganda Level:</span>
+        <button class="rating-btn low" data-rating="low" data-source="source-1">
+          L
+        </button>
+        <button
+          class="rating-btn medium selected"
+          data-rating="medium"
+          data-source="source-1"
+        >
+          M
+        </button>
+        <button
+          class="rating-btn high"
+          data-rating="high"
+          data-source="source-1"
+        >
+          H
+        </button>
+      </div>
+      <div class="community-rating">
+        <span class="community-rating-label">Community Rating:</span>
+        <span class="community-rating-value medium">Medium (65%)</span>
+      </div>
+      <div class="source-meta">
+        <div>
+          <span class="tag">Politics</span>
+          <span class="tag">Climate</span>
+        </div>
+        <div>Published: 2 hours ago</div>
+      </div>
+    </div>
 
-    <!-- News container will be populated by JavaScript -->
-    <div class="news-container">
-      <!-- Static news sources will be replaced by dynamic content -->
+    <div class="card news-source" id="source-2">
+      <div class="source-header">
+        <h2>Fox News</h2>
+        <div class="source-logo">FOX</div>
+      </div>
+      <p>
+        "Government overreach continues with new regulations targeting
+        businesses"
+      </p>
+      <div class="propaganda-meter">
+        <div
+          class="propaganda-level"
+          style="width: 75%; background-color: var(--danger)"
+        ></div>
+      </div>
+      <div class="rating-container">
+        <span>Propaganda Level:</span>
+        <button class="rating-btn low" data-rating="low" data-source="source-2">
+          L
+        </button>
+        <button
+          class="rating-btn medium"
+          data-rating="medium"
+          data-source="source-2"
+        >
+          M
+        </button>
+        <button
+          class="rating-btn high selected"
+          data-rating="high"
+          data-source="source-2"
+        >
+          H
+        </button>
+      </div>
+      <div class="community-rating">
+        <span class="community-rating-label">Community Rating:</span>
+        <span class="community-rating-value high">High (78%)</span>
+      </div>
+      <div class="source-meta">
+        <div>
+          <span class="tag">Politics</span>
+          <span class="tag">Business</span>
+        </div>
+        <div>Published: 5 hours ago</div>
+      </div>
+    </div>
+
+    <div class="card news-source" id="source-3">
+      <div class="source-header">
+        <h2>Reuters</h2>
+        <div class="source-logo">R</div>
+      </div>
+      <p>"Global markets respond to central bank interest rate decisions"</p>
+      <div class="propaganda-meter">
+        <div
+          class="propaganda-level"
+          style="width: 15%; background-color: var(--success)"
+        ></div>
+      </div>
+      <div class="rating-container">
+        <span>Propaganda Level:</span>
+        <button
+          class="rating-btn low selected"
+          data-rating="low"
+          data-source="source-3"
+        >
+          L
+        </button>
+        <button
+          class="rating-btn medium"
+          data-rating="medium"
+          data-source="source-3"
+        >
+          M
+        </button>
+        <button
+          class="rating-btn high"
+          data-rating="high"
+          data-source="source-3"
+        >
+          H
+        </button>
+      </div>
+      <div class="community-rating">
+        <span class="community-rating-label">Community Rating:</span>
+        <span class="community-rating-value low">Low (12%)</span>
+      </div>
+      <div class="source-meta">
+        <div>
+          <span class="tag">Finance</span>
+          <span class="tag">Global</span>
+        </div>
+        <div>Published: 1 day ago</div>
+      </div>
+    </div>
+
+    <div class="card news-source" id="source-4">
+      <div class="source-header">
+        <h2>RT (Russia Today)</h2>
+        <div class="source-logo">RT</div>
+      </div>
+      <p>"Western allies divided over military support for Ukraine"</p>
+      <div class="propaganda-meter">
+        <div
+          class="propaganda-level"
+          style="width: 85%; background-color: var(--danger)"
+        ></div>
+      </div>
+      <div class="rating-container">
+        <span>Propaganda Level:</span>
+        <button class="rating-btn low" data-rating="low" data-source="source-4">
+          L
+        </button>
+        <button
+          class="rating-btn medium"
+          data-rating="medium"
+          data-source="source-4"
+        >
+          M
+        </button>
+        <button
+          class="rating-btn high selected"
+          data-rating="high"
+          data-source="source-4"
+        >
+          H
+        </button>
+      </div>
+      <div class="community-rating">
+        <span class="community-rating-label">Community Rating:</span>
+        <span class="community-rating-value high">High (92%)</span>
+      </div>
+      <div class="source-meta">
+        <div>
+          <span class="tag">Geopolitics</span>
+          <span class="tag">Conflict</span>
+        </div>
+        <div>Published: 3 hours ago</div>
+      </div>
     </div>
 
     <div class="action-row">
@@ -384,9 +519,6 @@
     <script>
       document.getElementById("date").textContent = new Date().toLocaleString();
     </script>
-    <!-- Load JavaScript files -->
-    <script src="assets/js/services/news-api.js"></script>
     <script src="assets/js/propaganda-detector.js"></script>
-    <script src="assets/js/news-display.js"></script>
   </body>
 </html>

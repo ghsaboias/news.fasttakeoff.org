@@ -26,8 +26,6 @@ function initializeNewsSources() {
   // For each news source, set the appropriate class based on its propaganda level
   newsSources.forEach((source) => {
     const propagandaLevel = source.querySelector(".propaganda-level");
-    if (!propagandaLevel) return;
-
     const width = parseFloat(propagandaLevel.style.width);
 
     if (width >= 70) {
@@ -135,14 +133,10 @@ function updateUserStats() {
 function handleButtonClick(event) {
   const button = event.currentTarget;
 
-  // Skip if the button is inside a form (search form)
-  if (button.closest("form")) {
-    return;
-  }
-
   if (button.textContent.includes("Load More")) {
-    // This is now handled by the news-display.js
-    return;
+    showNotification(
+      "Loading more sources... This feature will be available in the full version."
+    );
   } else if (button.textContent.includes("View My Ratings")) {
     showNotification(
       "Your ratings history will be available in the full version."
@@ -188,6 +182,3 @@ function showNotification(message) {
     }, 300);
   }, 3000);
 }
-
-// Expose showNotification globally
-window.showNotification = showNotification;
