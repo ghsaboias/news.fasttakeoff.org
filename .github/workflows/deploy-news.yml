@@ -1,4 +1,4 @@
-name: Deploy News App
+name: Deploy News Site
 
 on:
   push:
@@ -6,54 +6,44 @@ on:
   workflow_dispatch:
 
 jobs:
-  build-and-deploy:
+  deploy:
     runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v4
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          fetch-depth: 0
 
-      - name: Cache dependencies
-        uses: actions/cache@v3
-        with:
-          path: ~/.npm
-          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-node-
-
-      - name: Clean install
-        run: npm ci
-      - name: Build
-        run: npm run build
       - name: Install SSH key
         uses: webfactory/ssh-agent@v0.8.0
         with:
           ssh-private-key: ${{ secrets.SSH_DEPLOY_KEY }}
+
       - name: Add known hosts
         run: |
           mkdir -p ~/.ssh
           echo "${{ secrets.KNOWN_HOSTS }}" >> ~/.ssh/known_hosts
           chmod 644 ~/.ssh/known_hosts
+
       - name: Deploy to server
         run: |
           echo "🚀 Starting deployment..."
-          # Copy PHP and .htaccess files to the out directory
-          cp save-email.php admin.php .htaccess ./out/
 
-          if ! /usr/bin/rsync -av --delete \
+          # Create html directory if it doesn't exist
+          mkdir -p html
+
+          # Copy index.html to html directory
+          cp index.html html/
+
+          # Deploy with rsync
+          /usr/bin/rsync -av --delete \
             -e "ssh" \
-            --exclude='.git*' --exclude='node_modules' \
-            --exclude='src' --exclude='*.md' \
-            ./out/ \
-            deployer@138.68.163.17:/var/www/aiworld-sites/news.aiworld.com.br/html/; then
-            echo "❌ Deployment failed"
-            exit 1
-          fi
-
-          # Set proper permissions for the emails.txt file on the server
-          ssh deployer@138.68.163.17 "touch /var/www/aiworld-sites/news.aiworld.com.br/html/emails.txt && chmod 666 /var/www/aiworld-sites/news.aiworld.com.br/html/emails.txt"
+            --exclude='.git*' \
+            --exclude='node_modules' \
+            --exclude='package*.json' \
+            --exclude='*.md' \
+            --exclude='.github' \
+            ./html/ \
+            deployer@138.68.163.17:/var/www/aiworld-sites/news.aiworld.com.br/html/
 
           echo "✅ Deployment complete!"

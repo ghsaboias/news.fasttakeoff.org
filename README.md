@@ -22,13 +22,13 @@ The platform helps users identify propaganda in news by:
 
 The page is automatically deployed to the server when changes are pushed to the master branch.
 
-To build the project locally:
+This is a simple static HTML site. The main content is in the `html/index.html` file.
 
-```bash
-npm run build
-```
+## How to Update
 
-This will create an `out` directory with the static files ready for deployment.
+1. Edit the `html/index.html` file
+2. Commit and push your changes to the master branch
+3. The GitHub Actions workflow will automatically deploy the changes to the server
 
 ## Future Development
 
