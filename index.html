@@ -3,19 +3,20 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>AIWorld News - Gamified News Experience</title>
+    <title>AIWorld News - Propaganda Detector</title>
     <style>
       :root {
-        --primary: #0070f3;
+        --primary: #00cec9;
         --secondary: #6c5ce7;
-        --accent: #00cec9;
-        --background: #f8f9fa;
-        --card-bg: #ffffff;
-        --text: #333;
-        --text-light: #666;
+        --accent: #fd79a8;
+        --background: #1e272e;
+        --card-bg: #2d3436;
+        --text: #dfe6e9;
+        --text-light: #b2bec3;
         --success: #00b894;
         --warning: #fdcb6e;
         --danger: #d63031;
+        --neutral: #636e72;
       }
 
       body {
@@ -35,7 +36,7 @@
         align-items: center;
         margin-bottom: 2rem;
         padding-bottom: 1rem;
-        border-bottom: 1px solid #eaeaea;
+        border-bottom: 1px solid #4d5656;
       }
 
       .logo {
@@ -76,7 +77,7 @@
         padding: 1.5rem;
         margin: 1rem 0;
         background-color: var(--card-bg);
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
       }
 
       .card h2 {
@@ -84,104 +85,110 @@
         color: var(--primary);
       }
 
-      .grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-        gap: 1.5rem;
-        margin: 2rem 0;
+      .news-source {
+        border-left: 4px solid var(--neutral);
+        transition: border-color 0.3s;
       }
 
-      .challenge-card {
-        border-left: 4px solid var(--accent);
+      .news-source.propaganda-high {
+        border-left-color: var(--danger);
       }
 
-      .map-container {
-        height: 300px;
-        background-color: #e0f7fa;
-        border-radius: 8px;
+      .news-source.propaganda-medium {
+        border-left-color: var(--warning);
+      }
+
+      .news-source.propaganda-low {
+        border-left-color: var(--success);
+      }
+
+      .source-header {
         display: flex;
-        justify-content: center;
+        justify-content: space-between;
         align-items: center;
-        margin: 1.5rem 0;
-        position: relative;
-        overflow: hidden;
+        margin-bottom: 1rem;
       }
 
-      .map-overlay {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA4MDAgNDAwIj48cGF0aCBkPSJNNzY5LDk2LjVINjg4Ljg4Yy0yLjI5LTcuMzMtNS42MS0xNC4zLTkuODgtMjAuNjVsNTYuODktNTYuODlhMTAsMTAsMCwwLDAsMC0xNC4xNGwtMjgtMjhhMTAsMTAsMCwwLDAtMTQuMTQsMEw2MzcsMzIuNzdjLTYuMzUtNC4yNy0xMy4zMi03LjU5LTIwLjY1LTkuODhWLTU3YTEwLDEwLDAsMCwwLTEwLTEwSDU2Ni4zYTEwLDEwLDAsMCwwLTEwLDEwVjIyLjg5Yy03LjMzLDIuMjktMTQuMyw1LjYxLTIwLjY1LDkuODhsLTU2Ljg5LTU2Ljg5YTEwLDEwLDAsMCwwLTE0LjE0LDBsLTI4LDI4YTEwLDEwLDAsMCwwLDAsMTQuMTRsNTYuODksNTYuODljLTQuMjcsNi4zNS03LjU5LDEzLjMyLTkuODgsMjAuNjVIMzk0LjVhMTAsMTAsMCwwLDAtMTAsMTB2NDBhMTAsMTAsMCwwLDAsMTAsMTBoODkuMTJjMi4yOSw3LjMzLDUuNjEsMTQuMyw5Ljg4LDIwLjY1bC01Ni44OSw1Ni44OWExMCwxMCwwLDAsMCwwLDE0LjE0bDI4LDI4YTEwLDEwLDAsMCwwLDE0LjE0LDBsNTYuODktNTYuODljNi4zNSw0LjI3LDEzLjMyLDcuNTksMjAuNjUsOS44OHY4OS4xMmExMCwxMCwwLDAsMCwxMCwxMGg0MGExMCwxMCwwLDAsMCwxMC0xMFYyMTguMzljNy4zMy0yLjI5LDE0LjMtNS42MSwyMC42NS05Ljg4bDU2Ljg5LDU2Ljg5YTEwLDEwLDAsMCwwLDE0LjE0LDBsMjgtMjhhMTAsMTAsMCwwLDAsMC0xNC4xNGwtNTYuODktNTYuODljNC4yNy02LjM1LDcuNTktMTMuMzIsOS44OC0yMC42NUgyOTYuNWExMCwxMCwwLDAsMCwxMC0xMHYtNDBBMTAsMTAsMCwwLDAsMjk2LjUsMzA2LjVaIiBmaWxsPSIjNmM1Y2U3IiBmaWxsLW9wYWNpdHk9IjAuMSIvPjwvc3ZnPg==");
-        background-size: cover;
-        opacity: 0.7;
-      }
-
-      .map-placeholder {
-        font-size: 1.2rem;
-        color: var(--primary);
-        z-index: 1;
-        text-align: center;
-        padding: 0 2rem;
-      }
-
-      .badge-container {
-        display: flex;
-        gap: 1rem;
-        flex-wrap: wrap;
-        margin-top: 1rem;
-      }
-
-      .badge {
-        width: 60px;
-        height: 60px;
+      .source-logo {
+        width: 40px;
+        height: 40px;
+        background-color: #fff;
         border-radius: 50%;
-        background-color: #f1f1f1;
         display: flex;
         justify-content: center;
         align-items: center;
-        font-size: 1.5rem;
-        position: relative;
+        font-weight: bold;
+        font-size: 1.2rem;
       }
 
-      .badge.locked {
-        opacity: 0.5;
+      .rating-container {
+        display: flex;
+        gap: 0.5rem;
+        margin: 1rem 0;
       }
 
-      .badge::after {
-        content: attr(data-tooltip);
-        position: absolute;
-        bottom: -30px;
-        left: 50%;
-        transform: translateX(-50%);
-        font-size: 0.7rem;
-        white-space: nowrap;
-        background: rgba(0, 0, 0, 0.7);
+      .rating-btn {
+        background-color: var(--neutral);
         color: white;
-        padding: 2px 8px;
-        border-radius: 4px;
-        opacity: 0;
-        transition: opacity 0.2s;
-        pointer-events: none;
+        border: none;
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        cursor: pointer;
+        font-weight: bold;
+        transition: background-color 0.2s, transform 0.1s;
       }
 
-      .badge:hover::after {
-        opacity: 1;
+      .rating-btn:hover {
+        transform: scale(1.1);
       }
 
-      .progress-container {
-        margin-top: 1rem;
-        background-color: #e0e0e0;
-        border-radius: 10px;
-        height: 10px;
+      .rating-btn.low {
+        background-color: var(--success);
+      }
+
+      .rating-btn.medium {
+        background-color: var(--warning);
+      }
+
+      .rating-btn.high {
+        background-color: var(--danger);
+      }
+
+      .rating-btn.selected {
+        box-shadow: 0 0 0 2px white;
+      }
+
+      .propaganda-meter {
+        height: 6px;
+        background-color: #4d5656;
+        border-radius: 3px;
+        margin: 1rem 0;
         overflow: hidden;
       }
 
-      .progress-bar {
+      .propaganda-level {
         height: 100%;
-        background-color: var(--success);
-        width: 35%;
+        width: 0%;
+        transition: width 0.3s, background-color 0.3s;
+      }
+
+      .source-meta {
+        display: flex;
+        justify-content: space-between;
+        font-size: 0.9rem;
+        color: var(--text-light);
+        margin-top: 1rem;
+      }
+
+      .tag {
+        display: inline-block;
+        background-color: rgba(108, 92, 231, 0.2);
+        color: var(--secondary);
+        padding: 0.2rem 0.5rem;
+        border-radius: 4px;
+        font-size: 0.8rem;
+        margin-right: 0.5rem;
       }
 
       .timestamp {
@@ -192,7 +199,7 @@
 
       .btn {
         background-color: var(--primary);
-        color: white;
+        color: var(--background);
         border: none;
         padding: 0.5rem 1rem;
         border-radius: 4px;
@@ -202,7 +209,7 @@
       }
 
       .btn:hover {
-        background-color: #0058c7;
+        background-color: #00a8a3;
       }
 
       .btn-outline {
@@ -212,7 +219,7 @@
       }
 
       .btn-outline:hover {
-        background-color: rgba(0, 112, 243, 0.1);
+        background-color: rgba(0, 206, 201, 0.1);
       }
 
       .action-row {
@@ -220,109 +227,298 @@
         gap: 1rem;
         margin-top: 1rem;
       }
+
+      .stats-row {
+        display: flex;
+        gap: 1.5rem;
+        margin: 1.5rem 0;
+      }
+
+      .stat-card {
+        flex: 1;
+        background-color: rgba(0, 0, 0, 0.2);
+        border-radius: 8px;
+        padding: 1rem;
+        text-align: center;
+      }
+
+      .stat-card h3 {
+        margin: 0;
+        font-size: 0.9rem;
+        color: var(--text-light);
+        text-transform: uppercase;
+      }
+
+      .stat-card .value {
+        font-size: 2rem;
+        font-weight: bold;
+        color: var(--primary);
+        margin: 0.5rem 0;
+      }
+
+      .community-rating {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        margin-top: 0.5rem;
+      }
+
+      .community-rating-label {
+        font-size: 0.8rem;
+        color: var(--text-light);
+      }
+
+      .community-rating-value {
+        font-weight: bold;
+      }
+
+      .community-rating-value.low {
+        color: var(--success);
+      }
+
+      .community-rating-value.medium {
+        color: var(--warning);
+      }
+
+      .community-rating-value.high {
+        color: var(--danger);
+      }
     </style>
   </head>
   <body>
     <header>
       <div class="logo">
-        <h1>AIWorld News</h1>
+        <h1>AIWorld News Detector</h1>
       </div>
       <div class="user-stats">
         <div class="stat">
-          <div class="stat-value">125</div>
-          <div class="stat-label">POINTS</div>
+          <div class="stat-value">15</div>
+          <div class="stat-label">SOURCES RATED</div>
         </div>
         <div class="stat">
-          <div class="stat-value">7</div>
-          <div class="stat-label">LEVEL</div>
-        </div>
-        <div class="stat">
-          <div class="stat-value">3</div>
-          <div class="stat-label">STREAK</div>
+          <div class="stat-value">87%</div>
+          <div class="stat-label">ACCURACY</div>
         </div>
       </div>
     </header>
 
-    <div class="card challenge-card">
-      <h2>Today's Challenge</h2>
-      <p>Read news from 3 different continents to earn 50 bonus points!</p>
-      <div class="progress-container">
-        <div class="progress-bar"></div>
+    <div class="stats-row">
+      <div class="stat-card">
+        <h3>Sources Analyzed</h3>
+        <div class="value">1,245</div>
       </div>
-      <p><small>1/3 continents explored today</small></p>
-    </div>
-
-    <h2>Your News Explorer Map</h2>
-    <div class="map-container">
-      <div class="map-overlay"></div>
-      <div class="map-placeholder">
-        Your interactive news map will appear here. Explore news from around the
-        world to unlock regions and earn badges!
+      <div class="stat-card">
+        <h3>Propaganda Detected</h3>
+        <div class="value">483</div>
+      </div>
+      <div class="stat-card">
+        <h3>Community Contributors</h3>
+        <div class="value">327</div>
       </div>
     </div>
 
-    <h2>Earned Badges</h2>
-    <div class="badge-container">
-      <div
-        class="badge"
-        style="background-color: #a0e7e5"
-        data-tooltip="Tech Expert"
-      >
-        💻
-      </div>
-      <div
-        class="badge"
-        style="background-color: #ffcb77"
-        data-tooltip="News Scout"
-      >
-        🔍
-      </div>
-      <div
-        class="badge locked"
-        style="background-color: #e5e5e5"
-        data-tooltip="Global Explorer"
-      >
-        🌍
-      </div>
-      <div
-        class="badge locked"
-        style="background-color: #e5e5e5"
-        data-tooltip="Fact Checker"
-      >
-        ✓
-      </div>
-    </div>
+    <h2>Rate These News Sources</h2>
 
-    <div class="grid">
-      <div class="card">
-        <h2>Test Deployment</h2>
-        <p>
-          This is a gamified test page for news.aiworld.com.br. If you're seeing
-          this, the deployment was successful!
-        </p>
-        <div class="action-row">
-          <button class="btn">Start Reading</button>
-          <button class="btn btn-outline">Learn More</button>
+    <div class="card news-source" id="source-1">
+      <div class="source-header">
+        <h2>CNN</h2>
+        <div class="source-logo">CNN</div>
+      </div>
+      <p>
+        "President announces new climate initiative, critics call it
+        insufficient"
+      </p>
+      <div class="propaganda-meter">
+        <div
+          class="propaganda-level"
+          style="width: 45%; background-color: var(--warning)"
+        ></div>
+      </div>
+      <div class="rating-container">
+        <span>Propaganda Level:</span>
+        <button class="rating-btn low" data-rating="low" data-source="source-1">
+          L
+        </button>
+        <button
+          class="rating-btn medium selected"
+          data-rating="medium"
+          data-source="source-1"
+        >
+          M
+        </button>
+        <button
+          class="rating-btn high"
+          data-rating="high"
+          data-source="source-1"
+        >
+          H
+        </button>
+      </div>
+      <div class="community-rating">
+        <span class="community-rating-label">Community Rating:</span>
+        <span class="community-rating-value medium">Medium (65%)</span>
+      </div>
+      <div class="source-meta">
+        <div>
+          <span class="tag">Politics</span>
+          <span class="tag">Climate</span>
         </div>
-        <p class="timestamp">Deployed on: <span id="date"></span></p>
-      </div>
-
-      <div class="card">
-        <h2>Coming Soon</h2>
-        <p>
-          We're working on an exciting news experience that makes staying
-          informed fun and engaging. Earn points, unlock badges, and compete
-          with friends!
-        </p>
-        <div class="action-row">
-          <button class="btn btn-outline">Subscribe for Updates</button>
-        </div>
+        <div>Published: 2 hours ago</div>
       </div>
     </div>
+
+    <div class="card news-source" id="source-2">
+      <div class="source-header">
+        <h2>Fox News</h2>
+        <div class="source-logo">FOX</div>
+      </div>
+      <p>
+        "Government overreach continues with new regulations targeting
+        businesses"
+      </p>
+      <div class="propaganda-meter">
+        <div
+          class="propaganda-level"
+          style="width: 75%; background-color: var(--danger)"
+        ></div>
+      </div>
+      <div class="rating-container">
+        <span>Propaganda Level:</span>
+        <button class="rating-btn low" data-rating="low" data-source="source-2">
+          L
+        </button>
+        <button
+          class="rating-btn medium"
+          data-rating="medium"
+          data-source="source-2"
+        >
+          M
+        </button>
+        <button
+          class="rating-btn high selected"
+          data-rating="high"
+          data-source="source-2"
+        >
+          H
+        </button>
+      </div>
+      <div class="community-rating">
+        <span class="community-rating-label">Community Rating:</span>
+        <span class="community-rating-value high">High (78%)</span>
+      </div>
+      <div class="source-meta">
+        <div>
+          <span class="tag">Politics</span>
+          <span class="tag">Business</span>
+        </div>
+        <div>Published: 5 hours ago</div>
+      </div>
+    </div>
+
+    <div class="card news-source" id="source-3">
+      <div class="source-header">
+        <h2>Reuters</h2>
+        <div class="source-logo">R</div>
+      </div>
+      <p>"Global markets respond to central bank interest rate decisions"</p>
+      <div class="propaganda-meter">
+        <div
+          class="propaganda-level"
+          style="width: 15%; background-color: var(--success)"
+        ></div>
+      </div>
+      <div class="rating-container">
+        <span>Propaganda Level:</span>
+        <button
+          class="rating-btn low selected"
+          data-rating="low"
+          data-source="source-3"
+        >
+          L
+        </button>
+        <button
+          class="rating-btn medium"
+          data-rating="medium"
+          data-source="source-3"
+        >
+          M
+        </button>
+        <button
+          class="rating-btn high"
+          data-rating="high"
+          data-source="source-3"
+        >
+          H
+        </button>
+      </div>
+      <div class="community-rating">
+        <span class="community-rating-label">Community Rating:</span>
+        <span class="community-rating-value low">Low (12%)</span>
+      </div>
+      <div class="source-meta">
+        <div>
+          <span class="tag">Finance</span>
+          <span class="tag">Global</span>
+        </div>
+        <div>Published: 1 day ago</div>
+      </div>
+    </div>
+
+    <div class="card news-source" id="source-4">
+      <div class="source-header">
+        <h2>RT (Russia Today)</h2>
+        <div class="source-logo">RT</div>
+      </div>
+      <p>"Western allies divided over military support for Ukraine"</p>
+      <div class="propaganda-meter">
+        <div
+          class="propaganda-level"
+          style="width: 85%; background-color: var(--danger)"
+        ></div>
+      </div>
+      <div class="rating-container">
+        <span>Propaganda Level:</span>
+        <button class="rating-btn low" data-rating="low" data-source="source-4">
+          L
+        </button>
+        <button
+          class="rating-btn medium"
+          data-rating="medium"
+          data-source="source-4"
+        >
+          M
+        </button>
+        <button
+          class="rating-btn high selected"
+          data-rating="high"
+          data-source="source-4"
+        >
+          H
+        </button>
+      </div>
+      <div class="community-rating">
+        <span class="community-rating-label">Community Rating:</span>
+        <span class="community-rating-value high">High (92%)</span>
+      </div>
+      <div class="source-meta">
+        <div>
+          <span class="tag">Geopolitics</span>
+          <span class="tag">Conflict</span>
+        </div>
+        <div>Published: 3 hours ago</div>
+      </div>
+    </div>
+
+    <div class="action-row">
+      <button class="btn">Load More Sources</button>
+      <button class="btn btn-outline">View My Ratings</button>
+    </div>
+
+    <p class="timestamp">Last updated: <span id="date"></span></p>
 
     <script>
       document.getElementById("date").textContent = new Date().toLocaleString();
     </script>
-    <script src="assets/js/gamification.js"></script>
+    <script src="assets/js/propaganda-detector.js"></script>
   </body>
 </html>

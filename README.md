@@ -1,23 +1,22 @@
-# Gamified News Experience - AIWorld
+# News Propaganda Detector - AIWorld
 
-This is a gamified news platform for news.aiworld.com.br that makes staying informed fun and engaging.
+A tool for identifying and rating propaganda in news sources at news.aiworld.com.br.
 
 ## Features
 
-- **Points System**: Earn points for reading articles, completing challenges, and engaging with content
-- **Badges & Achievements**: Unlock badges for different accomplishments like reading streaks or topic expertise
-- **Daily Challenges**: Complete daily challenges to earn bonus points and rewards
-- **News Explorer Map**: Visualize your news consumption across different regions of the world
-- **Level Progression**: Level up as you consume more diverse news content
+- **News Source Rating**: Rate news sources based on their propaganda level
+- **Propaganda Meter**: Visual indicator of propaganda level for each news source
+- **Community Ratings**: See how others have rated the same sources
+- **Dark Theme**: Clean, modern interface with a dark theme for comfortable reading
 
-## Gamification Elements
+## Core Functionality
 
-The platform includes several gamification elements to increase engagement:
+The platform helps users identify propaganda in news by:
 
-- **Knowledge Quests**: Complete quests by reading articles on specific topics
-- **Global Explorer**: Collect region badges by reading news from different parts of the world
-- **Topic Mastery**: Become an expert in specific news categories
-- **Balanced News Diet**: Earn rewards for consuming diverse news sources and perspectives
+- **Source Analysis**: Rate individual news sources on a low/medium/high propaganda scale
+- **Headline Evaluation**: Analyze headlines for emotionally charged language and bias
+- **Community Consensus**: Compare your ratings with the community average
+- **Propaganda Tracking**: Track propaganda trends across different news sources over time
 
 ## Deployment
 
@@ -33,8 +32,8 @@ This will create an `out` directory with the static files ready for deployment.
 
 ## Future Development
 
-- Interactive 3D globe for news visualization
-- Real-time news feed with WebSocket updates
-- AI-powered news categorization and recommendation
-- Social features for competing with friends
-- Mobile app integration
+- AI-powered propaganda detection algorithms
+- Historical tracking of propaganda levels over time
+- Source credibility scoring
+- Bias detection in article content
+- Browser extension for real-time propaganda detection
