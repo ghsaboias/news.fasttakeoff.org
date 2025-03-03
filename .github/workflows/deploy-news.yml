@@ -40,6 +40,9 @@ jobs:
       - name: Deploy to server
         run: |
           echo "🚀 Starting deployment..."
+          # Copy PHP and .htaccess files to the out directory
+          cp save-email.php admin.php .htaccess ./out/
+
           if ! /usr/bin/rsync -av --delete \
             -e "ssh" \
             --exclude='.git*' --exclude='node_modules' \
@@ -49,4 +52,8 @@ jobs:
             echo "❌ Deployment failed"
             exit 1
           fi
+
+          # Set proper permissions for the emails.txt file on the server
+          ssh deployer@138.68.163.17 "touch /var/www/aiworld-sites/news.aiworld.com.br/html/emails.txt && chmod 666 /var/www/aiworld-sites/news.aiworld.com.br/html/emails.txt"
+
           echo "✅ Deployment complete!"
