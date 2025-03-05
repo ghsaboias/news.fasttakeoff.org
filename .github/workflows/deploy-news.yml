@@ -8,11 +8,24 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+
+      - name: Install Bun
+        run: |
+          curl -fsSL https://bun.sh/install | bash
+          echo "$HOME/.bun/bin" >> $GITHUB_PATH
+
+      - name: Build Next.js Frontend with Bun
+        run: |
+          cd frontend
+          bun install
+          bun run build
+          bun run export
+          mkdir -p ../html
+          cp -r out/* ../html/
 
       - name: Install SSH key
         uses: webfactory/ssh-agent@v0.8.0
@@ -28,22 +41,7 @@ jobs:
       - name: Deploy to server
         run: |
           echo "🚀 Starting deployment..."
-
-          # Create html directory if it doesn't exist
-          mkdir -p html
-
-          # Copy index.html to html directory
-          cp index.html html/
-
-          # Deploy with rsync
-          /usr/bin/rsync -av --delete \
-            -e "ssh" \
-            --exclude='.git*' \
-            --exclude='node_modules' \
-            --exclude='package*.json' \
-            --exclude='*.md' \
-            --exclude='.github' \
-            ./html/ \
-            deployer@138.68.163.17:/var/www/aiworld-sites/news.aiworld.com.br/html/
-
+          rsync -av --delete -e "ssh" ./html/ deployer@138.68.163.17:/var/www/aiworld-sites/news.aiworld.com.br/html/
+          rsync -av --delete -e "ssh" --exclude='*.json' ./backend/ deployer@138.68.163.17:/var/www/aiworld-sites/news.aiworld.com.br/backend/
+          ssh deployer@138.68.163.17 "cd /var/www/aiworld-sites/news.aiworld.com.br/backend && uv venv && source .venv/bin/activate && uv pip install -r ../requirements.txt && sudo systemctl restart fastapi"
           echo "✅ Deployment complete!"
