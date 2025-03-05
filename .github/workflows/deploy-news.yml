@@ -42,5 +42,5 @@ jobs:
           echo "🚀 Starting deployment..."
           rsync -av --delete -e "ssh" ./html/ deployer@138.68.163.17:/var/www/aiworld-sites/news.aiworld.com.br/html/
           rsync -av --delete -e "ssh" --exclude='*.json' ./backend/ deployer@138.68.163.17:/var/www/aiworld-sites/news.aiworld.com.br/backend/
-          ssh deployer@138.68.163.17 "cd /var/www/aiworld-sites/news.aiworld.com.br/backend && uv venv && source .venv/bin/activate && uv pip install -r ../requirements.txt && sudo systemctl restart fastapi"
+          ssh deployer@138.68.163.17 "cd /var/www/aiworld-sites/news.aiworld.com.br/backend && source ~/.bashrc && uv venv && source .venv/bin/activate && uv pip install -r ../requirements.txt && sudo systemctl restart fastapi"
           echo "✅ Deployment complete!"
