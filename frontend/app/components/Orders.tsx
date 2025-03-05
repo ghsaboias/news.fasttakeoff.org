@@ -43,7 +43,7 @@ export default function Orders() {
     React.useEffect(() => {
         const fetchOrders = async () => {
             try {
-                const response = await fetch('http://127.0.0.1:8000/api/orders')
+                const response = await fetch('/api/orders')
                 if (!response.ok) {
                     throw new Error('Failed to fetch orders')
                 }
