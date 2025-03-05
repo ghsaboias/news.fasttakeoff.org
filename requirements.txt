@@ -1,5 +1,5 @@
-fastapi
-uvicorn
-requests
-groq
-python-dotenv 
+fastapi==0.110.0
+uvicorn==0.27.1
+python-dotenv==1.0.1
+requests==2.31.0
+httpx==0.27.0 

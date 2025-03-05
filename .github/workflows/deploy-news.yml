@@ -45,7 +45,8 @@ jobs:
 
           # Deploy backend and install uv if needed
           rsync -av --delete -e "ssh" --exclude='*.json' backend/ deployer@138.68.163.17:/var/www/aiworld-sites/news.aiworld.com.br/backend/
+          rsync -av -e "ssh" requirements.txt deployer@138.68.163.17:/var/www/aiworld-sites/news.aiworld.com.br/backend/
 
           # Setup backend and restart service (ensuring PATH includes ~/.local/bin)
-          ssh deployer@138.68.163.17 'mkdir -p ~/.local/bin && curl -LsSf https://astral.sh/uv/install.sh | sh && PATH="$HOME/.local/bin:$PATH" && cd /var/www/aiworld-sites/news.aiworld.com.br/backend && uv venv && source .venv/bin/activate && uv pip install -r ../requirements.txt && sudo systemctl restart fastapi'
+          ssh deployer@138.68.163.17 'mkdir -p ~/.local/bin && curl -LsSf https://astral.sh/uv/install.sh | sh && PATH="$HOME/.local/bin:$PATH" && cd /var/www/aiworld-sites/news.aiworld.com.br/backend && uv venv && source .venv/bin/activate && uv pip install -r requirements.txt && sudo systemctl restart fastapi'
           echo "✅ Deployment complete!"
