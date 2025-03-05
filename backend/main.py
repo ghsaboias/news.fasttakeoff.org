@@ -8,13 +8,13 @@ app = FastAPI()
 # Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "https://www.news.aiworld.com.br"],  # Allow our Next.js frontend
+    allow_origins=["http://localhost:3000", "https://news.aiworld.com.br"],  # Allow our Next.js frontend
     allow_credentials=True,
     allow_methods=["*"],  # Allow all methods
     allow_headers=["*"],  # Allow all headers
 )
 
-@app.get("/api/orders")
+@app.get("/orders")
 async def get_orders():
     try:
         with open("orders.json", "r") as f:
