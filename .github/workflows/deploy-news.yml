@@ -25,6 +25,8 @@ jobs:
           bun run build
           mkdir -p ../html
           cp -r out/* ../html/
+          # Remove any stray .txt files from out/
+          rm -f ../html/*.txt
 
       - name: Install SSH key
         uses: webfactory/ssh-agent@v0.8.0
@@ -37,7 +39,7 @@ jobs:
           echo "${{ secrets.KNOWN_HOSTS }}" >> ~/.ssh/known_hosts
           chmod 644 ~/.ssh/known_hosts
 
-      - name: Deploy to server
+      - name: Deploy to Server
         run: |
           echo "🚀 Starting deployment..."
           # Deploy frontend
@@ -48,16 +50,41 @@ jobs:
           rsync -av -e "ssh" requirements.txt deployer@138.68.163.17:/var/www/aiworld-sites/news.aiworld.com.br/backend/
 
           # Setup backend and restart service
-          ssh deployer@138.68.163.17 'mkdir -p ~/.local/bin && \
-            curl -LsSf https://astral.sh/uv/install.sh | sh && \
-            PATH="$HOME/.local/bin:$PATH" && \
-            cd /var/www/aiworld-sites/news.aiworld.com.br/backend && \
-            uv venv && \
-            source .venv/bin/activate && \
-            uv pip install -r requirements.txt && \
-            mkdir -p ~/.config/systemd/user/ && \
-            echo -e "[Unit]\nDescription=FastAPI for News Tracker\nAfter=network.target\n\n[Service]\nWorkingDirectory=/var/www/aiworld-sites/news.aiworld.com.br/backend\nExecStart=/var/www/aiworld-sites/news.aiworld.com.br/backend/.venv/bin/uvicorn main:app --host 0.0.0.0 --port 8000\nRestart=always\n\n[Install]\nWantedBy=default.target" > ~/.config/systemd/user/fastapi.service && \
-            systemctl --user daemon-reload && \
-            systemctl --user restart fastapi && \
-            systemctl --user enable fastapi'
+          ssh deployer@138.68.163.17 << 'EOF'
+            # Install uv if not present
+            mkdir -p ~/.local/bin
+            if ! command -v uv >/dev/null 2>&1; then
+              curl -LsSf https://astral.sh/uv/install.sh | sh
+            fi
+            export PATH="$HOME/.local/bin:$PATH"
+
+            # Setup backend
+            cd /var/www/aiworld-sites/news.aiworld.com.br/backend
+            uv venv
+            source .venv/bin/activate
+            uv pip install -r requirements.txt
+
+            # Configure and restart FastAPI service
+            mkdir -p ~/.config/systemd/user/
+            cat << 'SERVICE' > ~/.config/systemd/user/fastapi.service
+            [Unit]
+            Description=FastAPI for News Tracker
+            After=network.target
+
+            [Service]
+            WorkingDirectory=/var/www/aiworld-sites/news.aiworld.com.br/backend
+            ExecStart=/var/www/aiworld-sites/news.aiworld.com.br/backend/.venv/bin/uvicorn main:app --host 127.0.0.1 --port 8000
+            Restart=always
+
+            [Install]
+            WantedBy=default.target
+            SERVICE
+            systemctl --user daemon-reload
+            systemctl --user restart fastapi
+            systemctl --user enable fastapi
+
+            # Ensure ownership
+            sudo chown -R deployer:deployer /var/www/aiworld-sites/news.aiworld.com.br
+            sudo chmod -R 755 /var/www/aiworld-sites/news.aiworld.com.br
+          EOF
           echo "✅ Deployment complete!"
