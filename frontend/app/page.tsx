@@ -57,7 +57,7 @@ export default function Home() {
                   Track Changes
                 </h3>
                 <p className="mt-2 text-base text-gray-400">
-                  Monitor new executive orders as they're published. Stay informed about policy changes and government directives.
+                  Monitor new executive orders as they&apos;re published. Stay informed about policy changes and government directives.
                 </p>
               </div>
             </div>
