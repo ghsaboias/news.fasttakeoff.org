@@ -47,16 +47,10 @@ export default function RootLayout({
                 </Link>
                 <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
                   <Link
-                    href="/orders"
+                    href="/executive-orders"
                     className="inline-flex items-center px-1 pt-1 text-sm font-medium text-gray-300 hover:text-blue-400 transition-colors"
                   >
                     Browse Orders
-                  </Link>
-                  <Link
-                    href="/about"
-                    className="inline-flex items-center px-1 pt-1 text-sm font-medium text-gray-300 hover:text-blue-400 transition-colors"
-                  >
-                    About
                   </Link>
                 </div>
               </div>
