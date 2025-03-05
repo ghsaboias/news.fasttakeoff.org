@@ -47,8 +47,5 @@ __pycache__/
 # Bun
 bun.lockb
 
-# GitHub Workflows
-.github/workflows/deploy-news.yml
-
 # Deployment
 DEPLOYMENT.md
