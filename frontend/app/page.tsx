@@ -18,7 +18,7 @@ export default function Home() {
           <div className="mt-5 max-w-md mx-auto sm:flex sm:justify-center md:mt-8">
             <div className="rounded-md shadow-lg shadow-blue-500/20">
               <Link
-                href="/orders"
+                href="/executive-orders"
                 className="w-full flex items-center justify-center px-8 py-3 border border-transparent text-base font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 transition-colors md:py-4 md:text-lg md:px-10"
               >
                 Browse Orders
@@ -87,7 +87,7 @@ export default function Home() {
         </div>
         <div className="bg-[#1E293B] rounded-lg border border-blue-900/30 p-6">
           <Link
-            href="/orders"
+            href="/executive-orders"
             className="block text-center text-blue-400 hover:text-blue-300 transition-colors font-medium"
           >
             View all orders →
