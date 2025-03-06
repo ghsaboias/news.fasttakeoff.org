@@ -24,12 +24,12 @@ async function injectOrdersData() {
     const pageContent = fs.readFileSync(pageFilePath, "utf8");
 
     // Check if data is already injected
-    if (pageContent.includes("export const orders =")) {
+    if (pageContent.includes("const orders =")) {
       console.log("Orders data already injected, replacing with fresh data");
     }
 
     // Create new content with injected data
-    const ordersDataString = `export const orders = ${JSON.stringify(
+    const ordersDataString = `const orders = ${JSON.stringify(
       orders,
       null,
       2
@@ -37,10 +37,10 @@ async function injectOrdersData() {
 
     // Replace existing injected data or add new data
     let newContent;
-    if (pageContent.includes("export const orders =")) {
+    if (pageContent.includes("const orders =")) {
       // Replace existing data
       newContent = pageContent.replace(
-        /export const orders =[\s\S]*?;\n\n/,
+        /const orders =[\s\S]*?;\n\n/,
         ordersDataString
       );
     } else {
