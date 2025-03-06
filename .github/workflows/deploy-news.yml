@@ -36,11 +36,16 @@ jobs:
           curl -fsSL https://bun.sh/install | bash
           echo "$HOME/.bun/bin" >> $GITHUB_PATH
 
+      - name: Inject Orders Data
+        run: |
+          cd frontend
+          node ./injectOrdersData.js  # Adjust path if script is elsewhere
+
       - name: Build Next.js Frontend with Bun
         run: |
           cd frontend
           bun install
-          bun run build  # This now includes the inject-orders script
+          bun run build
           mkdir -p ../html
           cp -r out/* ../html/
           # Remove any stray .txt files from out/

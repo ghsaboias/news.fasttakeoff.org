@@ -1,7 +1,5 @@
-import type { Order } from '../components/Orders';
 import Orders from '../components/Orders';
-
-// Orders will be injected at build time as const orders = [...]
+import { orders } from './orders-data';
 
 export default function OrdersPage() {
     return (
@@ -11,6 +9,3 @@ export default function OrdersPage() {
         </main>
     )
 }
-
-// Type declaration for injected orders
-declare const orders: Order[];
