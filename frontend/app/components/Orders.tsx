@@ -1,92 +1,186 @@
 'use client'
 
-import { Search } from 'lucide-react'
-import React, { ChangeEvent } from 'react'
+import { Search } from 'lucide-react';
+import React, { ChangeEvent } from 'react';
 
+// Agency Interface
 interface Agency {
-    name: string
+    raw_name: string;
+    name: string;
+    id: number;
+    url: string;
+    json_url: string;
+    parent_id: number | null;
+    slug: string;
 }
 
+// OrderData Interface (matches "data" in response)
 interface OrderData {
-    title: string
-    type: string
-    document_number: string
-    html_url: string
-    publication_date: string
-    agencies: Agency[]
+    title: string;
+    type: string;
+    abstract: string | null;
+    document_number: string;
+    html_url: string;
+    pdf_url: string;
+    public_inspection_pdf_url: string;
+    publication_date: string;
+    agencies: Agency[];
+    excerpts: string | null;
 }
 
-export interface Order {
-    data: OrderData
-    content?: {
-        page_views?: {
-            count: number
-        }
-    }
+// Order Interface (root level with data, content, and additional fields)
+interface Order {
+    data: OrderData;
+    content: {
+        abstract: string | null;
+        action: string | null;
+        agencies: Agency[];
+        body_html_url: string;
+        cfr_references: any[]; // Empty in sample, refine if needed
+        citation: string;
+        comment_url: string | null;
+        comments_close_on: string | null;
+        correction_of: string | null;
+        corrections: any[]; // Empty in sample
+        dates: string | null;
+        disposition_notes: string;
+        docket_ids: string[];
+        dockets: any[]; // Empty in sample
+        document_number: string;
+        effective_on: string | null;
+        end_page: number;
+        executive_order_notes: string;
+        executive_order_number: string;
+        explanation: string | null;
+        full_text_xml_url: string;
+        html_url: string;
+        images: {
+            [key: string]: {
+                large: string;
+                original_size: string;
+            };
+        };
+        images_metadata: {
+            [key: string]: {
+                large: {
+                    identifier: string;
+                    content_type: string;
+                    size: number;
+                    width: number;
+                    sha: string;
+                    url: string;
+                    height: number;
+                };
+                original_size: {
+                    identifier: string;
+                    content_type: string;
+                    size: number;
+                    width: number;
+                    sha: string;
+                    url: string;
+                    height: number;
+                };
+            };
+        };
+        json_url: string;
+        mods_url: string;
+        not_received_for_publication: string | null;
+        page_length: number;
+        page_views: {
+            count: number;
+            last_updated: string;
+        };
+        pdf_url: string;
+        presidential_document_number: string;
+        proclamation_number: string | null;
+        public_inspection_pdf_url: string;
+        publication_date: string;
+        raw_text_url: string;
+        regulation_id_number_info: Record<string, any>; // Empty object in sample
+        regulation_id_numbers: string[];
+        regulations_dot_gov_info: {
+            checked_regulationsdotgov_at: string;
+        };
+        regulations_dot_gov_url: string | null;
+        significant: string | null;
+        signing_date: string;
+        start_page: number;
+        subtype: string;
+        title: string;
+        toc_doc: string;
+        toc_subject: string;
+        topics: string[];
+        type: string;
+        volume: number;
+    };
+    raw_text: string | null;
+    summary: string | null;
+    metadata: {
+        saved_at: string;
+        summarized: boolean;
+    };
 }
 
 type SortConfig = {
-    key: keyof OrderData | 'views'
-    direction: 'asc' | 'desc'
+    key: keyof OrderData | 'views';
+    direction: 'asc' | 'desc';
 }
 
 interface OrdersProps {
-    initialOrders: Order[]
+    initialOrders: Order[];
 }
 
 export default function Orders({ initialOrders = [] }: OrdersProps) {
-    const [searchTerm, setSearchTerm] = React.useState('')
+    const [searchTerm, setSearchTerm] = React.useState('');
     const [sortConfig, setSortConfig] = React.useState<SortConfig>({
         key: 'publication_date',
         direction: 'desc'
-    })
+    });
 
     const handleSort = (key: SortConfig['key']) => {
         setSortConfig((current: SortConfig) => ({
             key,
             direction: current.key === key && current.direction === 'asc' ? 'desc' : 'asc'
-        }))
-    }
+        }));
+    };
 
     const sortedAndFilteredOrders = React.useMemo(() => {
-        let result = [...initialOrders]
+        let result = [...initialOrders];
 
-        // Filter based on search term
         if (searchTerm) {
-            const lowerSearchTerm = searchTerm.toLowerCase()
+            const lowerSearchTerm = searchTerm.toLowerCase();
             result = result.filter(order =>
                 order.data.title.toLowerCase().includes(lowerSearchTerm) ||
                 order.data.document_number.toLowerCase().includes(lowerSearchTerm) ||
                 order.data.agencies.some((agency: Agency) =>
                     agency.name.toLowerCase().includes(lowerSearchTerm)
                 )
-            )
+            );
         }
 
-        // Sort
         result.sort((a: Order, b: Order) => {
             if (sortConfig.key === 'views') {
-                const aViews = a.content?.page_views?.count || 0
-                const bViews = b.content?.page_views?.count || 0
-                return sortConfig.direction === 'asc' ? aViews - bViews : bViews - aViews
+                const aViews = a.content.page_views.count || 0;
+                const bViews = b.content.page_views.count || 0;
+                return sortConfig.direction === 'asc' ? aViews - bViews : bViews - aViews;
             }
 
-            const aValue = a.data[sortConfig.key]
-            const bValue = b.data[sortConfig.key]
+            const aValue = a.data[sortConfig.key];
+            const bValue = b.data[sortConfig.key];
 
             if (sortConfig.direction === 'asc') {
-                return aValue > bValue ? 1 : -1
+                return aValue && bValue ? aValue > bValue ? 1 : -1 : 0;
             }
-            return aValue < bValue ? 1 : -1
-        })
+            return aValue && bValue ? aValue < bValue ? 1 : -1 : 0;
+        });
 
-        return result
-    }, [initialOrders, searchTerm, sortConfig])
+        return result;
+    }, [initialOrders, searchTerm, sortConfig]);
 
     const getSortIcon = (key: SortConfig['key']) => {
-        if (sortConfig.key !== key) return '↕'
-        return sortConfig.direction === 'asc' ? '↑' : '↓'
-    }
+        if (sortConfig.key !== key) return '↕';
+        return sortConfig.direction === 'asc' ? '↑' : '↓';
+    };
 
     return (
         <div className="container mx-auto py-10">
@@ -165,7 +259,7 @@ export default function Orders({ initialOrders = [] }: OrdersProps) {
                                     {order.data.agencies.map((agency: Agency) => agency.name).join(', ')}
                                 </td>
                                 <td className="px-6 py-4 whitespace-nowrap text-gray-300">
-                                    {order.content?.page_views?.count?.toLocaleString() || 'N/A'}
+                                    {order.content.page_views.count.toLocaleString() || 'N/A'}
                                 </td>
                             </tr>
                         ))}
@@ -179,5 +273,5 @@ export default function Orders({ initialOrders = [] }: OrdersProps) {
                 </div>
             )}
         </div>
-    )
-} 
+    );
+}
