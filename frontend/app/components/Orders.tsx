@@ -29,23 +29,23 @@ interface OrderData {
 }
 
 // Order Interface (root level with data, content, and additional fields)
-interface Order {
+export interface Order {
     data: OrderData;
     content: {
         abstract: string | null;
         action: string | null;
         agencies: Agency[];
         body_html_url: string;
-        cfr_references: any[]; // Empty in sample, refine if needed
+        cfr_references: unknown[]; // Empty in sample, refine if needed
         citation: string;
         comment_url: string | null;
         comments_close_on: string | null;
         correction_of: string | null;
-        corrections: any[]; // Empty in sample
+        corrections: unknown[]; // Empty in sample
         dates: string | null;
         disposition_notes: string;
         docket_ids: string[];
-        dockets: any[]; // Empty in sample
+        dockets: unknown[]; // Empty in sample
         document_number: string;
         effective_on: string | null;
         end_page: number;
@@ -96,7 +96,7 @@ interface Order {
         public_inspection_pdf_url: string;
         publication_date: string;
         raw_text_url: string;
-        regulation_id_number_info: Record<string, any>; // Empty object in sample
+        regulation_id_number_info: Record<string, unknown>; // Empty object in sample
         regulation_id_numbers: string[];
         regulations_dot_gov_info: {
             checked_regulationsdotgov_at: string;
