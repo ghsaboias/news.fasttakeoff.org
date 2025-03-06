@@ -13,6 +13,22 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Install Python and UV
+        run: |
+          sudo apt update
+          sudo apt install -y python3 python3-pip
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+
+      - name: Generate Static Orders Data
+        run: |
+          cd backend
+          uv venv
+          source .venv/bin/activate
+          uv pip install -r ../requirements.txt
+          python fetch_orders.py
+          cd ..
+
       - name: Install Bun
         run: |
           curl -fsSL https://bun.sh/install | bash

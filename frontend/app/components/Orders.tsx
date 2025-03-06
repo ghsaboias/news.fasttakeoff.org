@@ -43,9 +43,14 @@ export default function Orders() {
     React.useEffect(() => {
         const fetchOrders = async () => {
             try {
-                const response = await fetch('/api/orders')
+                // Try to fetch from static file first
+                let response = await fetch('/orders.json')
                 if (!response.ok) {
-                    throw new Error('Failed to fetch orders')
+                    // Fallback to API if static file fails
+                    response = await fetch('/api/orders')
+                    if (!response.ok) {
+                        throw new Error('Failed to fetch orders')
+                    }
                 }
                 const data = await response.json()
                 setOrders(data)

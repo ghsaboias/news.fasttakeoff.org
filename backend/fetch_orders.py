@@ -18,7 +18,7 @@ class FederalRegisterAPI:
     def __init__(self):
         self.base_url = "https://www.federalregister.gov/api/v1"
         self.session = requests.Session()
-        self.save_file = "orders.json"
+        self.save_file = "../frontend/public/orders.json"
 
     def fetch_all_orders(self, start_date="2025-01-20"):
         """Fetch all executive orders from the specified start date"""
@@ -70,4 +70,6 @@ class FederalRegisterAPI:
         logging.info(f"Saved {len(detailed_orders)} orders to {self.save_file}")
 
 if __name__ == "__main__":
+    # Ensure the target directory exists
+    os.makedirs(os.path.dirname(os.path.abspath("../frontend/public/orders.json")), exist_ok=True)
     FederalRegisterAPI().save_orders() 
