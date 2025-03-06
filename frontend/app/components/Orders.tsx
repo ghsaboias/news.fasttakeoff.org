@@ -108,7 +108,7 @@ export interface Order {
         subtype: string;
         title: string;
         toc_doc: string;
-        toc_subject: string;
+        toc_subject: string | null;
         topics: string[];
         type: string;
         volume: number;
