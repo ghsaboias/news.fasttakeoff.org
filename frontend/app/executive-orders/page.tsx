@@ -1,8 +1,10 @@
 import type { Order } from '../components/Orders';
 import Orders from '../components/Orders';
 
+// Declare the injected orders variable
+declare const orders: Order[];
+
 // Orders will be injected at build time
-const orders: Order[] = [];
 
 export default function OrdersPage() {
     return (
@@ -11,4 +13,4 @@ export default function OrdersPage() {
             <Orders initialOrders={orders} />
         </main>
     )
-} 
+}
