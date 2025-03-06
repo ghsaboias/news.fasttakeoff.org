@@ -14,7 +14,7 @@ interface Agency {
     slug: string;
 }
 
-// OrderData Interface (matches "data" in response)
+// OrderData Interface
 interface OrderData {
     title: string;
     type: string;
@@ -28,7 +28,7 @@ interface OrderData {
     excerpts: string | null;
 }
 
-// Order Interface (root level with data, content, and additional fields)
+// Order Interface
 export interface Order {
     data: OrderData;
     content: {
@@ -36,20 +36,20 @@ export interface Order {
         action: string | null;
         agencies: Agency[];
         body_html_url: string;
-        cfr_references: unknown[]; // Empty in sample, refine if needed
+        cfr_references: { title: string; part: string }[]; // Adjust if API specifies
         citation: string;
         comment_url: string | null;
         comments_close_on: string | null;
         correction_of: string | null;
-        corrections: unknown[]; // Empty in sample
+        corrections: { document_number: string; url: string }[]; // Adjust if API specifies
         dates: string | null;
-        disposition_notes: string;
+        disposition_notes: string | null; // Fixed: Allow null
         docket_ids: string[];
-        dockets: unknown[]; // Empty in sample
+        dockets: { id: string; name: string }[]; // Adjust if API specifies
         document_number: string;
         effective_on: string | null;
         end_page: number;
-        executive_order_notes: string;
+        executive_order_notes: string | null; // Fixed: Allow null
         executive_order_number: string;
         explanation: string | null;
         full_text_xml_url: string;
@@ -96,7 +96,7 @@ export interface Order {
         public_inspection_pdf_url: string;
         publication_date: string;
         raw_text_url: string;
-        regulation_id_number_info: Record<string, unknown>; // Empty object in sample
+        regulation_id_number_info: Record<string, string>; // Refine if API specifies
         regulation_id_numbers: string[];
         regulations_dot_gov_info: {
             checked_regulationsdotgov_at: string;
@@ -121,6 +121,7 @@ export interface Order {
     };
 }
 
+// Rest of your component code remains unchanged...
 type SortConfig = {
     key: keyof OrderData | 'views';
     direction: 'asc' | 'desc';
