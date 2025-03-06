@@ -57,12 +57,22 @@ export interface Order {
         images?: {
             [key: string]: {
                 large?: string;
+                medium?: string;
                 original_size?: string;
             };
         };
         images_metadata?: {
             [key: string]: {
                 large?: {
+                    identifier?: string;
+                    content_type?: string;
+                    size?: number;
+                    width?: number;
+                    sha?: string;
+                    url?: string;
+                    height?: number;
+                };
+                medium?: {
                     identifier?: string;
                     content_type?: string;
                     size?: number;
