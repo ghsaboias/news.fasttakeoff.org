@@ -5,13 +5,11 @@ import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { ArrowLeft, ExternalLink, FileText, RefreshCw } from 'lucide-react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 
 export default function OrderDetail({ params }: { params: { documentNumber: string } }) {
     const [order, setOrder] = useState<Order | null>(null)
     const [loading, setLoading] = useState(false)
-    const router = useRouter()
 
     useEffect(() => {
         fetchOrder()
