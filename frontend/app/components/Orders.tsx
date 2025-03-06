@@ -1,6 +1,7 @@
 'use client'
 
 import { Search } from 'lucide-react';
+import Link from 'next/link';
 import React, { ChangeEvent } from 'react';
 
 // Agency Interface
@@ -252,26 +253,49 @@ export default function Orders({ initialOrders = [] }: OrdersProps) {
                     </thead>
                     <tbody className="bg-[#1E293B] divide-y divide-blue-900/30">
                         {sortedAndFilteredOrders.map((order: Order) => (
-                            <tr key={order.data?.document_number} className="hover:bg-[#2E3B4E] transition-colors">
+                            <tr
+                                key={order.data?.document_number}
+                                className="group hover:bg-[#2E3B4E] transition-colors"
+                            >
                                 <td className="px-6 py-4">
-                                    <a
-                                        href={order.data?.html_url}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="text-blue-400 hover:text-blue-300 transition-colors"
+                                    <Link
+                                        href={`/orders/${order.data?.document_number}`}
+                                        className="text-blue-400 hover:text-blue-300 transition-colors block"
                                     >
                                         {order.data?.title}
-                                    </a>
+                                    </Link>
                                 </td>
-                                <td className="px-6 py-4 whitespace-nowrap text-gray-300">{order.data?.document_number}</td>
-                                <td className="px-6 py-4 whitespace-nowrap text-gray-300">
-                                    {new Date(order.data?.publication_date || '').toLocaleDateString()}
+                                <td className="px-6 py-4 whitespace-nowrap text-gray-300 group-hover:text-gray-200">
+                                    <Link
+                                        href={`/orders/${order.data?.document_number}`}
+                                        className="block"
+                                    >
+                                        {order.data?.document_number}
+                                    </Link>
                                 </td>
-                                <td className="px-6 py-4 text-gray-300">
-                                    {order.data?.agencies?.map((agency: Agency) => agency.name).join(', ')}
+                                <td className="px-6 py-4 whitespace-nowrap text-gray-300 group-hover:text-gray-200">
+                                    <Link
+                                        href={`/orders/${order.data?.document_number}`}
+                                        className="block"
+                                    >
+                                        {new Date(order.data?.publication_date || '').toLocaleDateString()}
+                                    </Link>
                                 </td>
-                                <td className="px-6 py-4 whitespace-nowrap text-gray-300">
-                                    {(order.content?.page_views?.count || 0).toLocaleString() || 'N/A'}
+                                <td className="px-6 py-4 text-gray-300 group-hover:text-gray-200">
+                                    <Link
+                                        href={`/orders/${order.data?.document_number}`}
+                                        className="block"
+                                    >
+                                        {order.data?.agencies?.map((agency: Agency) => agency.name).join(', ')}
+                                    </Link>
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap text-gray-300 group-hover:text-gray-200">
+                                    <Link
+                                        href={`/orders/${order.data?.document_number}`}
+                                        className="block"
+                                    >
+                                        {(order.content?.page_views?.count || 0).toLocaleString() || 'N/A'}
+                                    </Link>
                                 </td>
                             </tr>
                         ))}
