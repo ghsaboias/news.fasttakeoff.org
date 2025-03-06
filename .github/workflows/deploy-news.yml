@@ -39,7 +39,7 @@ jobs:
       - name: Inject Orders Data
         run: |
           cd frontend
-          node ./scripts/injectOrdersData.js
+          node ./scripts/inject-orders-data.js
 
       - name: Build Next.js Frontend with Bun
         run: |
