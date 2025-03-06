@@ -132,31 +132,14 @@ export interface Order {
     };
 }
 
-// Rest of your component code remains unchanged...
-type SortConfig = {
-    key: keyof OrderData | 'views';
-    direction: 'asc' | 'desc';
-}
-
 interface OrdersProps {
     initialOrders: Order[];
 }
 
 export default function Orders({ initialOrders = [] }: OrdersProps) {
     const [searchTerm, setSearchTerm] = React.useState('');
-    const [sortConfig, setSortConfig] = React.useState<SortConfig>({
-        key: 'publication_date',
-        direction: 'desc'
-    });
 
-    const handleSort = (key: SortConfig['key']) => {
-        setSortConfig((current: SortConfig) => ({
-            key,
-            direction: current.key === key && current.direction === 'asc' ? 'desc' : 'asc'
-        }));
-    };
-
-    const sortedAndFilteredOrders = React.useMemo(() => {
+    const filteredOrders = React.useMemo(() => {
         let result = [...initialOrders];
 
         if (searchTerm) {
@@ -170,29 +153,8 @@ export default function Orders({ initialOrders = [] }: OrdersProps) {
             );
         }
 
-        result.sort((a: Order, b: Order) => {
-            if (sortConfig.key === 'views') {
-                const aViews = a.content?.page_views?.count || 0;
-                const bViews = b.content?.page_views?.count || 0;
-                return sortConfig.direction === 'asc' ? aViews - bViews : bViews - aViews;
-            }
-
-            const aValue = a.data?.[sortConfig.key];
-            const bValue = b.data?.[sortConfig.key];
-
-            if (sortConfig.direction === 'asc') {
-                return aValue && bValue ? aValue > bValue ? 1 : -1 : 0;
-            }
-            return aValue && bValue ? aValue < bValue ? 1 : -1 : 0;
-        });
-
         return result;
-    }, [initialOrders, searchTerm, sortConfig]);
-
-    const getSortIcon = (key: SortConfig['key']) => {
-        if (sortConfig.key !== key) return '↕';
-        return sortConfig.direction === 'asc' ? '↑' : '↓';
-    };
+    }, [initialOrders, searchTerm]);
 
     return (
         <div className="container mx-auto py-10">
@@ -217,23 +179,20 @@ export default function Orders({ initialOrders = [] }: OrdersProps) {
                             <th
                                 scope="col"
                                 className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-[#2E3B4E] transition-colors"
-                                onClick={() => handleSort('title')}
                             >
-                                Title {getSortIcon('title')}
+                                Title
                             </th>
                             <th
                                 scope="col"
                                 className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-[#2E3B4E] transition-colors"
-                                onClick={() => handleSort('document_number')}
                             >
-                                Document Number {getSortIcon('document_number')}
+                                Document Number
                             </th>
                             <th
                                 scope="col"
                                 className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-[#2E3B4E] transition-colors"
-                                onClick={() => handleSort('publication_date')}
                             >
-                                Publication Date {getSortIcon('publication_date')}
+                                Publication Date
                             </th>
                             <th
                                 scope="col"
@@ -243,15 +202,14 @@ export default function Orders({ initialOrders = [] }: OrdersProps) {
                             </th>
                             <th
                                 scope="col"
-                                className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-[#2E3B4E] transition-colors"
-                                onClick={() => handleSort('views')}
+                                className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider"
                             >
-                                Views {getSortIcon('views')}
+                                Views
                             </th>
                         </tr>
                     </thead>
                     <tbody className="bg-[#1E293B] divide-y divide-blue-900/30">
-                        {sortedAndFilteredOrders.map((order: Order) => (
+                        {filteredOrders.map((order: Order) => (
                             <tr key={order.data?.document_number} className="hover:bg-[#2E3B4E] transition-colors">
                                 <td className="px-6 py-4">
                                     <a
@@ -279,7 +237,7 @@ export default function Orders({ initialOrders = [] }: OrdersProps) {
                 </table>
             </div>
 
-            {sortedAndFilteredOrders.length === 0 && (
+            {filteredOrders.length === 0 && (
                 <div className="text-center py-10 text-gray-400">
                     No orders found matching your search criteria.
                 </div>
