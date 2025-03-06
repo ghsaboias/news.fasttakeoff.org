@@ -2,8 +2,6 @@ import type { Order } from '../components/Orders';
 import Orders from '../components/Orders';
 
 // Orders will be injected at build time as const orders = [...]
-// @ts-ignore: 'orders' is injected at build time
-const orders: Order[] = [] as any; // Placeholder, replaced by injection
 
 export default function OrdersPage() {
     return (
@@ -13,3 +11,6 @@ export default function OrdersPage() {
         </main>
     )
 }
+
+// Type declaration for injected orders
+declare const orders: Order[];
