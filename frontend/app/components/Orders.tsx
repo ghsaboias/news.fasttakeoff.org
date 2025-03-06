@@ -30,39 +30,17 @@ type SortConfig = {
     direction: 'asc' | 'desc'
 }
 
-export default function Orders() {
-    const [orders, setOrders] = React.useState<Order[]>([])
-    const [loading, setLoading] = React.useState(true)
-    const [error, setError] = React.useState<string | null>(null)
+interface OrdersProps {
+    initialOrders: Order[]
+}
+
+export default function Orders({ initialOrders = [] }: OrdersProps) {
+    const [orders, setOrders] = React.useState<Order[]>(initialOrders)
     const [searchTerm, setSearchTerm] = React.useState('')
     const [sortConfig, setSortConfig] = React.useState<SortConfig>({
         key: 'publication_date',
         direction: 'desc'
     })
-
-    React.useEffect(() => {
-        const fetchOrders = async () => {
-            try {
-                // Try to fetch from static file first
-                let response = await fetch('/orders.json')
-                if (!response.ok) {
-                    // Fallback to API if static file fails
-                    response = await fetch('/api/orders')
-                    if (!response.ok) {
-                        throw new Error('Failed to fetch orders')
-                    }
-                }
-                const data = await response.json()
-                setOrders(data)
-            } catch (err) {
-                setError(err instanceof Error ? err.message : 'An error occurred')
-            } finally {
-                setLoading(false)
-            }
-        }
-
-        fetchOrders()
-    }, [])
 
     const handleSort = (key: SortConfig['key']) => {
         setSortConfig((current: SortConfig) => ({
@@ -105,48 +83,6 @@ export default function Orders() {
 
         return result
     }, [orders, searchTerm, sortConfig])
-
-    if (loading) {
-        return (
-            <div className="container mx-auto py-10">
-                <div className="animate-pulse">
-                    <div className="h-8 bg-gray-200 rounded w-1/4 mb-6"></div>
-                    <div className="space-y-4">
-                        {[...Array(5)].map((_, i) => (
-                            <div key={i} className="h-12 bg-gray-200 rounded"></div>
-                        ))}
-                    </div>
-                </div>
-            </div>
-        )
-    }
-
-    if (error) {
-        return (
-            <div className="container mx-auto py-10">
-                <div className="bg-red-50 border-l-4 border-red-500 p-4">
-                    <div className="flex">
-                        <div className="flex-shrink-0">
-                            <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
-                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-                            </svg>
-                        </div>
-                        <div className="ml-3">
-                            <p className="text-sm text-red-700">
-                                {error}
-                            </p>
-                        </div>
-                    </div>
-                </div>
-                <button
-                    onClick={() => window.location.reload()}
-                    className="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
-                >
-                    Retry
-                </button>
-            </div>
-        )
-    }
 
     const getSortIcon = (key: SortConfig['key']) => {
         if (sortConfig.key !== key) return '↕'

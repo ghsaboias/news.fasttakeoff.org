@@ -4,9 +4,10 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "bun run inject-orders && next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "inject-orders": "node scripts/inject-orders-data.js"
   },
   "dependencies": {
     "lucide-react": "^0.477.0",
