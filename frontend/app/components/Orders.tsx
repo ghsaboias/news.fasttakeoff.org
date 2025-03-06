@@ -35,7 +35,6 @@ interface OrdersProps {
 }
 
 export default function Orders({ initialOrders = [] }: OrdersProps) {
-    const [orders, setOrders] = React.useState<Order[]>(initialOrders)
     const [searchTerm, setSearchTerm] = React.useState('')
     const [sortConfig, setSortConfig] = React.useState<SortConfig>({
         key: 'publication_date',
@@ -50,7 +49,7 @@ export default function Orders({ initialOrders = [] }: OrdersProps) {
     }
 
     const sortedAndFilteredOrders = React.useMemo(() => {
-        let result = [...orders]
+        let result = [...initialOrders]
 
         // Filter based on search term
         if (searchTerm) {
@@ -82,7 +81,7 @@ export default function Orders({ initialOrders = [] }: OrdersProps) {
         })
 
         return result
-    }, [orders, searchTerm, sortConfig])
+    }, [initialOrders, searchTerm, sortConfig])
 
     const getSortIcon = (key: SortConfig['key']) => {
         if (sortConfig.key !== key) return '↕'
