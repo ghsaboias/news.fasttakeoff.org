@@ -16,7 +16,7 @@ interface OrderData {
     agencies: Agency[]
 }
 
-interface Order {
+export interface Order {
     data: OrderData
     content?: {
         page_views?: {

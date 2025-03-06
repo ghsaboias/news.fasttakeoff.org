@@ -1,7 +1,8 @@
+import type { Order } from '../components/Orders';
 import Orders from '../components/Orders';
 
-// This will be replaced by the inject-orders script at build time
-export const orders = [];
+// Orders will be injected at build time
+const orders: Order[] = [];
 
 export default function OrdersPage() {
     return (
