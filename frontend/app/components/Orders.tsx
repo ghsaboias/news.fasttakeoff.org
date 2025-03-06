@@ -112,7 +112,7 @@ export interface Order {
         topics?: string[];
         type?: string;
         volume?: number;
-        [key: string]: any;
+        [key: string]: unknown;
     };
     raw_text?: string | null;
     summary?: string | null;
