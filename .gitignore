@@ -49,3 +49,6 @@ bun.lockb
 
 # Deployment
 DEPLOYMENT.md
+
+# Generated files
+frontend/app/executive-orders/page.tsx
