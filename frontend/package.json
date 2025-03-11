@@ -2,12 +2,14 @@
   "name": "frontend",
   "version": "0.1.0",
   "private": true,
+  "type": "module",
   "scripts": {
     "dev": "next dev",
     "build": "bun run inject-orders && next build",
+    "fetch-orders": "node scripts/fetch-orders.js",
+    "inject-orders": "node scripts/inject-orders-data.js",
     "start": "next start",
-    "lint": "next lint",
-    "inject-orders": "node scripts/inject-orders-data.js"
+    "lint": "next lint"
   },
   "dependencies": {
     "@radix-ui/react-slot": "^1.1.2",
@@ -21,6 +23,7 @@
     "tailwindcss-animate": "^1.0.7"
   },
   "devDependencies": {
+    "node-fetch": "^3.3.2",
     "@eslint/eslintrc": "^3",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",

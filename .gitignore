@@ -32,13 +32,6 @@ yarn-error.log*
 *.swp
 *.swo
 
-# Python
-__pycache__/
-*.py[cod]
-.venv/
-*.pyc
-.pytest_cache/
-
 # Next.js
 .next/
 .vercel/
@@ -50,5 +43,4 @@ bun.lockb
 # Deployment
 DEPLOYMENT.md
 
-# Generated files
-frontend/app/executive-orders/page.tsx
+repo_summary_optimized_ts.txt

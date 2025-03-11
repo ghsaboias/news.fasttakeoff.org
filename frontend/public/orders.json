@@ -1,6 +1,4 @@
-import type { Order } from '../components/Orders';
-
-export const orders: Order[] = [
+[
   {
     "data": {
       "title": "Establishment of the Strategic Bitcoin Reserve and United States Digital Asset Stockpile",
@@ -146,12 +144,7 @@ export const orders: Order[] = [
       ],
       "excerpts": null
     },
-    "content": {
-      "page_views": {
-        "count": 0,
-        "last_updated": ""
-      }
-    },
+    "content": {},
     "raw_text": "",
     "summary": null,
     "metadata": {
@@ -182,12 +175,7 @@ export const orders: Order[] = [
       ],
       "excerpts": null
     },
-    "content": {
-      "page_views": {
-        "count": 0,
-        "last_updated": ""
-      }
-    },
+    "content": {},
     "raw_text": "",
     "summary": null,
     "metadata": {
@@ -218,12 +206,7 @@ export const orders: Order[] = [
       ],
       "excerpts": null
     },
-    "content": {
-      "page_views": {
-        "count": 0,
-        "last_updated": ""
-      }
-    },
+    "content": {},
     "raw_text": "",
     "summary": null,
     "metadata": {
@@ -254,12 +237,7 @@ export const orders: Order[] = [
       ],
       "excerpts": null
     },
-    "content": {
-      "page_views": {
-        "count": 0,
-        "last_updated": ""
-      }
-    },
+    "content": {},
     "raw_text": "",
     "summary": null,
     "metadata": {
@@ -290,12 +268,7 @@ export const orders: Order[] = [
       ],
       "excerpts": null
     },
-    "content": {
-      "page_views": {
-        "count": 0,
-        "last_updated": ""
-      }
-    },
+    "content": {},
     "raw_text": "",
     "summary": null,
     "metadata": {
@@ -326,12 +299,7 @@ export const orders: Order[] = [
       ],
       "excerpts": null
     },
-    "content": {
-      "page_views": {
-        "count": 0,
-        "last_updated": ""
-      }
-    },
+    "content": {},
     "raw_text": "",
     "summary": null,
     "metadata": {
@@ -606,12 +574,7 @@ export const orders: Order[] = [
       ],
       "excerpts": null
     },
-    "content": {
-      "page_views": {
-        "count": 0,
-        "last_updated": ""
-      }
-    },
+    "content": {},
     "raw_text": "",
     "summary": null,
     "metadata": {
@@ -642,12 +605,7 @@ export const orders: Order[] = [
       ],
       "excerpts": null
     },
-    "content": {
-      "page_views": {
-        "count": 0,
-        "last_updated": ""
-      }
-    },
+    "content": {},
     "raw_text": "",
     "summary": null,
     "metadata": {
@@ -800,12 +758,7 @@ export const orders: Order[] = [
       ],
       "excerpts": null
     },
-    "content": {
-      "page_views": {
-        "count": 0,
-        "last_updated": ""
-      }
-    },
+    "content": {},
     "raw_text": "",
     "summary": null,
     "metadata": {
@@ -836,12 +789,7 @@ export const orders: Order[] = [
       ],
       "excerpts": null
     },
-    "content": {
-      "page_views": {
-        "count": 0,
-        "last_updated": ""
-      }
-    },
+    "content": {},
     "raw_text": "",
     "summary": null,
     "metadata": {
@@ -994,12 +942,7 @@ export const orders: Order[] = [
       ],
       "excerpts": null
     },
-    "content": {
-      "page_views": {
-        "count": 0,
-        "last_updated": ""
-      }
-    },
+    "content": {},
     "raw_text": "",
     "summary": null,
     "metadata": {
@@ -1030,12 +973,7 @@ export const orders: Order[] = [
       ],
       "excerpts": null
     },
-    "content": {
-      "page_views": {
-        "count": 0,
-        "last_updated": ""
-      }
-    },
+    "content": {},
     "raw_text": "",
     "summary": null,
     "metadata": {
@@ -1066,12 +1004,7 @@ export const orders: Order[] = [
       ],
       "excerpts": null
     },
-    "content": {
-      "page_views": {
-        "count": 0,
-        "last_updated": ""
-      }
-    },
+    "content": {},
     "raw_text": "",
     "summary": null,
     "metadata": {
@@ -1102,12 +1035,7 @@ export const orders: Order[] = [
       ],
       "excerpts": null
     },
-    "content": {
-      "page_views": {
-        "count": 0,
-        "last_updated": ""
-      }
-    },
+    "content": {},
     "raw_text": "",
     "summary": null,
     "metadata": {
@@ -1260,12 +1188,7 @@ export const orders: Order[] = [
       ],
       "excerpts": null
     },
-    "content": {
-      "page_views": {
-        "count": 0,
-        "last_updated": ""
-      }
-    },
+    "content": {},
     "raw_text": "",
     "summary": null,
     "metadata": {
@@ -1296,12 +1219,7 @@ export const orders: Order[] = [
       ],
       "excerpts": null
     },
-    "content": {
-      "page_views": {
-        "count": 0,
-        "last_updated": ""
-      }
-    },
+    "content": {},
     "raw_text": "",
     "summary": null,
     "metadata": {
@@ -1332,12 +1250,7 @@ export const orders: Order[] = [
       ],
       "excerpts": null
     },
-    "content": {
-      "page_views": {
-        "count": 0,
-        "last_updated": ""
-      }
-    },
+    "content": {},
     "raw_text": "",
     "summary": null,
     "metadata": {
@@ -1368,12 +1281,7 @@ export const orders: Order[] = [
       ],
       "excerpts": null
     },
-    "content": {
-      "page_views": {
-        "count": 0,
-        "last_updated": ""
-      }
-    },
+    "content": {},
     "raw_text": "",
     "summary": null,
     "metadata": {
@@ -1526,12 +1434,7 @@ export const orders: Order[] = [
       ],
       "excerpts": null
     },
-    "content": {
-      "page_views": {
-        "count": 0,
-        "last_updated": ""
-      }
-    },
+    "content": {},
     "raw_text": "",
     "summary": null,
     "metadata": {
@@ -1562,12 +1465,7 @@ export const orders: Order[] = [
       ],
       "excerpts": null
     },
-    "content": {
-      "page_views": {
-        "count": 0,
-        "last_updated": ""
-      }
-    },
+    "content": {},
     "raw_text": "",
     "summary": null,
     "metadata": {
@@ -1598,12 +1496,7 @@ export const orders: Order[] = [
       ],
       "excerpts": null
     },
-    "content": {
-      "page_views": {
-        "count": 0,
-        "last_updated": ""
-      }
-    },
+    "content": {},
     "raw_text": "",
     "summary": null,
     "metadata": {
@@ -1634,12 +1527,7 @@ export const orders: Order[] = [
       ],
       "excerpts": null
     },
-    "content": {
-      "page_views": {
-        "count": 0,
-        "last_updated": ""
-      }
-    },
+    "content": {},
     "raw_text": "",
     "summary": null,
     "metadata": {
@@ -1914,12 +1802,7 @@ export const orders: Order[] = [
       ],
       "excerpts": null
     },
-    "content": {
-      "page_views": {
-        "count": 0,
-        "last_updated": ""
-      }
-    },
+    "content": {},
     "raw_text": "",
     "summary": null,
     "metadata": {
@@ -1950,12 +1833,7 @@ export const orders: Order[] = [
       ],
       "excerpts": null
     },
-    "content": {
-      "page_views": {
-        "count": 0,
-        "last_updated": ""
-      }
-    },
+    "content": {},
     "raw_text": "",
     "summary": null,
     "metadata": {
@@ -2230,12 +2108,7 @@ export const orders: Order[] = [
       ],
       "excerpts": null
     },
-    "content": {
-      "page_views": {
-        "count": 0,
-        "last_updated": ""
-      }
-    },
+    "content": {},
     "raw_text": "",
     "summary": null,
     "metadata": {
@@ -2266,12 +2139,7 @@ export const orders: Order[] = [
       ],
       "excerpts": null
     },
-    "content": {
-      "page_views": {
-        "count": 0,
-        "last_updated": ""
-      }
-    },
+    "content": {},
     "raw_text": "",
     "summary": null,
     "metadata": {
@@ -2302,12 +2170,7 @@ export const orders: Order[] = [
       ],
       "excerpts": null
     },
-    "content": {
-      "page_views": {
-        "count": 0,
-        "last_updated": ""
-      }
-    },
+    "content": {},
     "raw_text": "",
     "summary": null,
     "metadata": {
@@ -2338,12 +2201,7 @@ export const orders: Order[] = [
       ],
       "excerpts": null
     },
-    "content": {
-      "page_views": {
-        "count": 0,
-        "last_updated": ""
-      }
-    },
+    "content": {},
     "raw_text": "",
     "summary": null,
     "metadata": {
@@ -2374,12 +2232,7 @@ export const orders: Order[] = [
       ],
       "excerpts": null
     },
-    "content": {
-      "page_views": {
-        "count": 0,
-        "last_updated": ""
-      }
-    },
+    "content": {},
     "raw_text": "",
     "summary": null,
     "metadata": {
@@ -2532,12 +2385,7 @@ export const orders: Order[] = [
       ],
       "excerpts": null
     },
-    "content": {
-      "page_views": {
-        "count": 0,
-        "last_updated": ""
-      }
-    },
+    "content": {},
     "raw_text": "",
     "summary": null,
     "metadata": {
@@ -2568,12 +2416,7 @@ export const orders: Order[] = [
       ],
       "excerpts": null
     },
-    "content": {
-      "page_views": {
-        "count": 0,
-        "last_updated": ""
-      }
-    },
+    "content": {},
     "raw_text": "",
     "summary": null,
     "metadata": {
@@ -2604,12 +2447,7 @@ export const orders: Order[] = [
       ],
       "excerpts": null
     },
-    "content": {
-      "page_views": {
-        "count": 0,
-        "last_updated": ""
-      }
-    },
+    "content": {},
     "raw_text": "",
     "summary": null,
     "metadata": {
@@ -2640,12 +2478,7 @@ export const orders: Order[] = [
       ],
       "excerpts": null
     },
-    "content": {
-      "page_views": {
-        "count": 0,
-        "last_updated": ""
-      }
-    },
+    "content": {},
     "raw_text": "",
     "summary": null,
     "metadata": {
@@ -2676,12 +2509,7 @@ export const orders: Order[] = [
       ],
       "excerpts": null
     },
-    "content": {
-      "page_views": {
-        "count": 0,
-        "last_updated": ""
-      }
-    },
+    "content": {},
     "raw_text": "",
     "summary": null,
     "metadata": {
@@ -2712,12 +2540,7 @@ export const orders: Order[] = [
       ],
       "excerpts": null
     },
-    "content": {
-      "page_views": {
-        "count": 0,
-        "last_updated": ""
-      }
-    },
+    "content": {},
     "raw_text": "",
     "summary": null,
     "metadata": {
@@ -2748,12 +2571,7 @@ export const orders: Order[] = [
       ],
       "excerpts": null
     },
-    "content": {
-      "page_views": {
-        "count": 0,
-        "last_updated": ""
-      }
-    },
+    "content": {},
     "raw_text": "",
     "summary": null,
     "metadata": {
@@ -2784,12 +2602,7 @@ export const orders: Order[] = [
       ],
       "excerpts": null
     },
-    "content": {
-      "page_views": {
-        "count": 0,
-        "last_updated": ""
-      }
-    },
+    "content": {},
     "raw_text": "",
     "summary": null,
     "metadata": {
@@ -2820,12 +2633,7 @@ export const orders: Order[] = [
       ],
       "excerpts": null
     },
-    "content": {
-      "page_views": {
-        "count": 0,
-        "last_updated": ""
-      }
-    },
+    "content": {},
     "raw_text": "",
     "summary": null,
     "metadata": {
@@ -2856,12 +2664,7 @@ export const orders: Order[] = [
       ],
       "excerpts": null
     },
-    "content": {
-      "page_views": {
-        "count": 0,
-        "last_updated": ""
-      }
-    },
+    "content": {},
     "raw_text": "",
     "summary": null,
     "metadata": {
@@ -3014,12 +2817,7 @@ export const orders: Order[] = [
       ],
       "excerpts": null
     },
-    "content": {
-      "page_views": {
-        "count": 0,
-        "last_updated": ""
-      }
-    },
+    "content": {},
     "raw_text": "",
     "summary": null,
     "metadata": {
@@ -3050,12 +2848,7 @@ export const orders: Order[] = [
       ],
       "excerpts": null
     },
-    "content": {
-      "page_views": {
-        "count": 0,
-        "last_updated": ""
-      }
-    },
+    "content": {},
     "raw_text": "",
     "summary": null,
     "metadata": {
@@ -3086,12 +2879,7 @@ export const orders: Order[] = [
       ],
       "excerpts": null
     },
-    "content": {
-      "page_views": {
-        "count": 0,
-        "last_updated": ""
-      }
-    },
+    "content": {},
     "raw_text": "",
     "summary": null,
     "metadata": {
@@ -3122,12 +2910,7 @@ export const orders: Order[] = [
       ],
       "excerpts": null
     },
-    "content": {
-      "page_views": {
-        "count": 0,
-        "last_updated": ""
-      }
-    },
+    "content": {},
     "raw_text": "",
     "summary": null,
     "metadata": {
@@ -3280,12 +3063,7 @@ export const orders: Order[] = [
       ],
       "excerpts": null
     },
-    "content": {
-      "page_views": {
-        "count": 0,
-        "last_updated": ""
-      }
-    },
+    "content": {},
     "raw_text": "",
     "summary": null,
     "metadata": {
@@ -3438,12 +3216,7 @@ export const orders: Order[] = [
       ],
       "excerpts": null
     },
-    "content": {
-      "page_views": {
-        "count": 0,
-        "last_updated": ""
-      }
-    },
+    "content": {},
     "raw_text": "",
     "summary": null,
     "metadata": {
@@ -3474,12 +3247,7 @@ export const orders: Order[] = [
       ],
       "excerpts": null
     },
-    "content": {
-      "page_views": {
-        "count": 0,
-        "last_updated": ""
-      }
-    },
+    "content": {},
     "raw_text": "",
     "summary": null,
     "metadata": {
@@ -3754,12 +3522,7 @@ export const orders: Order[] = [
       ],
       "excerpts": null
     },
-    "content": {
-      "page_views": {
-        "count": 0,
-        "last_updated": ""
-      }
-    },
+    "content": {},
     "raw_text": "",
     "summary": null,
     "metadata": {
@@ -3912,12 +3675,7 @@ export const orders: Order[] = [
       ],
       "excerpts": null
     },
-    "content": {
-      "page_views": {
-        "count": 0,
-        "last_updated": ""
-      }
-    },
+    "content": {},
     "raw_text": "",
     "summary": null,
     "metadata": {
@@ -4260,12 +4018,7 @@ export const orders: Order[] = [
       ],
       "excerpts": null
     },
-    "content": {
-      "page_views": {
-        "count": 0,
-        "last_updated": ""
-      }
-    },
+    "content": {},
     "raw_text": "",
     "summary": null,
     "metadata": {
@@ -4296,12 +4049,7 @@ export const orders: Order[] = [
       ],
       "excerpts": null
     },
-    "content": {
-      "page_views": {
-        "count": 0,
-        "last_updated": ""
-      }
-    },
+    "content": {},
     "raw_text": "",
     "summary": null,
     "metadata": {
@@ -4332,12 +4080,7 @@ export const orders: Order[] = [
       ],
       "excerpts": null
     },
-    "content": {
-      "page_views": {
-        "count": 0,
-        "last_updated": ""
-      }
-    },
+    "content": {},
     "raw_text": "",
     "summary": null,
     "metadata": {
@@ -4490,12 +4233,7 @@ export const orders: Order[] = [
       ],
       "excerpts": null
     },
-    "content": {
-      "page_views": {
-        "count": 0,
-        "last_updated": ""
-      }
-    },
+    "content": {},
     "raw_text": "",
     "summary": null,
     "metadata": {
@@ -4648,12 +4386,7 @@ export const orders: Order[] = [
       ],
       "excerpts": null
     },
-    "content": {
-      "page_views": {
-        "count": 0,
-        "last_updated": ""
-      }
-    },
+    "content": {},
     "raw_text": "",
     "summary": null,
     "metadata": {
@@ -4684,12 +4417,7 @@ export const orders: Order[] = [
       ],
       "excerpts": null
     },
-    "content": {
-      "page_views": {
-        "count": 0,
-        "last_updated": ""
-      }
-    },
+    "content": {},
     "raw_text": "",
     "summary": null,
     "metadata": {
@@ -4720,12 +4448,7 @@ export const orders: Order[] = [
       ],
       "excerpts": null
     },
-    "content": {
-      "page_views": {
-        "count": 0,
-        "last_updated": ""
-      }
-    },
+    "content": {},
     "raw_text": "",
     "summary": null,
     "metadata": {
@@ -4756,12 +4479,7 @@ export const orders: Order[] = [
       ],
       "excerpts": null
     },
-    "content": {
-      "page_views": {
-        "count": 0,
-        "last_updated": ""
-      }
-    },
+    "content": {},
     "raw_text": "",
     "summary": null,
     "metadata": {
@@ -4792,12 +4510,7 @@ export const orders: Order[] = [
       ],
       "excerpts": null
     },
-    "content": {
-      "page_views": {
-        "count": 0,
-        "last_updated": ""
-      }
-    },
+    "content": {},
     "raw_text": "",
     "summary": null,
     "metadata": {
@@ -4828,12 +4541,7 @@ export const orders: Order[] = [
       ],
       "excerpts": null
     },
-    "content": {
-      "page_views": {
-        "count": 0,
-        "last_updated": ""
-      }
-    },
+    "content": {},
     "raw_text": "",
     "summary": null,
     "metadata": {
@@ -4864,12 +4572,7 @@ export const orders: Order[] = [
       ],
       "excerpts": null
     },
-    "content": {
-      "page_views": {
-        "count": 0,
-        "last_updated": ""
-      }
-    },
+    "content": {},
     "raw_text": "",
     "summary": null,
     "metadata": {
@@ -5022,12 +4725,7 @@ export const orders: Order[] = [
       ],
       "excerpts": null
     },
-    "content": {
-      "page_views": {
-        "count": 0,
-        "last_updated": ""
-      }
-    },
+    "content": {},
     "raw_text": "",
     "summary": null,
     "metadata": {
@@ -5180,12 +4878,7 @@ export const orders: Order[] = [
       ],
       "excerpts": null
     },
-    "content": {
-      "page_views": {
-        "count": 0,
-        "last_updated": ""
-      }
-    },
+    "content": {},
     "raw_text": "",
     "summary": null,
     "metadata": {
@@ -5338,12 +5031,7 @@ export const orders: Order[] = [
       ],
       "excerpts": null
     },
-    "content": {
-      "page_views": {
-        "count": 0,
-        "last_updated": ""
-      }
-    },
+    "content": {},
     "raw_text": "",
     "summary": null,
     "metadata": {
@@ -5351,4 +5039,4 @@ export const orders: Order[] = [
       "summarized": false
     }
   }
-];
+]
