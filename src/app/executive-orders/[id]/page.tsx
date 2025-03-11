@@ -8,9 +8,6 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { use, useEffect, useState } from "react"
 
-interface Params {
-    id: string;
-}
 
 // Extended interface to track loading state and ID for each related EO
 interface EnhancedRelatedEOInfo extends RelatedEOInfo {
@@ -18,10 +15,8 @@ interface EnhancedRelatedEOInfo extends RelatedEOInfo {
     fullId?: string | null;
 }
 
-export default function ExecutiveOrderPage({ params }: { params: Params }) {
-    // Unwrap params using React.use()
-    const unwrappedParams = use(params as unknown as Promise<Params>);
-    const { id } = unwrappedParams;
+export default function ExecutiveOrderPage({ params }: { params: Promise<{ id: string }> }) {
+    const { id } = use(params);
 
     const router = useRouter();
     const [executiveOrder, setExecutiveOrder] = useState<ExecutiveOrder | null>(null);
