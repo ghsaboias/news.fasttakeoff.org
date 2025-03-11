@@ -8,5 +8,5 @@ export default async function ExecutiveOrderPage({ params }: { params: { id: str
     if (!order) {
         return <div>Executive order not found</div>; // Or redirect, but keep it simple for Edge
     }
-    return <ExecutiveOrderClient initialOrder={order} id={params.id} />;
+    return <ExecutiveOrderClient initialOrder={order} />;
 }
