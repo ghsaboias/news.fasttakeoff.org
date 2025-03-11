@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "next dev",
-    "build": "bun run inject-orders && next build",
+    "build": "node scripts/inject-orders-data.js && next build",
     "fetch-orders": "node scripts/fetch-orders.js",
     "inject-orders": "node scripts/inject-orders-data.js",
     "start": "next start",
