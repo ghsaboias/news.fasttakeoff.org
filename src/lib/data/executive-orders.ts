@@ -131,7 +131,7 @@ export async function findExecutiveOrderByNumber(
                     startDate = tenDaysBefore.toISOString().split('T')[0];
                 }
             } catch (error) {
-                console.warn(`Could not parse date: ${date}, using default start date`);
+                console.error(`Error parsing date: ${date}, using default start date`, error);
             }
         }
 

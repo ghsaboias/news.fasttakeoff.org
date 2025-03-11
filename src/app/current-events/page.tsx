@@ -23,7 +23,7 @@ export default function CurrentEventsPage() {
                 <CardHeader>
                     <CardTitle className="text-2xl mb-2">Coming Soon</CardTitle>
                     <CardDescription className="text-lg">
-                        We're working on bringing you the latest news and updates in AI governance and policy.
+                        We&apos;re working on bringing you the latest news and updates in AI governance and policy.
                     </CardDescription>
                 </CardHeader>
                 <div className="my-8 space-y-4">

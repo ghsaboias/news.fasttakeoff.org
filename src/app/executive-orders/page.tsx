@@ -30,7 +30,7 @@ export default function ExecutiveOrdersPage() {
         }
 
         loadExecutiveOrders()
-    }, [])
+    }, [startDate])
 
     // Filter executive orders based on search query
     const filteredOrders = executiveOrders.filter((order) => {
