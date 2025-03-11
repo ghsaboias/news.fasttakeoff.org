@@ -152,8 +152,6 @@ export default function ExecutiveOrderPage({ params }: { params: Params }) {
         return null; // This shouldn't happen as we redirect on null, but TypeScript needs it
     }
 
-    console.log(executiveOrder);
-
     return (
         <div className="container mx-auto px-4 py-8">
             <div className="flex flex-col gap-8">
