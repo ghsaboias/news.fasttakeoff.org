@@ -1,7 +1,7 @@
 import { formatDate } from '@/lib/utils';
 import { NextRequest, NextResponse } from 'next/server';
 
-export const runtime = 'edge';
+export const runtime = 'nodejs';
 
 const BASE_URL = "https://www.federalregister.gov/api/v1";
 
