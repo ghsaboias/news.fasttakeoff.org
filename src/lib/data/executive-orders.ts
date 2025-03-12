@@ -89,19 +89,23 @@ export async function fetchExecutiveOrders(
 }
 
 // Function to fetch a single executive order by ID
-// src/lib/data/executive-orders.ts
 export async function fetchExecutiveOrderById(id: string): Promise<ExecutiveOrder | null> {
     try {
-        // Determine the base URL based on the environment
         const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
         const apiUrl = `${baseUrl}/api/executive-orders?id=${id}`;
-
-        const response = await fetch(apiUrl);
+        console.log(`Fetching executive order from: ${apiUrl}`);
+        const response = await fetch(apiUrl, { cache: 'no-store' });
+        console.log(`API response status for ${id}: ${response.status}`);
         if (!response.ok) {
-            if (response.status === 404) return null;
+            if (response.status === 404) {
+                console.log(`Executive order ${id} not found`);
+                return null;
+            }
             throw new Error(`API error: ${response.status}`);
         }
-        return await response.json();
+        const data = await response.json();
+        console.log(`API response data for ${id}:`, data);
+        return data;
     } catch (error) {
         console.error(`Server Error fetching executive order ${id}:`, error);
         return null;

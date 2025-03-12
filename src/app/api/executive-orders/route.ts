@@ -195,27 +195,26 @@ async function getAllOrders(
 
 async function getOrderById(id: string) {
     try {
-        const response = await fetch(`${BASE_URL}/documents/${id}.json`);
-
+        const url = `${BASE_URL}/documents/${id}.json`;
+        console.log(`Fetching from Federal Register: ${url}`);
+        const response = await fetch(url);
+        console.log(`Federal Register response status for ${id}: ${response.status}`);
         if (!response.ok) {
             if (response.status === 404) {
+                console.log(`Order ${id} not found in Federal Register`);
                 return NextResponse.json({ error: 'Executive order not found' }, { status: 404 });
             }
             throw new Error(`Federal Register API error: ${response.status}`);
         }
-
         const order = await response.json();
+        console.log(`Federal Register raw data for ${id}:`, order);
 
-        // Determine category based on agencies
+        // Transformation logic
         let category = "Uncategorized";
         if (order.agencies && order.agencies.length > 0) {
             category = order.agencies[0].name;
         }
-
-        // Extract year from the executive order number for categorization
         const orderYear = new Date(order.signing_date).getFullYear();
-
-        // Extract content from the HTML
         let content = "";
         if (order.body_html) {
             content = order.body_html.replace(/<[^>]*>/g, '').trim();
@@ -231,14 +230,13 @@ async function getOrderById(id: string) {
                     ? `Executive Order ${order.executive_order_number} of ${orderYear}`
                     : `Executive Order published on ${formatDate(order.publication_date)}`
             ),
-            content: content,
+            content,
             orderNumber: order.executive_order_number,
             publicationDate: order.publication_date,
             htmlUrl: order.html_url,
             pdfUrl: order.pdf_url,
             sections: extractSections(order.body_html || ""),
-            relatedOrders: [], // We would need additional logic to determine related orders
-            // Additional fields
+            relatedOrders: [],
             signingDate: order.signing_date,
             executiveOrderNotes: order.executive_order_notes,
             dispositionNotes: order.disposition_notes,
@@ -256,16 +254,13 @@ async function getOrderById(id: string) {
             tocSubject: order.toc_subject,
             presidentialDocumentNumber: order.presidential_document_number,
             agencies: order.agencies,
-            images: order.images
+            images: order.images,
         };
-
+        console.log(`Transformed order for ${id}:`, transformedOrder);
         return NextResponse.json(transformedOrder);
     } catch (error) {
-        console.error('Error fetching order details:', error);
-        return NextResponse.json(
-            { error: error instanceof Error ? error.message : 'Unknown error' },
-            { status: 500 }
-        );
+        console.error(`Error processing order ${id}:`, error);
+        return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
     }
 }
 
