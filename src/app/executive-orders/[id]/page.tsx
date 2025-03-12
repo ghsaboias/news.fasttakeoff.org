@@ -17,8 +17,8 @@ export async function generateStaticParams() {
 export const dynamic = 'force-static';
 export const revalidate = 3600; // Revalidate every hour
 
-export default async function ExecutiveOrderPage({ params }: { params: { id: string } }) {
-    const { id } = params;
+export default async function ExecutiveOrderPage({ params }: { params: Promise<{ id: string }> }) {
+    const { id } = await params;
     console.log(`Rendering page for executive order ${id}`);
     const order = await fetchExecutiveOrderById(id);
 
