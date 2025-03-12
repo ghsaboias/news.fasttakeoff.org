@@ -1,5 +1,3 @@
-export const runtime = 'nodejs';
-
 import { fetchExecutiveOrderById } from '@/lib/data/executive-orders';
 import ExecutiveOrderClient from './ExecutiveOrderClient';
 
