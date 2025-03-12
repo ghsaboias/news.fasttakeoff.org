@@ -1,5 +1,3 @@
-export const runtime = 'edge';
-
 import { fetchExecutiveOrderById, fetchExecutiveOrders } from '@/lib/data/executive-orders';
 import { notFound } from 'next/navigation';
 import ExecutiveOrderClient from './ExecutiveOrderClient';
