@@ -1,7 +1,8 @@
 'use client';
 
 import { Button } from "@/components/ui/button";
-import { findExecutiveOrderByNumber, type ExecutiveOrder } from "@/lib/data/executive-orders";
+import { findExecutiveOrderByNumber } from "@/lib/data/executive-orders";
+import { ExecutiveOrder, Section } from "@/lib/types/core";
 import { parseDispositionNotes, type RelatedEOInfo } from "@/lib/utils";
 import { ArrowLeft, ExternalLink, FileText, Info, Loader2 } from "lucide-react";
 import Link from "next/link";
@@ -23,9 +24,9 @@ export default function ExecutiveOrderClient({
 
     useEffect(() => {
         async function loadRelatedEOs() {
-            if (!initialOrder?.dispositionNotes) return;
+            if (!initialOrder?.metadata.dispositionNotes) return;
 
-            const parsedRelatedEOs = parseDispositionNotes(initialOrder.dispositionNotes);
+            const parsedRelatedEOs = parseDispositionNotes(initialOrder.metadata.dispositionNotes);
             const enhancedRelatedEOs = parsedRelatedEOs.map(eo => ({
                 ...eo,
                 isLoading: true,
@@ -115,44 +116,42 @@ export default function ExecutiveOrderClient({
                                 Executive Order {initialOrder.orderNumber}
                             </div>
                         )}
-                        {initialOrder.citation && (
+                        {initialOrder.publication.citation && (
                             <div className="inline-flex items-center gap-1 text-sm font-medium bg-primary/10 text-primary px-2 py-1 rounded">
                                 <Info className="h-4 w-4" />
-                                {initialOrder.citation}
+                                {initialOrder.publication.citation}
                             </div>
                         )}
                     </div>
                 </div>
                 <div className="flex flex-wrap gap-4">
-                    {initialOrder.htmlUrl && (
+                    {initialOrder.links.htmlUrl && (
                         <Button asChild variant="outline" size="sm">
-                            <a href={initialOrder.htmlUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2">
+                            <a href={initialOrder.links.htmlUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2">
                                 <ExternalLink className="h-4 w-4" />
                                 View on Federal Register
                             </a>
                         </Button>
                     )}
-                    {initialOrder.pdfUrl && (
+                    {initialOrder.links.pdfUrl && (
                         <Button asChild variant="outline" size="sm">
-                            <a href={initialOrder.pdfUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2">
+                            <a href={initialOrder.links.pdfUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2">
                                 <FileText className="h-4 w-4" />
                                 View PDF
                             </a>
                         </Button>
                     )}
-                    {initialOrder.bodyHtmlUrl && (
+                    {initialOrder.links.bodyHtmlUrl && (
                         <Button asChild variant="outline" size="sm">
-                            <a href={initialOrder.bodyHtmlUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2">
+                            <a href={initialOrder.links.bodyHtmlUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2">
                                 <FileText className="h-4 w-4" />
                                 View Full Text
                             </a>
                         </Button>
                     )}
                 </div>
-                <div className="bg-muted/50 p-6 rounded-lg">
-                    <h2 className="text-xl font-semibold mb-2">Summary</h2>
-                    <p className="text-muted-foreground">{initialOrder.summary}</p>
-                    {relatedEOsFromNotes.length > 0 && (
+                {relatedEOsFromNotes.length > 0 && (
+                    <div className="bg-muted/50 p-6 rounded-lg">
                         <div className="mt-4 pt-4 border-t border-border">
                             <h3 className="text-lg font-medium mb-2">Related Executive Orders</h3>
                             <ul className="space-y-2 flex-col">
@@ -177,12 +176,12 @@ export default function ExecutiveOrderClient({
                                 ))}
                             </ul>
                         </div>
-                    )}
-                </div>
-                {initialOrder.content ? (
+                    </div>
+                )}
+                {/* {initialOrder.content ? (
                     <div>
                         <h2 className="text-xl font-semibold mb-4">Overview</h2>
-                        <p className="text-muted-foreground whitespace-pre-line">{initialOrder.content}</p>
+                        <p className="text-muted-foreground whitespace-pre-line">{initialOrder.content.rawText}</p>
                     </div>
                 ) : (
                     <div className="bg-muted/30 p-6 rounded-lg text-center">
@@ -191,11 +190,11 @@ export default function ExecutiveOrderClient({
                             The full text of this executive order is available through the links above.
                         </p>
                     </div>
-                )}
-                {initialOrder.sections && initialOrder.sections.length > 0 && initialOrder.sections.some(section => section.content) ? (
+                )} */}
+                {initialOrder.content.sections && initialOrder.content.sections.length > 0 && initialOrder.content.sections.some(section => section.content) ? (
                     <div className="flex flex-col gap-6">
                         <h2 className="text-xl font-semibold">Key Sections</h2>
-                        {initialOrder.sections.map((section, index) => (
+                        {initialOrder.content.sections.map((section: Section, index: number) => (
                             section.content ? (
                                 <div key={index} className="border rounded-lg p-6">
                                     <h3 className="text-lg font-medium mb-2">{section.title}</h3>
@@ -206,6 +205,6 @@ export default function ExecutiveOrderClient({
                     </div>
                 ) : null}
             </div>
-        </div>
+        </div >
     );
 }

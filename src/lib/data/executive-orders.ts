@@ -1,82 +1,62 @@
-// Define the types for executive orders
-export interface Section {
-    title: string;
-    content: string;
-}
+import { ApiResponse, FederalRegisterResponse } from '@/lib/types/api';
+import { ExecutiveOrder } from '@/lib/types/core';
+import { transformFederalRegisterOrder, transformFederalRegisterOrders } from '../transformers/executive-orders';
 
-export interface ExecutiveOrder {
-    id: string;
-    title: string;
-    date: string;
-    category: string;
-    summary: string;
-    content: string;
-    sections: Section[];
-    relatedOrders?: string[];
-    orderNumber?: number;
-    publicationDate?: string;
-    htmlUrl?: string;
-    pdfUrl?: string;
-    signingDate?: string;
-    executiveOrderNotes?: string;
-    dispositionNotes?: string;
-    citation?: string;
-    volume?: number;
-    startPage?: number;
-    endPage?: number;
-    subtype?: string;
-    documentType?: string;
-    bodyHtmlUrl?: string;
-    rawTextUrl?: string;
-    fullTextXmlUrl?: string;
-    modsUrl?: string;
-    tocDoc?: string;
-    tocSubject?: string;
-    presidentialDocumentNumber?: string;
-    agencies?: Array<{ name: string; id: number; url?: string }>;
-    images?: Record<string, Record<string, string>>;
-}
-
-export interface PaginationInfo {
-    currentPage: number;
-    totalPages: number;
-    totalOrders: number;
-}
-
-export interface ApiResponse {
-    orders: ExecutiveOrder[];
-    pagination: PaginationInfo;
-}
-
-// Cache to store already fetched orders by page and startDate
-const orderCache: Record<string, ExecutiveOrder[]> = {};
+const FEDERAL_REGISTER_API = 'https://www.federalregister.gov/api/v1';
 
 // Function to fetch executive orders from the API
 export async function fetchExecutiveOrders(
     page: number = 1,
-    startDate: string = '2024-01-20',
+    startDate: string = '2025-01-20',
     category?: string
 ): Promise<ApiResponse> {
     try {
+        // Check if we're in a build environment
+        const isBuildOrStaticGeneration =
+            process.env.NODE_ENV === 'production' &&
+            typeof window === 'undefined';
+
+        // If we're in build/static generation, return empty data
+        if (isBuildOrStaticGeneration) {
+            console.log('Build environment detected: returning empty data');
+            return {
+                orders: [],
+                pagination: {
+                    currentPage: 1,
+                    totalPages: 1,
+                    totalOrders: 0
+                }
+            };
+        }
+
         const params = new URLSearchParams({
+            "conditions[presidential_document_type][]": "executive_order",
+            "conditions[signing_date][gte]": startDate,
+            per_page: "20",
             page: page.toString(),
-            startDate,
         });
+        if (category && category !== 'all') params.append("conditions[agencies][]", category);
 
-        if (category && category !== 'all') {
-            params.append('category', category);
-        }
+        const url = `${FEDERAL_REGISTER_API}/documents.json?${params}`;
+        console.log(`Fetching from ${url}`);
 
-        const response = await fetch(`/api/executive-orders?${params}`);
+        const response = await fetch(url);
+        if (!response.ok) throw new Error(`API error: ${response.status}`);
 
-        if (!response.ok) {
-            throw new Error(`API error: ${response.status}`);
-        }
+        const data = await response.json();
+        const frResponse = data as FederalRegisterResponse;
+        const transformedOrders = transformFederalRegisterOrders(frResponse.results);
 
-        return await response.json();
+        return {
+            orders: transformedOrders,
+            pagination: {
+                currentPage: page,
+                totalPages: frResponse.total_pages,
+                totalOrders: frResponse.count
+            }
+        };
     } catch (error) {
         console.error('Error fetching executive orders:', error);
-        // Return empty data on error
         return {
             orders: [],
             pagination: {
@@ -88,110 +68,83 @@ export async function fetchExecutiveOrders(
     }
 }
 
-// Function to fetch a single executive order by ID
 export async function fetchExecutiveOrderById(id: string): Promise<ExecutiveOrder | null> {
     try {
-        const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
-        const apiUrl = `${baseUrl}/api/executive-orders?id=${id}`;
-        console.log(`Fetching executive order from: ${apiUrl}`);
-        const response = await fetch(apiUrl, { cache: 'no-store' });
-        console.log(`API response status for ${id}: ${response.status}`);
-        if (!response.ok) {
-            if (response.status === 404) {
-                console.log(`Executive order ${id} not found`);
-                return null;
-            }
-            throw new Error(`API error: ${response.status}`);
+        // Check if we're in a build environment
+        const isBuildOrStaticGeneration =
+            process.env.NODE_ENV === 'production' &&
+            typeof window === 'undefined';
+
+        // If we're in build/static generation, return null
+        if (isBuildOrStaticGeneration) {
+            console.log('Build environment detected: skipping fetch for order ID', id);
+            return null;
         }
+
+        const kv = (globalThis as typeof globalThis & { env?: CloudflareEnv }).env?.NEXT_CACHE_WORKERS_KV;
+        const cacheKey = `order:${id}`;
+
+        if (kv) {
+            const cached = await kv.get(cacheKey, { type: 'json' });
+            if (cached) {
+                console.log(`Cache hit for ${id}`);
+                return cached as ExecutiveOrder;
+            }
+        }
+
+        const apiUrl = `${FEDERAL_REGISTER_API}/documents/${id}.json`;
+        console.log(`Fetching order from ${apiUrl}`);
+
+        const response = await fetch(apiUrl, { cache: 'no-store' });
+        if (!response.ok) {
+            console.log(`Fetch failed for ${id}: ${response.status}`);
+            return null;
+        }
+
         const data = await response.json();
-        console.log(`API response data for ${id}:`, data);
-        return data;
+        console.log("data", data);
+        const orderData = transformFederalRegisterOrder(data);
+        console.log("transformed", orderData);
+        if (kv && orderData) {
+            await kv.put(cacheKey, JSON.stringify(orderData), { expirationTtl: 86400 });
+        }
+
+        return orderData;
     } catch (error) {
         console.error(`Server Error fetching executive order ${id}:`, error);
         return null;
     }
 }
 
-// Function to find an executive order by its EO number
-export async function findExecutiveOrderByNumber(
-    eoNumber: string,
-    date?: string
-): Promise<string | null> {
-    try {
-        // If we have a date, use it to set the start date for the search
-        // Format the date to YYYY-MM-DD if it's in a different format
-        let startDate = '2024-01-20'; // Default start date
+export async function findExecutiveOrderByNumber(eoNumber: string, date?: string): Promise<string | null> {
+    // Check if we're in a build environment
+    const isBuildOrStaticGeneration =
+        process.env.NODE_ENV === 'production' &&
+        typeof window === 'undefined';
 
-        if (date) {
-            try {
-                // Try to parse the date string (which might be in various formats)
-                const parsedDate = new Date(date);
-
-                // Check if the date is valid
-                if (!isNaN(parsedDate.getTime())) {
-                    // Format as YYYY-MM-DD, subtracting 10 days to give some buffer
-                    const tenDaysBefore = new Date(parsedDate);
-                    tenDaysBefore.setDate(parsedDate.getDate() - 10);
-
-                    startDate = tenDaysBefore.toISOString().split('T')[0];
-                }
-            } catch (error) {
-                console.error(`Error parsing date: ${date}, using default start date`, error);
-            }
-        }
-
-        // First, check if we already have this EO number in our cache
-        for (const cacheKey in orderCache) {
-            const cachedOrders = orderCache[cacheKey];
-            const matchingOrder = cachedOrders.find(order =>
-                order.orderNumber?.toString() === eoNumber ||
-                order.presidentialDocumentNumber === eoNumber
-            );
-
-            if (matchingOrder) {
-                return matchingOrder.id;
-            }
-        }
-
-        // If not found in cache, fetch from API
-        const maxPages = 3; // Reduced from 5 to 3 to limit API calls
-        let foundId = null;
-
-        for (let page = 1; page <= maxPages; page++) {
-            // Check if we already have this page cached
-            const cacheKey = `${page}-${startDate}`;
-            let orders: ExecutiveOrder[];
-
-            if (orderCache[cacheKey]) {
-                orders = orderCache[cacheKey];
-            } else {
-                // If not in cache, fetch from API
-                const response = await fetchExecutiveOrders(page, startDate);
-                orders = response.orders;
-
-                // Cache the results
-                orderCache[cacheKey] = orders;
-            }
-
-            // Find the order with the matching EO number
-            const matchingOrder = orders.find(order =>
-                order.presidentialDocumentNumber?.toString() === eoNumber
-            );
-
-            if (matchingOrder) {
-                foundId = matchingOrder.id;
-                break;
-            }
-
-            // If we've reached the end of the results, stop searching
-            if (orders.length === 0) {
-                break;
-            }
-        }
-
-        return foundId;
-    } catch (error) {
-        console.error(`Error finding executive order by number ${eoNumber}:`, error);
+    // If we're in build/static generation, return null
+    if (isBuildOrStaticGeneration) {
+        console.log('Build environment detected: skipping lookup for EO number', eoNumber);
         return null;
     }
-} 
+
+    const kv = (globalThis as typeof globalThis & { env?: CloudflareEnv }).env?.NEXT_CACHE_WORKERS_KV;
+    const cacheKey = `eo:${eoNumber}:${date || 'no-date'}`;
+
+    if (kv) {
+        const cachedId = await kv.get(cacheKey);
+        if (cachedId) return cachedId;
+    }
+
+    const startDate = date ? new Date(date).toISOString().split('T')[0] : '2025-01-20';
+    for (let page = 1; page <= 3; page++) {
+        const response = await fetchExecutiveOrders(page, startDate);
+        const match = response.orders.find(o => o.metadata.presidentialDocumentNumber?.toString() === eoNumber);
+        if (match) {
+            if (kv) await kv.put(cacheKey, match.id, { expirationTtl: 86400 });
+            return match.id;
+        }
+        if (response.orders.length === 0) break;
+    }
+    return null;
+}

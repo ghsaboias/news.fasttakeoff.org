@@ -2,7 +2,8 @@
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { fetchExecutiveOrders, type ExecutiveOrder } from "@/lib/data/executive-orders"
+import { fetchExecutiveOrders } from "@/lib/data/executive-orders"
+import { ExecutiveOrder } from "@/lib/types/core"
 import { formatDate, getStartDate } from "@/lib/utils"
 import Link from "next/link"
 import { useEffect, useState } from "react"
@@ -22,8 +23,8 @@ export default function Home() {
       // Sort orders by publication date (newest first)
       const sortedOrders = [...orders].sort((a, b) => {
         // Use publicationDate for sorting if available, fallback to date
-        const dateA = a.publicationDate || a.date
-        const dateB = b.publicationDate || b.date
+        const dateA = a.publication.publicationDate || a.date
+        const dateB = b.publication.publicationDate || b.date
         return new Date(dateB).getTime() - new Date(dateA).getTime()
       })
 
@@ -109,14 +110,14 @@ export default function Home() {
                   <CardHeader>
                     <CardTitle className="line-clamp-2">{order.title}</CardTitle>
                     <CardDescription>
-                      {formatDate(order.publicationDate || order.date)}
+                      {formatDate(order.publication.publicationDate || order.date)}
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
                     <p className="line-clamp-3 text-sm text-muted-foreground">
                       {order.summary && !order.summary.includes('undefined') && !order.summary.includes('NaN')
                         ? order.summary
-                        : `Executive Order published on ${formatDate(order.publicationDate || order.date)}`
+                        : `Executive Order published on ${formatDate(order.publication.publicationDate || order.date)}`
                       }
                     </p>
                   </CardContent>

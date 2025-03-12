@@ -1,85 +1,34 @@
+import { FederalRegisterOrder, FederalRegisterResponse, OrderDetails } from '@/lib/types/executive-orders';
 import { formatDate } from '@/lib/utils';
 import { NextRequest, NextResponse } from 'next/server';
 
 const BASE_URL = "https://www.federalregister.gov/api/v1";
 
-// Define types for the API response
-interface FederalRegisterOrder {
-    document_number: string;
-    title: string;
-    publication_date: string;
-    signing_date: string;
-    executive_order_number: number;
-    presidential_document_type: string;
-    abstract?: string;
-    html_url: string;
-    pdf_url: string;
-    type: string;
-    agencies: Array<{ name: string; id: number; url?: string; json_url?: string; slug?: string; raw_name?: string; parent_id?: number | null }>;
-    // Additional fields
-    body_html?: string;
-    body_html_url?: string;
-    raw_text_url?: string;
-    full_text_xml_url?: string;
-    citation?: string;
-    start_page?: number;
-    end_page?: number;
-    volume?: number;
-    disposition_notes?: string;
-    executive_order_notes?: string;
-    presidential_document_number?: string;
-    toc_doc?: string;
-    toc_subject?: string;
-    subtype?: string;
-    mods_url?: string;
-    images?: Record<string, Record<string, string>>;
-}
-
-interface FederalRegisterResponse {
-    count: number;
-    total_pages: number;
-    results: FederalRegisterOrder[];
-}
-
-interface OrderDetails {
-    full_text_xml?: string;
-    body_html?: string;
-    abstract?: string;
-    executive_order_notes?: string;
-    disposition_notes?: string;
-    citation?: string;
-    volume?: number;
-    start_page?: number;
-    end_page?: number;
-    subtype?: string;
-    type?: string;
-    body_html_url?: string;
-    raw_text_url?: string;
-    full_text_xml_url?: string;
-    mods_url?: string;
-    toc_doc?: string;
-    toc_subject?: string;
-    presidential_document_number?: string;
-    images?: Record<string, Record<string, string>>;
-}
-
 export async function GET(request: NextRequest) {
     try {
+        const kv = (globalThis as typeof globalThis & { env?: CloudflareEnv }).env?.NEXT_CACHE_WORKERS_KV;
         const searchParams = request.nextUrl.searchParams;
         const id = searchParams.get('id');
+        const cacheKey = id ? `order:${id}` : `orders:${searchParams.toString()}`;
 
-        // If an ID is provided, fetch a specific executive order
-        if (id) {
-            return await getOrderById(id);
+        if (kv) {
+            const cached = await kv.get(cacheKey, { type: 'json' });
+            if (cached) return NextResponse.json(cached);
         }
 
-        // Otherwise, fetch all executive orders with optional filters
-        const startDate = searchParams.get('startDate') || '2020-01-20';
-        const page = parseInt(searchParams.get('page') || '1');
-        const perPage = parseInt(searchParams.get('perPage') || '20');
-        const category = searchParams.get('category');
+        const result = id
+            ? await getOrderById(id)
+            : await getAllOrders(
+                searchParams.get('startDate') || '2020-01-20',
+                parseInt(searchParams.get('page') || '1'),
+                parseInt(searchParams.get('perPage') || '20'),
+                searchParams.get('category')
+            );
 
-        return await getAllOrders(startDate, page, perPage, category);
+        if (kv && result.status === 200) {
+            await kv.put(cacheKey, JSON.stringify(await result.json()), { expirationTtl: 3600 });
+        }
+        return result;
     } catch (error) {
         console.error('Error in executive orders API:', error);
         return NextResponse.json(
@@ -102,40 +51,29 @@ async function getAllOrders(
         page: page.toString(),
     });
 
-    // Add category filter if provided
     if (category && category !== 'all') {
         params.append("conditions[agencies][]", category);
     }
 
     const response = await fetch(`${BASE_URL}/documents.json?${params}`);
-
-
     if (!response.ok) {
         throw new Error(`Federal Register API error: ${response.status}`);
     }
 
     const data = await response.json() as FederalRegisterResponse;
 
-    // Transform the data to match our application's format
     const transformedOrders = await Promise.all(
-        data.results.map(async (order) => {
-            // Extract year from the executive order number for categorization
+        data.results.map(async (order: FederalRegisterOrder) => { // Add type here
             const orderYear = new Date(order.signing_date).getFullYear();
-
-            // Determine category based on agencies
             let category = "Uncategorized";
             if (order.agencies && order.agencies.length > 0) {
                 category = order.agencies[0].name;
             }
 
-            // Get additional details for each order
             const details = await fetchOrderDetails(order.document_number);
-
-            // Extract content from the HTML
             let content = "";
             if (details.body_html) {
                 content = details.body_html.replace(/<[^>]*>/g, '').trim();
-                // Limit content length for the list view
                 if (content.length > 300) {
                     content = content.substring(0, 300) + "...";
                 }
@@ -151,14 +89,13 @@ async function getAllOrders(
                         ? `Executive Order ${order.executive_order_number} of ${orderYear}`
                         : `Executive Order published on ${formatDate(order.publication_date)}`
                 ),
-                content: content,
+                content,
                 orderNumber: order.executive_order_number,
                 publicationDate: order.publication_date,
                 htmlUrl: order.html_url,
                 pdfUrl: order.pdf_url,
                 sections: extractSections(details.body_html || ""),
-                relatedOrders: [], // We would need additional logic to determine related orders
-                // Additional fields
+                relatedOrders: [],
                 signingDate: order.signing_date,
                 executiveOrderNotes: details.executive_order_notes,
                 dispositionNotes: details.disposition_notes,

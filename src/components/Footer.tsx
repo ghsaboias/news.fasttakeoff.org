@@ -33,26 +33,6 @@ export default function Footer() {
                         </ul>
                     </div>
                     <div className="space-y-4">
-                        <h4 className="text-sm font-semibold">Legal</h4>
-                        <ul className="space-y-2 text-sm">
-                            <li>
-                                <Link href="/privacy" className="hover:underline">
-                                    Privacy Policy
-                                </Link>
-                            </li>
-                            <li>
-                                <Link href="/terms" className="hover:underline">
-                                    Terms of Service
-                                </Link>
-                            </li>
-                            <li>
-                                <Link href="/cookies" className="hover:underline">
-                                    Cookie Policy
-                                </Link>
-                            </li>
-                        </ul>
-                    </div>
-                    <div className="space-y-4">
                         <h4 className="text-sm font-semibold">Contact</h4>
                         <ul className="space-y-2 text-sm">
                             <li>
