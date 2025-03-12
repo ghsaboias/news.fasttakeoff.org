@@ -68,20 +68,16 @@ export async function fetchExecutiveOrders(
     }
 }
 
-export async function fetchExecutiveOrderById(id: string): Promise<ExecutiveOrder | null> {
+export async function fetchExecutiveOrderById(id: string, env?: CloudflareEnv): Promise<ExecutiveOrder | null> {
     try {
-        // Check if we're in a build environment
-        const isBuildOrStaticGeneration =
-            process.env.NODE_ENV === 'production' &&
-            typeof window === 'undefined';
-
-        // If we're in build/static generation, return null
-        if (isBuildOrStaticGeneration) {
-            console.log('Build environment detected: skipping fetch for order ID', id);
+        // Only skip fetch during actual static generation, not runtime
+        const isStaticGeneration = process.env.NEXT_PHASE === 'phase-production-build';
+        if (isStaticGeneration) {
+            console.log('Static generation detected: skipping fetch for order ID', id);
             return null;
         }
 
-        const kv = (globalThis as typeof globalThis & { env?: CloudflareEnv }).env?.NEXT_CACHE_WORKERS_KV;
+        const kv = env?.NEXT_CACHE_WORKERS_KV;
         const cacheKey = `order:${id}`;
 
         if (kv) {
@@ -102,9 +98,12 @@ export async function fetchExecutiveOrderById(id: string): Promise<ExecutiveOrde
         }
 
         const data = await response.json();
-        console.log("data", data);
         const orderData = transformFederalRegisterOrder(data);
-        console.log("transformed", orderData);
+        if (!orderData) {
+            console.log(`Transformation failed for ${id}`);
+            return null;
+        }
+
         if (kv && orderData) {
             await kv.put(cacheKey, JSON.stringify(orderData), { expirationTtl: 86400 });
         }
@@ -116,19 +115,18 @@ export async function fetchExecutiveOrderById(id: string): Promise<ExecutiveOrde
     }
 }
 
-export async function findExecutiveOrderByNumber(eoNumber: string, date?: string): Promise<string | null> {
-    // Check if we're in a build environment
-    const isBuildOrStaticGeneration =
-        process.env.NODE_ENV === 'production' &&
-        typeof window === 'undefined';
-
-    // If we're in build/static generation, return null
-    if (isBuildOrStaticGeneration) {
-        console.log('Build environment detected: skipping lookup for EO number', eoNumber);
+export async function findExecutiveOrderByNumber(
+    eoNumber: string,
+    date?: string,
+    env?: CloudflareEnv // Add env param
+): Promise<string | null> {
+    const isStaticGeneration = process.env.NEXT_PHASE === 'phase-production-build';
+    if (isStaticGeneration) {
+        console.log('Static generation detected: skipping lookup for EO number', eoNumber);
         return null;
     }
 
-    const kv = (globalThis as typeof globalThis & { env?: CloudflareEnv }).env?.NEXT_CACHE_WORKERS_KV;
+    const kv = env?.NEXT_CACHE_WORKERS_KV;
     const cacheKey = `eo:${eoNumber}:${date || 'no-date'}`;
 
     if (kv) {
