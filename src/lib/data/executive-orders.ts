@@ -70,20 +70,10 @@ export async function fetchExecutiveOrders(
 
 export async function fetchExecutiveOrderById(id: string): Promise<ExecutiveOrder | null> {
     try {
-        // Check if we're in a build environment
-        const isBuildOrStaticGeneration =
-            process.env.NODE_ENV === 'production' &&
-            typeof window === 'undefined';
-
-        // If we're in build/static generation, return null
-        if (isBuildOrStaticGeneration) {
-            console.log('Build environment detected: skipping fetch for order ID', id);
-            return null;
-        }
-
         const kv = (globalThis as typeof globalThis & { env?: CloudflareEnv }).env?.NEXT_CACHE_WORKERS_KV;
         const cacheKey = `order:${id}`;
 
+        // Try to get from KV cache first
         if (kv) {
             const cached = await kv.get(cacheKey, { type: 'json' });
             if (cached) {
@@ -95,23 +85,28 @@ export async function fetchExecutiveOrderById(id: string): Promise<ExecutiveOrde
         const apiUrl = `${FEDERAL_REGISTER_API}/documents/${id}.json`;
         console.log(`Fetching order from ${apiUrl}`);
 
-        const response = await fetch(apiUrl, { cache: 'no-store' });
+        const response = await fetch(apiUrl, {
+            next: {
+                revalidate: 3600 // Cache for 1 hour
+            }
+        });
+
         if (!response.ok) {
             console.log(`Fetch failed for ${id}: ${response.status}`);
             return null;
         }
 
         const data = await response.json();
-        console.log("data", data);
         const orderData = transformFederalRegisterOrder(data);
-        console.log("transformed", orderData);
+
+        // Cache in KV if available
         if (kv && orderData) {
             await kv.put(cacheKey, JSON.stringify(orderData), { expirationTtl: 86400 });
         }
 
         return orderData;
     } catch (error) {
-        console.error(`Server Error fetching executive order ${id}:`, error);
+        console.error(`Error fetching executive order ${id}:`, error);
         return null;
     }
 }
