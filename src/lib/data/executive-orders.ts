@@ -70,34 +70,37 @@ export async function fetchExecutiveOrders(
 
 export async function fetchExecutiveOrderById(id: string, env?: CloudflareEnv): Promise<ExecutiveOrder | null> {
     try {
-        // Only skip fetch during actual static generation, not runtime
         const isStaticGeneration = process.env.NEXT_PHASE === 'phase-production-build';
         if (isStaticGeneration) {
             console.log('Static generation detected: skipping fetch for order ID', id);
             return null;
         }
 
+        console.log(`Fetching executive order ${id} at runtime`);
         const kv = env?.NEXT_CACHE_WORKERS_KV;
         const cacheKey = `order:${id}`;
-
         if (kv) {
             const cached = await kv.get(cacheKey, { type: 'json' });
             if (cached) {
-                console.log(`Cache hit for ${id}`);
+                console.log(`Cache hit for ${id}:`, cached);
                 return cached as ExecutiveOrder;
             }
+            console.log(`No cache hit for ${id}`);
+        } else {
+            console.log(`No KV environment available for ${id}`);
         }
 
         const apiUrl = `${FEDERAL_REGISTER_API}/documents/${id}.json`;
-        console.log(`Fetching order from ${apiUrl}`);
-
+        console.log(`Fetching from ${apiUrl}`);
         const response = await fetch(apiUrl, { cache: 'no-store' });
+        console.log(`API response status for ${id}: ${response.status}`);
         if (!response.ok) {
             console.log(`Fetch failed for ${id}: ${response.status}`);
             return null;
         }
 
         const data = await response.json();
+        console.log(`API data received for ${id}:`, JSON.stringify(data).slice(0, 200)); // Truncate for brevity
         const orderData = transformFederalRegisterOrder(data);
         if (!orderData) {
             console.log(`Transformation failed for ${id}`);
@@ -105,6 +108,7 @@ export async function fetchExecutiveOrderById(id: string, env?: CloudflareEnv): 
         }
 
         if (kv && orderData) {
+            console.log(`Caching order ${id} in KV`);
             await kv.put(cacheKey, JSON.stringify(orderData), { expirationTtl: 86400 });
         }
 
