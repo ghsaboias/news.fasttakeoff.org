@@ -28,6 +28,7 @@ export class DiscordClient {
         const url = `${DISCORD_API}/guilds/${GUILD_ID}/channels`;
         const response = await this.throttledFetch(url);
         const channels = await response.json();
+        console.log('[Server] Raw channels:', channels);
         return channels;
     }
 

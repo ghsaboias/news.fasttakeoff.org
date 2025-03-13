@@ -1,8 +1,7 @@
 import { getChannels } from "@/lib/data/discord-channels";
 import CurrentEventsClient from "./CurrentEventsClient";
 
-export const dynamic = "force-dynamic"; // Dynamic at build, ISR at runtime
-export const revalidate = 3600; // 1 hour revalidation
+export const revalidate = 3600;
 
 async function getInitialChannels() {
     console.log('[Server] DISCORD_GUILD_ID:', process.env.DISCORD_GUILD_ID || 'undefined');
@@ -14,7 +13,7 @@ async function getInitialChannels() {
         return channels;
     } catch (error) {
         console.error('[Server] Error fetching channels:', error instanceof Error ? error.message : error);
-        return []; // Fallback for build-time
+        return []; // Fallback to empty array to prevent build failure
     }
 }
 
