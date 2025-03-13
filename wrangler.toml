@@ -18,4 +18,3 @@ zone_name = "aiworld.com.br"
 
 [vars]
 DISCORD_GUILD_ID = "1108138416660557926"
-DISCORD_TOKEN = "" # Leave empty, will be overridden by dashboard secret
