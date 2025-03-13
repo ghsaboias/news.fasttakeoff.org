@@ -22,10 +22,13 @@ export class DiscordClient {
     }
 
     async fetchAllChannels(): Promise<DiscordChannel[]> {
+        if (process.env.NEXT_PHASE === 'phase-production-build') {
+            console.log('Skipping Discord fetch during static build');
+            return [];
+        }
         const url = `${DISCORD_API}/guilds/${GUILD_ID}/channels`;
         const response = await this.throttledFetch(url);
         const channels = await response.json();
-
         return channels;
     }
 
