@@ -15,27 +15,35 @@ export class DiscordClient {
     private async throttledFetch(url: string): Promise<Response> {
         await this.delay(1000);
         this.apiCallCount++;
-        console.log(`[Discord] API call #${this.apiCallCount}: ${url}`);
+        console.log(`[Discord] Attempt #${this.apiCallCount}: Fetching ${url}`);
         const token = process.env.DISCORD_TOKEN;
         if (!token) throw new Error('DISCORD_TOKEN is not set');
         const response = await fetch(url, {
             headers: {
                 Authorization: token,
-                'User-Agent': 'NewsApp/0.1.0',
+                'User-Agent': 'NewsApp/0.1.0', // Test UA
             },
         });
+        console.log(`[Discord] Response #${this.apiCallCount}: Status ${response.status}`);
         if (!response.ok) throw new Error(`Discord API error: ${response.status}`);
         return response;
     }
 
     async fetchAllChannels(): Promise<DiscordChannel[]> {
+        if (process.env.NEXT_PHASE === 'phase-production-build') {
+            console.log('[Build] Skipping Discord fetch, returning empty array');
+            return [];
+        }
+        console.log('[Runtime] Attempting Discord fetch');
         try {
             const url = `${DISCORD_API}/guilds/${GUILD_ID}/channels`;
             const response = await this.throttledFetch(url);
-            return response.json();
+            const channels = await response.json();
+            console.log('[Runtime] Fetch succeeded, channels:', channels.length);
+            return channels;
         } catch (error) {
-            console.error('Failed to fetch Discord channels:', error);
-            return []; // Fallback for build/runtime
+            console.error('[Runtime] Fetch failed:', error);
+            return [];
         }
     }
 
