@@ -5,9 +5,6 @@ import CurrentEventsClient from "./CurrentEventsClient";
 export const revalidate = 3600; // 1 hour in seconds
 
 async function getInitialChannels() {
-    console.log('[Server] DISCORD_GUILD_ID:', process.env.DISCORD_GUILD_ID || 'undefined');
-    console.log('[Server] DISCORD_TOKEN:', process.env.DISCORD_TOKEN || 'undefined');
-    console.log('[Server] Fetching initial channels');
     try {
         const channels = await getChannels();
         console.log('[Server] Initial channels fetched:', channels.length);
