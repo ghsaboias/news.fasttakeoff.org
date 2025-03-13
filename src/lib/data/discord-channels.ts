@@ -18,7 +18,7 @@ export class DiscordClient {
         console.log(`[Discord] API call #${this.apiCallCount}: ${url}`);
         const token = process.env.DISCORD_TOKEN;
         if (!token) throw new Error('DISCORD_TOKEN is missing');
-        const response = await fetch(url, { headers: { Authorization: token } });
+        const response = await fetch(url, { headers: { Authorization: `Bot ${token}` } });
         if (!response.ok) throw new Error(`Discord API error: ${response.status}`);
         return response;
     }
