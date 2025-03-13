@@ -13,10 +13,17 @@ export class DiscordClient {
     }
 
     private async throttledFetch(url: string): Promise<Response> {
-        await this.delay(1000); // 1-second delay to respect rate limits
+        await this.delay(1000);
         this.apiCallCount++;
         console.log(`[Discord] API call #${this.apiCallCount}: ${url}`);
-        const response = await fetch(url, { headers: { Authorization: `${process.env.DISCORD_TOKEN}` } });
+        const token = process.env.DISCORD_TOKEN;
+        if (!token) throw new Error('DISCORD_TOKEN is not set');
+        const response = await fetch(url, {
+            headers: {
+                Authorization: token, // User token, no Bot prefix
+                'User-Agent': 'NewsApp/0.1.0', // Test custom UA
+            },
+        });
         if (!response.ok) throw new Error(`Discord API error: ${response.status}`);
         return response;
     }
