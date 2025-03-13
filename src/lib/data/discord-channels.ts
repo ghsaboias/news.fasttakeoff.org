@@ -34,9 +34,10 @@ export class DiscordClient {
             console.log('[Build] Skipping Discord fetch, returning empty array');
             return [];
         }
-        console.log('[Runtime] Attempting Discord fetch');
+        console.log('[Runtime] Checking cache or initiating fetch');
         try {
             const url = `${DISCORD_API}/guilds/${GUILD_ID}/channels`;
+            console.log('[Runtime] Fetching from:', url);
             const response = await this.throttledFetch(url);
             const channels = await response.json();
             console.log('[Runtime] Fetch succeeded, channels:', channels.length);
