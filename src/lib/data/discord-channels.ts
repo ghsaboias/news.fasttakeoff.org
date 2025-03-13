@@ -16,7 +16,6 @@ export class DiscordClient {
         await this.delay(1000); // 1-second delay to respect rate limits
         this.apiCallCount++;
         console.log(`[Discord] API call #${this.apiCallCount}: ${url}`);
-        console.log(`[Discord] DISCORD_TOKEN: ${process.env.DISCORD_TOKEN}`);
         const token = process.env.DISCORD_TOKEN;
         if (!token) throw new Error('DISCORD_TOKEN is missing');
         const response = await fetch(url, { headers: { Authorization: token } });
