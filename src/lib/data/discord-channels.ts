@@ -40,12 +40,12 @@ export class DiscordClient {
 
     async fetchAllChannels(): Promise<DiscordChannel[]> {
         if (process.env.NEXT_PHASE === 'phase-production-build') {
-            console.log('[Build] Skipping Discord fetch, returning empty array');
+            console.log('[Build] Using empty array during build');
             return [];
         }
-        console.log('[Runtime] Checking cache or initiating fetch');
+        console.log('[Runtime] Attempting Discord fetch');
         try {
-            const url = `${DISCORD_API}/guilds/${GUILD_ID}/channels`;
+            const url = `${DISCORD_API}/guilds/${GUILD_ID}/channels`; // Ensure GUILD_ID is used
             console.log('[Runtime] Fetching from:', url);
             const response = await this.throttledFetch(url);
             const channels = await response.json();
