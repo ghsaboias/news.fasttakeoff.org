@@ -16,8 +16,6 @@ pattern = "news.aiworld.com.br"
 custom_domain = true
 zone_name = "aiworld.com.br"
 
-[env.production]
-vars = { 
-  DISCORD_GUILD_ID = "1108138416660557926", 
-  DISCORD_TOKEN = "" # Leave empty, will be overridden by dashboard secret
-}
+[vars]
+DISCORD_GUILD_ID = "1108138416660557926"
+DISCORD_TOKEN = "" # Leave empty, will be overridden by dashboard secret
