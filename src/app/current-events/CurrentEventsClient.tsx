@@ -30,8 +30,8 @@ function formatDate(timestamp: string) {
     });
 }
 
-interface Props {
-    initialChannels: DiscordChannel[];
+export interface Props {
+    channels: DiscordChannel[];
 }
 
 interface MediaPreviewProps {
@@ -88,8 +88,7 @@ function MediaPreview({ url, type, contentType, alt }: MediaPreviewProps) {
     );
 }
 
-export default function CurrentEventsClient({ initialChannels }: Props) {
-    const [channels] = useState<DiscordChannel[]>(initialChannels);
+export default function CurrentEventsClient({ channels }: Props) {
     const [channelData, setChannelData] = useState<Map<string, { count: number; messages: DiscordMessage[]; loading: boolean }>>(
         new Map()
     );
