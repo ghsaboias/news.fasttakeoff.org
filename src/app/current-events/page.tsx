@@ -1,15 +1,10 @@
-// src/app/current-events/page.tsx
-import { getChannels } from "@/lib/data/discord-channels";
-import CurrentEventsClient from "./CurrentEventsClient";
+export const revalidate = 3600; // 1 hour
 
-async function getInitialChannels() {
-    console.log('[Server] Fetching initial channels');
-    const channels = await getChannels();
-    console.log('[Server] Initial channels fetched:', channels.length);
-    return channels;
-}
+import { getChannels } from '@/lib/data/discord-channels';
+import CurrentEventsClient from './CurrentEventsClient';
 
 export default async function CurrentEventsPage() {
-    const initialChannels = await getInitialChannels();
-    return <CurrentEventsClient initialChannels={initialChannels} />;
+    const channels = await getChannels();
+    console.log('[Server] Initial channels fetched:', channels.length);
+    return <CurrentEventsClient channels={channels} />;
 }
