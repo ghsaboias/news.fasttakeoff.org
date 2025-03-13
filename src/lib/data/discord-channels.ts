@@ -16,19 +16,16 @@ export class DiscordClient {
         await this.delay(1000); // 1-second delay to respect rate limits
         this.apiCallCount++;
         console.log(`[Discord] API call #${this.apiCallCount}: ${url}`);
-        const token = process.env.DISCORD_TOKEN;
-        if (!token) throw new Error('DISCORD_TOKEN is missing');
-        const response = await fetch(url, { headers: { Authorization: `Bot ${token}` } });
+        const response = await fetch(url, { headers: { Authorization: `${process.env.DISCORD_TOKEN}` } });
         if (!response.ok) throw new Error(`Discord API error: ${response.status}`);
         return response;
     }
 
     async fetchAllChannels(): Promise<DiscordChannel[]> {
-        if (!GUILD_ID) throw new Error('DISCORD_GUILD_ID is missing');
         const url = `${DISCORD_API}/guilds/${GUILD_ID}/channels`;
         const response = await this.throttledFetch(url);
         const channels = await response.json();
-        console.log('[Server] Raw channels:', channels);
+
         return channels;
     }
 
