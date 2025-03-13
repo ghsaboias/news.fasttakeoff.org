@@ -13,18 +13,14 @@ export class DiscordClient {
     }
 
     private async throttledFetch(url: string): Promise<Response> {
-        await this.delay(1000);
+        await this.delay(1000); // 1-second delay to respect rate limits
         this.apiCallCount++;
         console.log(`[Discord] API call #${this.apiCallCount}: ${url}`);
+        console.log(`[Discord] DISCORD_TOKEN: ${process.env.DISCORD_TOKEN}`);
         const token = process.env.DISCORD_TOKEN;
         if (!token) throw new Error('DISCORD_TOKEN is missing');
-        const response = await fetch(url, {
-            headers: {
-                Authorization: token,
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36' // Common browser UA
-            }
-        });
-        if (!response.ok) throw new Error(`Discord API error: ${response.status} - ${await response.text()}`);
+        const response = await fetch(url, { headers: { Authorization: token } });
+        if (!response.ok) throw new Error(`Discord API error: ${response.status}`);
         return response;
     }
 
