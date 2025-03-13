@@ -1,6 +1,8 @@
-// src/app/current-events/page.tsx
 import { getChannels } from "@/lib/data/discord-channels";
 import CurrentEventsClient from "./CurrentEventsClient";
+
+// Force dynamic rendering to fetch at runtime
+export const dynamic = "force-dynamic";
 
 async function getInitialChannels() {
     console.log('[Server] Fetching initial channels');
