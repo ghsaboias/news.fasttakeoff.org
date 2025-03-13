@@ -17,15 +17,24 @@ export class DiscordClient {
         this.apiCallCount++;
         console.log(`[Discord] Attempt #${this.apiCallCount}: Fetching ${url}`);
         const token = process.env.DISCORD_TOKEN;
+        const guildId = process.env.DISCORD_GUILD_ID;
+        console.log(`[Discord] Using GUILD_ID: ${guildId}`);
+        console.log(`[Discord] Using token (first 10 chars): ${token?.substring(0, 10)}...`);
         if (!token) throw new Error('DISCORD_TOKEN is not set');
-        const response = await fetch(url, {
-            headers: {
-                Authorization: token,
-                'User-Agent': 'NewsApp/0.1.0', // Test UA
-            },
-        });
+        if (!guildId) throw new Error('DISCORD_GUILD_ID is not set');
+        const headers = {
+            Authorization: token,
+            'User-Agent': 'NewsApp/0.1.0',
+        };
+        console.log(`[Discord] Headers:`, JSON.stringify(headers, null, 2));
+        const response = await fetch(url, { headers });
         console.log(`[Discord] Response #${this.apiCallCount}: Status ${response.status}`);
-        if (!response.ok) throw new Error(`Discord API error: ${response.status}`);
+        console.log(`[Discord] Response Headers:`, JSON.stringify([...response.headers], null, 2));
+        if (!response.ok) {
+            const errorBody = await response.text();
+            console.log(`[Discord] Error Body:`, errorBody);
+            throw new Error(`Discord API error: ${response.status}`);
+        }
         return response;
     }
 
