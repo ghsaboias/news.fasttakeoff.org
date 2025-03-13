@@ -3,7 +3,6 @@ import { getChannels } from '@/lib/data/discord-channels';
 import { unstable_cache } from 'next/cache';
 import CurrentEventsClient from './CurrentEventsClient';
 
-// Cache with 1-hour revalidation
 const getCachedChannels = unstable_cache(
     async () => {
         console.log('[Server] Fetching channels from Discord');
@@ -15,18 +14,20 @@ const getCachedChannels = unstable_cache(
     { revalidate: 3600, tags: ['discord-channels'] }
 );
 
+export const dynamic = 'force-dynamic'; // Force runtime execution
 export const revalidate = 3600; // 1 hour
 
 export default async function CurrentEventsPage() {
     console.log('[Server] Starting channel fetch');
-    let channels = await getChannels(); // Build-time fetch (returns [] due to skip)
+    let channels = await getChannels(); // Build-time fetch (returns [])
+    console.log('[Server] Initial channels:', channels.length);
 
-    // If channels is empty, fetch fresh data at runtime
-    if (channels.length === 0 && process.env.NEXT_PHASE !== 'phase-production-build') {
-        console.log('[Server] Build-time data empty, forcing runtime fetch');
+    // Force fetch at runtime if empty
+    if (channels.length === 0) {
+        console.log('[Server] Empty channels, forcing runtime fetch');
         channels = await getCachedChannels();
     } else {
-        console.log('[Server] Using build-time or cached data:', channels.length);
+        console.log('[Server] Using initial data:', channels.length);
     }
 
     return <CurrentEventsClient channels={channels} />;
