@@ -20,8 +20,8 @@ export class DiscordClient {
         if (!token) throw new Error('DISCORD_TOKEN is not set');
         const response = await fetch(url, {
             headers: {
-                Authorization: token, // User token, no Bot prefix
-                'User-Agent': 'NewsApp/0.1.0', // Test custom UA
+                Authorization: token,
+                'User-Agent': 'NewsApp/0.1.0',
             },
         });
         if (!response.ok) throw new Error(`Discord API error: ${response.status}`);
