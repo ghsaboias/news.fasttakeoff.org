@@ -18,13 +18,18 @@ export class DiscordClient {
         console.log(`[Discord] API call #${this.apiCallCount}: ${url}`);
         const token = process.env.DISCORD_TOKEN;
         if (!token) throw new Error('DISCORD_TOKEN is missing');
-        const response = await fetch(url, {
-            headers: {
-                Authorization: token,
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36' // Common browser UA
-            }
-        });
-        if (!response.ok) throw new Error(`Discord API error: ${response.status} - ${await response.text()}`);
+        const headers = {
+            Authorization: token,
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+        };
+        console.log('[Discord] Request headers:', headers);
+        const response = await fetch(url, { headers });
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.log('[Discord] Response status:', response.status);
+            console.log('[Discord] Response headers:', Object.fromEntries(response.headers.entries()));
+            throw new Error(`Discord API error: ${response.status} - ${errorText}`);
+        }
         return response;
     }
 
