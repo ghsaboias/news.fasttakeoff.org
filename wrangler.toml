@@ -15,7 +15,3 @@ id = "2b5d6df3cfc54116b6e34000be4b71a3"
 pattern = "news.aiworld.com.br"
 custom_domain = true
 zone_name = "aiworld.com.br"
-
-[logs]
-enabled = true
-sampling_rate = 1.0
