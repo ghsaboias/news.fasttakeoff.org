@@ -2,7 +2,7 @@
 import { DiscordChannel, DiscordMessage } from '@/lib/types/core';
 
 const DISCORD_API = 'https://discord.com/api/v10';
-const GUILD_ID = process.env.DISCORD_GUILD_ID || '';
+// const GUILD_ID = process.env.DISCORD_GUILD_ID || '';
 const ALLOWED_EMOJIS = ['🔵', '🟡', '🔴', '🟠'];
 
 export class DiscordClient {
@@ -12,93 +12,66 @@ export class DiscordClient {
         return new Promise(resolve => setTimeout(resolve, ms));
     }
 
-    private async throttledFetch(url: string): Promise<Response> {
+    private async throttledFetch(url: string, env?: CloudflareEnv): Promise<Response> {
         await this.delay(1000);
         this.apiCallCount++;
+
+        console.log(`[Discord] Phase: ${process.env.NEXT_PHASE || 'unknown'}`);
         console.log(`[Discord] Attempt #${this.apiCallCount}: Fetching ${url}`);
-        const token = process.env.DISCORD_TOKEN;
-        const guildId = process.env.DISCORD_GUILD_ID;
-        console.log(`[Discord] Using GUILD_ID: ${guildId}`);
-        console.log(`[Discord] Using token (first 10 chars): ${token?.substring(0, 10)}...`);
+        const token = env?.DISCORD_TOKEN || process.env.DISCORD_TOKEN;
+        const guildId = env?.DISCORD_GUILD_ID || process.env.DISCORD_GUILD_ID;
+        console.log(`[Discord] Token (first 10 chars): ${token?.substring(0, 10) || 'unset'}...`);
+        console.log(`[Discord] Guild ID: ${guildId || 'unset'}`);
+
         if (!token) throw new Error('DISCORD_TOKEN is not set');
         if (!guildId) throw new Error('DISCORD_GUILD_ID is not set');
+
         const headers = {
             Authorization: token,
-            'User-Agent': 'NewsApp/0.1.0',
+            'User-Agent': 'NewsApp/0.1.0 (https://news.aiworld.com.br)',
+            'Content-Type': 'application/json',
         };
-        console.log(`[Discord] Headers:`, JSON.stringify(headers, null, 2));
+        console.log(`[Discord] Headers: ${JSON.stringify(headers, null, 2)}`);
+
         const response = await fetch(url, { headers });
-        console.log(`[Discord] Response #${this.apiCallCount}: Status ${response.status}`);
-        console.log(`[Discord] Response Headers:`, JSON.stringify([...response.headers], null, 2));
+        console.log(`[Discord] Response Status: ${response.status}`);
+        console.log(`[Discord] Response Headers: ${JSON.stringify([...response.headers], null, 2)}`);
+
         if (!response.ok) {
             const errorBody = await response.text();
-            console.log(`[Discord] Error Body:`, errorBody);
-            throw new Error(`Discord API error: ${response.status}`);
+            console.log(`[Discord] Error Body: ${errorBody}`);
+            throw new Error(`Discord API error: ${response.status} - ${errorBody}`);
         }
         return response;
     }
 
-    async fetchAllChannels(): Promise<DiscordChannel[]> {
-        if (process.env.NEXT_PHASE === 'phase-production-build') {
-            console.log('[Build] Using empty array during build');
-            return [];
-        }
-        console.log('[Runtime] Attempting Discord fetch');
-        try {
-            const url = `${DISCORD_API}/guilds/${GUILD_ID}/channels`; // Ensure GUILD_ID is used
-            console.log('[Runtime] Fetching from:', url);
-            const response = await this.throttledFetch(url);
-            const channels = await response.json();
-            console.log('[Runtime] Fetch succeeded, channels:', channels.length);
-            return channels;
-        } catch (error) {
-            console.error('[Runtime] Fetch failed:', error);
-            return [];
-        }
+    async fetchAllChannels(env?: CloudflareEnv): Promise<DiscordChannel[]> {
+        const guildId = env?.DISCORD_GUILD_ID || process.env.DISCORD_GUILD_ID;
+        const url = `${DISCORD_API}/guilds/${guildId}/channels`;
+        const response = await this.throttledFetch(url, env);
+        return response.json();
     }
 
     filterChannels(channels: DiscordChannel[]): DiscordChannel[] {
-        const GUILD_ID = process.env.DISCORD_GUILD_ID || '';
-
+        const guildId = process.env.DISCORD_GUILD_ID || '';
         return channels
             .filter(c => {
-                // First check if it's a text channel with allowed emoji
-                const isValidType = c.type === 0; // Only Text channels, no Announcements
+                const isValidType = c.type === 0;
                 const hasAllowedEmoji = ALLOWED_EMOJIS.includes(Array.from(c.name)[0] || '');
+                if (!isValidType || !hasAllowedEmoji) return false;
 
-                if (!isValidType || !hasAllowedEmoji) {
-                    return false;
-                }
-
-                // Find guild permission override
-                const guildPermission = c.permission_overwrites?.find(p => p.id === GUILD_ID);
-
-                // If no guild permission, channel is visible
-                if (!guildPermission) {
-                    return true;
-                }
-
-                // Check explicit allow of VIEW_CHANNEL
-                if (guildPermission.allow === "1024") {
-                    return true;
-                }
-
-                // Check for deny of VIEW_CHANNEL
+                const guildPermission = c.permission_overwrites?.find(p => p.id === guildId);
+                if (!guildPermission) return true;
+                if (guildPermission.allow === "1024") return true;
                 const denyBits = parseInt(guildPermission.deny);
-                if ((denyBits & 1024) === 1024) {
-                    return false;
-                }
-
-                // If neither explicitly allowed nor denied, channel is visible
-                return true;
+                return (denyBits & 1024) !== 1024;
             })
             .sort((a, b) => a.position - b.position);
     }
 
-    async fetchChannels(): Promise<DiscordChannel[]> {
-        const allChannels = await this.fetchAllChannels();
-        const filteredChannels = this.filterChannels(allChannels);
-        return filteredChannels;
+    async fetchChannels(env?: CloudflareEnv): Promise<DiscordChannel[]> {
+        const allChannels = await this.fetchAllChannels(env);
+        return this.filterChannels(allChannels);
     }
 
     async fetchLastHourMessages(channelId: string): Promise<{ count: number; messages: DiscordMessage[] }> {
@@ -132,7 +105,7 @@ export class DiscordClient {
     }
 }
 
-export async function getChannels(): Promise<DiscordChannel[]> {
+export async function getChannels(env?: CloudflareEnv): Promise<DiscordChannel[]> {
     const client = new DiscordClient();
-    return client.fetchChannels();
+    return client.fetchChannels(env);
 }

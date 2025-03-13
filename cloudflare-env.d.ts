@@ -4,4 +4,7 @@ interface CloudflareEnv {
 	NEXT_CACHE_WORKERS_KV: KVNamespace;
 	NEXTJS_ENV: string;
 	ASSETS: Fetcher;
+	// Add custom environment variables
+	DISCORD_TOKEN?: string;
+	DISCORD_GUILD_ID?: string;
 }

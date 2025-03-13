@@ -68,12 +68,9 @@ class ReportGenerator {
 
     private parseSummary(text: string): Report {
         const lines = text.split('\n').filter(Boolean);
-        if (lines.length < 4) throw new Error('Invalid report format');
-
-        const headline = lines[0].trim();
-
+        if (lines.length < 2) throw new Error('Invalid report format');
         return {
-            headline,
+            headline: lines[0].trim(),
             timestamp: new Date().toISOString(),
             content: text,
         };
