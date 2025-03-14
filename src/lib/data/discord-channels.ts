@@ -13,7 +13,7 @@ export class DiscordClient {
     }
 
     private async throttledFetch(url: string, env?: CloudflareEnv): Promise<Response> {
-        await this.delay(1000);
+        await this.delay(100);
         this.apiCallCount++;
 
         console.log(`[Discord] Phase: ${process.env.NEXT_PHASE || 'unknown'}`);
@@ -35,7 +35,6 @@ export class DiscordClient {
 
         const response = await fetch(url, { headers });
         console.log(`[Discord] Response Status: ${response.status}`);
-        console.log(`[Discord] Response Headers: ${JSON.stringify([...response.headers], null, 2)}`);
 
         if (!response.ok) {
             const errorBody = await response.text();
