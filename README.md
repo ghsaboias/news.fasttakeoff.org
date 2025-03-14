@@ -1,36 +1,92 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# News AI World
+
+A Next.js application hosted at news.aiworld.com.br that aggregates executive orders from the Federal Register API and generates real-time journalistic reports from Discord data. Built with TypeScript, Tailwind CSS, and deployed via Cloudflare Workers, it features a modular UI and caching with Cloudflare KV.
+
+## Features
+
+- Fetches and displays executive orders with detailed metadata
+- Generates concise reports from Discord channel messages
+- Responsive UI with reusable components (e.g., buttons, cards, dialogs)
+- Type-safe codebase with TypeScript
+- Styled with Tailwind CSS and shadcn/ui
+- Caching via Cloudflare KV for performance
+
+## Tech Stack
+
+- **Framework**: Next.js 15.2.2, React 19
+- **Language**: TypeScript
+- **Styling**: Tailwind CSS, shadcn/ui
+- **Deployment**: Cloudflare Workers
+- **APIs**: Federal Register, Discord, Groq
+- **Dependencies**: @radix-ui, lucide-react, groq-sdk
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
+
+- Node.js (v20+ recommended)
+- npm, yarn, pnpm, or bun
+- Cloudflare account (for deployment)
+- Environment variables: DISCORD_TOKEN, DISCORD_GUILD_ID, GROQ_API_KEY
+
+### Installation
+
+Clone the repo:
+
+```bash
+git clone https://github.com/ghsaboias/news.aiworld.com.br.git
+cd news.aiworld.com.br
+```
+
+Install dependencies:
+
+```bash
+npm install
+```
+
+Set up environment variables in a .env.local file:
+
+```text
+DISCORD_TOKEN=your-discord-bot-token
+DISCORD_GUILD_ID=your-guild-id
+GROQ_API_KEY=your-groq-api-key
+```
+
+### Development
+
+Run the development server:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000) to view the app.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Build & Deploy
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Build the app:
 
-## Learn More
+```bash
+npm run build
+```
 
-To learn more about Next.js, take a look at the following resources:
+Deploy to Cloudflare:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```bash
+npm run deploy
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Project Structure
 
-## Deploy on Vercel
+- `src/app/` - Next.js pages and API routes
+- `src/components/` - Reusable UI components
+- `src/lib/` - Utilities, types, and data transformers
+- `.open-next/` - Cloudflare deployment artifacts
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Contributing
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Pull requests are welcome! Please open an issue first to discuss changes.
+
+## License
+
+MIT
