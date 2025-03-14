@@ -21,7 +21,7 @@ export async function POST(request: Request) {
 
 // GET endpoint with Cache API
 export async function GET() {
-    // @ts-ignore - Cloudflare Worker globals (cache available in deployed env)
+    // @ts-expect-error - Cloudflare Worker globals (cache available in deployed env)
     const cache = caches.default;
     const cacheKey = 'https://news.aiworld.com.br/api/reports'; // Unique key for this endpoint
     const cachedResponse = await cache.match(cacheKey);
@@ -45,7 +45,6 @@ export async function GET() {
             headers: cacheHeaders,
         });
 
-        // @ts-ignore - Cloudflare Worker globals
         await cache.put(cacheKey, cachedResponse.clone());
         return response;
     } catch (error) {
