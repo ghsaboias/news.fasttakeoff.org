@@ -16,6 +16,14 @@ import {
     DialogTitle,
     DialogTrigger,
 } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Report } from "@/lib/data/discord-reports";
 import { DiscordChannel, DiscordMessage } from "@/lib/types/core";
@@ -95,6 +103,8 @@ export default function CurrentEventsClient({ channels }: Props) {
     const [channelReports, setChannelReports] = useState<Map<string, { report: Report | null; loading: boolean; error: string | null }>>(
         new Map()
     );
+    const [searchQuery, setSearchQuery] = useState("");
+    const [sortBy, setSortBy] = useState<"position" | "name" | "recent">("position");
 
     const fetchMessages = async (channelId: string) => {
         setChannelData(prev => {
@@ -166,277 +176,326 @@ export default function CurrentEventsClient({ channels }: Props) {
         }
     };
 
+    // Filter and sort channels
+    const filteredChannels = channels
+        .filter(channel =>
+            channel.name.toLowerCase().includes(searchQuery.toLowerCase())
+        )
+        .sort((a, b) => {
+            switch (sortBy) {
+                case "position":
+                    return a.position - b.position;
+                case "name":
+                    return a.name.localeCompare(b.name);
+                case "recent":
+                    const aData = channelData.get(a.id);
+                    const bData = channelData.get(b.id);
+                    if (!aData?.messages.length) return 1;
+                    if (!bData?.messages.length) return -1;
+                    return new Date(bData.messages[0].timestamp).getTime() -
+                        new Date(aData.messages[0].timestamp).getTime();
+                default:
+                    return 0;
+            }
+        });
+
     return (
         <div className="container mx-auto py-8">
-            <div className="flex items-center justify-between mb-6">
-                <h1 className="text-2xl font-bold">Current Events</h1>
-                <Badge variant="secondary">
-                    Total Channels: {channels.length}
-                </Badge>
-            </div>
-            <div className="grid gap-6">
-                {channels.map(channel => (
-                    <Card key={channel.id}>
-                        <CardHeader>
-                            <div className="flex items-center justify-between">
-                                <CardTitle>{channel.name}</CardTitle>
-                                <div className="flex gap-2">
+            <div className="flex flex-col gap-6">
+                {/* Header */}
+                <div className="flex items-center justify-between">
+                    <h1 className="text-2xl font-bold">Current Events</h1>
+                    <Badge variant="secondary">
+                        Total Channels: {channels.length}
+                    </Badge>
+                </div>
+
+                {/* Search and Filter */}
+                <div className="flex flex-col sm:flex-row gap-4">
+                    <Input
+                        placeholder="Search channels..."
+                        value={searchQuery}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchQuery(e.target.value)}
+                        className="max-w-sm"
+                    />
+                    <Select value={sortBy} onValueChange={(value: "position" | "name" | "recent") => setSortBy(value)}>
+                        <SelectTrigger className="w-[180px]">
+                            <SelectValue placeholder="Sort by..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="position">Position</SelectItem>
+                            <SelectItem value="name">Name</SelectItem>
+                            <SelectItem value="recent">Most Recent</SelectItem>
+                        </SelectContent>
+                    </Select>
+                </div>
+
+                {/* Grid of Cards */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {filteredChannels.map(channel => (
+                        <Card key={channel.id} className="flex flex-col">
+                            <CardHeader>
+                                <div className="flex items-center justify-between">
+                                    <CardTitle className="line-clamp-1">{channel.name}</CardTitle>
                                     <Badge variant="outline">
                                         Position: {channel.position}
                                     </Badge>
                                 </div>
-                            </div>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="flex items-center gap-4">
-                                <Button
-                                    onClick={() => fetchMessages(channel.id)}
-                                    disabled={channelData.get(channel.id)?.loading}
-                                    className="cursor-pointer"
-                                >
-                                    {channelData.get(channel.id)?.loading ? "Fetching..." : "Fetch Messages in Last Hour"}
-                                </Button>
-                                {channelData.get(channel.id)?.messages.length ? (
-                                    <Button
-                                        onClick={() => generateChannelReport(channel.id)}
-                                        disabled={channelReports.get(channel.id)?.loading}
-                                        variant="secondary"
-                                        className="cursor-pointer"
-                                    >
-                                        {channelReports.get(channel.id)?.loading ? "Generating..." : "Generate Report"}
-                                    </Button>
-                                ) : null}
-                            </div>
+                            </CardHeader>
+                            <CardContent className="flex-1">
+                                <div className="flex flex-col gap-4">
+                                    <div className="flex items-center gap-2">
+                                        <Button
+                                            onClick={() => fetchMessages(channel.id)}
+                                            disabled={channelData.get(channel.id)?.loading}
+                                            variant="outline"
+                                            size="sm"
+                                        >
+                                            {channelData.get(channel.id)?.loading ? "Fetching..." : "Fetch Sources"}
+                                        </Button>
+                                        {channelData.get(channel.id)?.messages.length ? (
+                                            <Button
+                                                onClick={() => generateChannelReport(channel.id)}
+                                                disabled={channelReports.get(channel.id)?.loading}
+                                                variant="outline"
+                                                size="sm"
+                                            >
+                                                {channelReports.get(channel.id)?.loading ? "Generating..." : "Generate Report"}
+                                            </Button>
+                                        ) : null}
+                                    </div>
 
-                            {/* Report Section */}
-                            {(() => {
-                                const reportData = channelReports.get(channel.id);
-                                if (reportData?.error) {
-                                    return (
-                                        <div className="mt-4 p-4 bg-destructive/10 text-destructive rounded-lg">
-                                            {reportData.error}
-                                        </div>
-                                    );
-                                }
-                                if (reportData?.report) {
-                                    return (
-                                        <div className="mt-4">
-                                            <Accordion type="single" collapsible className="w-full">
-                                                <AccordionItem value="report">
-                                                    <AccordionTrigger className="text-base font-semibold hover:no-underline cursor-pointer">
-                                                        <div className="flex flex-col items-start gap-2 text-left">
-                                                            <div className="font-bold">{reportData.report.headline}</div>
-                                                            <div className="text-xs text-muted-foreground">
-                                                                Generated: {new Date(reportData.report.timestamp).toLocaleString()}
-                                                            </div>
-                                                        </div>
-                                                    </AccordionTrigger>
-                                                    <AccordionContent>
-                                                        <div className="space-y-4 pt-4">
-                                                            <div>
-                                                                <h3 className="font-semibold mb-2">Report</h3>
-                                                                <p className="text-sm text-muted-foreground whitespace-pre-wrap">{reportData.report.body}</p>
-                                                            </div>
-                                                            <Separator />
-                                                        </div>
-                                                    </AccordionContent>
-                                                </AccordionItem>
-                                            </Accordion>
-                                        </div>
-                                    );
-                                }
-                                return null;
-                            })()}
+                                    {/* Report Section */}
+                                    {(() => {
+                                        const reportData = channelReports.get(channel.id);
+                                        if (reportData?.error) {
+                                            return (
+                                                <div className="mt-4 p-4 bg-destructive/10 text-destructive rounded-lg">
+                                                    {reportData.error}
+                                                </div>
+                                            );
+                                        }
+                                        if (reportData?.report) {
+                                            return (
+                                                <div className="mt-4">
+                                                    <Accordion type="single" collapsible className="w-full">
+                                                        <AccordionItem value="report">
+                                                            <AccordionTrigger className="text-base font-semibold hover:no-underline cursor-pointer">
+                                                                <div className="flex flex-col items-start gap-2 text-left">
+                                                                    <div className="font-bold">{reportData.report.headline}</div>
+                                                                    <div className="text-xs text-muted-foreground">
+                                                                        Generated: {new Date(reportData.report.timestamp).toLocaleString()}
+                                                                    </div>
+                                                                </div>
+                                                            </AccordionTrigger>
+                                                            <AccordionContent>
+                                                                <div className="space-y-4 pt-4">
+                                                                    <div>
+                                                                        <h3 className="font-semibold mb-2">Report</h3>
+                                                                        <p className="text-sm text-muted-foreground whitespace-pre-wrap">{reportData.report.body}</p>
+                                                                    </div>
+                                                                    <Separator />
+                                                                </div>
+                                                            </AccordionContent>
+                                                        </AccordionItem>
+                                                    </Accordion>
+                                                </div>
+                                            );
+                                        }
+                                        return null;
+                                    })()}
 
-                            {/* Messages Section */}
-                            {(() => {
-                                const data = channelData.get(channel.id);
-                                if (data?.messages.length) {
-                                    return (
-                                        <div className="mt-4">
-                                            <Accordion type="single" collapsible className="w-full">
-                                                <AccordionItem value="messages">
-                                                    <AccordionTrigger className="text-base font-semibold hover:no-underline cursor-pointer bg-muted px-4">
-                                                        <div className="flex items-center gap-2">
-                                                            Messages
-                                                            <Badge variant="secondary" className="ml-2">
-                                                                {data.messages.length}
-                                                            </Badge>
-                                                        </div>
-                                                    </AccordionTrigger>
-                                                    <AccordionContent>
-                                                        <div className="space-y-4 pt-4">
-                                                            <Accordion type="single" collapsible className="w-full">
-                                                                {data.messages.map((message, index) => (
-                                                                    <AccordionItem
-                                                                        value={`message-${index}`}
-                                                                        key={message.id}
-                                                                        className="border-b border-border/40 last:border-0"
-                                                                    >
-                                                                        <AccordionTrigger className="text-sm">
-                                                                            {message.embeds?.[0]?.title || message.embeds?.[0]?.description?.slice(0, 100) || message.content || 'No content'}...
-                                                                        </AccordionTrigger>
-                                                                        <AccordionContent>
-                                                                            <div className="space-y-4 p-4 bg-secondary/50 rounded-lg">
-                                                                                {/* Metadata Section */}
-                                                                                <div className="flex items-center justify-between text-xs text-muted-foreground">
-                                                                                    <div className="flex items-center gap-2">
-                                                                                        {message.author && (
+                                    {/* Messages Section */}
+                                    {(() => {
+                                        const data = channelData.get(channel.id);
+                                        if (data?.messages.length) {
+                                            return (
+                                                <div className="mt-4">
+                                                    <Accordion type="single" collapsible className="w-full">
+                                                        <AccordionItem value="messages">
+                                                            <AccordionTrigger className="text-base font-semibold hover:no-underline cursor-pointer bg-muted px-4">
+                                                                <div className="flex items-center gap-2">
+                                                                    Messages
+                                                                    <Badge variant="secondary" className="ml-2">
+                                                                        {data.messages.length}
+                                                                    </Badge>
+                                                                </div>
+                                                            </AccordionTrigger>
+                                                            <AccordionContent>
+                                                                <div className="space-y-4 pt-4">
+                                                                    <Accordion type="single" collapsible className="w-full">
+                                                                        {data.messages.map((message, index) => (
+                                                                            <AccordionItem
+                                                                                value={`message-${index}`}
+                                                                                key={message.id}
+                                                                                className="border-b border-border/40 last:border-0"
+                                                                            >
+                                                                                <AccordionTrigger className="text-sm">
+                                                                                    {message.embeds?.[0]?.title || message.embeds?.[0]?.description?.slice(0, 100) || message.content || 'No content'}...
+                                                                                </AccordionTrigger>
+                                                                                <AccordionContent>
+                                                                                    <div className="space-y-4 p-4 bg-secondary/50 rounded-lg">
+                                                                                        {/* Metadata Section */}
+                                                                                        <div className="flex items-center justify-between text-xs text-muted-foreground">
                                                                                             <div className="flex items-center gap-2">
-                                                                                                {message.author.avatar && (
-                                                                                                    <Image
-                                                                                                        src={`https://cdn.discordapp.com/avatars/${message.author.id}/${message.author.avatar}.png`}
-                                                                                                        alt={message.author.username}
-                                                                                                        className="w-5 h-5 rounded-full"
-                                                                                                    />
-                                                                                                )}
-                                                                                                <span>{message.author.global_name || message.author.username}</span>
-                                                                                            </div>
-                                                                                        )}
-                                                                                    </div>
-                                                                                    <time dateTime={message.timestamp}>
-                                                                                        {formatDate(message.timestamp)}
-                                                                                    </time>
-                                                                                </div>
-
-                                                                                <Separator />
-
-                                                                                {/* Content Section */}
-                                                                                {message.content && (
-                                                                                    <div>
-                                                                                        <h4 className="font-semibold text-sm">Source:</h4>
-                                                                                        <a
-                                                                                            href={message.content}
-                                                                                            target="_blank"
-                                                                                            rel="noopener noreferrer"
-                                                                                            className="text-sm text-blue-500 hover:underline break-all"
-                                                                                        >
-                                                                                            {message.content}
-                                                                                        </a>
-                                                                                    </div>
-                                                                                )}
-
-                                                                                {/* Embeds Section */}
-                                                                                {message.embeds?.map((embed, embedIndex) => (
-                                                                                    <div key={embedIndex} className="space-y-2">
-                                                                                        {embed.title && (
-                                                                                            <div>
-                                                                                                <h4 className="font-semibold text-sm">Title:</h4>
-                                                                                                <p className="text-sm">{embed.title}</p>
-                                                                                            </div>
-                                                                                        )}
-                                                                                        {embed.description && (
-                                                                                            <div>
-                                                                                                <h4 className="font-semibold text-sm">Description:</h4>
-                                                                                                <p className="text-sm">{embed.description}</p>
-                                                                                            </div>
-                                                                                        )}
-                                                                                        {embed.fields?.length && embed.fields.length > 0 && (
-                                                                                            <div>
-                                                                                                <h4 className="font-semibold text-sm">Additional Information:</h4>
-                                                                                                {embed.fields.map((field, fieldIndex) => (
-                                                                                                    <div key={fieldIndex} className="ml-4 mt-2">
-                                                                                                        <p className="text-sm font-medium">{field.name}:</p>
-                                                                                                        <p className="text-sm">{field.value}</p>
+                                                                                                {message.author && (
+                                                                                                    <div className="flex items-center gap-2">
+                                                                                                        {message.author.avatar && (
+                                                                                                            <Image
+                                                                                                                src={`https://cdn.discordapp.com/avatars/${message.author.id}/${message.author.avatar}.png`}
+                                                                                                                alt={message.author.username}
+                                                                                                                className="w-5 h-5 rounded-full"
+                                                                                                            />
+                                                                                                        )}
+                                                                                                        <span>{message.author.global_name || message.author.username}</span>
                                                                                                     </div>
-                                                                                                ))}
-                                                                                            </div>
-                                                                                        )}
-                                                                                        {embed.author && (
-                                                                                            <div className="flex items-center gap-2 mt-2">
-                                                                                                {embed.author.icon_url && (
-                                                                                                    <Image
-                                                                                                        src={embed.author.icon_url}
-                                                                                                        alt={embed.author.name || "Author"}
-                                                                                                        className="w-4 h-4 rounded-full"
-                                                                                                    />
                                                                                                 )}
-                                                                                                <span className="text-sm text-muted-foreground">
-                                                                                                    {embed.author.name}
-                                                                                                </span>
+                                                                                            </div>
+                                                                                            <time dateTime={message.timestamp}>
+                                                                                                {formatDate(message.timestamp)}
+                                                                                            </time>
+                                                                                        </div>
+
+                                                                                        <Separator />
+
+                                                                                        {/* Content Section */}
+                                                                                        {message.content && (
+                                                                                            <div>
+                                                                                                <h4 className="font-semibold text-sm">Source:</h4>
+                                                                                                <a
+                                                                                                    href={message.content}
+                                                                                                    target="_blank"
+                                                                                                    rel="noopener noreferrer"
+                                                                                                    className="text-sm text-blue-500 hover:underline break-all"
+                                                                                                >
+                                                                                                    {message.content}
+                                                                                                </a>
                                                                                             </div>
                                                                                         )}
-                                                                                    </div>
-                                                                                ))}
 
-                                                                                {/* Media Section */}
-                                                                                {message.attachments?.length && message.attachments.length > 0 && (
-                                                                                    <div className="space-y-2">
-                                                                                        <h4 className="font-semibold text-sm">Media:</h4>
-                                                                                        <div className="grid grid-cols-2 gap-4">
-                                                                                            {message.attachments.map((attachment) => {
-                                                                                                if (attachment.content_type?.startsWith('image/')) {
-                                                                                                    return (
-                                                                                                        <MediaPreview
-                                                                                                            key={attachment.id}
-                                                                                                            url={attachment.url}
-                                                                                                            type="image"
-                                                                                                            alt={attachment.filename}
-                                                                                                        />
-                                                                                                    );
-                                                                                                } else if (attachment.content_type?.startsWith('video/')) {
-                                                                                                    return (
-                                                                                                        <MediaPreview
-                                                                                                            key={attachment.id}
-                                                                                                            url={attachment.url}
-                                                                                                            type="video"
-                                                                                                            contentType={attachment.content_type}
-                                                                                                        />
-                                                                                                    );
-                                                                                                }
-                                                                                                return null;
-                                                                                            })}
-                                                                                        </div>
-                                                                                    </div>
-                                                                                )}
-
-                                                                                {/* Referenced Message Section */}
-                                                                                {message.referenced_message && (
-                                                                                    <>
-                                                                                        <Separator />
-                                                                                        <div className="mt-2">
-                                                                                            <h4 className="font-semibold text-sm">Replying to:</h4>
-                                                                                            <div className="ml-4 mt-1 p-2 bg-secondary/30 rounded border-l-2 border-primary/50">
-                                                                                                <div className="flex items-center gap-2 mb-1">
-                                                                                                    {message.referenced_message.author?.avatar && (
-                                                                                                        <Image
-                                                                                                            src={`https://cdn.discordapp.com/avatars/${message.referenced_message.author.id}/${message.referenced_message.author.avatar}.png`}
-                                                                                                            alt={message.referenced_message.author.username}
-                                                                                                            className="w-4 h-4 rounded-full"
-                                                                                                        />
-                                                                                                    )}
-                                                                                                    <span className="text-xs text-muted-foreground">
-                                                                                                        {message.referenced_message.author?.global_name || message.referenced_message.author?.username}
-                                                                                                    </span>
-                                                                                                </div>
-                                                                                                <p className="text-sm">{message.referenced_message.content}</p>
+                                                                                        {/* Embeds Section */}
+                                                                                        {message.embeds?.map((embed, embedIndex) => (
+                                                                                            <div key={embedIndex} className="space-y-2">
+                                                                                                {embed.title && (
+                                                                                                    <div>
+                                                                                                        <h4 className="font-semibold text-sm">Title:</h4>
+                                                                                                        <p className="text-sm">{embed.title}</p>
+                                                                                                    </div>
+                                                                                                )}
+                                                                                                {embed.description && (
+                                                                                                    <div>
+                                                                                                        <h4 className="font-semibold text-sm">Description:</h4>
+                                                                                                        <p className="text-sm">{embed.description}</p>
+                                                                                                    </div>
+                                                                                                )}
+                                                                                                {embed.fields?.length && embed.fields.length > 0 && (
+                                                                                                    <div>
+                                                                                                        <h4 className="font-semibold text-sm">Additional Information:</h4>
+                                                                                                        {embed.fields.map((field, fieldIndex) => (
+                                                                                                            <div key={fieldIndex} className="ml-4 mt-2">
+                                                                                                                <p className="text-sm font-medium">{field.name}:</p>
+                                                                                                                <p className="text-sm">{field.value}</p>
+                                                                                                            </div>
+                                                                                                        ))}
+                                                                                                    </div>
+                                                                                                )}
+                                                                                                {embed.author && (
+                                                                                                    <div className="flex items-center gap-2 mt-2">
+                                                                                                        {embed.author.icon_url && (
+                                                                                                            <Image
+                                                                                                                src={embed.author.icon_url}
+                                                                                                                alt={embed.author.name || "Author"}
+                                                                                                                className="w-4 h-4 rounded-full"
+                                                                                                            />
+                                                                                                        )}
+                                                                                                        <span className="text-sm text-muted-foreground">
+                                                                                                            {embed.author.name}
+                                                                                                        </span>
+                                                                                                    </div>
+                                                                                                )}
                                                                                             </div>
-                                                                                        </div>
-                                                                                    </>
-                                                                                )}
-                                                                            </div>
-                                                                        </AccordionContent>
-                                                                    </AccordionItem>
-                                                                ))}
-                                                            </Accordion>
-                                                        </div>
-                                                    </AccordionContent>
-                                                </AccordionItem>
-                                            </Accordion>
-                                        </div>
-                                    );
-                                } else if (data?.messages.length === 0 && !data?.loading) {
-                                    return (
-                                        <div className="mt-4 p-4 bg-muted/50 text-muted-foreground rounded-lg">
-                                            No messages found
-                                        </div>
-                                    );
-                                }
-                                return null;
-                            })()}
-                        </CardContent>
-                    </Card>
-                ))}
+                                                                                        ))}
+
+                                                                                        {/* Media Section */}
+                                                                                        {message.attachments?.length && message.attachments.length > 0 && (
+                                                                                            <div className="space-y-2">
+                                                                                                <h4 className="font-semibold text-sm">Media:</h4>
+                                                                                                <div className="grid grid-cols-2 gap-4">
+                                                                                                    {message.attachments.map((attachment) => {
+                                                                                                        if (attachment.content_type?.startsWith('image/')) {
+                                                                                                            return (
+                                                                                                                <MediaPreview
+                                                                                                                    key={attachment.id}
+                                                                                                                    url={attachment.url}
+                                                                                                                    type="image"
+                                                                                                                    alt={attachment.filename}
+                                                                                                                />
+                                                                                                            );
+                                                                                                        } else if (attachment.content_type?.startsWith('video/')) {
+                                                                                                            return (
+                                                                                                                <MediaPreview
+                                                                                                                    key={attachment.id}
+                                                                                                                    url={attachment.url}
+                                                                                                                    type="video"
+                                                                                                                    contentType={attachment.content_type}
+                                                                                                                />
+                                                                                                            );
+                                                                                                        }
+                                                                                                        return null;
+                                                                                                    })}
+                                                                                                </div>
+                                                                                            </div>
+                                                                                        )}
+
+                                                                                        {/* Referenced Message Section */}
+                                                                                        {message.referenced_message && (
+                                                                                            <>
+                                                                                                <Separator />
+                                                                                                <div className="mt-2">
+                                                                                                    <h4 className="font-semibold text-sm">Replying to:</h4>
+                                                                                                    <div className="ml-4 mt-1 p-2 bg-secondary/30 rounded border-l-2 border-primary/50">
+                                                                                                        <div className="flex items-center gap-2 mb-1">
+                                                                                                            {message.referenced_message.author?.avatar && (
+                                                                                                                <Image
+                                                                                                                    src={`https://cdn.discordapp.com/avatars/${message.referenced_message.author.id}/${message.referenced_message.author.avatar}.png`}
+                                                                                                                    alt={message.referenced_message.author.username}
+                                                                                                                    className="w-4 h-4 rounded-full"
+                                                                                                                />
+                                                                                                            )}
+                                                                                                            <span className="text-xs text-muted-foreground">
+                                                                                                                {message.referenced_message.author?.global_name || message.referenced_message.author?.username}
+                                                                                                            </span>
+                                                                                                        </div>
+                                                                                                        <p className="text-sm">{message.referenced_message.content}</p>
+                                                                                                    </div>
+                                                                                                </div>
+                                                                                            </>
+                                                                                        )}
+                                                                                    </div>
+                                                                                </AccordionContent>
+                                                                            </AccordionItem>
+                                                                        ))}
+                                                                    </Accordion>
+                                                                </div>
+                                                            </AccordionContent>
+                                                        </AccordionItem>
+                                                    </Accordion>
+                                                </div>
+                                            );
+                                        } else if (data?.messages.length === 0 && !data?.loading) {
+                                            return (
+                                                <div className="mt-4 p-4 bg-muted/50 text-muted-foreground rounded-lg">
+                                                    No messages found
+                                                </div>
+                                            );
+                                        }
+                                        return null;
+                                    })()}
+                                </div>
+                            </CardContent>
+                        </Card>
+                    ))}
+                </div>
             </div>
         </div>
     );
