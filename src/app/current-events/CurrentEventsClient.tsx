@@ -235,7 +235,7 @@ export default function CurrentEventsClient({ channels }: Props) {
                                                         <div className="space-y-4 pt-4">
                                                             <div>
                                                                 <h3 className="font-semibold mb-2">Report</h3>
-                                                                <p className="text-sm text-muted-foreground whitespace-pre-wrap">{reportData.report.content}</p>
+                                                                <p className="text-sm text-muted-foreground whitespace-pre-wrap">{reportData.report.body}</p>
                                                             </div>
                                                             <Separator />
                                                         </div>

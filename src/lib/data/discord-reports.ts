@@ -1,11 +1,12 @@
 // src/lib/data/discord-reports.ts
-import { DiscordMessage } from '@/lib/types/core';
-import { DiscordClient } from './discord-channels';
+import { DiscordChannel, DiscordMessage } from '@/lib/types/core';
+import { DiscordClient, getChannels } from './discord-channels';
 
 export interface Report {
     headline: string;
+    city: string;
+    body: string;
     timestamp: string;
-    content: string;
 }
 
 class ReportGenerator {
@@ -68,11 +69,12 @@ class ReportGenerator {
 
     private parseSummary(text: string): Report {
         const lines = text.split('\n').filter(Boolean);
-        if (lines.length < 2) throw new Error('Invalid report format');
+        if (lines.length < 3 || !lines[0] || !lines[1]) throw new Error('Invalid report format: missing headline or city');
         return {
             headline: lines[0].trim(),
+            city: lines[1].trim(),
+            body: lines.slice(2).join('\n').trim(),
             timestamp: new Date().toISOString(),
-            content: text,
         };
     }
 
@@ -135,4 +137,46 @@ class ReportGenerator {
 export async function generateReport(channelId: string): Promise<Report> {
     const generator = new ReportGenerator();
     return generator.generate(channelId);
+}
+
+export async function fetchNewsSummaries(): Promise<Report[]> {
+    try {
+        const allChannels = await getChannels();
+        const sortedChannels = allChannels.sort((a, b) => a.position - b.position); // Sort by position
+        const client = new DiscordClient();
+        const summaries: Report[] = [];
+        let activeChannels: { channel: DiscordChannel; count: number }[] = [];
+        let startIdx = 0;
+
+        // Dynamic sampling: process 5 channels at a time
+        while (activeChannels.length < 3 && startIdx < sortedChannels.length) {
+            const batch = sortedChannels.slice(startIdx, startIdx + 5);
+            const channelActivity = await Promise.all(
+                batch.map(async (channel) => {
+                    const { count } = await client.fetchLastHourMessages(channel.id);
+                    return { channel, count };
+                })
+            );
+            activeChannels = activeChannels.concat(channelActivity.filter(c => c.count > 0));
+            activeChannels.sort((a, b) => b.count - a.count); // Sort by activity
+            activeChannels = activeChannels.slice(0, 3); // Keep top 3
+            startIdx += 5;
+        }
+
+        // Generate reports for top 3 active channels
+        for (const { channel } of activeChannels.slice(0, 3)) {
+            try {
+                const report = await generateReport(channel.id);
+                summaries.push(report);
+            } catch (error) {
+                console.error(`No messages for channel ${channel.id}:`, error);
+                continue;
+            }
+        }
+
+        return summaries.length ? summaries : [{ headline: "NO NEWS IN THE LAST HOUR", city: "No updates", body: "No updates", timestamp: new Date().toISOString() }];
+    } catch (error) {
+        console.error('Error fetching news summaries:', error);
+        return [{ headline: "NO NEWS IN THE LAST HOUR", city: "No updates", body: "No updates", timestamp: new Date().toISOString() }];
+    }
 }
