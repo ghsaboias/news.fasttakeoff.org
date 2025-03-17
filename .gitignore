@@ -49,3 +49,7 @@ next-env.d.ts
 repo_summary.txt
 
 deployment.md
+
+.repomix-output.txt
+
+.cursorrules
