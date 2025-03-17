@@ -169,4 +169,8 @@ export interface DiscordChannel {
     default_thread_rate_limit_per_user?: number;
     default_sort_order?: number | null;
     default_forum_layout?: number;
+    hasActivity?: boolean;
+    lastMessageTimestamp?: string | null;
+    messageCount?: number;
+    messages?: DiscordMessage[];
 }
