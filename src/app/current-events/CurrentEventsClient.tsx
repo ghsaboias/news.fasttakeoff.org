@@ -3,6 +3,7 @@
 
 import ChannelCard from "@/components/current-events/ChannelCard";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
     Select,
@@ -13,7 +14,8 @@ import {
 } from "@/components/ui/select";
 import { Report } from "@/lib/data/discord-reports";
 import { DiscordChannel, DiscordMessage } from "@/lib/types/core";
-import { useState } from "react";
+import { RefreshCw } from "lucide-react";
+import { useEffect, useState } from "react";
 
 export interface Props {
     channels: DiscordChannel[];
@@ -28,6 +30,57 @@ export default function CurrentEventsClient({ channels }: Props) {
     );
     const [searchQuery, setSearchQuery] = useState("");
     const [sortBy, setSortBy] = useState<"position" | "name" | "recent">("position");
+    const [isLoading, setIsLoading] = useState(true);
+    const [activeChannels, setActiveChannels] = useState<DiscordChannel[]>([]);
+    const [metadata, setMetadata] = useState<{
+        totalChannels: number;
+        activeChannels: number;
+        timestamp: string;
+        cacheHit: boolean;
+        cacheAge: number | null;
+    }>({
+        totalChannels: channels.length,
+        activeChannels: 0,
+        timestamp: new Date().toISOString(),
+        cacheHit: false,
+        cacheAge: null
+    });
+
+    async function fetchActiveChannels() {
+        setIsLoading(true);
+        try {
+            const response = await fetch('/api/channels/active');
+            if (!response.ok) throw new Error(`Failed to fetch: ${response.status}`);
+
+            const data = await response.json();
+            setActiveChannels(data.channels);
+            setMetadata(data.metadata);
+
+            // Pre-populate channelData with the message counts and messages we already have
+            const newChannelData = new Map(channelData);
+            data.channels.forEach((channel: DiscordChannel & { messageCount: number, messages: DiscordMessage[] }) => {
+                if (channel.messageCount > 0) {
+                    newChannelData.set(channel.id, {
+                        count: channel.messageCount,
+                        messages: channel.messages || [],
+                        loading: false
+                    });
+                }
+            });
+            setChannelData(newChannelData);
+        } catch (error) {
+            console.error('Error fetching active channels:', error);
+            // Fallback to showing all channels
+            setActiveChannels(channels);
+        } finally {
+            setIsLoading(false);
+        }
+    }
+
+    useEffect(() => {
+        fetchActiveChannels();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [channels]);
 
     const fetchMessages = async (channelId: string) => {
         setChannelData(prev => {
@@ -100,7 +153,7 @@ export default function CurrentEventsClient({ channels }: Props) {
     };
 
     // Filter and sort channels
-    const filteredChannels = channels
+    const filteredChannels = activeChannels
         .filter(channel =>
             channel.name.toLowerCase().includes(searchQuery.toLowerCase())
         )
@@ -127,11 +180,42 @@ export default function CurrentEventsClient({ channels }: Props) {
             <div className="flex flex-col gap-6">
                 {/* Header */}
                 <div className="flex items-center justify-between">
-                    <h1 className="text-2xl font-bold">Current Events</h1>
-                    <Badge variant="secondary">
-                        Total Channels: {channels.length}
-                    </Badge>
+                    <div className="flex items-center gap-2">
+                        <h1 className="text-2xl font-bold">Current Events</h1>
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={fetchActiveChannels}
+                            disabled={isLoading}
+                            className="ml-2"
+                        >
+                            <RefreshCw className={`h-4 w-4 mr-1 ${isLoading ? 'animate-spin' : ''}`} />
+                            Refresh
+                        </Button>
+                    </div>
+                    <div className="flex flex-col items-end gap-1">
+                        <div className="flex gap-2">
+                            <Badge variant="secondary">
+                                Active Channels: {metadata.activeChannels}
+                            </Badge>
+                            <Badge variant="outline">
+                                Total Channels: {metadata.totalChannels}
+                            </Badge>
+                        </div>
+                        {metadata.timestamp && (
+                            <span className="text-xs text-muted-foreground">
+                                Last updated: {new Date(metadata.timestamp).toLocaleTimeString()}
+                            </span>
+                        )}
+                    </div>
                 </div>
+
+                {/* Loading indicator */}
+                {isLoading && (
+                    <div className="flex justify-center py-4">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+                    </div>
+                )}
 
                 {/* Search and Filter */}
                 <div className="flex flex-col sm:flex-row gap-4">
@@ -166,6 +250,14 @@ export default function CurrentEventsClient({ channels }: Props) {
                         />
                     ))}
                 </div>
+
+                {/* No active channels message */}
+                {!isLoading && filteredChannels.length === 0 && (
+                    <div className="text-center py-8">
+                        <p className="text-lg text-gray-500">No active channels found</p>
+                        <p className="text-sm text-gray-400">Try again later or adjust your search criteria</p>
+                    </div>
+                )}
             </div>
         </div>
     );
