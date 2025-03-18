@@ -46,7 +46,19 @@ export default function Home() {
         },
       });
       if (!response.ok) throw new Error(`API error: ${response.status}`);
-      const summaries = await response.json();
+      const data = await response.json();
+
+      // Check if the response has the new format with 'reports' property
+      const summaries = data.reports || data;
+
+      // Log metadata if available
+      if (data.meta) {
+        console.log(
+          `Reports loaded in ${data.meta.processingTimeMs}ms, ` +
+          `Cache hits: ${data.meta.cacheHits}/${data.meta.totalReports}`
+        );
+      }
+
       setNewsSummaries(summaries);
     } catch (error) {
       console.error('Error loading news summaries:', error);
@@ -174,7 +186,17 @@ export default function Home() {
                 <Card key={index}>
                   <CardHeader>
                     <CardTitle>{summary.headline}</CardTitle>
-                    <CardDescription>{summary.city}</CardDescription>
+                    <CardDescription className="flex items-center justify-between">
+                      <span>{summary.city}</span>
+                      {summary.cacheStatus && (
+                        <span className={`text-xs px-1.5 py-0.5 rounded-full ${summary.cacheStatus === 'hit'
+                          ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+                          : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
+                          }`}>
+                          {summary.cacheStatus === 'hit' ? 'cached' : 'fresh'}
+                        </span>
+                      )}
+                    </CardDescription>
                   </CardHeader>
                   <CardContent>
                     <p className="text-sm text-muted-foreground">
