@@ -8,7 +8,7 @@ import { useState } from "react"
 export default function KVTestPage() {
     const [key, setKey] = useState('test-key')
     const [value, setValue] = useState('{"test":"data"}')
-    const [result, setResult] = useState<any>(null)
+    const [result, setResult] = useState<Record<string, unknown> | null>(null)
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
 
