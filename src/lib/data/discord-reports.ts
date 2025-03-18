@@ -11,6 +11,9 @@ export interface Report {
     cacheStatus?: 'hit' | 'miss'; // Added to track cache status
 }
 
+// Global homepage key
+const HOMEPAGE_REPORTS_KEY = 'homepage:reports';
+
 // Cache report in KV (if available)
 async function cacheReport(channelId: string, report: Report): Promise<void> {
     try {
@@ -71,6 +74,79 @@ async function getCachedReport(channelId: string): Promise<Report | null> {
         return null;
     } catch (error) {
         console.error(`[KV DEBUG] Failed to get cached report for channel ${channelId}:`, error);
+        return null;
+    }
+}
+
+// Cache all homepage reports in a single KV entry
+async function cacheHomepageReports(reports: Report[]): Promise<void> {
+    try {
+        console.log(`[KV DEBUG] Attempting to cache homepage reports bundle`);
+
+        // Add timestamp to know when this was cached
+        const homepageCache = {
+            reports,
+            timestamp: new Date().toISOString(),
+            cacheDate: new Date().toUTCString()
+        };
+
+        try {
+            // @ts-expect-error - Accessing Cloudflare bindings
+            if (typeof REPORTS_CACHE !== 'undefined') {
+                // @ts-expect-error - Accessing Cloudflare bindings
+                await REPORTS_CACHE.put(
+                    HOMEPAGE_REPORTS_KEY,
+                    JSON.stringify(homepageCache),
+                    { expirationTtl: 3600 } // 1 hour expiration
+                );
+                console.log(`[KV DEBUG] Successfully cached homepage reports bundle`);
+                return;
+            }
+        } catch (e) {
+            console.log('[KV DEBUG] Error accessing REPORTS_CACHE for homepage bundle:', e);
+        }
+
+        console.log(`[KV DEBUG] KV binding not accessible, homepage reports not cached`);
+    } catch (error) {
+        console.error(`[KV DEBUG] Failed to cache homepage reports:`, error);
+    }
+}
+
+// Get cached homepage reports
+async function getCachedHomepageReports(): Promise<Report[] | null> {
+    try {
+        console.log(`[KV DEBUG] Attempting to get cached homepage reports bundle`);
+
+        try {
+            // @ts-expect-error - Accessing Cloudflare bindings
+            if (typeof REPORTS_CACHE !== 'undefined') {
+                // @ts-expect-error - Accessing Cloudflare bindings
+                const cachedData = await REPORTS_CACHE.get(HOMEPAGE_REPORTS_KEY);
+
+                if (cachedData) {
+                    console.log(`[KV DEBUG] Cache hit for homepage reports bundle`);
+                    const cacheData = JSON.parse(cachedData);
+
+                    // Log when this was cached
+                    console.log(`[KV DEBUG] Homepage cache from: ${cacheData.cacheDate || 'unknown'}`);
+
+                    // Add cache status to each report
+                    const reportsWithStatus = cacheData.reports.map((report: Report) => ({
+                        ...report,
+                        cacheStatus: 'hit'
+                    }));
+
+                    return reportsWithStatus;
+                }
+            }
+        } catch (e) {
+            console.log('[KV DEBUG] Error accessing REPORTS_CACHE for homepage bundle:', e);
+        }
+
+        console.log(`[KV DEBUG] Cache miss for homepage reports bundle`);
+        return null;
+    } catch (error) {
+        console.error(`[KV DEBUG] Failed to get cached homepage reports:`, error);
         return null;
     }
 }
@@ -252,6 +328,14 @@ export async function generateReport(channelId: string): Promise<Report> {
 
 export async function fetchNewsSummaries(): Promise<Report[]> {
     try {
+        // First try to get the cached homepage reports bundle
+        const cachedHomepageReports = await getCachedHomepageReports();
+        if (cachedHomepageReports) {
+            console.log('[CACHE] Using cached homepage reports bundle');
+            return cachedHomepageReports;
+        }
+
+        // If no cached bundle, proceed with individual channel fetching
         // Get the top 3 active channel IDs
         const activeChannelIds = await getActiveChannelIds(3);
 
@@ -273,6 +357,11 @@ export async function fetchNewsSummaries(): Promise<Report[]> {
 
         // Filter out any null reports
         const validSummaries = summaries.filter(Boolean) as Report[];
+
+        // If we have valid summaries, cache them as a homepage bundle
+        if (validSummaries.length) {
+            await cacheHomepageReports(validSummaries);
+        }
 
         return validSummaries.length ? validSummaries : [{
             headline: "NO NEWS IN THE LAST HOUR",
