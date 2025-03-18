@@ -14,7 +14,7 @@ preview_id = "2b5d6df3cfc54116b6e34000be4b71a3"
 
 [[kv_namespaces]]
 binding = "REPORTS_CACHE"
-id = "2c3c53affd864a598eef7a59a91d61f6"
+id = "1907c22aa1e24a0e98f995ffcbb7b9aa"
 
 [[routes]]
 pattern = "news.aiworld.com.br"
