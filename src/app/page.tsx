@@ -39,7 +39,12 @@ export default function Home() {
   async function loadNewsSummaries() {
     try {
       setLoadingNews(true);
-      const response = await fetch('/api/reports', { method: 'GET' });
+      const response = await fetch('/api/reports', {
+        method: 'GET',
+        headers: {
+          'Cache-Control': 'no-cache',
+        },
+      });
       if (!response.ok) throw new Error(`API error: ${response.status}`);
       const summaries = await response.json();
       setNewsSummaries(summaries);
@@ -56,7 +61,7 @@ export default function Home() {
     loadExecutiveOrders()
     loadNewsSummaries()
 
-    // Optional: Refresh every hour (like executive orders)
+    // Refresh every hour
     const refreshInterval = setInterval(() => {
       loadExecutiveOrders()
       loadNewsSummaries()

@@ -10,6 +10,7 @@ binding = "ASSETS"
 [[kv_namespaces]]
 binding = "NEXT_CACHE_WORKERS_KV"
 id = "2b5d6df3cfc54116b6e34000be4b71a3"
+preview_id = "2b5d6df3cfc54116b6e34000be4b71a3"
 
 [[routes]]
 pattern = "news.aiworld.com.br"

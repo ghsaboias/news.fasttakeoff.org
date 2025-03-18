@@ -12,15 +12,13 @@ export class DiscordClient {
         return new Promise(resolve => setTimeout(resolve, ms));
     }
 
-    private async throttledFetch(url: string, env?: CloudflareEnv): Promise<Response> {
+    private async throttledFetch(url: string): Promise<Response> {
         await this.delay(100);
         this.apiCallCount++;
 
-        console.log(`[Discord] Phase: ${process.env.NEXT_PHASE || 'unknown'}`);
         console.log(`[Discord] Attempt #${this.apiCallCount}: Fetching ${url}`);
-        const token = env?.DISCORD_TOKEN || process.env.DISCORD_TOKEN;
-        const guildId = env?.DISCORD_GUILD_ID || process.env.DISCORD_GUILD_ID;
-        console.log(`[Discord] Token (first 10 chars): ${token?.substring(0, 10) || 'unset'}...`);
+        const token = process.env.DISCORD_TOKEN;
+        const guildId = process.env.DISCORD_GUILD_ID;
         console.log(`[Discord] Guild ID: ${guildId || 'unset'}`);
 
         if (!token) throw new Error('DISCORD_TOKEN is not set');
@@ -31,7 +29,6 @@ export class DiscordClient {
             'User-Agent': 'NewsApp/0.1.0 (https://news.aiworld.com.br)',
             'Content-Type': 'application/json',
         };
-        console.log(`[Discord] Headers: ${JSON.stringify(headers, null, 2)}`);
 
         const response = await fetch(url, { headers });
         console.log(`[Discord] Response Status: ${response.status}`);
@@ -44,10 +41,10 @@ export class DiscordClient {
         return response;
     }
 
-    async fetchAllChannels(env?: CloudflareEnv): Promise<DiscordChannel[]> {
-        const guildId = env?.DISCORD_GUILD_ID || process.env.DISCORD_GUILD_ID;
+    async fetchAllChannels(): Promise<DiscordChannel[]> {
+        const guildId = process.env.DISCORD_GUILD_ID;
         const url = `${DISCORD_API}/guilds/${guildId}/channels`;
-        const response = await this.throttledFetch(url, env);
+        const response = await this.throttledFetch(url);
         return response.json();
     }
 
@@ -68,8 +65,8 @@ export class DiscordClient {
             .sort((a, b) => a.position - b.position);
     }
 
-    async fetchChannels(env?: CloudflareEnv): Promise<DiscordChannel[]> {
-        const allChannels = await this.fetchAllChannels(env);
+    async fetchChannels(): Promise<DiscordChannel[]> {
+        const allChannels = await this.fetchAllChannels();
         return this.filterChannels(allChannels);
     }
 
@@ -104,7 +101,7 @@ export class DiscordClient {
     }
 }
 
-export async function getChannels(env?: CloudflareEnv): Promise<DiscordChannel[]> {
+export async function getChannels(): Promise<DiscordChannel[]> {
     const client = new DiscordClient();
-    return client.fetchChannels(env);
+    return client.fetchChannels();
 }
