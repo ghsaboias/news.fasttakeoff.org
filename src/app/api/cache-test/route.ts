@@ -6,7 +6,7 @@ export async function GET() {
     try {
         // Current timestamp
         const timestamp = new Date().toISOString();
-        const result: Record<string, any> = {
+        const result: Record<string, boolean | string | null | { test: boolean; timestamp: string }> = {
             timestamp,
             kvBinding: false,
             readTest: null,
