@@ -63,7 +63,7 @@ async function cacheHomepageReports(reports: Report[]): Promise<void> {
 }
 
 // GET endpoint
-export async function GET(request: Request) {
+export async function GET() {
     try {
         console.log('[API] GET /api/reports: Fetching news summaries');
 
