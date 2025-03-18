@@ -15,6 +15,7 @@ export default function Home() {
   const [newsSummaries, setNewsSummaries] = useState<Report[]>([])
   const [loadingEO, setLoadingEO] = useState(true)
   const [loadingNews, setLoadingNews] = useState(true)
+  const [cacheStatus, setCacheStatus] = useState<string | null>(null)
 
   // Function to load executive orders (unchanged)
   async function loadExecutiveOrders() {
@@ -44,25 +45,20 @@ export default function Home() {
         headers: {
           'Cache-Control': 'no-cache',
         },
+        next: { revalidate: 0 }, // Skip Next.js built-in cache
       });
       if (!response.ok) throw new Error(`API error: ${response.status}`);
-      const data = await response.json();
+      const summaries = await response.json();
 
-      // Check if the response has the new format with 'reports' property
-      const summaries = data.reports || data;
-
-      // Log metadata if available
-      if (data.meta) {
-        console.log(
-          `Reports loaded in ${data.meta.processingTimeMs}ms, ` +
-          `Cache hits: ${data.meta.cacheHits}/${data.meta.totalReports}`
-        );
-      }
+      // Determine cache status
+      const isCached = summaries.some((summary: Report) => summary.cacheStatus === 'hit');
+      setCacheStatus(isCached ? 'Cache Hit' : 'Cache Miss');
 
       setNewsSummaries(summaries);
     } catch (error) {
       console.error('Error loading news summaries:', error);
       setNewsSummaries([{ headline: "NO NEWS IN THE LAST HOUR", city: "No updates", body: "No updates", timestamp: new Date().toISOString() }]);
+      setCacheStatus('Error');
     } finally {
       setLoadingNews(false);
     }
@@ -168,6 +164,11 @@ export default function Home() {
         <div className="flex flex-col gap-6">
           <div className="flex items-center justify-between">
             <h2 className="text-2xl font-bold tracking-tight md:text-3xl">Latest News</h2>
+            {cacheStatus && (
+              <span className={`text-xs px-2 py-1 rounded ${cacheStatus === 'Cache Hit' ? 'bg-green-100 text-green-800' : cacheStatus === 'Cache Miss' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'}`}>
+                {cacheStatus}
+              </span>
+            )}
           </div>
           <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
             {loadingNews ? (
@@ -186,22 +187,17 @@ export default function Home() {
                 <Card key={index}>
                   <CardHeader>
                     <CardTitle>{summary.headline}</CardTitle>
-                    <CardDescription className="flex items-center justify-between">
-                      <span>{summary.city}</span>
-                      {summary.cacheStatus && (
-                        <span className={`text-xs px-1.5 py-0.5 rounded-full ${summary.cacheStatus === 'hit'
-                          ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-                          : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
-                          }`}>
-                          {summary.cacheStatus === 'hit' ? 'cached' : 'fresh'}
-                        </span>
-                      )}
-                    </CardDescription>
+                    <CardDescription>{summary.city}</CardDescription>
                   </CardHeader>
                   <CardContent>
                     <p className="text-sm text-muted-foreground">
                       {summary.body.slice(0, 100)}...
                     </p>
+                    {summary.cacheStatus === 'hit' && (
+                      <div className="mt-2 text-xs text-green-600">
+                        Cached
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               ))
