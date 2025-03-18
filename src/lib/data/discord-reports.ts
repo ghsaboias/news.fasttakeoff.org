@@ -16,16 +16,16 @@ async function cacheReport(channelId: string, report: Report): Promise<void> {
     try {
         console.log(`[KV DEBUG] Attempting to cache report for channel ${channelId}`);
 
-        // Add the channelId to the report for reference
+        // Ensure channelId is included in the report
         const reportWithChannel = { ...report, channelId };
         const key = `reports:channel:${channelId}`;
         console.log(`[KV DEBUG] Caching with key: ${key}`);
 
         try {
             // @ts-expect-error - Accessing Cloudflare bindings
-            if (typeof NEXT_CACHE_WORKERS_KV !== 'undefined') {
+            if (typeof REPORTS_CACHE !== 'undefined') {
                 // @ts-expect-error - Accessing Cloudflare bindings
-                await NEXT_CACHE_WORKERS_KV.put(
+                await REPORTS_CACHE.put(
                     key,
                     JSON.stringify(reportWithChannel),
                     { expirationTtl: 3600 }
@@ -34,7 +34,7 @@ async function cacheReport(channelId: string, report: Report): Promise<void> {
                 return;
             }
         } catch (e) {
-            console.log('[KV DEBUG] Error accessing KV directly:', e);
+            console.log('[KV DEBUG] Error accessing REPORTS_CACHE directly:', e);
         }
 
         console.log(`[KV DEBUG] KV binding not accessible, report not cached`);
@@ -52,9 +52,9 @@ async function getCachedReport(channelId: string): Promise<Report | null> {
 
         try {
             // @ts-expect-error - Accessing Cloudflare bindings
-            if (typeof NEXT_CACHE_WORKERS_KV !== 'undefined') {
+            if (typeof REPORTS_CACHE !== 'undefined') {
                 // @ts-expect-error - Accessing Cloudflare bindings
-                const cachedData = await NEXT_CACHE_WORKERS_KV.get(key);
+                const cachedData = await REPORTS_CACHE.get(key);
                 console.log(`[KV DEBUG] Cache lookup result: ${cachedData ? 'HIT' : 'MISS'}`);
 
                 if (cachedData) {
@@ -64,7 +64,7 @@ async function getCachedReport(channelId: string): Promise<Report | null> {
                 }
             }
         } catch (e) {
-            console.log('[KV DEBUG] Error accessing KV directly:', e);
+            console.log('[KV DEBUG] Error accessing REPORTS_CACHE directly:', e);
         }
 
         console.log(`[KV DEBUG] Cache miss for channel ${channelId}`);
@@ -191,7 +191,7 @@ class ReportGenerator {
 
         console.log('\n=== SENDING TO GROQ ===');
         // console.log(prompt);
-        // console.log('=== END PROMPT ===\n');
+        console.log('=== END PROMPT ===\n');
 
         const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
             method: 'POST',
@@ -228,15 +228,20 @@ class ReportGenerator {
 
         console.log('\n=== GROQ RESPONSE ===');
         // console.log(completionText);
-        // console.log('=== END RESPONSE ===\n');
+        console.log('=== END RESPONSE ===\n');
 
         const report = this.parseSummary(completionText);
-        const reportWithStatus = { ...report, cacheStatus: 'miss' as const };
+        // Create an object with explicit channelId and cacheStatus
+        const reportWithMetadata = {
+            ...report,
+            channelId,
+            cacheStatus: 'miss' as const
+        };
 
-        // Cache the report
-        await cacheReport(channelId, reportWithStatus);
+        // Cache the report with channelId
+        await cacheReport(channelId, reportWithMetadata);
 
-        return reportWithStatus;
+        return reportWithMetadata;
     }
 }
 
