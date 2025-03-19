@@ -1,7 +1,8 @@
 // src/lib/data/discord-reports.ts
 import { DiscordChannel, DiscordMessage } from '@/lib/types/core';
+import { getCloudflareContext } from '@opennextjs/cloudflare';
+import type { CloudflareEnv } from '../../../cloudflare-env.d';
 import { DiscordClient, getChannels } from './discord-channels';
-
 export interface Report {
     headline: string;
     city: string;
@@ -13,6 +14,8 @@ export interface Report {
 
 // Cache report in KV (if available)
 async function cacheReport(channelId: string, report: Report): Promise<void> {
+    const context = getCloudflareContext() as unknown as { env: CloudflareEnv };
+    const { env } = context;
     try {
         console.log(`[KV DEBUG] Attempting to cache report for channel ${channelId}`);
 
@@ -21,20 +24,14 @@ async function cacheReport(channelId: string, report: Report): Promise<void> {
         const key = `reports:channel:${channelId}`;
         console.log(`[KV DEBUG] Caching with key: ${key}`);
 
-        try {
-            // @ts-expect-error - Accessing Cloudflare bindings
-            if (typeof REPORTS_CACHE !== 'undefined') {
-                // @ts-expect-error - Accessing Cloudflare bindings
-                await REPORTS_CACHE.put(
-                    key,
-                    JSON.stringify(reportWithChannel),
-                    { expirationTtl: 3600 }
-                );
-                console.log(`[KV DEBUG] Successfully cached report for channel ${channelId}`);
-                return;
-            }
-        } catch (e) {
-            console.log('[KV DEBUG] Error accessing REPORTS_CACHE directly:', e);
+        if (env.REPORTS_CACHE) {
+            await env.REPORTS_CACHE.put(
+                key,
+                JSON.stringify(reportWithChannel),
+                { expirationTtl: 3600 }
+            );
+            console.log(`[KV DEBUG] Successfully cached report for channel ${channelId}`);
+            return;
         }
 
         console.log(`[KV DEBUG] KV binding not accessible, report not cached`);
@@ -46,26 +43,24 @@ async function cacheReport(channelId: string, report: Report): Promise<void> {
 
 // Get cached report from KV (if available)
 async function getCachedReport(channelId: string): Promise<Report | null> {
+    const context = getCloudflareContext() as unknown as { env: CloudflareEnv };
+    const { env } = context;
     try {
         const key = `reports:channel:${channelId}`;
         console.log(`[KV DEBUG] Attempting to get cached report with key: ${key}`);
 
-        try {
-            // @ts-expect-error - Accessing Cloudflare bindings
-            if (typeof REPORTS_CACHE !== 'undefined') {
-                // @ts-expect-error - Accessing Cloudflare bindings
-                const cachedData = await REPORTS_CACHE.get(key);
-                console.log(`[KV DEBUG] Cache lookup result: ${cachedData ? 'HIT' : 'MISS'}`);
 
-                if (cachedData) {
-                    console.log(`[KV DEBUG] Cache hit for channel ${channelId}`);
-                    const report = JSON.parse(cachedData);
-                    return { ...report, cacheStatus: 'hit' };
-                }
+        if (env.REPORTS_CACHE) {
+            const cachedData = await env.REPORTS_CACHE.get(key);
+            console.log(`[KV DEBUG] Cache lookup result: ${cachedData ? 'HIT' : 'MISS'}`);
+
+            if (cachedData) {
+                console.log(`[KV DEBUG] Cache hit for channel ${channelId}`);
+                const report = JSON.parse(cachedData);
+                return { ...report, cacheStatus: 'hit' };
             }
-        } catch (e) {
-            console.log('[KV DEBUG] Error accessing REPORTS_CACHE directly:', e);
         }
+
 
         console.log(`[KV DEBUG] Cache miss for channel ${channelId}`);
         return null;
