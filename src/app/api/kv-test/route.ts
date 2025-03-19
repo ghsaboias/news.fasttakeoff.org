@@ -1,10 +1,11 @@
 import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { NextResponse } from 'next/server';
-import type { CloudflareEnv } from '../../../../cloudflare-env.d'; // Adjust path
+import type { CloudflareEnv } from '../../../../cloudflare-env.d';
 
 export async function GET(request: Request) {
     const context = getCloudflareContext() as unknown as { env: CloudflareEnv };
-    const { env } = context; const { searchParams } = new URL(request.url);
+    const { env } = context;
+    const { searchParams } = new URL(request.url);
     const key = searchParams.get('key') || 'test-key';
 
     try {
