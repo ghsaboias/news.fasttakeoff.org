@@ -14,14 +14,18 @@ import {
 } from "@/components/ui/select";
 import { Report } from "@/lib/data/discord-reports";
 import { DiscordChannel, DiscordMessage } from "@/lib/types/core";
+import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { RefreshCw } from "lucide-react";
 import { useEffect, useState } from "react";
-
+import type { CloudflareEnv } from "../../../cloudflare-env.d";
 export interface Props {
     channels: DiscordChannel[];
 }
 
 export default function CurrentEventsClient({ channels }: Props) {
+    const context = getCloudflareContext() as unknown as { env: CloudflareEnv };
+    const { env } = context;
+
     const [channelData, setChannelData] = useState<Map<string, { count: number; messages: DiscordMessage[]; loading: boolean }>>(
         new Map()
     );
@@ -36,14 +40,10 @@ export default function CurrentEventsClient({ channels }: Props) {
         totalChannels: number;
         activeChannels: number;
         timestamp: string;
-        cacheHit: boolean;
-        cacheAge: number | null;
     }>({
         totalChannels: channels.length,
         activeChannels: 0,
         timestamp: new Date().toISOString(),
-        cacheHit: false,
-        cacheAge: null
     });
 
     async function fetchActiveChannels() {
@@ -112,19 +112,19 @@ export default function CurrentEventsClient({ channels }: Props) {
         }
     };
 
-    const generateChannelReport = async (channelId: string) => {
+    const generateChannelReport = async (channel: DiscordChannel) => {
         setChannelReports(prev => {
             const newMap = new Map(prev);
-            newMap.set(channelId, { report: null, loading: true, error: null });
+            newMap.set(channel.id, { report: null, loading: true, error: null });
             return newMap;
         });
 
         try {
-            console.log(`[Client] Sending POST to /api/reports with channelId: ${channelId}`);
+            console.log(`[Client] Sending POST to /api/reports with channelId: ${channel.id}`);
             const response = await fetch('/api/reports', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ channelId, timeframe: '1h' }),
+                body: JSON.stringify({ channelId: channel.id, timeframe: '1h' }),
             });
 
             if (!response.ok) {
@@ -136,16 +136,31 @@ export default function CurrentEventsClient({ channels }: Props) {
             const { report } = await response.json() as { report: Report };
             console.log('[Client] Report received:', report);
 
+            // Cache the report
+            const cacheKey = `report:${channel.id}`;
+            const cacheValue = {
+                report,
+                timestamp: new Date().toISOString(),
+                channelName: channel.name
+            };
+
+            // Store the report in the cache
+            if (env.REPORTS_CACHE) {
+                await env.REPORTS_CACHE.put(cacheKey, JSON.stringify(cacheValue), {
+                    expirationTtl: 60 * 60 * 48 // 48 hours
+                });
+            }
+
             setChannelReports(prev => {
                 const newMap = new Map(prev);
-                newMap.set(channelId, { report, loading: false, error: null });
+                newMap.set(channel.id, { report, loading: false, error: null });
                 return newMap;
             });
         } catch (error) {
             console.error('[Client] Error generating report:', error);
             setChannelReports(prev => {
                 const newMap = new Map(prev);
-                newMap.set(channelId, {
+                newMap.set(channel.id, {
                     report: null,
                     loading: false,
                     error: error instanceof Error ? error.message : 'Failed to generate report',
@@ -199,10 +214,10 @@ export default function CurrentEventsClient({ channels }: Props) {
                     <div className="flex flex-col items-end gap-1">
                         <div className="flex gap-2">
                             <Badge variant="secondary">
-                                Active Channels: {metadata.activeChannels}
+                                Active Topics: {metadata.activeChannels}
                             </Badge>
                             <Badge variant="outline">
-                                Total Channels: {metadata.totalChannels}
+                                Total Topics: {metadata.totalChannels}
                             </Badge>
                         </div>
                         {metadata.timestamp && (
@@ -254,10 +269,10 @@ export default function CurrentEventsClient({ channels }: Props) {
                     ))}
                 </div>
 
-                {/* No active channels message */}
+                {/* No active topics message */}
                 {!isLoading && filteredChannels.length === 0 && (
                     <div className="text-center py-8">
-                        <p className="text-lg text-gray-500">No active channels found</p>
+                        <p className="text-lg text-gray-500">No active topics found</p>
                         <p className="text-sm text-gray-400">Try again later or adjust your search criteria</p>
                     </div>
                 )}

@@ -21,7 +21,7 @@ interface ChannelCardProps {
         error: string | null
     }>;
     fetchMessages: (channelId: string) => Promise<void>;
-    generateChannelReport: (channelId: string) => Promise<void>;
+    generateChannelReport: (channel: DiscordChannel) => Promise<void>;
 }
 
 export default function ChannelCard({
@@ -74,7 +74,7 @@ export default function ChannelCard({
                         </Button>
                         {(channelData.get(channel.id)?.messages.length || channel.messages?.length) ? (
                             <Button
-                                onClick={() => generateChannelReport(channel.id)}
+                                onClick={() => generateChannelReport(channel)}
                                 disabled={channelReports.get(channel.id)?.loading}
                                 variant="outline"
                                 size="sm"
