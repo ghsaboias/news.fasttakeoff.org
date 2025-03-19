@@ -15,7 +15,6 @@ export default function Home() {
   const [newsSummaries, setNewsSummaries] = useState<Report[]>([])
   const [loadingEO, setLoadingEO] = useState(true)
   const [loadingNews, setLoadingNews] = useState(true)
-  const [cacheStatus, setCacheStatus] = useState<string | null>(null)
 
   // Function to load executive orders (unchanged)
   async function loadExecutiveOrders() {
@@ -50,15 +49,10 @@ export default function Home() {
       if (!response.ok) throw new Error(`API error: ${response.status}`);
       const summaries = await response.json() as Report[];
 
-      // Determine cache status
-      const isCached = summaries.some((summary: Report) => summary.cacheStatus === 'hit');
-      setCacheStatus(isCached ? 'Cache Hit' : 'Cache Miss');
-
       setNewsSummaries(summaries);
     } catch (error) {
       console.error('Error loading news summaries:', error);
       setNewsSummaries([{ headline: "NO NEWS IN THE LAST HOUR", city: "No updates", body: "No updates", timestamp: new Date().toISOString() }]);
-      setCacheStatus('Error');
     } finally {
       setLoadingNews(false);
     }
@@ -164,11 +158,6 @@ export default function Home() {
         <div className="flex flex-col gap-6">
           <div className="flex items-center justify-between">
             <h2 className="text-2xl font-bold tracking-tight md:text-3xl">Latest News</h2>
-            {cacheStatus && (
-              <span className={`text-xs px-2 py-1 rounded ${cacheStatus === 'Cache Hit' ? 'bg-green-100 text-green-800' : cacheStatus === 'Cache Miss' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'}`}>
-                {cacheStatus}
-              </span>
-            )}
           </div>
           <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
             {loadingNews ? (
@@ -193,11 +182,6 @@ export default function Home() {
                     <p className="text-sm text-muted-foreground">
                       {summary.body.slice(0, 100)}...
                     </p>
-                    {summary.cacheStatus === 'hit' && (
-                      <div className="mt-2 text-xs text-green-600">
-                        Cached
-                      </div>
-                    )}
                   </CardContent>
                 </Card>
               ))
