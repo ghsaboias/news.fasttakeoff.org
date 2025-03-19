@@ -39,7 +39,7 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
     try {
-        const { key = 'test-key', value = { test: 'data', timestamp: new Date().toISOString() }, delete: shouldDelete = false } = await request.json();
+        const { key = 'test-key', value = { test: 'data', timestamp: new Date().toISOString() }, delete: shouldDelete = false } = await request.json() as { key: string, value: any, delete: boolean };
         console.log(`[KV TEST] Attempting to ${shouldDelete ? 'delete' : 'write'} key: ${key}`);
 
         let success = false;
