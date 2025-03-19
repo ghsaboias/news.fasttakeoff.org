@@ -1,24 +1,23 @@
+import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { NextResponse } from 'next/server';
+import type { CloudflareEnv } from '../../../../cloudflare-env.d'; // Adjust path
 
 export async function GET(request: Request) {
-    const { searchParams } = new URL(request.url);
+    const context = getCloudflareContext() as unknown as { env: CloudflareEnv };
+    const { env } = context; const { searchParams } = new URL(request.url);
     const key = searchParams.get('key') || 'test-key';
 
     try {
         console.log(`[KV TEST] Attempting to read key: ${key}`);
-        let value = null;
+        console.log(`[KV TEST] REPORTS_CACHE available: ${!!env.REPORTS_CACHE}`);
+        console.log(`[KV TEST] NEXT_CACHE_WORKERS_KV available: ${!!env.NEXT_CACHE_WORKERS_KV}`);
 
-        try {
-            // @ts-expect-error - Accessing Cloudflare bindings
-            if (typeof REPORTS_CACHE !== 'undefined') {
-                // @ts-expect-error - Accessing Cloudflare bindings
-                value = await REPORTS_CACHE.get(key);
-                console.log(`[KV TEST] Read result: ${value ? 'HIT' : 'MISS'}`);
-            } else {
-                console.log('[KV TEST] REPORTS_CACHE is not available in this environment');
-            }
-        } catch (e) {
-            console.error('[KV TEST] Error accessing REPORTS_CACHE:', e);
+        let value = null;
+        if (env.REPORTS_CACHE) {
+            value = await env.REPORTS_CACHE.get(key);
+            console.log(`[KV TEST] Read result: ${value ? 'HIT' : 'MISS'}`);
+        } else {
+            console.log('[KV TEST] REPORTS_CACHE is not available in this environment');
         }
 
         return NextResponse.json({
@@ -38,54 +37,32 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
+    const context = getCloudflareContext() as unknown as { env: CloudflareEnv };
+    const { env } = context;
+    const body = await request.json() as { key?: string; value?: Record<string, unknown> | string; delete?: boolean };
+    const { key = 'test-key', value = { test: 'data', timestamp: new Date().toISOString() }, delete: shouldDelete = false } = body;
+
     try {
-        const body = await request.json() as {
-            key?: string;
-            value?: Record<string, unknown>;
-            delete?: boolean;
-        };
-        const {
-            key = 'test-key',
-            value = { test: 'data', timestamp: new Date().toISOString() },
-            delete: shouldDelete = false
-        } = body;
         console.log(`[KV TEST] Attempting to ${shouldDelete ? 'delete' : 'write'} key: ${key}`);
+        console.log(`[KV TEST] REPORTS_CACHE available: ${!!env.REPORTS_CACHE}`);
 
         let success = false;
-
-        try {
-            // @ts-expect-error - Accessing Cloudflare bindings
-            if (typeof REPORTS_CACHE !== 'undefined') {
-                if (shouldDelete) {
-                    // To delete a key, we use the delete method
-                    // @ts-expect-error - Accessing Cloudflare bindings
-                    await REPORTS_CACHE.delete(key);
-                    console.log(`[KV TEST] Successfully deleted key: ${key} from KV cache`);
-                } else {
-                    // Normal write operation
-                    // @ts-expect-error - Accessing Cloudflare bindings
-                    await REPORTS_CACHE.put(
-                        key,
-                        typeof value === 'string' ? value : JSON.stringify(value),
-                        { expirationTtl: 3600 } // 1 hour expiration
-                    );
-                    console.log(`[KV TEST] Successfully wrote to KV cache with key: ${key}`);
-                }
-                success = true;
+        if (env.REPORTS_CACHE) {
+            if (shouldDelete) {
+                await env.REPORTS_CACHE.delete(key);
+                console.log(`[KV TEST] Successfully deleted key: ${key} from KV cache`);
             } else {
-                console.log('[KV TEST] REPORTS_CACHE is not available in this environment');
+                await env.REPORTS_CACHE.put(key, typeof value === 'string' ? value : JSON.stringify(value), { expirationTtl: 3600 });
+                console.log(`[KV TEST] Successfully wrote to KV cache with key: ${key}`);
             }
-        } catch (e) {
-            console.error('[KV TEST] Error accessing REPORTS_CACHE:', e);
+            success = true;
+        } else {
+            console.log('[KV TEST] REPORTS_CACHE is not available in this environment');
         }
 
         return NextResponse.json({
             success,
-            message: success
-                ? shouldDelete
-                    ? 'Key deleted from KV cache'
-                    : 'Value written to KV cache'
-                : 'Failed to write to KV cache or KV not available',
+            message: success ? (shouldDelete ? 'Key deleted from KV cache' : 'Value written to KV cache') : 'Failed to write to KV cache or KV not available',
             key,
             operation: shouldDelete ? 'delete' : 'write',
             timestamp: new Date().toISOString()
@@ -98,4 +75,4 @@ export async function POST(request: Request) {
             timestamp: new Date().toISOString()
         }, { status: 500 });
     }
-} 
+}

@@ -27,7 +27,7 @@
     "**/*.ts",
     "**/*.tsx",
     ".next/types/**/*.ts",
-    "cloudflare-env.d.ts"
+    "cloudflare-env.old.d.ts"
   ],
   "exclude": ["node_modules"]
 }
