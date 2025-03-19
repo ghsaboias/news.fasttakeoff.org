@@ -146,7 +146,7 @@ class ReportGenerator {
             ${formattedText}
 
             Requirements:
-            - Start with ONE clear and specific headline in ALL CAPS (do not use any asterisks or other formatting)
+            - Start with ONE clear and specific headline in ALL CAPS
             - Second line must be in format: "City" (just the location name, no date)
             - First paragraph must summarize the most important verified development, including key names, numbers, locations, dates, etc.
             - Subsequent paragraphs should cover other significant developments
@@ -163,7 +163,7 @@ class ReportGenerator {
         const lines = text.split('\n').filter(Boolean);
         if (lines.length < 3 || !lines[0] || !lines[1]) throw new Error('Invalid report format: missing headline or city');
         return {
-            headline: lines[0].trim(),
+            headline: lines[0].trim().replace(/\*+/g, '').trim(),
             city: lines[1].trim(),
             body: lines.slice(2).join('\n').trim(),
             timestamp: new Date().toISOString(),
