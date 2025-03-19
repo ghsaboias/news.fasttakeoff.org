@@ -28,7 +28,7 @@ async function cacheReport(channelId: string, report: Report): Promise<void> {
             await env.REPORTS_CACHE.put(
                 key,
                 JSON.stringify(reportWithChannel),
-                { expirationTtl: 3600 }
+                { expirationTtl: 60 * 60 * 24 } // 24 hours
             );
             console.log(`[KV DEBUG] Successfully cached report for channel ${channelId}`);
             return;
