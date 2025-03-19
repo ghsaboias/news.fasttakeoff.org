@@ -48,7 +48,7 @@ export default function Home() {
         next: { revalidate: 0 }, // Skip Next.js built-in cache
       });
       if (!response.ok) throw new Error(`API error: ${response.status}`);
-      const summaries = await response.json();
+      const summaries = await response.json() as Report[];
 
       // Determine cache status
       const isCached = summaries.some((summary: Report) => summary.cacheStatus === 'hit');

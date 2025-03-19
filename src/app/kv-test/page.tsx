@@ -18,7 +18,7 @@ export default function KVTestPage() {
         setError(null)
         try {
             const response = await fetch(`/api/kv-test?key=${encodeURIComponent(key)}`)
-            const data = await response.json()
+            const data = await response.json() as Record<string, unknown>
             setResult(data)
         } catch (error) {
             console.error('Error reading from KV:', error)
@@ -45,7 +45,7 @@ export default function KVTestPage() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ key, value: valueObj })
             })
-            const data = await response.json()
+            const data = await response.json() as Record<string, unknown>
             setResult(data)
         } catch (error) {
             console.error('Error writing to KV:', error)
@@ -61,7 +61,7 @@ export default function KVTestPage() {
         setError(null)
         try {
             const response = await fetch('/api/kv-test?key=homepage:reports')
-            const data = await response.json()
+            const data = await response.json() as Record<string, unknown>
             setResult(data)
         } catch (error) {
             console.error('Error reading homepage cache:', error)
@@ -86,7 +86,7 @@ export default function KVTestPage() {
                     delete: true
                 })
             })
-            const data = await response.json()
+            const data = await response.json() as Record<string, unknown>
             setResult(data)
         } catch (error) {
             console.error('Error deleting homepage cache:', error)
@@ -106,7 +106,7 @@ export default function KVTestPage() {
                 headers: { 'Cache-Control': 'no-cache' },
                 next: { revalidate: 0 }
             })
-            const data = await response.json()
+            const data = await response.json() as Record<string, unknown>
             setResult({
                 success: true,
                 message: 'Homepage API response',

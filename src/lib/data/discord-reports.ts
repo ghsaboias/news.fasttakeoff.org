@@ -219,7 +219,13 @@ class ReportGenerator {
             throw new Error(`Groq API request failed: ${response.status} - ${errorText}`);
         }
 
-        const data = await response.json();
+        const data = await response.json() as {
+            choices?: Array<{
+                message?: {
+                    content?: string
+                }
+            }>
+        };
         const completionText = data.choices?.[0]?.message?.content;
 
         if (!completionText) {
