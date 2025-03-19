@@ -94,7 +94,11 @@ export async function GET() {
 // POST endpoint
 export async function POST(request: Request) {
     try {
-        const { channelId, timeframe } = await request.json();
+        const body = await request.json() as {
+            channelId?: string;
+            timeframe?: string;
+        };
+        const { channelId, timeframe } = body;
         console.log(`[API] POST /api/reports: channelId=${channelId}, timeframe=${timeframe}`);
         if (!channelId || !timeframe) {
             return NextResponse.json({ error: 'Missing channelId or timeframe' }, { status: 400 });
