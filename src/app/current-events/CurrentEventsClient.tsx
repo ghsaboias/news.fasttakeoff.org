@@ -52,7 +52,10 @@ export default function CurrentEventsClient({ channels }: Props) {
             const response = await fetch('/api/channels/active');
             if (!response.ok) throw new Error(`Failed to fetch: ${response.status}`);
 
-            const data = await response.json();
+            const data = await response.json() as {
+                channels: (DiscordChannel & { messageCount: number, messages: DiscordMessage[] })[],
+                metadata: typeof metadata
+            };
             setActiveChannels(data.channels);
             setMetadata(data.metadata);
 
@@ -92,7 +95,7 @@ export default function CurrentEventsClient({ channels }: Props) {
         try {
             const response = await fetch(`/api/channels/${channelId}/messages`);
             if (!response.ok) throw new Error(`Failed to fetch messages: ${response.status}`);
-            const { count, messages } = await response.json();
+            const { count, messages } = await response.json() as { count: number, messages: DiscordMessage[] };
 
             setChannelData(prev => {
                 const newMap = new Map(prev);
@@ -130,7 +133,7 @@ export default function CurrentEventsClient({ channels }: Props) {
                 throw new Error(`Failed to generate report: ${response.status} - ${errorText}`);
             }
 
-            const { report } = await response.json();
+            const { report } = await response.json() as { report: Report };
             console.log('[Client] Report received:', report);
 
             setChannelReports(prev => {
