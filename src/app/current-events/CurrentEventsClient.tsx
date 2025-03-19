@@ -14,18 +14,13 @@ import {
 } from "@/components/ui/select";
 import { Report } from "@/lib/data/discord-reports";
 import { DiscordChannel, DiscordMessage } from "@/lib/types/core";
-import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { RefreshCw } from "lucide-react";
 import { useEffect, useState } from "react";
-import type { CloudflareEnv } from "../../../cloudflare-env.d";
 export interface Props {
     channels: DiscordChannel[];
 }
 
 export default function CurrentEventsClient({ channels }: Props) {
-    const context = getCloudflareContext() as unknown as { env: CloudflareEnv };
-    const { env } = context;
-
     const [channelData, setChannelData] = useState<Map<string, { count: number; messages: DiscordMessage[]; loading: boolean }>>(
         new Map()
     );
@@ -135,21 +130,6 @@ export default function CurrentEventsClient({ channels }: Props) {
 
             const { report } = await response.json() as { report: Report };
             console.log('[Client] Report received:', report);
-
-            // Cache the report
-            const cacheKey = `report:${channel.id}`;
-            const cacheValue = {
-                report,
-                timestamp: new Date().toISOString(),
-                channelName: channel.name
-            };
-
-            // Store the report in the cache
-            if (env.REPORTS_CACHE) {
-                await env.REPORTS_CACHE.put(cacheKey, JSON.stringify(cacheValue), {
-                    expirationTtl: 60 * 60 * 48 // 48 hours
-                });
-            }
 
             setChannelReports(prev => {
                 const newMap = new Map(prev);
