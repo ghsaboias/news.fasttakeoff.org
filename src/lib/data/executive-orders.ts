@@ -1,4 +1,4 @@
-import { ApiResponse, FederalRegisterResponse } from '@/lib/types/api';
+import { ApiResponse, FederalRegisterOrder, FederalRegisterResponse } from '@/lib/types/api';
 import { ExecutiveOrder } from '@/lib/types/core';
 import { transformFederalRegisterOrder, transformFederalRegisterOrders } from '../transformers/executive-orders';
 
@@ -99,7 +99,7 @@ export async function fetchExecutiveOrderById(id: string, env?: CloudflareEnv): 
             return null;
         }
 
-        const data = await response.json();
+        const data = await response.json() as FederalRegisterOrder;
         console.log(`API data received for ${id}:`, JSON.stringify(data).slice(0, 200)); // Truncate for brevity
         const orderData = transformFederalRegisterOrder(data);
         if (!orderData) {
