@@ -1,4 +1,6 @@
-import { DiscordClient, getChannels } from '@/lib/data/discord-channels';
+'use server'
+
+import { DiscordClient, getActiveChannels } from '@/lib/data/discord-channels';
 import { DiscordMessage } from '@/lib/types/core';
 import { NextResponse } from 'next/server';
 
@@ -28,69 +30,25 @@ async function checkChannelHasRecentBotActivity(client: DiscordClient, channelId
     }
 }
 
-export async function GET() {
-    // Commented out for now as these are not used yet
-    // const url = new URL(request.url);
-    // const timeframe = url.searchParams.get('timeframe') || '1h';
-    // const useCache = url.searchParams.get('cache') !== 'false';
-
-    // TODO: Implement caching with Cloudflare KV when available
-
+export async function GET(request: Request) {
     try {
-        // Fetch all channels
-        const channels = await getChannels();
-        const client = new DiscordClient();
+        const url = new URL(request.url);
+        const limit = parseInt(url.searchParams.get('limit') || '10');
 
-        // Process channels in batches to avoid rate limiting
-        const enrichedChannels = [];
-        const batchSize = 5;
-
-        for (let i = 0; i < channels.length; i += batchSize) {
-            const batch = channels.slice(i, i + batchSize);
-
-            // Process batch in parallel
-            const batchResults = await Promise.all(
-                batch.map(async (channel) => {
-                    const activityData = await checkChannelHasRecentBotActivity(client, channel.id);
-                    return {
-                        ...channel,
-                        hasActivity: activityData.hasActivity,
-                        lastMessageTimestamp: activityData.lastMessageTimestamp,
-                        messageCount: activityData.messageCount,
-                        messages: activityData.messages
-                    };
-                })
-            );
-
-            enrichedChannels.push(...batchResults);
-
-            // Add a small delay between batches if not the last batch
-            if (i + batchSize < channels.length) {
-                await new Promise(resolve => setTimeout(resolve, 500));
-            }
-        }
-
-        // Filter to only active channels
-        const activeChannels = enrichedChannels.filter(channel => channel.hasActivity);
-
-        // Prepare metadata
-        const metadata = {
-            totalChannels: channels.length,
-            activeChannels: activeChannels.length,
-            timestamp: new Date().toISOString(),
-            cacheHit: false,
-            cacheAge: null
-        };
+        console.log(`[API] GET /api/channels/active: Fetching top ${limit} active channels`);
+        const activeChannels = await getActiveChannels(limit);
 
         return NextResponse.json({
             channels: activeChannels,
-            metadata
+            metadata: {
+                totalChannels: activeChannels.length,
+                activeChannels: activeChannels.filter(c => (c.messageCounts["1h"] || 0) > 0).length,
+                timestamp: new Date().toISOString()
+            }
         });
     } catch (error) {
-        console.error('[API] Error fetching active channels:', error);
-        return NextResponse.json(
-            { error: 'Failed to fetch active channels' },
-            { status: 500 }
-        );
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        console.error('[API] Error fetching active channels:', errorMessage, error);
+        return NextResponse.json({ error: errorMessage }, { status: 500 });
     }
 } 

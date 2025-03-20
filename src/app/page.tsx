@@ -35,10 +35,12 @@ export default function Home() {
     }
   }
 
-  // Function to load news summaries
+  // Function to load news summaries - updated to use new API
   async function loadNewsSummaries() {
     try {
       setLoadingNews(true);
+
+      // Simply fetch the reports from the API, which now handles finding top active channels
       const response = await fetch('/api/reports', {
         method: 'GET',
         headers: {
@@ -46,10 +48,18 @@ export default function Home() {
         },
         next: { revalidate: 0 }, // Skip Next.js built-in cache
       });
+
       if (!response.ok) throw new Error(`API error: ${response.status}`);
       const summaries = await response.json() as Report[];
 
-      setNewsSummaries(summaries);
+      // Sort by messageCountLastHour if available
+      const sortedSummaries = summaries.sort((a, b) => {
+        const countA = a.messageCountLastHour || 0;
+        const countB = b.messageCountLastHour || 0;
+        return countB - countA;
+      });
+
+      setNewsSummaries(sortedSummaries);
     } catch (error) {
       console.error('Error loading news summaries:', error);
       setNewsSummaries([{ headline: "NO NEWS IN THE LAST HOUR", city: "No updates", body: "No updates", timestamp: new Date().toISOString() }]);
@@ -158,6 +168,9 @@ export default function Home() {
         <div className="flex flex-col gap-6">
           <div className="flex items-center justify-between">
             <h2 className="text-2xl font-bold tracking-tight md:text-3xl">Latest News</h2>
+            <Link href="/current-events" className="text-sm font-medium hover:underline">
+              View all news
+            </Link>
           </div>
           <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
             {loadingNews ? (
@@ -182,6 +195,11 @@ export default function Home() {
                     <p className="text-sm text-muted-foreground">
                       {summary.body.slice(0, 100)}...
                     </p>
+                    {summary.messageCountLastHour && (
+                      <div className="mt-2 text-xs text-muted-foreground">
+                        <span className="font-medium">{summary.messageCountLastHour}</span> updates in the last hour
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               ))
