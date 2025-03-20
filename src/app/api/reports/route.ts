@@ -79,16 +79,12 @@ export async function GET(request: Request) {
                         id => id && !freshReportIds.includes(id)
                     );
 
-                    // Generate reports for additional channels until we have at least 3
-                    const neededReportCount = Math.max(3 - freshReports.length, 0);
-                    console.log(`[API] Need ${neededReportCount} more reports`);
-                    const channelsForGeneration = channelsToGenerate.slice(0, neededReportCount);
-
-                    console.log(`[API] Generating reports for ${channelsForGeneration.length} additional channels`);
+                    // Generate reports for all remaining active channels
+                    console.log(`[API] Generating reports for ${channelsToGenerate.length} additional channels`);
 
                     // Generate new reports
                     const newReports = await Promise.all(
-                        channelsForGeneration.map(channelId => generateReport(channelId as string))
+                        channelsToGenerate.map(channelId => generateReport(channelId as string))
                     );
 
                     // Combine fresh and new reports
