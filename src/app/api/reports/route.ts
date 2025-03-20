@@ -72,6 +72,7 @@ export async function GET(request: Request) {
 
                     // Get active channel IDs (limit 5 to have some extras)
                     const activeChannelIds = await getActiveChannelIds();
+                    console.log(`[API] Retrieved ${activeChannelIds.length} active channel IDs`);
 
                     // Filter out channels that already have fresh reports
                     const channelsToGenerate = activeChannelIds.filter(
