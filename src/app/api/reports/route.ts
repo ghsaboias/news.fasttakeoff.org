@@ -81,6 +81,7 @@ export async function GET(request: Request) {
 
                     // Generate reports for additional channels until we have at least 3
                     const neededReportCount = Math.max(3 - freshReports.length, 0);
+                    console.log(`[API] Need ${neededReportCount} more reports`);
                     const channelsForGeneration = channelsToGenerate.slice(0, neededReportCount);
 
                     console.log(`[API] Generating reports for ${channelsForGeneration.length} additional channels`);
