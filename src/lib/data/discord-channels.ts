@@ -195,7 +195,7 @@ export async function getChannels(): Promise<DiscordChannel[]> {
     return client.fetchChannels();
 }
 
-export async function getActiveChannels(limit = 3): Promise<(DiscordChannel & { messageCounts: { "1h": number }; lastMessageTimestamp?: string })[]> {
+export async function getActiveChannels(limit = 5): Promise<(DiscordChannel & { messageCounts: { "1h": number }; lastMessageTimestamp?: string })[]> {
     const client = new DiscordClient();
     const context = getCloudflareContext() as unknown as { env: CloudflareEnv };
     const { env } = context;

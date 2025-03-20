@@ -1,4 +1,4 @@
-import { fetchNewsSummaries, generateReport, Report } from '@/lib/data/discord-reports';
+import { fetchNewsSummaries, generateReport, getActiveChannelIds, Report } from '@/lib/data/discord-reports';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { NextResponse } from 'next/server';
 import type { CloudflareEnv } from '../../../../cloudflare-env.d';
@@ -39,15 +39,67 @@ export async function GET(request: Request) {
                         })
                     );
 
-                    // Filter valid reports, sort by messageCountLastHour, and take top 3
+                    // Filter valid reports
                     const validReports = reports.filter(Boolean) as Report[];
-                    const sortedReports = validReports.sort((a, b) => {
+
+                    // Check report freshness (less than 1 hour old)
+                    const now = Date.now();
+                    const oneHourAgo = now - 60 * 60 * 1000;
+                    const freshReports = validReports.filter(report => {
+                        if (!report.generatedAt) return false;
+                        const generatedAt = new Date(report.generatedAt).getTime();
+                        return generatedAt > oneHourAgo;
+                    });
+
+                    console.log(`[API] Retrieved ${freshReports.length} fresh reports from KV`);
+
+                    // If we have at least 3 fresh reports, sort and return top 3
+                    if (freshReports.length >= 3) {
+                        const sortedReports = freshReports.sort((a, b) => {
+                            const countA = a.messageCountLastHour || 0;
+                            const countB = b.messageCountLastHour || 0;
+                            return countB - countA;
+                        }).slice(0, 3);
+
+                        return NextResponse.json(sortedReports);
+                    }
+
+                    // Otherwise, generate additional reports
+                    console.log('[API] Fewer than 3 fresh reports in cache, generating additional reports');
+
+                    // Get IDs of fresh reports to avoid regenerating them
+                    const freshReportIds = freshReports.map(r => r.channelId);
+
+                    // Get active channel IDs (limit 5 to have some extras)
+                    const activeChannelIds = await getActiveChannelIds();
+
+                    // Filter out channels that already have fresh reports
+                    const channelsToGenerate = activeChannelIds.filter(
+                        id => id && !freshReportIds.includes(id)
+                    );
+
+                    // Generate reports for additional channels until we have at least 3
+                    const neededReportCount = Math.max(3 - freshReports.length, 0);
+                    const channelsForGeneration = channelsToGenerate.slice(0, neededReportCount);
+
+                    console.log(`[API] Generating reports for ${channelsForGeneration.length} additional channels`);
+
+                    // Generate new reports
+                    const newReports = await Promise.all(
+                        channelsForGeneration.map(channelId => generateReport(channelId as string))
+                    );
+
+                    // Combine fresh and new reports
+                    const allReports = [...freshReports, ...newReports];
+
+                    // Sort by message count and take top 3
+                    const sortedReports = allReports.sort((a, b) => {
                         const countA = a.messageCountLastHour || 0;
                         const countB = b.messageCountLastHour || 0;
                         return countB - countA;
                     }).slice(0, 3);
 
-                    console.log(`[API] Retrieved ${sortedReports.length} reports from KV`);
+                    console.log(`[API] Returning ${sortedReports.length} reports (${freshReports.length} from cache, ${newReports.length} newly generated)`);
                     return NextResponse.json(sortedReports);
                 }
             } catch (error) {

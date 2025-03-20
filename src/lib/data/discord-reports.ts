@@ -77,9 +77,9 @@ async function getCachedReport(channelId: string): Promise<Report | null> {
 }
 
 // Get the top active channel IDs
-export async function getActiveChannelIds(limit = 3): Promise<string[]> {
+export async function getActiveChannelIds(): Promise<string[]> {
     try {
-        const activeChannels = await getActiveChannels(limit);
+        const activeChannels = await getActiveChannels();
         return activeChannels.map(channel => channel.id);
     } catch (error) {
         console.error('Error getting active channel IDs:', error);
@@ -261,7 +261,7 @@ export async function generateReport(channelId: string, isUserGenerated = false)
 export async function fetchNewsSummaries(): Promise<Report[]> {
     try {
         // Get the top 3 active channel IDs
-        const activeChannelIds = await getActiveChannelIds(3);
+        const activeChannelIds = await getActiveChannelIds();
 
         if (activeChannelIds.length === 0) {
             return [{ headline: "NO NEWS IN THE LAST HOUR", city: "No updates", body: "No updates", timestamp: new Date().toISOString() }];
