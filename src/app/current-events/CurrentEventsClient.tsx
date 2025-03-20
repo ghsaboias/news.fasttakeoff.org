@@ -28,7 +28,7 @@ export default function CurrentEventsClient({ channels }: Props) {
         new Map()
     );
     const [searchQuery, setSearchQuery] = useState("");
-    const [sortBy, setSortBy] = useState<"position" | "name" | "recent">("position");
+    const [sortBy, setSortBy] = useState<"position" | "name" | "recent" | "activity">("activity");
     const [isLoading, setIsLoading] = useState(true);
     const [activeChannels, setActiveChannels] = useState<DiscordChannel[]>([]);
     const [metadata, setMetadata] = useState<{
@@ -48,7 +48,7 @@ export default function CurrentEventsClient({ channels }: Props) {
             if (!response.ok) throw new Error(`Failed to fetch: ${response.status}`);
 
             const data = await response.json() as {
-                channels: (DiscordChannel & { messageCount: number, messages: DiscordMessage[] })[],
+                channels: (DiscordChannel & { messageCounts: { "1h": number }, messages?: DiscordMessage[] })[],
                 metadata: typeof metadata
             };
             setActiveChannels(data.channels);
@@ -56,22 +56,66 @@ export default function CurrentEventsClient({ channels }: Props) {
 
             // Pre-populate channelData with the message counts and messages we already have
             const newChannelData = new Map(channelData);
-            data.channels.forEach((channel: DiscordChannel & { messageCount: number, messages: DiscordMessage[] }) => {
-                if (channel.messageCount > 0) {
+            data.channels.forEach((channel: DiscordChannel & { messageCounts: { "1h": number }, messages?: DiscordMessage[] }) => {
+                if (channel.messageCounts["1h"] > 0) {
                     newChannelData.set(channel.id, {
-                        count: channel.messageCount,
+                        count: channel.messageCounts["1h"],
                         messages: channel.messages || [],
                         loading: false
                     });
                 }
             });
             setChannelData(newChannelData);
+
+            // Pre-fetch reports for active channels in parallel
+            await Promise.all(data.channels.map(channel => fetchChannelReport(channel.id)));
         } catch (error) {
             console.error('Error fetching active channels:', error);
             // Fallback to showing all channels
             setActiveChannels(channels);
         } finally {
             setIsLoading(false);
+        }
+    }
+
+    // New function to fetch a channel's report
+    async function fetchChannelReport(channelId: string) {
+        // Mark as loading
+        setChannelReports(prev => {
+            const newMap = new Map(prev);
+            newMap.set(channelId, {
+                ...newMap.get(channelId) || { report: null, error: null },
+                loading: true
+            });
+            return newMap;
+        });
+
+        try {
+            const response = await fetch(`/api/reports?channelId=${channelId}`);
+            if (!response.ok) throw new Error(`Failed to fetch report: ${response.status}`);
+
+            const report = await response.json() as Report;
+
+            setChannelReports(prev => {
+                const newMap = new Map(prev);
+                newMap.set(channelId, {
+                    report,
+                    loading: false,
+                    error: null
+                });
+                return newMap;
+            });
+        } catch (error) {
+            console.error(`[Client] Error fetching report for channel ${channelId}:`, error);
+            setChannelReports(prev => {
+                const newMap = new Map(prev);
+                newMap.set(channelId, {
+                    report: null,
+                    loading: false,
+                    error: error instanceof Error ? error.message : 'Failed to fetch report'
+                });
+                return newMap;
+            });
         }
     }
 
@@ -162,12 +206,18 @@ export default function CurrentEventsClient({ channels }: Props) {
                 case "name":
                     return a.name.localeCompare(b.name);
                 case "recent":
+                    const aReport = channelReports.get(a.id)?.report;
+                    const bReport = channelReports.get(b.id)?.report;
+
+                    if (!aReport?.lastMessageTimestamp) return 1;
+                    if (!bReport?.lastMessageTimestamp) return -1;
+
+                    return new Date(bReport.lastMessageTimestamp).getTime() -
+                        new Date(aReport.lastMessageTimestamp).getTime();
+                case "activity":
                     const aData = channelData.get(a.id);
                     const bData = channelData.get(b.id);
-                    if (!aData?.messages.length) return 1;
-                    if (!bData?.messages.length) return -1;
-                    return new Date(bData.messages[0].timestamp).getTime() -
-                        new Date(aData.messages[0].timestamp).getTime();
+                    return (bData?.count || 0) - (aData?.count || 0);
                 default:
                     return 0;
             }
@@ -223,14 +273,15 @@ export default function CurrentEventsClient({ channels }: Props) {
                         onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchQuery(e.target.value)}
                         className="max-w-sm"
                     />
-                    <Select value={sortBy} onValueChange={(value: "position" | "name" | "recent") => setSortBy(value)}>
+                    <Select value={sortBy} onValueChange={(value: "position" | "name" | "recent" | "activity") => setSortBy(value)}>
                         <SelectTrigger className="w-[180px]">
                             <SelectValue placeholder="Sort by..." />
                         </SelectTrigger>
                         <SelectContent>
+                            <SelectItem value="activity">Most Active</SelectItem>
+                            <SelectItem value="recent">Most Recent</SelectItem>
                             <SelectItem value="position">Position</SelectItem>
                             <SelectItem value="name">Name</SelectItem>
-                            <SelectItem value="recent">Most Recent</SelectItem>
                         </SelectContent>
                     </Select>
                 </div>

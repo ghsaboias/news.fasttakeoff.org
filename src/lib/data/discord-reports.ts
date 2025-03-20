@@ -1,15 +1,19 @@
 // src/lib/data/discord-reports.ts
-import { DiscordChannel, DiscordMessage } from '@/lib/types/core';
+import { DiscordMessage } from '@/lib/types/core';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
 import type { CloudflareEnv } from '../../../cloudflare-env.d';
-import { DiscordClient, getChannels } from './discord-channels';
+import { DiscordClient, getActiveChannels } from './discord-channels';
 export interface Report {
     headline: string;
     city: string;
     body: string;
     timestamp: string;
-    channelId?: string; // Added to track which channel the report is from
-    cacheStatus?: 'hit' | 'miss'; // Added to track cache status
+    channelId?: string;
+    cacheStatus?: 'hit' | 'miss';
+    messageCountLastHour?: number;
+    lastMessageTimestamp?: string;
+    generatedAt?: string;
+    userGenerated?: boolean;
 }
 
 // Cache report in KV (if available)
@@ -19,16 +23,20 @@ async function cacheReport(channelId: string, report: Report): Promise<void> {
     try {
         console.log(`[KV DEBUG] Attempting to cache report for channel ${channelId}`);
 
-        // Ensure channelId is included in the report
-        const reportWithChannel = { ...report, channelId };
-        const key = `reports:channel:${channelId}`;
+        // Ensure channelId is included in the report and set generatedAt if not present
+        const reportWithMetadata = {
+            ...report,
+            channelId,
+            generatedAt: report.generatedAt || new Date().toISOString()
+        };
+        const key = `report:${channelId}:1h`;
         console.log(`[KV DEBUG] Caching with key: ${key}`);
 
         if (env.REPORTS_CACHE) {
             await env.REPORTS_CACHE.put(
                 key,
-                JSON.stringify(reportWithChannel),
-                { expirationTtl: 60 * 60 * 24 } // 24 hours
+                JSON.stringify(reportWithMetadata),
+                { expirationTtl: 60 * 60 * 48 } // 48 hours
             );
             console.log(`[KV DEBUG] Successfully cached report for channel ${channelId}`);
             return;
@@ -46,9 +54,8 @@ async function getCachedReport(channelId: string): Promise<Report | null> {
     const context = getCloudflareContext() as unknown as { env: CloudflareEnv };
     const { env } = context;
     try {
-        const key = `reports:channel:${channelId}`;
+        const key = `report:${channelId}:1h`;
         console.log(`[KV DEBUG] Attempting to get cached report with key: ${key}`);
-
 
         if (env.REPORTS_CACHE) {
             const cachedData = await env.REPORTS_CACHE.get(key);
@@ -61,7 +68,6 @@ async function getCachedReport(channelId: string): Promise<Report | null> {
             }
         }
 
-
         console.log(`[KV DEBUG] Cache miss for channel ${channelId}`);
         return null;
     } catch (error) {
@@ -73,28 +79,8 @@ async function getCachedReport(channelId: string): Promise<Report | null> {
 // Get the top active channel IDs
 export async function getActiveChannelIds(limit = 3): Promise<string[]> {
     try {
-        const allChannels = await getChannels();
-        const sortedChannels = allChannels.sort((a, b) => a.position - b.position);
-        const client = new DiscordClient();
-        let activeChannels: { channel: DiscordChannel; count: number }[] = [];
-        let startIdx = 0;
-
-        // Dynamic sampling: process 5 channels at a time
-        while (activeChannels.length < limit && startIdx < sortedChannels.length) {
-            const batch = sortedChannels.slice(startIdx, startIdx + 5);
-            const channelActivity = await Promise.all(
-                batch.map(async (channel) => {
-                    const { count } = await client.fetchLastHourMessages(channel.id);
-                    return { channel, count };
-                })
-            );
-            activeChannels = activeChannels.concat(channelActivity.filter(c => c.count > 0));
-            activeChannels.sort((a, b) => b.count - a.count); // Sort by activity
-            activeChannels = activeChannels.slice(0, limit); // Keep top 3
-            startIdx += 5;
-        }
-
-        return activeChannels.map(({ channel }) => channel.id);
+        const activeChannels = await getActiveChannels(limit);
+        return activeChannels.map(channel => channel.id);
     } catch (error) {
         console.error('Error getting active channel IDs:', error);
         return [];
@@ -170,18 +156,29 @@ class ReportGenerator {
         };
     }
 
-    async generate(channelId: string): Promise<Report> {
+    async generate(channelId: string, isUserGenerated = false): Promise<Report> {
         // Check cache first
         const cachedReport = await getCachedReport(channelId);
-        if (cachedReport) {
-            return cachedReport;
+        const now = Date.now();
+
+        // Use cached report if it's less than 1 hour old and not a user-initiated regeneration
+        if (cachedReport && !isUserGenerated) {
+            if (cachedReport.generatedAt) {
+                const generatedAt = new Date(cachedReport.generatedAt).getTime();
+                const oneHourAgo = now - 60 * 60 * 1000;
+
+                if (generatedAt > oneHourAgo) {
+                    console.log(`[Report] Using cached report for channel ${channelId}, generated at ${cachedReport.generatedAt}`);
+                    return cachedReport;
+                }
+            }
         }
 
         const discordClient = new DiscordClient();
-        const messages = await discordClient.fetchLastHourMessages(channelId);
-        if (!messages.messages.length) throw new Error('No messages found');
+        const messagesResult = await discordClient.fetchLastHourMessages(channelId);
+        if (!messagesResult.messages.length) throw new Error('No messages found');
 
-        const formattedText = this.formatMessages(messages.messages);
+        const formattedText = this.formatMessages(messagesResult.messages);
         const prompt = this.createPrompt(formattedText);
 
         console.log('\n=== SENDING TO GROQ ===');
@@ -232,23 +229,33 @@ class ReportGenerator {
         console.log('=== END RESPONSE ===\n');
 
         const report = this.parseSummary(completionText);
-        // Create an object with explicit channelId and cacheStatus
-        const reportWithMetadata = {
+
+        // Find the latest message timestamp
+        const lastMessageTimestamp = messagesResult.messages.length > 0
+            ? messagesResult.messages.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())[0].timestamp
+            : new Date().toISOString();
+
+        // Create an object with all metadata
+        const reportWithMetadata: Report = {
             ...report,
             channelId,
-            cacheStatus: 'miss' as const
+            cacheStatus: 'miss' as const,
+            messageCountLastHour: messagesResult.count,
+            lastMessageTimestamp,
+            generatedAt: new Date().toISOString(),
+            userGenerated: isUserGenerated
         };
 
-        // Cache the report with channelId
+        // Cache the report with full metadata
         await cacheReport(channelId, reportWithMetadata);
 
         return reportWithMetadata;
     }
 }
 
-export async function generateReport(channelId: string): Promise<Report> {
+export async function generateReport(channelId: string, isUserGenerated = false): Promise<Report> {
     const generator = new ReportGenerator();
-    return generator.generate(channelId);
+    return generator.generate(channelId, isUserGenerated);
 }
 
 export async function fetchNewsSummaries(): Promise<Report[]> {
