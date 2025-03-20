@@ -43,30 +43,30 @@ async function cacheChannel(channelId: string, data: CachedChannel): Promise<voi
 }
 
 // Get cached channel from KV (if available)
-async function getCachedChannel(channelId: string): Promise<CachedChannel | null> {
-    const context = getCloudflareContext() as unknown as { env: CloudflareEnv };
-    const { env } = context;
-    try {
-        const key = `channel:${channelId}`;
-        console.log(`[KV DEBUG] Attempting to get cached channel with key: ${key}`);
+// async function getCachedChannel(channelId: string): Promise<CachedChannel | null> {
+//     const context = getCloudflareContext() as unknown as { env: CloudflareEnv };
+//     const { env } = context;
+//     try {
+//         const key = `channel:${channelId}`;
+//         console.log(`[KV DEBUG] Attempting to get cached channel with key: ${key}`);
 
-        if (env.NEXT_CACHE_WORKERS_KV) {
-            const cachedData = await env.NEXT_CACHE_WORKERS_KV.get(key);
-            console.log(`[KV DEBUG] Channel cache lookup result: ${cachedData ? 'HIT' : 'MISS'}`);
+//         if (env.NEXT_CACHE_WORKERS_KV) {
+//             const cachedData = await env.NEXT_CACHE_WORKERS_KV.get(key);
+//             console.log(`[KV DEBUG] Channel cache lookup result: ${cachedData ? 'HIT' : 'MISS'}`);
 
-            if (cachedData) {
-                console.log(`[KV DEBUG] Cache hit for channel ${channelId}`);
-                return JSON.parse(cachedData);
-            }
-        }
+//             if (cachedData) {
+//                 console.log(`[KV DEBUG] Cache hit for channel ${channelId}`);
+//                 return JSON.parse(cachedData);
+//             }
+//         }
 
-        console.log(`[KV DEBUG] Cache miss for channel ${channelId}`);
-        return null;
-    } catch (error) {
-        console.error(`[KV DEBUG] Failed to get cached channel for ${channelId}:`, error);
-        return null;
-    }
-}
+//         console.log(`[KV DEBUG] Cache miss for channel ${channelId}`);
+//         return null;
+//     } catch (error) {
+//         console.error(`[KV DEBUG] Failed to get cached channel for ${channelId}:`, error);
+//         return null;
+//     }
+// }
 
 export class DiscordClient {
     apiCallCount = 0;

@@ -5,10 +5,10 @@ import { NextResponse } from 'next/server';
 
 export async function GET(
     request: Request,
-    { params }: { params: { channelId: string } }
+    { params }: { params: Promise<{ channelId: string }> }
 ) {
     try {
-        const channelId = params.channelId;
+        const { channelId } = await params;
         console.log(`[API] GET /api/channels/${channelId}/messages: Fetching channel messages`);
 
         const client = new DiscordClient();
@@ -20,7 +20,7 @@ export async function GET(
         });
     } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-        console.error(`[API] Error fetching messages for channel ${params.channelId}:`, errorMessage, error);
+        console.error(`[API] Error fetching messages. Params: ${JSON.stringify(params)}`, errorMessage, error);
         return NextResponse.json({ error: errorMessage }, { status: 500 });
     }
 } 
