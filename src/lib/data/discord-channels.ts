@@ -24,9 +24,9 @@ async function cacheChannel(channelId: string, data: CachedChannel): Promise<voi
     try {
         console.log(`[KV DEBUG] Attempting to cache channel data for ${channelId}`);
 
-        if (env.NEXT_CACHE_WORKERS_KV) {
+        if (env.REPORTS_CACHE) {
             const key = `channel:${channelId}`;
-            await env.NEXT_CACHE_WORKERS_KV.put(
+            await env.REPORTS_CACHE.put(
                 key,
                 JSON.stringify(data),
                 { expirationTtl: 60 * 60 * 48 } // 48 hours
@@ -50,8 +50,8 @@ async function cacheChannel(channelId: string, data: CachedChannel): Promise<voi
 //         const key = `channel:${channelId}`;
 //         console.log(`[KV DEBUG] Attempting to get cached channel with key: ${key}`);
 
-//         if (env.NEXT_CACHE_WORKERS_KV) {
-//             const cachedData = await env.NEXT_CACHE_WORKERS_KV.get(key);
+//         if (env.REPORTS_CACHE) {
+//             const cachedData = await env.REPORTS_CACHE.get(key);
 //             console.log(`[KV DEBUG] Channel cache lookup result: ${cachedData ? 'HIT' : 'MISS'}`);
 
 //             if (cachedData) {
@@ -203,16 +203,16 @@ export async function getActiveChannels(limit = 3): Promise<(DiscordChannel & { 
     const result: (DiscordChannel & { messageCounts: { "1h": number }; lastMessageTimestamp?: string })[] = [];
 
     // Try to get active channels from cache first
-    if (env.NEXT_CACHE_WORKERS_KV) {
+    if (env.REPORTS_CACHE) {
         try {
-            const list = await env.NEXT_CACHE_WORKERS_KV.list({ prefix: 'channel:' });
+            const list = await env.REPORTS_CACHE.list({ prefix: 'channel:' });
 
             if (list.keys.length > 0) {
                 const cachedChannels: CachedChannel[] = [];
 
                 // Fetch all cached channel data in parallel
                 const promises = list.keys.map(async (key) => {
-                    const data = await env.NEXT_CACHE_WORKERS_KV?.get(key.name);
+                    const data = await env.REPORTS_CACHE?.get(key.name);
                     if (data) {
                         return JSON.parse(data) as CachedChannel;
                     }
