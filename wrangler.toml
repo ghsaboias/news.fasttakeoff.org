@@ -30,3 +30,6 @@ zone_name = "aiworld.com.br"
 DISCORD_TOKEN = "NzUwMzQyOTExODkxMDc5MTY5.GlHsx6.3cuRXm1lFqvyyOjxk_woZD197i59kbNv5HNP-E"
 DISCORD_GUILD_ID = "1108138416660557926"
 GROQ_API_KEY = "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"
+
+[observability.logs]
+enabled = true

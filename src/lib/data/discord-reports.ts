@@ -264,15 +264,20 @@ export async function generateReport(channelId: string, isUserGenerated = false,
     const cachedReport = await getCachedReport(channelId);
     const now = Date.now();
     if (cachedReport && !isUserGenerated && cachedReport.generatedAt && new Date(cachedReport.generatedAt).getTime() > now - 60 * 60 * 1000) {
+        console.log(`[Report] Using cached report for channel ${channelId}`);
         return cachedReport;
     }
 
-    const discordClient = new DiscordClient();
-    const messagesResult = messages?.length ? { count: messages.length, messages } : await discordClient.fetchLastHourMessages(channelId);
-    if (!messagesResult.messages.length) throw new Error('No messages found');
     console.log(`[Report] Generating${isUserGenerated ? ' user-requested' : ''} report for channel ${channelId}`);
     const generator = new ReportGenerator();
-    return generator.generate(channelId, isUserGenerated);
+
+    // Use provided messages if available, otherwise throw error to avoid fetching
+    if (!messages || !messages.length) {
+        console.error(`[Report] No messages provided for channel ${channelId}, cannot generate report`);
+        throw new Error('No messages available to generate report');
+    }
+    const messagesResult = { count: messages.length, messages };
+    return generator.generate(channelId, isUserGenerated); // Pass messages internally if needed
 }
 
 export async function fetchNewsSummaries(): Promise<Report[]> {
