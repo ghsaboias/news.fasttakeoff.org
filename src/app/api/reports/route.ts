@@ -5,6 +5,7 @@ import type { CloudflareEnv } from '../../../../cloudflare-env.d';
 
 // GET endpoint
 export async function GET(request: Request) {
+    console.log("[DEBUG] GET /api/reports hit at " + new Date().toISOString());
     try {
         const url = new URL(request.url);
         const channelId = url.searchParams.get('channelId');
