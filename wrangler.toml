@@ -30,3 +30,6 @@ zone_name = "aiworld.com.br"
 DISCORD_TOKEN = "***REMOVED***"
 DISCORD_GUILD_ID = "1108138416660557926"
 GROQ_API_KEY = "***REMOVED***"
+
+[observability.logs]
+enabled = true
