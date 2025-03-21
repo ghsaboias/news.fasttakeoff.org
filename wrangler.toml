@@ -20,6 +20,7 @@ preview_id = "1907c22aa1e24a0e98f995ffcbb7b9aa"
 [[kv_namespaces]]
 binding = "CHANNELS_CACHE"
 id = "8cf4b17a28e043059145354652cb7149"
+preview_id = "8cf4b17a28e043059145354652cb7149"
 
 [[routes]]
 pattern = "news.aiworld.com.br"
