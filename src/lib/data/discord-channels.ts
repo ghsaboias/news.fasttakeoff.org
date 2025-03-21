@@ -166,86 +166,78 @@ export async function getChannels(): Promise<DiscordChannel[]> {
     return client.fetchChannels();
 }
 
-export async function getActiveChannels(limit = 5): Promise<(DiscordChannel & { messageCounts: { "1h": number }; lastMessageTimestamp?: string })[]> {
+export async function getActiveChannels(limit = Infinity): Promise<(DiscordChannel & { messageCounts: { "1h": number }; lastMessageTimestamp?: string })[]> {
     const client = new DiscordClient();
     const context = getCloudflareContext() as unknown as { env: CloudflareEnv };
     const { env } = context;
     const channels = await client.fetchChannels();
     const result: (DiscordChannel & { messageCounts: { "1h": number }; lastMessageTimestamp?: string })[] = [];
+    const now = Date.now();
+    const oneHourAgo = now - 60 * 60 * 1000;
 
+    // Check KV cache with freshness
     if (env.REPORTS_CACHE) {
         try {
             const list = await env.REPORTS_CACHE.list({ prefix: 'channel:' });
+            console.log(`[Discord] Cache check: ${list.keys.length} channels found in KV`);
 
             if (list.keys.length > 0) {
                 const cachedChannels: CachedChannel[] = [];
-
                 const promises = list.keys.map(async (key) => {
                     const data = await env.REPORTS_CACHE?.get(key.name);
-                    if (data) {
-                        return JSON.parse(data) as CachedChannel;
-                    }
+                    if (data) return JSON.parse(data) as CachedChannel;
                     return null;
                 });
-
                 const results = await Promise.all(promises);
                 cachedChannels.push(...results.filter(Boolean) as CachedChannel[]);
-                console.log(`[Discord] Cache check: ${cachedChannels.length} channels found in KV`);
 
-                cachedChannels.sort((a, b) => b.messageCounts["1h"] - a.messageCounts["1h"]);
-                const topActiveChannelIds = cachedChannels
-                    .filter(c => c.messageCounts["1h"] > 0)
-                    .slice(0, limit)
-                    .map(c => c.channelId);
-
-                for (const channelId of topActiveChannelIds) {
-                    const channelInfo = channels.find(c => c.id === channelId);
-                    const cachedChannel = cachedChannels.find(c => c.channelId === channelId);
-
-                    if (channelInfo && cachedChannel) {
-                        result.push({
-                            ...channelInfo,
-                            messageCounts: cachedChannel.messageCounts,
-                            lastMessageTimestamp: cachedChannel.lastMessageTimestamp
-                        });
+                // Filter fresh and active channels
+                for (const cachedChannel of cachedChannels) {
+                    const cachedTime = new Date(cachedChannel.cachedAt).getTime();
+                    if (cachedTime > oneHourAgo && cachedChannel.messageCounts["1h"] > 0) {
+                        const channelInfo = channels.find(c => c.id === cachedChannel.channelId);
+                        if (channelInfo) {
+                            result.push({
+                                ...channelInfo,
+                                messageCounts: cachedChannel.messageCounts,
+                                lastMessageTimestamp: cachedChannel.lastMessageTimestamp
+                            });
+                        }
                     }
                 }
-
-                if (result.length > 0) {
-                    return result;
-                }
+                console.log(`[Discord] Fresh cached active channels: ${result.length}`);
             }
         } catch (error) {
             console.error('[Discord] Error fetching cached active channels:', error);
         }
     }
 
-    console.log('[Discord] Cache miss for active channels, fetching from API');
-
+    // API check for all channels, updating stale or uncached
+    console.log('[Discord] Checking all channels via API for fresh activity');
     const channelsWithActivity: (DiscordChannel & { messageCounts: { "1h": number }; lastMessageTimestamp?: string })[] = [];
     for (const channel of channels) {
-        try {
-            const { count, messages } = await client.fetchLastHourMessages(channel.id);
-            if (count > 0) {
-                const lastMessageTimestamp = messages.length > 0
-                    ? messages.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())[0].timestamp
-                    : undefined;
-
-                channelsWithActivity.push({
-                    ...channel,
-                    messageCounts: { "1h": count },
-                    lastMessageTimestamp
-                });
+        const cachedEntry = result.find(r => r.id === channel.id);
+        const cachedTime = cachedEntry ? new Date(cachedEntry.lastMessageTimestamp || now).getTime() : 0;
+        if (!cachedEntry || cachedTime < oneHourAgo) { // Skip if fresh
+            try {
+                const { count, messages } = await client.fetchLastHourMessages(channel.id);
+                if (count > 0) {
+                    const lastMessageTimestamp = messages.length > 0
+                        ? messages.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())[0].timestamp
+                        : undefined;
+                    channelsWithActivity.push({
+                        ...channel,
+                        messageCounts: { "1h": count },
+                        lastMessageTimestamp
+                    });
+                }
+            } catch (error) {
+                console.error(`[Discord] Error fetching messages for channel ${channel.id}:`, error);
             }
-
-            if (channelsWithActivity.length >= limit) {
-                break;
-            }
-        } catch (error) {
-            console.error(`[Discord] Error fetching messages for channel ${channel.id}:`, error);
         }
     }
 
     console.log(`[Discord] API fetch complete: ${channelsWithActivity.length} active channels out of ${channels.length} total`);
-    return channelsWithActivity.sort((a, b) => b.messageCounts["1h"] - a.messageCounts["1h"]);
+    result.push(...channelsWithActivity.filter(c => !result.some(r => r.id === c.id))); // Deduplicate
+    return result.sort((a, b) => b.messageCounts["1h"] - a.messageCounts["1h"]).slice(0, limit);
 }
