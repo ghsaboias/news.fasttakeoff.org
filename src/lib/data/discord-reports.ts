@@ -23,7 +23,6 @@ async function cacheReport(channelId: string, report: Report): Promise<void> {
     try {
         console.log(`[KV DEBUG] Attempting to cache report for channel ${channelId}`);
 
-        // Ensure channelId is included in the report and set generatedAt if not present
         const reportWithMetadata = {
             ...report,
             channelId,
@@ -38,14 +37,13 @@ async function cacheReport(channelId: string, report: Report): Promise<void> {
                 JSON.stringify(reportWithMetadata),
                 { expirationTtl: 60 * 60 * 48 } // 48 hours
             );
-            console.log(`[KV DEBUG] Successfully cached report for channel ${channelId}`);
+            console.log(`[KV] Cached report for ${channelId} with TTL 48h`);
             return;
         }
 
         console.log(`[KV DEBUG] KV binding not accessible, report not cached`);
     } catch (error) {
         console.error(`[KV DEBUG] Failed to cache report for channel ${channelId}:`, error);
-        // Continue execution even if caching fails
     }
 }
 
@@ -59,8 +57,7 @@ async function getCachedReport(channelId: string): Promise<Report | null> {
 
         if (env.REPORTS_CACHE) {
             const cachedData = await env.REPORTS_CACHE.get(key);
-            console.log(`[KV DEBUG] Cache lookup result: ${cachedData ? 'HIT' : 'MISS'}`);
-
+            console.log(`[KV] Report cache for ${channelId}: ${cachedData ? 'hit' : 'miss'}`);
             if (cachedData) {
                 console.log(`[KV DEBUG] Cache hit for channel ${channelId}`);
                 const report = JSON.parse(cachedData);
@@ -80,6 +77,7 @@ async function getCachedReport(channelId: string): Promise<Report | null> {
 export async function getActiveChannelIds(): Promise<string[]> {
     try {
         const activeChannels = await getActiveChannels();
+        console.log(`[Reports] Active channel IDs retrieved: ${activeChannels.length}`);
         return activeChannels.map(channel => channel.id);
     } catch (error) {
         console.error('Error getting active channel IDs:', error);

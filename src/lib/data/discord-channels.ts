@@ -42,32 +42,6 @@ async function cacheChannel(channelId: string, data: CachedChannel): Promise<voi
     }
 }
 
-// Get cached channel from KV (if available)
-// async function getCachedChannel(channelId: string): Promise<CachedChannel | null> {
-//     const context = getCloudflareContext() as unknown as { env: CloudflareEnv };
-//     const { env } = context;
-//     try {
-//         const key = `channel:${channelId}`;
-//         console.log(`[KV DEBUG] Attempting to get cached channel with key: ${key}`);
-
-//         if (env.REPORTS_CACHE) {
-//             const cachedData = await env.REPORTS_CACHE.get(key);
-//             console.log(`[KV DEBUG] Channel cache lookup result: ${cachedData ? 'HIT' : 'MISS'}`);
-
-//             if (cachedData) {
-//                 console.log(`[KV DEBUG] Cache hit for channel ${channelId}`);
-//                 return JSON.parse(cachedData);
-//             }
-//         }
-
-//         console.log(`[KV DEBUG] Cache miss for channel ${channelId}`);
-//         return null;
-//     } catch (error) {
-//         console.error(`[KV DEBUG] Failed to get cached channel for ${channelId}:`, error);
-//         return null;
-//     }
-// }
-
 export class DiscordClient {
     apiCallCount = 0;
 
@@ -134,7 +108,6 @@ export class DiscordClient {
     }
 
     async fetchLastHourMessages(channelId: string): Promise<{ count: number; messages: DiscordMessage[] }> {
-        // Always fetch fresh data from Discord API
         const now = Date.now();
         const since = now - 60 * 60 * 1000; // Last hour
         let allMessages: DiscordMessage[] = [];
@@ -147,14 +120,12 @@ export class DiscordClient {
             const messages: DiscordMessage[] = await response.json();
             if (!messages.length) break;
 
-            // Filter for FaytuksBot messages
             const botMessages = messages.filter(
                 msg => msg.author?.username === 'FaytuksBot' &&
                     msg.author?.discriminator === '7032' &&
                     (msg.content?.includes('http') || (msg.embeds && msg.embeds.length > 0))
             );
 
-            // Track latest message timestamp for cache
             if (botMessages.length > 0 && !latestMessageTimestamp) {
                 latestMessageTimestamp = botMessages[0].timestamp;
             }
@@ -168,7 +139,7 @@ export class DiscordClient {
             lastMessageId = messages[messages.length - 1].id;
         }
 
-        // Cache channel data
+        console.log(`[Discord] Fetching messages for channel ${channelId}: ${allMessages.length} found`);
         const channels = await this.fetchChannels();
         const channelInfo = channels.find(c => c.id === channelId);
 
@@ -202,7 +173,6 @@ export async function getActiveChannels(limit = 5): Promise<(DiscordChannel & { 
     const channels = await client.fetchChannels();
     const result: (DiscordChannel & { messageCounts: { "1h": number }; lastMessageTimestamp?: string })[] = [];
 
-    // Try to get active channels from cache first
     if (env.REPORTS_CACHE) {
         try {
             const list = await env.REPORTS_CACHE.list({ prefix: 'channel:' });
@@ -210,7 +180,6 @@ export async function getActiveChannels(limit = 5): Promise<(DiscordChannel & { 
             if (list.keys.length > 0) {
                 const cachedChannels: CachedChannel[] = [];
 
-                // Fetch all cached channel data in parallel
                 const promises = list.keys.map(async (key) => {
                     const data = await env.REPORTS_CACHE?.get(key.name);
                     if (data) {
@@ -221,15 +190,14 @@ export async function getActiveChannels(limit = 5): Promise<(DiscordChannel & { 
 
                 const results = await Promise.all(promises);
                 cachedChannels.push(...results.filter(Boolean) as CachedChannel[]);
+                console.log(`[Discord] Cache check: ${cachedChannels.length} channels found in KV`);
 
-                // Sort by message count and take top channels
                 cachedChannels.sort((a, b) => b.messageCounts["1h"] - a.messageCounts["1h"]);
                 const topActiveChannelIds = cachedChannels
                     .filter(c => c.messageCounts["1h"] > 0)
                     .slice(0, limit)
                     .map(c => c.channelId);
 
-                // Match with full channel info
                 for (const channelId of topActiveChannelIds) {
                     const channelInfo = channels.find(c => c.id === channelId);
                     const cachedChannel = cachedChannels.find(c => c.channelId === channelId);
@@ -252,10 +220,8 @@ export async function getActiveChannels(limit = 5): Promise<(DiscordChannel & { 
         }
     }
 
-    // Fallback to API if cache isn't available or empty
     console.log('[Discord] Cache miss for active channels, fetching from API');
 
-    // Process channels in batches to avoid too many API calls
     const channelsWithActivity: (DiscordChannel & { messageCounts: { "1h": number }; lastMessageTimestamp?: string })[] = [];
     for (const channel of channels) {
         try {
@@ -272,7 +238,6 @@ export async function getActiveChannels(limit = 5): Promise<(DiscordChannel & { 
                 });
             }
 
-            // If we have enough channels, stop fetching
             if (channelsWithActivity.length >= limit) {
                 break;
             }
@@ -281,5 +246,6 @@ export async function getActiveChannels(limit = 5): Promise<(DiscordChannel & { 
         }
     }
 
+    console.log(`[Discord] API fetch complete: ${channelsWithActivity.length} active channels out of ${channels.length} total`);
     return channelsWithActivity.sort((a, b) => b.messageCounts["1h"] - a.messageCounts["1h"]);
 }

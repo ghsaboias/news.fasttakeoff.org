@@ -6,29 +6,24 @@ import type { CloudflareEnv } from '../../../../cloudflare-env.d';
 // GET endpoint
 export async function GET(request: Request) {
     try {
-        // Check if requesting a specific channel report
         const url = new URL(request.url);
         const channelId = url.searchParams.get('channelId');
 
         console.log(`[API] GET /api/reports: ${channelId ? `Fetching report for channel ${channelId}` : 'Fetching top reports'}`);
 
-        // If channelId is provided, generate or get that specific report
         if (channelId) {
             const report = await generateReport(channelId);
             return NextResponse.json(report);
         }
 
-        // For homepage: list keys and fetch reports directly from KV
         const context = getCloudflareContext() as unknown as { env: CloudflareEnv };
         const { env } = context;
 
         if (env.REPORTS_CACHE) {
             try {
-                // List all report keys
                 const list = await env.REPORTS_CACHE.list({ prefix: 'report:' });
 
                 if (list.keys.length) {
-                    // Fetch all reports in parallel
                     const reports = await Promise.all(
                         list.keys.map(async (key: { name: string }) => {
                             const data = await env.REPORTS_CACHE?.get(key.name);
@@ -39,10 +34,7 @@ export async function GET(request: Request) {
                         })
                     );
 
-                    // Filter valid reports
                     const validReports = reports.filter(Boolean) as Report[];
-
-                    // Check report freshness (less than 1 hour old)
                     const now = Date.now();
                     const oneHourAgo = now - 60 * 60 * 1000;
                     const freshReports = validReports.filter(report => {
@@ -50,10 +42,8 @@ export async function GET(request: Request) {
                         const generatedAt = new Date(report.generatedAt).getTime();
                         return generatedAt > oneHourAgo;
                     });
+                    console.log(`[API] Fresh reports in KV: ${freshReports.length}/${validReports.length} valid`);
 
-                    console.log(`[API] Retrieved ${freshReports.length} fresh reports from KV`);
-
-                    // If we have at least 3 fresh reports, sort and return top 3
                     if (freshReports.length >= 3) {
                         const sortedReports = freshReports.sort((a, b) => {
                             const countA = a.messageCountLastHour || 0;
@@ -64,33 +54,21 @@ export async function GET(request: Request) {
                         return NextResponse.json(sortedReports);
                     }
 
-                    // Otherwise, generate additional reports
                     console.log('[API] Fewer than 3 fresh reports in cache, generating additional reports');
-
-                    // Get IDs of fresh reports to avoid regenerating them
                     const freshReportIds = freshReports.map(r => r.channelId);
-
-                    // Get active channel IDs (limit 5 to have some extras)
                     const activeChannelIds = await getActiveChannelIds();
                     console.log(`[API] Retrieved ${activeChannelIds.length} active channel IDs`);
-
-                    // Filter out channels that already have fresh reports
+                    console.log(`[API] Active channels to process: ${activeChannelIds.length}, fresh IDs: ${freshReportIds.length}`);
                     const channelsToGenerate = activeChannelIds.filter(
                         id => id && !freshReportIds.includes(id)
                     );
 
-                    // Generate reports for all remaining active channels
                     console.log(`[API] Generating reports for ${channelsToGenerate.length} additional channels`);
-
-                    // Generate new reports
                     const newReports = await Promise.all(
                         channelsToGenerate.map(channelId => generateReport(channelId as string))
                     );
 
-                    // Combine fresh and new reports
                     const allReports = [...freshReports, ...newReports];
-
-                    // Sort by message count and take top 3
                     const sortedReports = allReports.sort((a, b) => {
                         const countA = a.messageCountLastHour || 0;
                         const countB = b.messageCountLastHour || 0;
@@ -102,11 +80,9 @@ export async function GET(request: Request) {
                 }
             } catch (error) {
                 console.error('[API] Error fetching reports from KV:', error);
-                // Fall through to fetchNewsSummaries if KV fails
             }
         }
 
-        // Fallback to generating reports if KV is empty or unavailable
         console.log('[API] No cached reports found, fetching fresh reports');
         const reports = await fetchNewsSummaries();
         console.log(`[API] Generated ${reports.length} fresh reports`);
