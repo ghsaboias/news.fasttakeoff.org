@@ -231,7 +231,7 @@ export async function getActiveChannels(limit = 3): Promise<(DiscordChannel & { 
     const channelsToCheck = channels
         .filter(c => !result.some(r => r.id === c.id)) // Exclude already fresh cached channels
         .sort((a, b) => a.position - b.position) // Sort by position ascending
-        .slice(0, 15); // Take top 20
+        .slice(0, 10); // Take top 20
     console.log(`[Discord] Starting API check for ${channelsToCheck.length} channels (smallest positions)`);
 
     const batchSize = 5;
