@@ -52,9 +52,9 @@ export default function CurrentEventsClient({ channels }: Props) {
                 metadata: typeof metadata
             };
             setActiveChannels(data.channels);
+            console.log(`[Client] Active channels loaded: ${data.channels.length}, total: ${channels.length}`);
             setMetadata(data.metadata);
 
-            // Pre-populate channelData with the message counts and messages we already have
             const newChannelData = new Map(channelData);
             data.channels.forEach((channel: DiscordChannel & { messageCounts: { "1h": number }, messages?: DiscordMessage[] }) => {
                 if (channel.messageCounts["1h"] > 0) {
@@ -67,11 +67,9 @@ export default function CurrentEventsClient({ channels }: Props) {
             });
             setChannelData(newChannelData);
 
-            // Pre-fetch reports for active channels in parallel
             await Promise.all(data.channels.map(channel => fetchChannelReport(channel.id)));
         } catch (error) {
             console.error('Error fetching active channels:', error);
-            // Fallback to showing all channels
             setActiveChannels(channels);
         } finally {
             setIsLoading(false);
