@@ -44,38 +44,46 @@ export class DiscordClient {
         return new Promise(resolve => setTimeout(resolve, ms));
     }
 
-    private async throttledFetch(url: string): Promise<Response> {
-        const delayMs = 500; // Increased from 100ms to 250ms
-        await this.delay(delayMs);
-        this.apiCallCount++;
+    private async throttledFetch(url: string, retries = 3): Promise<Response> {
+        const delayMs = 500;
+        for (let i = 0; i < retries; i++) {
+            await this.delay(delayMs * (i + 1));
+            this.apiCallCount++;
+            const elapsedSeconds = (Date.now() - this.callStartTime) / 1000;
+            const callRate = this.apiCallCount / (elapsedSeconds || 1);
 
-        const elapsedSeconds = (Date.now() - this.callStartTime) / 1000;
-        const callRate = this.apiCallCount / (elapsedSeconds || 1);
+            console.log(`[Discord] Throttling for ${delayMs}ms, call #${this.apiCallCount}, rate: ${callRate.toFixed(2)}/sec`);
+            console.log(`[Discord] Fetching ${url}`);
+            const token = process.env.DISCORD_TOKEN;
+            const guildId = process.env.DISCORD_GUILD_ID;
+            console.log(`[Discord] Guild ID: ${guildId || 'unset'}`);
 
-        console.log(`[Discord] Throttling for ${delayMs}ms, call #${this.apiCallCount}, rate: ${callRate.toFixed(2)}/sec`);
-        console.log(`[Discord] Fetching ${url}`);
-        const token = process.env.DISCORD_TOKEN;
-        const guildId = process.env.DISCORD_GUILD_ID;
-        console.log(`[Discord] Guild ID: ${guildId || 'unset'}`);
+            if (!token) throw new Error('DISCORD_TOKEN is not set');
+            if (!guildId) throw new Error('DISCORD_GUILD_ID is not set');
 
-        if (!token) throw new Error('DISCORD_TOKEN is not set');
-        if (!guildId) throw new Error('DISCORD_GUILD_ID is not set');
+            const headers = {
+                Authorization: token,
+                'User-Agent': 'NewsApp/0.1.0 (https://news.aiworld.com.br)',
+                'Content-Type': 'application/json',
+            };
 
-        const headers = {
-            Authorization: token,
-            'User-Agent': 'NewsApp/0.1.0 (https://news.aiworld.com.br)',
-            'Content-Type': 'application/json',
-        };
+            const response = await fetch(url, { headers });
+            console.log(`[Discord] Response Status: ${response.status}`);
 
-        const response = await fetch(url, { headers });
-        console.log(`[Discord] Response Status: ${response.status}`);
-
-        if (!response.ok) {
-            const errorBody = await response.text();
-            console.log(`[Discord] Error Body: ${errorBody}`);
-            throw new Error(`Discord API error: ${response.status} - ${errorBody}`);
+            if (response.status === 429) {
+                const retryAfter = parseFloat(response.headers.get('retry-after') || '1') * 1000;
+                console.log(`[Discord] Rate limited, retrying after ${retryAfter}ms (attempt ${i + 1}/${retries})`);
+                await this.delay(retryAfter);
+                continue;
+            }
+            if (!response.ok) {
+                const errorBody = await response.text();
+                console.log(`[Discord] Error Body: ${errorBody}`);
+                throw new Error(`Discord API error: ${response.status} - ${errorBody}`);
+            }
+            return response;
         }
-        return response;
+        throw new Error("Max retries reached due to rate limits");
     }
 
     async fetchAllChannels(): Promise<DiscordChannel[]> {
@@ -109,7 +117,7 @@ export class DiscordClient {
 
     async fetchLastHourMessages(channelId: string): Promise<{ count: number; messages: DiscordMessage[] }> {
         const now = Date.now();
-        const since = now - 60 * 60 * 1000; // Last hour
+        const since = now - 60 * 60 * 1000;
         const sinceDate = new Date(since).toISOString();
         const nowDate = new Date(now).toISOString();
 
@@ -145,19 +153,14 @@ export class DiscordClient {
         }
 
         console.log(`[Discord] Completed fetching for channel ${channelId}: ${allMessages.length} messages found`);
-        const channels = await this.fetchChannels();
-        const channelInfo = channels.find(c => c.id === channelId);
-
-        if (channelInfo) {
-            const channelData: CachedChannel = {
-                channelId,
-                name: channelInfo.name,
-                lastMessageTimestamp: latestMessageTimestamp || new Date().toISOString(),
-                messageCounts: { "1h": allMessages.length },
-                cachedAt: new Date().toISOString()
-            };
-            await cacheChannel(channelId, channelData);
-        }
+        const channelData: CachedChannel = {
+            channelId,
+            name: `Channel_${channelId}`, // Placeholder; ideally pass channel name
+            lastMessageTimestamp: latestMessageTimestamp || new Date().toISOString(),
+            messageCounts: { "1h": allMessages.length },
+            cachedAt: new Date().toISOString()
+        };
+        await cacheChannel(channelId, channelData);
 
         return { count: allMessages.length, messages: allMessages };
     }
