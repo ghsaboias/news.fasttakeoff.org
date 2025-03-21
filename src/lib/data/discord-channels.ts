@@ -24,9 +24,9 @@ async function cacheChannel(channelId: string, data: CachedChannel): Promise<voi
     try {
         console.log(`[KV DEBUG] Attempting to cache channel data for ${channelId}`);
 
-        if (env.REPORTS_CACHE) {
+        if (env.CHANNELS_CACHE) {
             const key = `channel:${channelId}`;
-            await env.REPORTS_CACHE.put(
+            await env.CHANNELS_CACHE.put(
                 key,
                 JSON.stringify(data),
                 { expirationTtl: 60 * 60 * 48 } // 48 hours
@@ -176,15 +176,15 @@ export async function getActiveChannels(limit = Infinity): Promise<(DiscordChann
     const oneHourAgo = now - 60 * 60 * 1000;
 
     // Check KV cache with freshness
-    if (env.REPORTS_CACHE) {
+    if (env.CHANNELS_CACHE) {
         try {
-            const list = await env.REPORTS_CACHE.list({ prefix: 'channel:' });
+            const list = await env.CHANNELS_CACHE.list({ prefix: 'channel:' });
             console.log(`[Discord] Cache check: ${list.keys.length} channels found in KV`);
 
             if (list.keys.length > 0) {
                 const cachedChannels: CachedChannel[] = [];
                 const promises = list.keys.map(async (key) => {
-                    const data = await env.REPORTS_CACHE?.get(key.name);
+                    const data = await env.CHANNELS_CACHE?.get(key.name);
                     if (data) return JSON.parse(data) as CachedChannel;
                     return null;
                 });
