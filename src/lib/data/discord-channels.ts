@@ -39,6 +39,7 @@ async function cacheChannel(channelId: string, data: CachedChannel): Promise<voi
 export class DiscordClient {
     apiCallCount = 0;
     callStartTime = Date.now();
+    subrequestCount = 0;
 
     private delay(ms: number): Promise<void> {
         return new Promise(resolve => setTimeout(resolve, ms));
@@ -49,10 +50,11 @@ export class DiscordClient {
         for (let i = 0; i < retries; i++) {
             await this.delay(delayMs * (i + 1));
             this.apiCallCount++;
+            this.subrequestCount++;
             const elapsedSeconds = (Date.now() - this.callStartTime) / 1000;
             const callRate = this.apiCallCount / (elapsedSeconds || 1);
 
-            console.log(`[Discord] Throttling for ${delayMs}ms, call #${this.apiCallCount}, rate: ${callRate.toFixed(2)}/sec`);
+            console.log(`[Discord] Throttling for ${delayMs}ms, call #${this.apiCallCount}, rate: ${callRate.toFixed(2)}/sec, subrequest #${this.subrequestCount}`);
             console.log(`[Discord] Fetching ${url}`);
             const token = process.env.DISCORD_TOKEN;
             const guildId = process.env.DISCORD_GUILD_ID;
@@ -79,6 +81,7 @@ export class DiscordClient {
                 console.log(`[Discord] Error Body: ${errorBody}`);
                 throw new Error(`Discord API error: ${response.status} - ${errorBody}`);
             }
+            console.log(`[Discord] Subrequest #${this.subrequestCount}: Response status ${response.status}`);
             return response;
         }
         throw new Error("Max retries reached due to rate limits");
@@ -114,6 +117,9 @@ export class DiscordClient {
     }
 
     async fetchLastHourMessages(channelId: string): Promise<{ count: number; messages: DiscordMessage[] }> {
+        // Reset subrequest count for each channel fetch
+        this.subrequestCount = 0;
+
         const now = Date.now();
         const since = now - 60 * 60 * 1000; // Last hour
         const sinceDate = new Date(since).toISOString();
@@ -153,7 +159,7 @@ export class DiscordClient {
             fetchCount++;
         }
 
-        console.log(`[Discord] Completed fetching for channel ${channelId}: ${allMessages.length} messages found (capped at ${maxFetches * 100} messages)`);
+        console.log(`[Discord] Completed fetching for channel ${channelId}: ${allMessages.length} messages found (capped at ${maxFetches * 100} messages), total subrequests: ${this.subrequestCount}`);
         const channelData: CachedChannel = {
             channelId,
             name: `Channel_${channelId}`,
