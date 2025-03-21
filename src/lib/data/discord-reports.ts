@@ -268,15 +268,30 @@ export async function generateReport(channelId: string, isUserGenerated = false,
         return cachedReport;
     }
 
-    console.log(`[Report] Generating${isUserGenerated ? ' user-requested' : ''} report for channel ${channelId}`);
-    const generator = new ReportGenerator();
-
-    // Use provided messages if available, otherwise throw error to avoid fetching
-    if (!messages || !messages.length) {
-        console.error(`[Report] No messages provided for channel ${channelId}, cannot generate report`);
-        throw new Error('No messages available to generate report');
+    let messagesToUse = messages || [];
+    if (!messagesToUse.length) {
+        console.log(`[Report] No messages provided for channel ${channelId}, fetching from Discord`);
+        const discordClient = new DiscordClient();
+        const { messages: fetchedMessages } = await discordClient.fetchLastHourMessages(channelId);
+        messagesToUse = fetchedMessages;
     }
-    return generator.generate(channelId, isUserGenerated); // Pass messages internally if needed
+
+    if (!messagesToUse.length) {
+        console.log(`[Report] No messages found for channel ${channelId}, returning fallback report`);
+        return {
+            headline: "NO ACTIVITY IN THE LAST HOUR",
+            city: "N/A",
+            body: "No messages were posted in this channel within the last hour.",
+            timestamp: new Date().toISOString(),
+            channelId,
+            messageCountLastHour: 0,
+            generatedAt: new Date().toISOString(),
+            cacheStatus: 'miss'
+        };
+    }
+
+    const generator = new ReportGenerator();
+    return generator.generate(channelId, isUserGenerated);
 }
 
 export async function fetchNewsSummaries(): Promise<Report[]> {

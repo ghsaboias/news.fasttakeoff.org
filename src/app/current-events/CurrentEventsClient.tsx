@@ -16,6 +16,7 @@ import { Report } from "@/lib/data/discord-reports";
 import { DiscordChannel, DiscordMessage } from "@/lib/types/core";
 import { RefreshCw } from "lucide-react";
 import { useEffect, useState } from "react";
+
 export interface Props {
     channels: DiscordChannel[];
 }
@@ -76,9 +77,7 @@ export default function CurrentEventsClient({ channels }: Props) {
         }
     }
 
-    // New function to fetch a channel's report
     async function fetchChannelReport(channelId: string) {
-        // Mark as loading
         setChannelReports(prev => {
             const newMap = new Map(prev);
             newMap.set(channelId, {
@@ -90,7 +89,9 @@ export default function CurrentEventsClient({ channels }: Props) {
 
         try {
             const response = await fetch(`/api/reports?channelId=${channelId}`);
-            if (!response.ok) throw new Error(`Failed to fetch report: ${response.status}`);
+            if (!response.ok) {
+                throw new Error(`Failed to fetch report: ${response.status}`);
+            }
 
             const report = await response.json() as Report;
 
@@ -192,8 +193,13 @@ export default function CurrentEventsClient({ channels }: Props) {
         }
     };
 
-    // Filter and sort channels
+    // Filter and sort channels, excluding those with failed reports
     const filteredChannels = activeChannels
+        .filter(channel => {
+            const channelReport = channelReports.get(channel.id);
+            // Exclude channels where the report fetch failed
+            return !channelReport?.error;
+        })
         .filter(channel =>
             channel.name.toLowerCase().includes(searchQuery.toLowerCase())
         )

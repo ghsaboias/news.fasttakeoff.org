@@ -1,11 +1,10 @@
 import { fetchNewsSummaries, generateReport, getActiveChannelIds, Report } from '@/lib/data/discord-reports';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { NextResponse } from 'next/server';
-import type { CloudflareEnv } from '../../../../cloudflare-env.d';
+import type { CloudflareEnv } from '../../../../cloudflare-env';
 
 // GET endpoint
 export async function GET(request: Request) {
-    console.error("[DEBUG] Forced error log at " + new Date().toISOString());
     console.log("[DEBUG] GET /api/reports hit at " + new Date().toISOString());
     try {
         const url = new URL(request.url);
