@@ -58,3 +58,5 @@ repomix-output.txt
 .dev.vars
 
 .repomixignore
+
+delete-cache.js
