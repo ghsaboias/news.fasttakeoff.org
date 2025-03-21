@@ -6,15 +6,22 @@ import type { CloudflareEnv } from '../../../../cloudflare-env';
 // GET endpoint
 export async function GET(request: Request) {
     console.log("[DEBUG] GET /api/reports hit at " + new Date().toISOString());
+    let subrequestCount = 0;
+
+    const incrementSubrequest = () => {
+        subrequestCount++;
+        console.log(`[API] Subrequest count: ${subrequestCount}`);
+    };
+
     try {
         const url = new URL(request.url);
         const channelId = url.searchParams.get('channelId');
-
         console.log(`[API] GET /api/reports: ${channelId ? `Fetching report for channel ${channelId}` : 'Fetching top reports'}`);
 
         if (channelId) {
             console.log(`[API] Generating single report for requested channel ${channelId}`);
             const report = await generateReport(channelId);
+            incrementSubrequest();
             return NextResponse.json(report);
         }
 
@@ -25,11 +32,13 @@ export async function GET(request: Request) {
             try {
                 const list = await env.REPORTS_CACHE.list({ prefix: 'report:' });
                 console.log(`[API] Found ${list.keys.length} reports in KV cache`);
+                incrementSubrequest();
 
                 if (list.keys.length) {
                     const reports = await Promise.all(
                         list.keys.map(async (key: { name: string }) => {
                             const data = await env.REPORTS_CACHE?.get(key.name);
+                            incrementSubrequest();
                             if (data) {
                                 return JSON.parse(data) as Report;
                             }
@@ -105,10 +114,10 @@ export async function GET(request: Request) {
     } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'Unknown error';
         console.error('[API] Error fetching reports:', errorMessage, error);
+        console.log(`[API] Total subrequests at failure: ${subrequestCount}`);
         return NextResponse.json({ error: errorMessage }, { status: 500 });
     }
 }
-
 // POST endpoint - for user-initiated report generation
 export async function POST(request: Request) {
     try {

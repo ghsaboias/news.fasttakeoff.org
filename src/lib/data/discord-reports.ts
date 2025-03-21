@@ -3,6 +3,7 @@ import { DiscordMessage } from '@/lib/types/core';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
 import type { CloudflareEnv } from '../../../cloudflare-env.d';
 import { DiscordClient, getActiveChannels } from './discord-channels';
+
 export interface Report {
     headline: string;
     city: string;
@@ -90,6 +91,16 @@ export async function getActiveChannelIds(): Promise<string[]> {
 }
 
 class ReportGenerator {
+    private subrequestCount = 0;
+
+    private async trackedFetch(url: string, options: RequestInit): Promise<Response> {
+        this.subrequestCount++;
+        console.log(`[Report] Subrequest #${this.subrequestCount}: Fetching ${url}`);
+        const response = await fetch(url, options);
+        console.log(`[Report] Subrequest #${this.subrequestCount}: Response status ${response.status}`);
+        return response;
+    }
+
     private formatMessages(messages: DiscordMessage[]): string {
         return messages
             .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
@@ -159,6 +170,9 @@ class ReportGenerator {
     }
 
     async generate(channelId: string, isUserGenerated = false): Promise<Report> {
+        // Reset counter for each report generation
+        this.subrequestCount = 0;
+
         // Check cache first
         const cachedReport = await getCachedReport(channelId);
         const now = Date.now();
@@ -191,8 +205,7 @@ class ReportGenerator {
         const prompt = this.createPrompt(formattedText);
 
         console.log(`[Report] Sending prompt to Groq API for channel ${channelId}`);
-
-        const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        const response = await this.trackedFetch('https://api.groq.com/openai/v1/chat/completions', {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${process.env.GROQ_API_KEY}`,
@@ -231,7 +244,7 @@ class ReportGenerator {
             throw new Error('No content returned from Groq API');
         }
 
-        console.log(`[Report] Received response from Groq API for channel ${channelId}`);
+        console.log(`[Report] Received response from Groq API for channel ${channelId}, total subrequests: ${this.subrequestCount}`);
 
         const report = this.parseSummary(completionText);
 
