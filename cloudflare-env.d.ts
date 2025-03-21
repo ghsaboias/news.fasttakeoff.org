@@ -2,6 +2,7 @@
 // Runtime types generated with workerd@1.20250317.0 2025-03-11 nodejs_compat
 export interface CloudflareEnv {
     NEXT_CACHE_WORKERS_KV: KVNamespace;
+    CHANNELS_CACHE: KVNamespace;
     REPORTS_CACHE: KVNamespace;
     DISCORD_TOKEN: string;
     DISCORD_GUILD_ID: string;
