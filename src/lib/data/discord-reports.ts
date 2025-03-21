@@ -260,53 +260,38 @@ class ReportGenerator {
     }
 }
 
-export async function generateReport(channelId: string, isUserGenerated = false): Promise<Report> {
+export async function generateReport(channelId: string, isUserGenerated = false, messages?: DiscordMessage[]): Promise<Report> {
+    const cachedReport = await getCachedReport(channelId);
+    const now = Date.now();
+    if (cachedReport && !isUserGenerated && cachedReport.generatedAt && new Date(cachedReport.generatedAt).getTime() > now - 60 * 60 * 1000) {
+        return cachedReport;
+    }
+
+    const discordClient = new DiscordClient();
+    const messagesResult = messages?.length ? { count: messages.length, messages } : await discordClient.fetchLastHourMessages(channelId);
+    if (!messagesResult.messages.length) throw new Error('No messages found');
     console.log(`[Report] Generating${isUserGenerated ? ' user-requested' : ''} report for channel ${channelId}`);
     const generator = new ReportGenerator();
     return generator.generate(channelId, isUserGenerated);
 }
 
 export async function fetchNewsSummaries(): Promise<Report[]> {
-    try {
-        // Get the top 3 active channel IDs
-        const activeChannelIds = await getActiveChannelIds();
-
-        if (activeChannelIds.length === 0) {
-            console.log('[Reports] No active channels found');
-            return [{ headline: "NO NEWS IN THE LAST HOUR", city: "No updates", body: "No updates", timestamp: new Date().toISOString() }];
-        }
-
-        console.log(`[Reports] Generating reports for ${activeChannelIds.length} active channels: ${activeChannelIds.join(', ')}`);
-
-        // Generate or retrieve reports for each active channel
-        const summaries = await Promise.all(
-            activeChannelIds.map(async (channelId) => {
-                try {
-                    return await generateReport(channelId);
-                } catch (error) {
-                    console.error(`Error generating report for channel ${channelId}:`, error);
-                    return null;
-                }
-            })
-        );
-
-        // Filter out any null reports
-        const validSummaries = summaries.filter(Boolean) as Report[];
-        console.log(`[Reports] Generated ${validSummaries.length} valid reports out of ${activeChannelIds.length} channels`);
-
-        return validSummaries.length ? validSummaries : [{
-            headline: "NO NEWS IN THE LAST HOUR",
-            city: "No updates",
-            body: "No updates",
-            timestamp: new Date().toISOString()
-        }];
-    } catch (error) {
-        console.error('Error fetching news summaries:', error);
-        return [{
-            headline: "NO NEWS IN THE LAST HOUR",
-            city: "No updates",
-            body: "No updates",
-            timestamp: new Date().toISOString()
-        }];
-    }
+    const activeChannels = await getActiveChannels();
+    const summaries = await Promise.all(
+        activeChannels.map(async (channel) => {
+            try {
+                return await generateReport(channel.id, false, channel.messages); // Pass messages
+            } catch (error) {
+                console.error(`Error generating report for channel ${channel.id}:`, error);
+                return null;
+            }
+        })
+    );
+    const validSummaries = summaries.filter(Boolean) as Report[];
+    return validSummaries.length ? validSummaries : [{
+        headline: "NO NEWS IN THE LAST HOUR",
+        city: "No updates",
+        body: "No updates",
+        timestamp: new Date().toISOString()
+    }];
 }
