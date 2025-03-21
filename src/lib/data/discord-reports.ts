@@ -276,7 +276,6 @@ export async function generateReport(channelId: string, isUserGenerated = false,
         console.error(`[Report] No messages provided for channel ${channelId}, cannot generate report`);
         throw new Error('No messages available to generate report');
     }
-    const messagesResult = { count: messages.length, messages };
     return generator.generate(channelId, isUserGenerated); // Pass messages internally if needed
 }
 
