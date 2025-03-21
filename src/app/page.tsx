@@ -10,6 +10,8 @@ import { formatDate, getStartDate } from "@/lib/utils"
 import Link from "next/link"
 import { useEffect, useState } from "react"
 
+export const dynamic = 'force-dynamic';
+
 export default function Home() {
   const [latestExecutiveOrders, setLatestExecutiveOrders] = useState<ExecutiveOrder[]>([])
   const [newsSummaries, setNewsSummaries] = useState<Report[]>([])
