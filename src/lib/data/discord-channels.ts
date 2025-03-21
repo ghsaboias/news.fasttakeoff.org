@@ -31,7 +31,7 @@ async function cacheChannel(channelId: string, data: CachedChannel): Promise<voi
                 JSON.stringify(data),
                 { expirationTtl: 60 * 60 * 48 } // 48 hours
             );
-            console.log(`[KV DEBUG] Successfully cached channel data for ${channelId}`);
+            console.log(`[KV] Cached channel ${channelId} with messageCount: ${data.messageCounts["1h"]}`);
             return;
         }
 
@@ -44,16 +44,22 @@ async function cacheChannel(channelId: string, data: CachedChannel): Promise<voi
 
 export class DiscordClient {
     apiCallCount = 0;
+    callStartTime = Date.now();
 
     private delay(ms: number): Promise<void> {
         return new Promise(resolve => setTimeout(resolve, ms));
     }
 
     private async throttledFetch(url: string): Promise<Response> {
-        await this.delay(100);
+        const delayMs = 100;
+        await this.delay(delayMs);
         this.apiCallCount++;
 
-        console.log(`[Discord] Attempt #${this.apiCallCount}: Fetching ${url}`);
+        const elapsedSeconds = (Date.now() - this.callStartTime) / 1000;
+        const callRate = this.apiCallCount / (elapsedSeconds || 1);
+
+        console.log(`[Discord] Throttling for ${delayMs}ms, call #${this.apiCallCount}, rate: ${callRate.toFixed(2)}/sec`);
+        console.log(`[Discord] Fetching ${url}`);
         const token = process.env.DISCORD_TOKEN;
         const guildId = process.env.DISCORD_GUILD_ID;
         console.log(`[Discord] Guild ID: ${guildId || 'unset'}`);
@@ -110,6 +116,11 @@ export class DiscordClient {
     async fetchLastHourMessages(channelId: string): Promise<{ count: number; messages: DiscordMessage[] }> {
         const now = Date.now();
         const since = now - 60 * 60 * 1000; // Last hour
+        const sinceDate = new Date(since).toISOString();
+        const nowDate = new Date(now).toISOString();
+
+        console.log(`[Discord] Fetching messages for channel ${channelId} from ${sinceDate} to ${nowDate}`);
+
         let allMessages: DiscordMessage[] = [];
         let lastMessageId: string | undefined;
         let latestMessageTimestamp: string | undefined;
@@ -139,7 +150,7 @@ export class DiscordClient {
             lastMessageId = messages[messages.length - 1].id;
         }
 
-        console.log(`[Discord] Fetching messages for channel ${channelId}: ${allMessages.length} found`);
+        console.log(`[Discord] Completed fetching for channel ${channelId}: ${allMessages.length} messages found`);
         const channels = await this.fetchChannels();
         const channelInfo = channels.find(c => c.id === channelId);
 
@@ -192,9 +203,13 @@ export async function getActiveChannels(limit = Infinity): Promise<(DiscordChann
                 cachedChannels.push(...results.filter(Boolean) as CachedChannel[]);
 
                 // Filter fresh and active channels
+                let freshCount = 0;
+                let staleCount = 0;
+
                 for (const cachedChannel of cachedChannels) {
                     const cachedTime = new Date(cachedChannel.cachedAt).getTime();
                     if (cachedTime > oneHourAgo && cachedChannel.messageCounts["1h"] > 0) {
+                        freshCount++;
                         const channelInfo = channels.find(c => c.id === cachedChannel.channelId);
                         if (channelInfo) {
                             result.push({
@@ -203,9 +218,11 @@ export async function getActiveChannels(limit = Infinity): Promise<(DiscordChann
                                 lastMessageTimestamp: cachedChannel.lastMessageTimestamp
                             });
                         }
+                    } else {
+                        staleCount++;
                     }
                 }
-                console.log(`[Discord] Fresh cached active channels: ${result.length}`);
+                console.log(`[Discord] Cache results: ${freshCount} fresh, ${staleCount} stale channels`);
             }
         } catch (error) {
             console.error('[Discord] Error fetching cached active channels:', error);
@@ -213,13 +230,18 @@ export async function getActiveChannels(limit = Infinity): Promise<(DiscordChann
     }
 
     // API check for all channels, updating stale or uncached
-    console.log('[Discord] Checking all channels via API for fresh activity');
+    const channelsToCheck = channels.filter(c => !result.some(r => r.id === c.id));
+    console.log(`[Discord] Starting API check for ${channelsToCheck.length} channels not in fresh cache`);
+
     const channelsWithActivity: (DiscordChannel & { messageCounts: { "1h": number }; lastMessageTimestamp?: string })[] = [];
-    for (const channel of channels) {
+    let processedCount = 0;
+
+    for (const channel of channelsToCheck) {
         const cachedEntry = result.find(r => r.id === channel.id);
         const cachedTime = cachedEntry ? new Date(cachedEntry.lastMessageTimestamp || now).getTime() : 0;
         if (!cachedEntry || cachedTime < oneHourAgo) { // Skip if fresh
             try {
+                processedCount++;
                 const { count, messages } = await client.fetchLastHourMessages(channel.id);
                 if (count > 0) {
                     const lastMessageTimestamp = messages.length > 0
@@ -237,7 +259,7 @@ export async function getActiveChannels(limit = Infinity): Promise<(DiscordChann
         }
     }
 
-    console.log(`[Discord] API fetch complete: ${channelsWithActivity.length} active channels out of ${channels.length} total`);
+    console.log(`[Discord] API check complete: processed ${processedCount} of ${channelsToCheck.length} channels, found ${channelsWithActivity.length} active`);
     result.push(...channelsWithActivity.filter(c => !result.some(r => r.id === c.id))); // Deduplicate
     return result.sort((a, b) => b.messageCounts["1h"] - a.messageCounts["1h"]).slice(0, limit);
 }
