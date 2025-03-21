@@ -21,7 +21,7 @@ async function cacheReport(channelId: string, report: Report): Promise<void> {
     const context = getCloudflareContext() as unknown as { env: CloudflareEnv };
     const { env } = context;
     try {
-        console.log(`[KV DEBUG] Attempting to cache report for channel ${channelId}`);
+        console.log(`[KV] Caching report for channel ${channelId}`);
 
         const reportWithMetadata = {
             ...report,
@@ -29,7 +29,7 @@ async function cacheReport(channelId: string, report: Report): Promise<void> {
             generatedAt: report.generatedAt || new Date().toISOString()
         };
         const key = `report:${channelId}:1h`;
-        console.log(`[KV DEBUG] Caching with key: ${key}`);
+        console.log(`[KV] Using cache key: ${key}, TTL: 48h`);
 
         if (env.REPORTS_CACHE) {
             await env.REPORTS_CACHE.put(
@@ -37,13 +37,13 @@ async function cacheReport(channelId: string, report: Report): Promise<void> {
                 JSON.stringify(reportWithMetadata),
                 { expirationTtl: 60 * 60 * 48 } // 48 hours
             );
-            console.log(`[KV] Cached report for ${channelId} with TTL 48h`);
+            console.log(`[KV] Successfully cached report for ${channelId}, messageCount: ${report.messageCountLastHour || 0}`);
             return;
         }
 
-        console.log(`[KV DEBUG] KV binding not accessible, report not cached`);
+        console.log(`[KV] KV binding not accessible, report not cached`);
     } catch (error) {
-        console.error(`[KV DEBUG] Failed to cache report for channel ${channelId}:`, error);
+        console.error(`[KV] Failed to cache report for channel ${channelId}:`, error);
     }
 }
 
@@ -53,22 +53,25 @@ async function getCachedReport(channelId: string): Promise<Report | null> {
     const { env } = context;
     try {
         const key = `report:${channelId}:1h`;
-        console.log(`[KV DEBUG] Attempting to get cached report with key: ${key}`);
+        console.log(`[KV] Checking for cached report with key: ${key}`);
 
         if (env.REPORTS_CACHE) {
             const cachedData = await env.REPORTS_CACHE.get(key);
-            console.log(`[KV] Report cache for ${channelId}: ${cachedData ? 'hit' : 'miss'}`);
+            const cacheStatus = cachedData ? 'hit' : 'miss';
+            console.log(`[KV] Report cache for ${channelId}: ${cacheStatus}`);
+
             if (cachedData) {
-                console.log(`[KV DEBUG] Cache hit for channel ${channelId}`);
                 const report = JSON.parse(cachedData);
+                const generatedAt = report.generatedAt ? new Date(report.generatedAt).toISOString() : 'unknown';
+                console.log(`[KV] Cache hit for channel ${channelId}, generated at ${generatedAt}`);
                 return { ...report, cacheStatus: 'hit' };
             }
         }
 
-        console.log(`[KV DEBUG] Cache miss for channel ${channelId}`);
+        console.log(`[KV] Cache miss for channel ${channelId}`);
         return null;
     } catch (error) {
-        console.error(`[KV DEBUG] Failed to get cached report for channel ${channelId}:`, error);
+        console.error(`[KV] Failed to get cached report for channel ${channelId}:`, error);
         return null;
     }
 }
@@ -77,8 +80,9 @@ async function getCachedReport(channelId: string): Promise<Report | null> {
 export async function getActiveChannelIds(): Promise<string[]> {
     try {
         const activeChannels = await getActiveChannels();
-        console.log(`[Reports] Active channel IDs retrieved: ${activeChannels.length}`);
-        return activeChannels.map(channel => channel.id);
+        const channelIds = activeChannels.map(channel => channel.id);
+        console.log(`[Reports] Retrieved ${channelIds.length} active channel IDs: ${channelIds.join(', ')}`);
+        return channelIds;
     } catch (error) {
         console.error('Error getting active channel IDs:', error);
         return [];
@@ -169,19 +173,24 @@ class ReportGenerator {
                     console.log(`[Report] Using cached report for channel ${channelId}, generated at ${cachedReport.generatedAt}`);
                     return cachedReport;
                 }
+                console.log(`[Report] Cached report for ${channelId} is stale (generated at ${cachedReport.generatedAt})`);
             }
+        } else if (isUserGenerated) {
+            console.log(`[Report] User requested fresh report for channel ${channelId}, bypassing cache`);
+        } else {
+            console.log(`[Report] No cached report found for channel ${channelId}, generating new report`);
         }
 
         const discordClient = new DiscordClient();
+        console.log(`[Report] Fetching messages for channel ${channelId} from the last hour`);
         const messagesResult = await discordClient.fetchLastHourMessages(channelId);
         if (!messagesResult.messages.length) throw new Error('No messages found');
 
+        console.log(`[Report] Processing ${messagesResult.messages.length} messages for channel ${channelId}`);
         const formattedText = this.formatMessages(messagesResult.messages);
         const prompt = this.createPrompt(formattedText);
 
-        console.log('\n=== SENDING TO GROQ ===');
-        // console.log(prompt);
-        console.log('=== END PROMPT ===\n');
+        console.log(`[Report] Sending prompt to Groq API for channel ${channelId}`);
 
         const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
             method: 'POST',
@@ -222,9 +231,7 @@ class ReportGenerator {
             throw new Error('No content returned from Groq API');
         }
 
-        console.log('\n=== GROQ RESPONSE ===');
-        // console.log(completionText);
-        console.log('=== END RESPONSE ===\n');
+        console.log(`[Report] Received response from Groq API for channel ${channelId}`);
 
         const report = this.parseSummary(completionText);
 
@@ -244,6 +251,8 @@ class ReportGenerator {
             userGenerated: isUserGenerated
         };
 
+        console.log(`[Report] Generated report for channel ${channelId}, messageCount: ${messagesResult.count}`);
+
         // Cache the report with full metadata
         await cacheReport(channelId, reportWithMetadata);
 
@@ -252,6 +261,7 @@ class ReportGenerator {
 }
 
 export async function generateReport(channelId: string, isUserGenerated = false): Promise<Report> {
+    console.log(`[Report] Generating${isUserGenerated ? ' user-requested' : ''} report for channel ${channelId}`);
     const generator = new ReportGenerator();
     return generator.generate(channelId, isUserGenerated);
 }
@@ -262,8 +272,11 @@ export async function fetchNewsSummaries(): Promise<Report[]> {
         const activeChannelIds = await getActiveChannelIds();
 
         if (activeChannelIds.length === 0) {
+            console.log('[Reports] No active channels found');
             return [{ headline: "NO NEWS IN THE LAST HOUR", city: "No updates", body: "No updates", timestamp: new Date().toISOString() }];
         }
+
+        console.log(`[Reports] Generating reports for ${activeChannelIds.length} active channels: ${activeChannelIds.join(', ')}`);
 
         // Generate or retrieve reports for each active channel
         const summaries = await Promise.all(
@@ -279,6 +292,7 @@ export async function fetchNewsSummaries(): Promise<Report[]> {
 
         // Filter out any null reports
         const validSummaries = summaries.filter(Boolean) as Report[];
+        console.log(`[Reports] Generated ${validSummaries.length} valid reports out of ${activeChannelIds.length} channels`);
 
         return validSummaries.length ? validSummaries : [{
             headline: "NO NEWS IN THE LAST HOUR",

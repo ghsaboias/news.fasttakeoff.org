@@ -12,6 +12,7 @@ export async function GET(request: Request) {
         console.log(`[API] GET /api/reports: ${channelId ? `Fetching report for channel ${channelId}` : 'Fetching top reports'}`);
 
         if (channelId) {
+            console.log(`[API] Generating single report for requested channel ${channelId}`);
             const report = await generateReport(channelId);
             return NextResponse.json(report);
         }
@@ -22,6 +23,7 @@ export async function GET(request: Request) {
         if (env.REPORTS_CACHE) {
             try {
                 const list = await env.REPORTS_CACHE.list({ prefix: 'report:' });
+                console.log(`[API] Found ${list.keys.length} reports in KV cache`);
 
                 if (list.keys.length) {
                     const reports = await Promise.all(
@@ -42,7 +44,10 @@ export async function GET(request: Request) {
                         const generatedAt = new Date(report.generatedAt).getTime();
                         return generatedAt > oneHourAgo;
                     });
+
+                    const freshChannelIds = freshReports.map(r => r.channelId).filter(Boolean);
                     console.log(`[API] Fresh reports in KV: ${freshReports.length}/${validReports.length} valid`);
+                    console.log(`[API] Fresh report channel IDs: ${freshChannelIds.join(', ')}`);
 
                     if (freshReports.length >= 3) {
                         const sortedReports = freshReports.sort((a, b) => {
@@ -51,19 +56,21 @@ export async function GET(request: Request) {
                             return countB - countA;
                         }).slice(0, 3);
 
+                        const selectedIds = sortedReports.map(r => r.channelId).filter(Boolean);
+                        console.log(`[API] Returning top 3 cached reports for channels: ${selectedIds.join(', ')}`);
                         return NextResponse.json(sortedReports);
                     }
 
                     console.log('[API] Fewer than 3 fresh reports in cache, generating additional reports');
                     const freshReportIds = freshReports.map(r => r.channelId);
                     const activeChannelIds = await getActiveChannelIds();
-                    console.log(`[API] Retrieved ${activeChannelIds.length} active channel IDs`);
-                    console.log(`[API] Active channels to process: ${activeChannelIds.length}, fresh IDs: ${freshReportIds.length}`);
+                    console.log(`[API] Active channel IDs: ${activeChannelIds.join(', ')}`);
+
                     const channelsToGenerate = activeChannelIds.filter(
                         id => id && !freshReportIds.includes(id)
                     );
 
-                    console.log(`[API] Generating reports for ${channelsToGenerate.length} additional channels`);
+                    console.log(`[API] Generating reports for ${channelsToGenerate.length} additional channels: ${channelsToGenerate.join(', ')}`);
                     const newReports = await Promise.all(
                         channelsToGenerate.map(channelId => generateReport(channelId as string))
                     );
@@ -75,7 +82,9 @@ export async function GET(request: Request) {
                         return countB - countA;
                     }).slice(0, 3);
 
+                    const finalChannelIds = sortedReports.map(r => r.channelId).filter(Boolean);
                     console.log(`[API] Returning ${sortedReports.length} reports (${freshReports.length} from cache, ${newReports.length} newly generated)`);
+                    console.log(`[API] Final selected channel IDs: ${finalChannelIds.join(', ')}`);
                     return NextResponse.json(sortedReports);
                 }
             } catch (error) {
@@ -84,8 +93,12 @@ export async function GET(request: Request) {
         }
 
         console.log('[API] No cached reports found, fetching fresh reports');
+        const activeChannelIds = await getActiveChannelIds();
+        console.log(`[API] Generating fresh reports for active channels: ${activeChannelIds.join(', ')}`);
+
         const reports = await fetchNewsSummaries();
-        console.log(`[API] Generated ${reports.length} fresh reports`);
+        const reportChannelIds = reports.map(r => r.channelId).filter(Boolean);
+        console.log(`[API] Generated ${reports.length} fresh reports for channels: ${reportChannelIds.join(', ')}`);
 
         return NextResponse.json(reports);
     } catch (error) {
@@ -106,12 +119,14 @@ export async function POST(request: Request) {
         console.log(`[API] POST /api/reports: channelId=${channelId}, timeframe=${timeframe}`);
 
         if (!channelId || !timeframe) {
+            console.log('[API] POST request missing required parameters');
             return NextResponse.json({ error: 'Missing channelId or timeframe' }, { status: 400 });
         }
 
         // Set userGenerated flag to true for POST requests
+        console.log(`[API] Generating user-requested report for channel ${channelId}`);
         const report = await generateReport(channelId, true);
-        console.log('[API] Report generated successfully:', report);
+        console.log(`[API] User-requested report generated for channel ${channelId}, messageCount: ${report.messageCountLastHour || 0}`);
         return NextResponse.json({ report });
     } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'Unknown error';
