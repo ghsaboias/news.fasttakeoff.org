@@ -22,7 +22,6 @@ async function cacheReport(channelId: string, report: Report): Promise<void> {
     const context = getCloudflareContext() as unknown as { env: CloudflareEnv };
     const { env } = context;
     try {
-        console.log(`[KV] Caching report for channel ${channelId}`);
 
         const reportWithMetadata = {
             ...report,
@@ -30,7 +29,6 @@ async function cacheReport(channelId: string, report: Report): Promise<void> {
             generatedAt: report.generatedAt || new Date().toISOString()
         };
         const key = `report:${channelId}:1h`;
-        console.log(`[KV] Using cache key: ${key}, TTL: 48h`);
 
         if (env.REPORTS_CACHE) {
             await env.REPORTS_CACHE.put(
@@ -54,7 +52,6 @@ async function getCachedReport(channelId: string): Promise<Report | null> {
     const { env } = context;
     try {
         const key = `report:${channelId}:1h`;
-        console.log(`[KV] Checking for cached report with key: ${key}`);
 
         if (env.REPORTS_CACHE) {
             const cachedData = await env.REPORTS_CACHE.get(key);
