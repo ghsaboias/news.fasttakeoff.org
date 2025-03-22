@@ -69,7 +69,6 @@ async function getCachedReport(channelId: string): Promise<Report | null> {
             }
         }
 
-        console.log(`[KV] Cache miss for channel ${channelId}`);
         return null;
     } catch (error) {
         console.error(`[KV] Failed to get cached report for channel ${channelId}:`, error);
@@ -95,9 +94,7 @@ class ReportGenerator {
 
     private async trackedFetch(url: string, options: RequestInit): Promise<Response> {
         this.subrequestCount++;
-        console.log(`[Report] Subrequest #${this.subrequestCount}: Fetching ${url}`);
         const response = await fetch(url, options);
-        console.log(`[Report] Subrequest #${this.subrequestCount}: Response status ${response.status}`);
         return response;
     }
 
@@ -196,7 +193,6 @@ class ReportGenerator {
         }
 
         const discordClient = new DiscordClient();
-        console.log(`[Report] Fetching messages for channel ${channelId} from the last hour`);
         const messagesResult = await discordClient.fetchLastHourMessages(channelId);
         if (!messagesResult.messages.length) throw new Error('No messages found');
 
