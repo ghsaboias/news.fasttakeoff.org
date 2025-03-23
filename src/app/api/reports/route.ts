@@ -1,4 +1,5 @@
-import { fetchNewsSummaries, generateReport, getActiveChannelIds, Report } from '@/lib/data/discord-reports';
+import { fetchNewsSummaries, generateReport, getActiveChannelIds } from '@/lib/data/discord-reports';
+import { Report } from '@/lib/types/core';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { NextResponse } from 'next/server';
 import type { CloudflareEnv } from '../../../../cloudflare-env';

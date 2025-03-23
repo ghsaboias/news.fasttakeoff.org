@@ -1,21 +1,8 @@
 // src/lib/data/discord-reports.ts
-import { DiscordMessage } from '@/lib/types/core';
+import { DiscordMessage, Report } from '@/lib/types/core';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
 import type { CloudflareEnv } from '../../../cloudflare-env.d';
 import { DiscordClient, getActiveChannels } from './discord-channels';
-
-export interface Report {
-    headline: string;
-    city: string;
-    body: string;
-    timestamp: string;
-    channelId?: string;
-    cacheStatus?: 'hit' | 'miss';
-    messageCountLastHour?: number;
-    lastMessageTimestamp?: string;
-    generatedAt?: string;
-    userGenerated?: boolean;
-}
 
 // Cache report in KV (if available)
 async function cacheReport(channelId: string, report: Report): Promise<void> {
@@ -98,12 +85,12 @@ class ReportGenerator {
     private formatMessages(messages: DiscordMessage[]): string {
         return messages
             .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
-            .map((msg) => {
-                const timestamp = new Date(msg.timestamp).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
-                const parts = [`[${timestamp}] Source: ${msg.content}`];
+            .map((message) => {
+                const timestamp = new Date(message.timestamp).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
+                const parts = [`[${timestamp}] Message: ${message.content}`];
 
-                if (msg.embeds?.length) {
-                    msg.embeds.forEach(embed => {
+                if (message.embeds?.length) {
+                    message.embeds.forEach(embed => {
                         if (embed.title) {
                             parts.push(`Title: ${embed.title}`);
                         }
@@ -122,8 +109,8 @@ class ReportGenerator {
                     });
                 }
 
-                if (msg.referenced_message?.content) {
-                    parts.push(`Context: ${msg.referenced_message.content}`);
+                if (message.referenced_message?.content) {
+                    parts.push(`Context: ${message.referenced_message.content}`);
                 }
 
                 return parts.join('\n');
@@ -141,8 +128,8 @@ class ReportGenerator {
             Requirements:
             - Start with ONE clear and specific headline in ALL CAPS
             - Second line must be in format: "City" (just the location name, no date)
-            - First paragraph must summarize the most important verified development, including key names, numbers, locations, dates, etc.
-            - Subsequent paragraphs should cover other significant developments
+            - Paragraphs must summarize the most important verified developments, including key names, numbers, locations, dates, etc.
+            - Paragraphs must be in the order of most important to least important
             - Do NOT include additional headlines - weave all events into a cohesive narrative
             - Only include verified facts and direct quotes from official statements
             - Maintain strictly neutral tone - avoid loaded terms or partisan framing
@@ -193,7 +180,13 @@ class ReportGenerator {
         const messagesResult = await discordClient.fetchLastHourMessages(channelId);
         if (!messagesResult.messages.length) throw new Error('No messages found');
 
-        console.log(`[Report] Processing ${messagesResult.messages.length} messages for channel ${channelId}`);
+        // Get channel data to retrieve name
+        const channels = await discordClient.fetchChannels();
+        const channel = channels.find(c => c.id === channelId);
+        // Clean up channel name by removing emoji prefixes
+        const channelName = channel?.name || `Channel_${channelId}`;
+
+        console.log(`[Report] Processing ${messagesResult.messages.length} messages for channel ${channelId} (${channelName})`);
         const formattedText = this.formatMessages(messagesResult.messages);
         const prompt = this.createPrompt(formattedText);
 
@@ -250,6 +243,7 @@ class ReportGenerator {
         const reportWithMetadata: Report = {
             ...report,
             channelId,
+            channelName,
             cacheStatus: 'miss' as const,
             messageCountLastHour: messagesResult.count,
             lastMessageTimestamp,
@@ -257,7 +251,7 @@ class ReportGenerator {
             userGenerated: isUserGenerated
         };
 
-        console.log(`[Report] Generated report for channel ${channelId}, messageCount: ${messagesResult.count}`);
+        console.log(`[Report] Generated report for channel ${channelId}, messageCountLastHour: ${messagesResult.count}`);
 
         // Cache the report with full metadata
         await cacheReport(channelId, reportWithMetadata);
@@ -284,12 +278,21 @@ export async function generateReport(channelId: string, isUserGenerated = false,
 
     if (!messagesToUse.length) {
         console.log(`[Report] No messages found for channel ${channelId}, returning fallback report`);
+
+        // Get channel name
+        const discordClient = new DiscordClient();
+        const channels = await discordClient.fetchChannels();
+        const channel = channels.find(c => c.id === channelId);
+        // Clean up channel name by removing emoji prefixes
+        const channelName = channel?.name || `Channel_${channelId}`;
+
         return {
             headline: "NO ACTIVITY IN THE LAST HOUR",
             city: "N/A",
             body: "No messages were posted in this channel within the last hour.",
             timestamp: new Date().toISOString(),
             channelId,
+            channelName,
             messageCountLastHour: 0,
             generatedAt: new Date().toISOString(),
             cacheStatus: 'miss'
@@ -317,6 +320,7 @@ export async function fetchNewsSummaries(): Promise<Report[]> {
         headline: "NO NEWS IN THE LAST HOUR",
         city: "No updates",
         body: "No updates",
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
+        channelName: "No active channels"
     }];
 }

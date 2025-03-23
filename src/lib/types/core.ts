@@ -174,3 +174,17 @@ export interface DiscordChannel {
     messageCount?: number;
     messages?: DiscordMessage[];
 }
+
+export interface Report {
+    headline: string;
+    city: string;
+    body: string;
+    timestamp: string;
+    channelId?: string;
+    channelName?: string;
+    cacheStatus?: 'hit' | 'miss';
+    messageCountLastHour?: number;
+    lastMessageTimestamp?: string;
+    generatedAt?: string;
+    userGenerated?: boolean;
+}
