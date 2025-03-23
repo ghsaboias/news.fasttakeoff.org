@@ -15,7 +15,7 @@ interface ReportAccordionProps {
 export default function ReportAccordion({ reportData }: ReportAccordionProps) {
     if (reportData?.error) {
         return (
-            <div className="mt-4 p-4 bg-destructive/10 text-destructive rounded-lg">
+            <div className="mt-4 p-4 bg-destructive-light text-destructive rounded-lg">
                 {reportData.error}
             </div>
         );
@@ -28,7 +28,7 @@ export default function ReportAccordion({ reportData }: ReportAccordionProps) {
                     <AccordionItem value="report">
                         <AccordionTrigger className="text-base font-semibold hover:no-underline cursor-pointer">
                             <div className="flex flex-col items-start gap-2 text-left">
-                                <div className="font-bold">{reportData.report.headline}</div>
+                                <div className="font-bold">{reportData.report.headline.toUpperCase()}</div>
                                 <div className="text-xs text-muted-foreground">
                                     Generated: {new Date(reportData.report.timestamp).toLocaleString()}
                                 </div>

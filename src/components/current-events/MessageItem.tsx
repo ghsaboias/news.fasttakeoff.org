@@ -1,7 +1,6 @@
 "use client";
 
 import { AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { Separator } from "@/components/ui/separator";
 import { DiscordMessage } from "@/lib/types/core";
 import Image from "next/image";
 import MediaPreview from "./MediaPreview";
@@ -22,7 +21,7 @@ interface MessageItemProps {
 export default function MessageItem({ message, index, noAccordion = false }: MessageItemProps) {
     // The content to display inside the accordion or directly
     const MessageContent = () => (
-        <div className="space-y-4 p-4 bg-secondary/50 rounded-lg">
+        <div className="space-y-4 p-4 bg-secondary-light rounded-lg">
             {/* Metadata Section */}
             <div className="flex items-center justify-between text-xs text-muted-foreground">
                 <div className="flex items-center gap-2">
@@ -45,8 +44,6 @@ export default function MessageItem({ message, index, noAccordion = false }: Mes
                     {formatDate(message.timestamp)}
                 </time>
             </div>
-
-            <Separator />
 
             {/* Content Section */}
             {message.content && (
@@ -152,7 +149,7 @@ export default function MessageItem({ message, index, noAccordion = false }: Mes
     return (
         <AccordionItem
             value={`message-${index}`}
-            className="border-b border-border/40 last:border-0"
+            className="border-b border-border last:border-0"
         >
             <AccordionTrigger className="text-sm">
                 {message.embeds?.[0]?.title || message.embeds?.[0]?.description?.slice(0, 100) || message.content || 'No content'}...

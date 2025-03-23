@@ -102,7 +102,7 @@ export default function ChannelDetailClient({ channel, report, messages }: Chann
 
                 {/* Error Message */}
                 {channelReport.error && (
-                    <div className="p-4 bg-destructive/10 text-destructive rounded-lg">
+                    <div className="p-4 bg-destructive-light text-destructive rounded-lg">
                         {channelReport.error}
                     </div>
                 )}
@@ -112,9 +112,9 @@ export default function ChannelDetailClient({ channel, report, messages }: Chann
                     <div className="space-y-6">
                         <div className="space-y-3">
                             <h3 className="text-xl font-bold tracking-tight">{channel.name}</h3>
-                            <h1 className="text-2xl font-bold">{channelReport.report.headline}</h1>
+                            <h1 className="text-2xl font-bold">{channelReport.report.headline.toUpperCase()}</h1>
                             <h2 className="text-lg font-medium text-muted-foreground">{channelReport.report.city}</h2>
-                            <div className="prose prose-zinc dark:prose-invert max-w-none">
+                            <div className="prose prose-zinc max-w-none">
                                 {formatReportText(channelReport.report.body)}
                             </div>
                         </div>
@@ -183,7 +183,7 @@ export default function ChannelDetailClient({ channel, report, messages }: Chann
                                 <div className="space-y-2">
                                     {channelData.messages.map((message, index) => (
                                         <div key={message.id}>
-                                            <div className={`bg-muted/50 p-4 rounded-md`}>
+                                            <div className={`bg-muted-light p-4 rounded-md`}>
                                                 <MessageItem message={message} index={index} noAccordion={true} />
                                             </div>
                                             {index < channelData.messages.length - 1 && (
@@ -193,7 +193,7 @@ export default function ChannelDetailClient({ channel, report, messages }: Chann
                                     ))}
                                 </div>
                             ) : (
-                                <div className="p-4 bg-muted/50 text-muted-foreground rounded-lg mt-4">
+                                <div className="p-4 bg-muted-light text-muted-foreground rounded-lg mt-4">
                                     {channelData.loading ?
                                         "Loading sources..." :
                                         "No messages found. Click 'Refresh Sources' to load the latest messages."}
