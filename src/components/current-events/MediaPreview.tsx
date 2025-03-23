@@ -21,6 +21,8 @@ export default function MediaPreview({ url, type, contentType, alt }: MediaPrevi
                             src={url}
                             alt={alt || 'Media content'}
                             className="w-full h-full object-cover hover:scale-105 transition-transform"
+                            width={1000}
+                            height={1000}
                         />
                     ) : (
                         <video
@@ -42,6 +44,8 @@ export default function MediaPreview({ url, type, contentType, alt }: MediaPrevi
                             src={url}
                             alt={alt || 'Media content'}
                             className="max-h-[90vh] max-w-full object-contain rounded-lg"
+                            width={1000}
+                            height={1000}
                         />
                     ) : (
                         <video

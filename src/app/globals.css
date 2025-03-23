@@ -1,4 +1,6 @@
-@import "tailwindcss";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
 @plugin "tailwindcss-animate";
 
@@ -118,9 +120,9 @@
 
 @layer base {
   * {
-    @apply border-border outline-ring/50;
+    @apply border-[var(--border)];
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-[var(--background)] text-[var(--foreground)];
   }
 }

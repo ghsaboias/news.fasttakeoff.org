@@ -1,12 +1,9 @@
 "use client";
 
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Report } from "@/lib/data/discord-reports";
-import { DiscordChannel, DiscordMessage } from "@/lib/types/core";
-import MessagesAccordion from "./MessagesAccordion";
-import ReportAccordion from "./ReportAccordion";
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { DiscordChannel, DiscordMessage, Report } from "@/lib/types/core";
+import { Clock, MessageSquare } from "lucide-react";
+import Link from "next/link";
 
 interface ChannelCardProps {
     channel: DiscordChannel;
@@ -28,8 +25,6 @@ export default function ChannelCard({
     channel,
     channelData,
     channelReports,
-    fetchMessages,
-    generateChannelReport,
 }: ChannelCardProps) {
     // Format timestamp if available
     const formattedTimestamp = channel.lastMessageTimestamp
@@ -40,60 +35,71 @@ export default function ChannelCard({
         })
         : null;
 
+    const reportData = channelReports.get(channel.id);
+    const messageCount = channelData.get(channel.id)?.count ?? channel.messageCount ?? 0;
+    const hasReport = reportData?.report && !reportData?.error;
+
     return (
-        <Card key={channel.id} className="flex flex-col">
-            <CardHeader>
-                <div className="flex items-center justify-between">
-                    <CardTitle className="line-clamp-1">{channel.name}</CardTitle>
-                    <Badge variant="outline">
-                        Position: {channel.position}
-                    </Badge>
-                </div>
-                {/* Message count and timestamp */}
-                {((channel.messageCount ?? 0) > 0 || (channelData.get(channel.id)?.count ?? 0) > 0) && (
-                    <div className="flex items-center gap-2 mt-2 text-sm text-muted-foreground">
-                        <span>
-                            {channelData.get(channel.id)?.count ?? channel.messageCount ?? 0} message{(channelData.get(channel.id)?.count ?? channel.messageCount ?? 0) !== 1 ? 's' : ''} in the last hour
-                        </span>
+        <Link href={`/current-events/${channel.id}`}>
+            <Card className="h-full flex flex-col hover:bg-accent/5 hover:shadow-md transition-all duration-200 cursor-pointer">
+                <CardHeader className="pb-2">
+                    <div className="flex items-center justify-between">
+                        <CardTitle className="line-clamp-1 text-lg font-semibold">{channel.name}</CardTitle>
+                    </div>
+                    {hasReport && (
+                        <div className="mt-2">
+                            <div className="font-semibold text-base line-clamp-1">
+                                {reportData?.report?.headline}
+                            </div>
+                            {reportData?.report?.city && (
+                                <div className="text-sm text-muted-foreground mt-1">
+                                    {reportData.report.city}
+                                </div>
+                            )}
+                        </div>
+                    )}
+                </CardHeader>
+
+                <CardContent className="flex-1 pb-2">
+                    {hasReport && reportData?.report?.body && (
+                        <p className="text-sm text-muted-foreground line-clamp-3">
+                            {reportData.report.body}
+                        </p>
+                    )}
+                    {!hasReport && messageCount > 0 && (
+                        <div className="flex items-center text-sm text-muted-foreground">
+                            <MessageSquare className="h-4 w-4 mr-1" />
+                            <span>
+                                {messageCount} message{messageCount !== 1 ? 's' : ''} in the last hour
+                            </span>
+                        </div>
+                    )}
+                </CardContent>
+
+                <CardFooter className="pt-0">
+                    <div className="w-full flex justify-between items-center text-xs text-muted-foreground">
+                        <div className="flex items-center gap-2">
+                            {messageCount > 0 && hasReport && (
+                                <div className="flex items-center">
+                                    <MessageSquare className="h-3 w-3 mr-1" />
+                                    <span>{messageCount}</span>
+                                </div>
+                            )}
+                            {reportData?.report?.timestamp && (
+                                <span>
+                                    Generated: {new Date(reportData.report.timestamp).toLocaleTimeString()}
+                                </span>
+                            )}
+                        </div>
                         {formattedTimestamp && (
-                            <span>• Last update: {formattedTimestamp}</span>
+                            <div className="flex items-center">
+                                <Clock className="h-3 w-3 mr-1" />
+                                <span>Last update: {formattedTimestamp}</span>
+                            </div>
                         )}
                     </div>
-                )}
-            </CardHeader>
-            <CardContent className="flex-1">
-                <div className="flex flex-col gap-4">
-                    <div className="flex items-center gap-2">
-                        <Button
-                            onClick={() => fetchMessages(channel.id)}
-                            disabled={channelData.get(channel.id)?.loading}
-                            variant="outline"
-                            size="sm"
-                        >
-                            {channelData.get(channel.id)?.loading ? "Fetching..." : "Fetch Sources"}
-                        </Button>
-                        {(channelData.get(channel.id)?.messages.length || channel.messages?.length) ? (
-                            <Button
-                                onClick={() => generateChannelReport(channel)}
-                                disabled={channelReports.get(channel.id)?.loading}
-                                variant="outline"
-                                size="sm"
-                            >
-                                {channelReports.get(channel.id)?.loading ? "Generating..." : "Generate Report"}
-                            </Button>
-                        ) : null}
-                    </div>
-
-                    {/* Report Section */}
-                    <ReportAccordion reportData={channelReports.get(channel.id)} />
-
-                    {/* Messages Section */}
-                    <MessagesAccordion
-                        channelDataForMessages={channelData.get(channel.id)}
-                        channelMessages={channel.messages}
-                    />
-                </div>
-            </CardContent>
-        </Card>
+                </CardFooter>
+            </Card>
+        </Link>
     );
 } 

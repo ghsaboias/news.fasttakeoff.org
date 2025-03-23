@@ -12,9 +12,9 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-import { Report } from "@/lib/data/discord-reports";
-import { DiscordChannel, DiscordMessage } from "@/lib/types/core";
-import { RefreshCw } from "lucide-react";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { DiscordChannel, DiscordMessage, Report } from "@/lib/types/core";
+import { FilterX, RefreshCw, Search } from "lucide-react";
 import { useEffect, useState } from "react";
 
 export interface Props {
@@ -30,6 +30,7 @@ export default function CurrentEventsClient({ channels }: Props) {
     );
     const [searchQuery, setSearchQuery] = useState("");
     const [sortBy, setSortBy] = useState<"position" | "name" | "recent" | "activity">("activity");
+    const [view, setView] = useState<"all" | "withReports">("all");
     const [isLoading, setIsLoading] = useState(true);
     const [activeChannels, setActiveChannels] = useState<DiscordChannel[]>([]);
     const [metadata, setMetadata] = useState<{
@@ -197,12 +198,16 @@ export default function CurrentEventsClient({ channels }: Props) {
     const filteredChannels = activeChannels
         .filter(channel => {
             const channelReport = channelReports.get(channel.id);
-            // Exclude channels where the report fetch failed
-            return !channelReport?.error;
+
+            // Filter by search query
+            const matchesSearch = channel.name.toLowerCase().includes(searchQuery.toLowerCase());
+
+            // Filter by view type
+            const matchesView = view === "all" ||
+                (view === "withReports" && channelReport?.report && !channelReport?.error);
+
+            return matchesSearch && matchesView && !channelReport?.error;
         })
-        .filter(channel =>
-            channel.name.toLowerCase().includes(searchQuery.toLowerCase())
-        )
         .sort((a, b) => {
             switch (sortBy) {
                 case "position":
@@ -227,11 +232,18 @@ export default function CurrentEventsClient({ channels }: Props) {
             }
         });
 
+    const clearSearch = () => setSearchQuery("");
+
+    const reportCount = filteredChannels.filter(channel => {
+        const report = channelReports.get(channel.id)?.report;
+        return report && !channelReports.get(channel.id)?.error;
+    }).length;
+
     return (
-        <div className="container mx-auto py-8">
+        <div className="py-8 px-4">
             <div className="flex flex-col gap-6">
                 {/* Header */}
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col gap-4 md:flex-row md:items-center justify-between">
                     <div className="flex items-center gap-2">
                         <h1 className="text-2xl font-bold">Current Events</h1>
                         <Button
@@ -251,47 +263,65 @@ export default function CurrentEventsClient({ channels }: Props) {
                                 Active Topics: {metadata.activeChannels}
                             </Badge>
                             <Badge variant="outline">
-                                Total Topics: {metadata.totalChannels}
+                                With Reports: {reportCount}
                             </Badge>
                         </div>
                         {metadata.timestamp && (
                             <span className="text-xs text-muted-foreground">
-                                Last updated: {new Date(metadata.timestamp).toLocaleTimeString()}
+                                Last updated: {new Date(metadata.timestamp).toISOString().substring(11, 19)}
                             </span>
                         )}
                     </div>
                 </div>
 
-                {/* Loading indicator */}
-                {isLoading && (
-                    <div className="flex justify-center py-4">
-                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
-                    </div>
-                )}
-
                 {/* Search and Filter */}
-                <div className="flex flex-col sm:flex-row gap-4">
-                    <Input
-                        placeholder="Search channels..."
-                        value={searchQuery}
-                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchQuery(e.target.value)}
-                        className="max-w-sm"
-                    />
-                    <Select value={sortBy} onValueChange={(value: "position" | "name" | "recent" | "activity") => setSortBy(value)}>
-                        <SelectTrigger className="w-[180px]">
-                            <SelectValue placeholder="Sort by..." />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="activity">Most Active</SelectItem>
-                            <SelectItem value="recent">Most Recent</SelectItem>
-                            <SelectItem value="position">Position</SelectItem>
-                            <SelectItem value="name">Name</SelectItem>
-                        </SelectContent>
-                    </Select>
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-center justify-between">
+                    <div className="relative max-w-sm">
+                        <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                        <Input
+                            placeholder="Search topics..."
+                            value={searchQuery}
+                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchQuery(e.target.value)}
+                            className="pl-8 pr-8 max-w-sm"
+                        />
+                        {searchQuery && (
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                className="absolute right-0 top-0 h-9 px-2"
+                                onClick={clearSearch}
+                            >
+                                <FilterX className="h-4 w-4" />
+                            </Button>
+                        )}
+                    </div>
+                    <div className="flex gap-2 items-center">
+                        <Tabs
+                            value={view}
+                            onValueChange={(value) => setView(value as "all" | "withReports")}
+                            className="mr-2"
+                        >
+                            <TabsList>
+                                <TabsTrigger value="all">All</TabsTrigger>
+                                <TabsTrigger value="withReports">With Reports</TabsTrigger>
+                            </TabsList>
+                        </Tabs>
+                        <Select value={sortBy} onValueChange={(value: "position" | "name" | "recent" | "activity") => setSortBy(value)}>
+                            <SelectTrigger className="w-[150px]">
+                                <SelectValue placeholder="Sort by..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="activity">Most Active</SelectItem>
+                                <SelectItem value="recent">Most Recent</SelectItem>
+                                <SelectItem value="position">Position</SelectItem>
+                                <SelectItem value="name">Name</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
                 </div>
 
                 {/* Grid of Cards */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-4">
                     {filteredChannels.map(channel => (
                         <ChannelCard
                             key={channel.id}
@@ -308,7 +338,14 @@ export default function CurrentEventsClient({ channels }: Props) {
                 {!isLoading && filteredChannels.length === 0 && (
                     <div className="text-center py-8">
                         <p className="text-lg text-gray-500">No active topics found</p>
-                        <p className="text-sm text-gray-400">Try again later or adjust your search criteria</p>
+                        {searchQuery && (
+                            <p className="text-sm text-gray-400 mt-2">
+                                Try adjusting your search criteria or
+                                <Button variant="link" onClick={clearSearch} className="px-1 py-0">
+                                    clear your search
+                                </Button>
+                            </p>
+                        )}
                     </div>
                 )}
             </div>

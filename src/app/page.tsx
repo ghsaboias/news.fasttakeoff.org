@@ -1,12 +1,12 @@
 // src/app/page.tsx
 'use client'
 
+import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Report } from "@/lib/data/discord-reports"
 import { fetchExecutiveOrders } from "@/lib/data/executive-orders"
-import { ExecutiveOrder } from "@/lib/types/core"
-import { formatDate, getStartDate } from "@/lib/utils"
+import { ExecutiveOrder, Report } from "@/lib/types/core"
+import { formatDate, formatTime, getStartDate } from "@/lib/utils"
 import Link from "next/link"
 import { useEffect, useState } from "react"
 
@@ -107,7 +107,7 @@ export default function Home() {
       </section>
 
       {/* Latest Executive Orders Section */}
-      <section className="container mx-auto px-4">
+      <section className="container mx-auto px-4 min-w-[90%]">
         <div className="flex flex-col gap-6">
           <div className="flex items-center justify-between">
             <h2 className="text-2xl font-bold tracking-tight md:text-3xl">Latest Executive Orders</h2>
@@ -115,7 +115,7 @@ export default function Home() {
               View all
             </Link>
           </div>
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
             {loadingEO ? (
               Array(3).fill(0).map((_, index) => (
                 <Card key={index} className="animate-pulse">
@@ -166,7 +166,7 @@ export default function Home() {
       </section>
 
       {/* Latest News Section */}
-      <section className="container mx-auto px-4">
+      <section className="container mx-auto px-4 min-w-[90%]">
         <div className="flex flex-col gap-6">
           <div className="flex items-center justify-between">
             <h2 className="text-2xl font-bold tracking-tight md:text-3xl">Latest News</h2>
@@ -174,15 +174,17 @@ export default function Home() {
               View all news
             </Link>
           </div>
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+
             {loadingNews ? (
               Array(3).fill(0).map((_, index) => (
-                <Card key={index} className="animate-pulse">
+                <Card key={index} className="animate-pulse min-h-[280px]">
                   <CardHeader>
                     <div className="h-6 bg-muted rounded w-3/4 mb-2"></div>
                   </CardHeader>
-                  <CardContent>
-                    <div className="h-4 bg-muted rounded w-full"></div>
+                  <CardContent className="flex flex-col h-full">
+                    <div className="h-4 bg-muted rounded w-full mb-auto"></div>
+                    <div className="mt-4 h-3 bg-muted rounded w-2/5"></div>
                   </CardContent>
                 </Card>
               ))
@@ -190,19 +192,38 @@ export default function Home() {
               newsSummaries.map((summary, index) => (
                 <Card key={index}>
                   <CardHeader>
+                    <div className="flex justify-between gap-2 mb-2">
+                      {summary.channelName && (
+                        <Badge variant="outline" className="px-1 py-0 h-5">
+                          {summary.channelName}
+                        </Badge>
+                      )}
+                      <span className="text-xs text-muted-foreground">
+                        {summary.generatedAt ? formatTime(summary.generatedAt) : 'Recent'}
+                      </span>
+                    </div>
                     <CardTitle>{summary.headline}</CardTitle>
                     <CardDescription>{summary.city}</CardDescription>
                   </CardHeader>
-                  <CardContent>
-                    <p className="text-sm text-muted-foreground">
+                  <CardContent className="flex flex-col h-full">
+                    <p className="text-sm text-muted-foreground mb-auto">
                       {summary.body.slice(0, 100)}...
                     </p>
-                    {summary.messageCountLastHour && (
-                      <div className="mt-2 text-xs text-muted-foreground">
-                        <span className="font-medium">{summary.messageCountLastHour}</span> updates in the last hour
-                      </div>
-                    )}
+                    <div className="mt-4 text-xs text-muted-foreground">
+                      {summary.messageCountLastHour && (
+                        <div className="mt-1">
+                          <span className="font-medium">{summary.messageCountLastHour}</span> updates in the last hour
+                        </div>
+                      )}
+                    </div>
                   </CardContent>
+                  <CardFooter>
+                    <Button asChild variant="outline" size="sm">
+                      <Link href={`/current-events/${summary.channelId}`}>
+                        Read More
+                      </Link>
+                    </Button>
+                  </CardFooter>
                 </Card>
               ))
             ) : (

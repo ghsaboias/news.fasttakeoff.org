@@ -2,7 +2,7 @@
 
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Separator } from "@/components/ui/separator";
-import { Report } from "@/lib/data/discord-reports";
+import { Report } from "@/lib/types/core";
 
 interface ReportAccordionProps {
     reportData: {

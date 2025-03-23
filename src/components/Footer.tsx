@@ -3,8 +3,8 @@ import Link from "next/link"
 
 export default function Footer() {
     return (
-        <footer className="bg-muted/40 py-6 md:py-12">
-            <div className="container mx-auto px-4">
+        <footer className="bg-muted/40 py-6">
+            <div className="container mx-auto px-4 min-w-[90%]">
                 <div className="grid grid-cols-1 gap-8 md:grid-cols-4">
                     <div className="space-y-4">
                         <h3 className="text-lg font-bold">AI World News</h3>
@@ -54,18 +54,10 @@ export default function Footer() {
                     </div>
                 </div>
                 <Separator className="my-6" />
-                <div className="flex flex-col items-center justify-between gap-4 md:flex-row">
+                <div className="flex flex-col items-center gap-4">
                     <p className="text-center text-sm text-muted-foreground">
                         &copy; {new Date().getFullYear()} AI World News. All rights reserved.
                     </p>
-                    <div className="flex items-center gap-4">
-                        <Link href="#" className="text-sm text-muted-foreground hover:underline">
-                            Accessibility
-                        </Link>
-                        <Link href="#" className="text-sm text-muted-foreground hover:underline">
-                            Sitemap
-                        </Link>
-                    </div>
                 </div>
             </div>
         </footer>

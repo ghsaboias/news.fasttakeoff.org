@@ -84,3 +84,24 @@ export function parseDispositionNotes(dispositionNotes?: string): RelatedEOInfo[
 
   return relatedEOs;
 }
+
+/**
+ * Formats a timestamp to show only the time in HH:MM format
+ * @param timestamp ISO timestamp string
+ * @returns Time in HH:MM format
+ */
+export function formatTime(timestamp: string | undefined): string {
+  if (!timestamp) return 'Time unavailable';
+
+  try {
+    const date = new Date(timestamp);
+    return date.toLocaleTimeString('en-US', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true
+    });
+  } catch (error) {
+    console.error('Error formatting time:', error);
+    return 'Invalid time';
+  }
+}
