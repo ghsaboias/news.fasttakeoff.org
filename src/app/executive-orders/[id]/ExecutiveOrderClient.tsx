@@ -111,13 +111,13 @@ export default function ExecutiveOrderClient({
                     <div className="mt-2 flex flex-wrap gap-x-4 gap-y-2 items-center">
                         <p className="text-lg text-muted-foreground">Signed on {initialOrder.date}</p>
                         {initialOrder.orderNumber && (
-                            <div className="inline-flex items-center gap-1 text-sm font-medium bg-primary/10 text-primary px-2 py-1 rounded">
+                            <div className="inline-flex items-center gap-1 text-sm font-medium bg-primary-light text-primary px-2 py-1 rounded">
                                 <Info className="h-4 w-4" />
                                 Executive Order {initialOrder.orderNumber}
                             </div>
                         )}
                         {initialOrder.publication.citation && (
-                            <div className="inline-flex items-center gap-1 text-sm font-medium bg-primary/10 text-primary px-2 py-1 rounded">
+                            <div className="inline-flex items-center gap-1 text-sm font-medium bg-primary-light text-primary px-2 py-1 rounded">
                                 <Info className="h-4 w-4" />
                                 {initialOrder.publication.citation}
                             </div>
@@ -151,7 +151,7 @@ export default function ExecutiveOrderClient({
                     )}
                 </div>
                 {relatedEOsFromNotes.length > 0 && (
-                    <div className="bg-muted/50 p-6 rounded-lg">
+                    <div className="bg-muted-light p-6 rounded-lg">
                         <div className="mt-4 pt-4 border-t border-border">
                             <h3 className="text-lg font-medium mb-2">Related Executive Orders</h3>
                             <ul className="space-y-2 flex-col">
@@ -184,7 +184,7 @@ export default function ExecutiveOrderClient({
                         <p className="text-muted-foreground whitespace-pre-line">{initialOrder.content.rawText}</p>
                     </div>
                 ) : (
-                    <div className="bg-muted/30 p-6 rounded-lg text-center">
+                    <div className="bg-muted-lighter p-6 rounded-lg text-center">
                         <h2 className="text-xl font-semibold mb-2">Full Text</h2>
                         <p className="text-muted-foreground">
                             The full text of this executive order is available through the links above.

@@ -87,7 +87,7 @@ export default function Home() {
   return (
     <div className="flex flex-col gap-16 py-8 md:py-12">
       {/* Hero Section */}
-      <section className="container mx-auto px-4">
+      <section className="mx-auto px-4">
         <div className="flex flex-col items-center gap-6 text-center">
           <h1 className="text-3xl font-bold tracking-tighter sm:text-5xl md:text-6xl">
             AI World News
@@ -96,18 +96,26 @@ export default function Home() {
             Your trusted source for AI governance, policy updates, and the latest developments in artificial intelligence regulation.
           </p>
           <div className="flex flex-col gap-4 sm:flex-row">
-            <Button asChild size="lg">
-              <Link href="/executive-orders">Explore Executive Orders</Link>
-            </Button>
-            <Button asChild variant="outline" size="lg">
+            <Button
+              asChild
+              variant="default"
+              size="lg"
+            >
               <Link href="/current-events">Latest News</Link>
+            </Button>
+            <Button
+              asChild
+              size="lg"
+              variant="outline"
+            >
+              <Link href="/executive-orders">Explore Executive Orders</Link>
             </Button>
           </div>
         </div>
       </section>
 
       {/* Latest Executive Orders Section */}
-      <section className="container mx-auto px-4 min-w-[90%]">
+      <section className="mx-auto px-4 w-[95%]">
         <div className="flex flex-col gap-6">
           <div className="flex items-center justify-between">
             <h2 className="text-2xl font-bold tracking-tight md:text-3xl">Latest Executive Orders</h2>
@@ -166,7 +174,7 @@ export default function Home() {
       </section>
 
       {/* Latest News Section */}
-      <section className="container mx-auto px-4 min-w-[90%]">
+      <section className="mx-auto px-4 w-[95%]">
         <div className="flex flex-col gap-6">
           <div className="flex items-center justify-between">
             <h2 className="text-2xl font-bold tracking-tight md:text-3xl">Latest News</h2>
@@ -202,7 +210,7 @@ export default function Home() {
                         {summary.generatedAt ? formatTime(summary.generatedAt) : 'Recent'}
                       </span>
                     </div>
-                    <CardTitle>{summary.headline}</CardTitle>
+                    <CardTitle>{summary.headline.toUpperCase()}</CardTitle>
                     <CardDescription>{summary.city}</CardDescription>
                   </CardHeader>
                   <CardContent className="flex flex-col h-full">

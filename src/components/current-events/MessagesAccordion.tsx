@@ -52,7 +52,7 @@ export default function MessagesAccordion({ channelDataForMessages, channelMessa
         );
     } else if (count === 0 && !loading) {
         return (
-            <div className="mt-4 p-4 bg-muted/50 text-muted-foreground rounded-lg">
+            <div className="mt-4 p-4 bg-muted-light text-muted-foreground rounded-lg">
                 No messages found
             </div>
         );
