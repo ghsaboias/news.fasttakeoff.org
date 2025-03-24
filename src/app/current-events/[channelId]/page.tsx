@@ -25,7 +25,7 @@ async function getChannelDetails(channelId: string): Promise<{
         // Generate report
         let report = null;
         try {
-            report = await generateReport(channelId, false, messages.messages);
+            report = await generateReport(channelId, false);
         } catch (error) {
             console.error("Error generating report:", error);
         }
