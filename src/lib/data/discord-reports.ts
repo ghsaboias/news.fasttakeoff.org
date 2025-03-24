@@ -284,23 +284,35 @@ export async function generateReport(channelId: string, isUserGenerated = false)
 }
 
 export async function fetchNewsSummaries(): Promise<Report[]> {
-    const activeChannels = await getActiveChannels();
-    const summaries = await Promise.all(
-        activeChannels.map(async (channel) => {
-            try {
-                return await generateReport(channel.id, false)
-            } catch (error) {
-                console.error(`Error generating report for channel ${channel.id}:`, error);
-                return null;
-            }
-        })
-    );
+    const activeChannels = await getActiveChannels(3, 10); // Fetch up to 10 candidates, return 3 active
+    const summaries: Report[] = [];
+
+    // Generate reports for active channels
+    for (const channel of activeChannels) {
+        try {
+            const report = await generateReport(channel.id, false);
+            summaries.push(report);
+        } catch (error) {
+            console.error(`Error generating report for channel ${channel.id}:`, error);
+        }
+    }
+
+    // Pad with fallback reports if needed
+    while (summaries.length < 3) {
+        const fallbackChannel = activeChannels[summaries.length] || { id: `fallback-${summaries.length}`, name: "Inactive Channel" };
+        summaries.push({
+            headline: "NO ACTIVITY IN THE LAST HOUR",
+            city: "N/A",
+            body: "No messages were posted in this channel within the last hour.",
+            timestamp: new Date().toISOString(),
+            channelId: fallbackChannel.id,
+            channelName: fallbackChannel.name,
+            messageCountLastHour: 0,
+            generatedAt: new Date().toISOString(),
+            cacheStatus: 'miss'
+        });
+    }
+
     const validSummaries = summaries.filter(Boolean) as Report[];
-    return validSummaries.length ? validSummaries : [{
-        headline: "NO NEWS IN THE LAST HOUR",
-        city: "No updates",
-        body: "No updates",
-        timestamp: new Date().toISOString(),
-        channelName: "No active channels"
-    }];
+    return validSummaries.slice(0, 3);
 }

@@ -40,27 +40,18 @@ export default function Home() {
   // Function to load news summaries - updated to use new API
   async function loadNewsSummaries() {
     try {
-      setLoadingNews(true);
-
-      // Simply fetch the reports from the API, which now handles finding top active channels
       const response = await fetch('/api/reports', {
         method: 'GET',
-        headers: {
-          'Cache-Control': 'no-cache',
-        },
-        next: { revalidate: 0 }, // Skip Next.js built-in cache
+        headers: { 'Cache-Control': 'no-cache' },
+        next: { revalidate: 0 },
       });
-
       if (!response.ok) throw new Error(`API error: ${response.status}`);
       const summaries = await response.json() as Report[];
-
-      // Sort by messageCountLastHour if available
       const sortedSummaries = summaries.sort((a, b) => {
         const countA = a.messageCountLastHour || 0;
         const countB = b.messageCountLastHour || 0;
         return countB - countA;
       });
-
       setNewsSummaries(sortedSummaries);
     } catch (error) {
       console.error('Error loading news summaries:', error);
@@ -70,19 +61,15 @@ export default function Home() {
     }
   }
 
-  // Load both on initial render
   useEffect(() => {
-    loadExecutiveOrders()
-    loadNewsSummaries()
-
-    // Refresh every hour
+    loadExecutiveOrders();
+    loadNewsSummaries();
     const refreshInterval = setInterval(() => {
-      loadExecutiveOrders()
-      loadNewsSummaries()
-    }, 60 * 60 * 1000) // 1 hour in milliseconds
-
-    return () => clearInterval(refreshInterval)
-  }, [])
+      loadExecutiveOrders();
+      loadNewsSummaries();
+    }, 60 * 60 * 1000);
+    return () => clearInterval(refreshInterval);
+  }, []);
 
   return (
     <div className="flex flex-col gap-16 py-8 md:py-12">
