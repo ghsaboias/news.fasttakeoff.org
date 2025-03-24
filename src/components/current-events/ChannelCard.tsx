@@ -41,7 +41,7 @@ export default function ChannelCard({
 
     return (
         <Link href={`/current-events/${channel.id}`}>
-            <Card className="h-full flex flex-col hover:bg-accent/5 hover:shadow-md transition-all duration-200 cursor-pointer">
+            <Card className="h-full flex flex-col hover:bg-accent/5 hover:shadow-md transition-all duration-200 cursor-pointer gap-2">
                 <CardHeader className="pb-2">
                     <div className="flex items-center justify-between">
                         <CardTitle className="line-clamp-1 text-lg font-semibold">{channel.name}</CardTitle>
@@ -60,7 +60,7 @@ export default function ChannelCard({
                     )}
                 </CardHeader>
 
-                <CardContent className="flex-1 pb-2">
+                <CardContent className="pb-2">
                     {hasReport && reportData?.report?.body && (
                         <p className="text-sm text-muted-foreground line-clamp-3">
                             {reportData.report.body}
