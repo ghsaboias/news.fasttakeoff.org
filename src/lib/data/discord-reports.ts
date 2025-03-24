@@ -260,39 +260,19 @@ class ReportGenerator {
     }
 }
 
-export async function generateReport(channelId: string, isUserGenerated = false, messages?: DiscordMessage[]): Promise<Report> {
-    const cachedReport = await getCachedReport(channelId);
-    const now = Date.now();
-    if (cachedReport && !isUserGenerated && cachedReport.generatedAt && new Date(cachedReport.generatedAt).getTime() > now - 60 * 60 * 1000) {
-        console.log(`[Report] Using cached report for channel ${channelId}`);
-        return cachedReport;
-    }
-
-    let messagesToUse = messages || [];
-    if (!messagesToUse.length) {
-        console.log(`[Report] No messages provided for channel ${channelId}, fetching from Discord`);
-        const discordClient = new DiscordClient();
-        const { messages: fetchedMessages } = await discordClient.fetchLastHourMessages(channelId);
-        messagesToUse = fetchedMessages;
-    }
+export async function generateReport(channelId: string, isUserGenerated = false): Promise<Report> {
+    const discordClient = new DiscordClient();
+    const { messages: messagesToUse, channelName } = await discordClient.fetchLastHourMessages(channelId, isUserGenerated);
 
     if (!messagesToUse.length) {
         console.log(`[Report] No messages found for channel ${channelId}, returning fallback report`);
-
-        // Get channel name
-        const discordClient = new DiscordClient();
-        const channels = await discordClient.fetchChannels();
-        const channel = channels.find(c => c.id === channelId);
-        // Clean up channel name by removing emoji prefixes
-        const channelName = channel?.name || `Channel_${channelId}`;
-
         return {
             headline: "NO ACTIVITY IN THE LAST HOUR",
             city: "N/A",
             body: "No messages were posted in this channel within the last hour.",
             timestamp: new Date().toISOString(),
             channelId,
-            channelName,
+            channelName: channelName || `Channel_${channelId}`,
             messageCountLastHour: 0,
             generatedAt: new Date().toISOString(),
             cacheStatus: 'miss'
@@ -308,7 +288,7 @@ export async function fetchNewsSummaries(): Promise<Report[]> {
     const summaries = await Promise.all(
         activeChannels.map(async (channel) => {
             try {
-                return await generateReport(channel.id, false, channel.messages); // Pass messages
+                return await generateReport(channel.id, false)
             } catch (error) {
                 console.error(`Error generating report for channel ${channel.id}:`, error);
                 return null;

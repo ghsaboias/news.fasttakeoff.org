@@ -6,33 +6,13 @@ import type { CloudflareEnv } from '../../../cloudflare-env.d';
 const DISCORD_API = 'https://discord.com/api/v10';
 const ALLOWED_EMOJIS = ['🔵', '🟡', '🔴', '🟠'];
 
-interface CachedChannel {
-    channelId: string;
-    name: string;
-    lastMessageTimestamp: string;
-    messageCounts: { "1h": number };
+// Removed CachedChannel interface entirely
+interface CachedMessages {
+    messages: DiscordMessage[];
     cachedAt: string;
-}
-
-// Cache channel data in KV (if available)
-async function cacheChannel(channelId: string, data: CachedChannel): Promise<void> {
-    const context = getCloudflareContext() as unknown as { env: CloudflareEnv };
-    const { env } = context;
-    try {
-        if (env.CHANNELS_CACHE) {
-            const key = `channel:${channelId}`;
-            await env.CHANNELS_CACHE.put(
-                key,
-                JSON.stringify(data),
-                { expirationTtl: 60 * 60 * 48 } // 48 hours
-            );
-            console.log(`[KV] Cached channel ${channelId} with messageCount: ${data.messageCounts["1h"]}`);
-            return;
-        }
-        console.log(`[KV DEBUG] KV binding not accessible, channel data not cached`);
-    } catch (error) {
-        console.error(`[KV DEBUG] Failed to cache channel data for ${channelId}:`, error);
-    }
+    messageCount: number;
+    lastMessageTimestamp: string;
+    channelName: string;
 }
 
 export class DiscordClient {
@@ -105,19 +85,107 @@ export class DiscordClient {
     }
 
     async fetchChannels(): Promise<DiscordChannel[]> {
+        const guildId = process.env.DISCORD_GUILD_ID || '';
+        const context = getCloudflareContext() as unknown as { env: CloudflareEnv };
+        const { env } = context;
+        const key = `channels:guild:${guildId}`;
+
+        if (env.CHANNELS_CACHE) {
+            const cached = await env.CHANNELS_CACHE.get(key);
+            if (cached) {
+                console.log(`[KV] Cache hit for guild channels ${guildId}`);
+                return this.filterChannels(JSON.parse(cached));
+            }
+        }
+
         const allChannels = await this.fetchAllChannels();
-        return this.filterChannels(allChannels);
+        const filteredChannels = this.filterChannels(allChannels);
+
+        if (env.CHANNELS_CACHE) {
+            await env.CHANNELS_CACHE.put(key, JSON.stringify(allChannels), { expirationTtl: 60 * 60 * 24 }); // 24 hours
+            console.log(`[KV] Cached guild channels ${guildId}`);
+        }
+
+        return filteredChannels;
     }
 
-    async fetchLastHourMessages(channelId: string): Promise<{ count: number; messages: DiscordMessage[] }> {
+    private async cacheMessages(channelId: string, messages: DiscordMessage[], channelName: string): Promise<void> {
+        const context = getCloudflareContext() as unknown as { env: CloudflareEnv };
+        const { env } = context;
+        try {
+            if (!env.CHANNELS_CACHE) {
+                console.log(`[KV] CHANNELS_CACHE binding not available, skipping cache for channel ${channelId}`);
+                return;
+            }
+
+            const latestMessage = messages[0]; // Assuming sorted by timestamp descending
+            const data: CachedMessages = {
+                messages,
+                cachedAt: new Date().toISOString(),
+                messageCount: messages.length,
+                lastMessageTimestamp: latestMessage?.timestamp || new Date().toISOString(),
+                channelName,
+            };
+
+            const key = `messages:${channelId}:1h`;
+            await env.CHANNELS_CACHE.put(key, JSON.stringify(data), { expirationTtl: 60 * 60 * 48 });
+            console.log(`[KV] Cached ${messages.length} messages for channel ${channelId} at ${data.cachedAt}`);
+        } catch (error) {
+            console.error(`[KV] Failed to cache messages for channel ${channelId}:`, error);
+        }
+    }
+
+    public async getCachedMessages(channelId: string): Promise<CachedMessages | null> {
+        const context = getCloudflareContext() as unknown as { env: CloudflareEnv };
+        const { env } = context;
+        try {
+            if (!env.CHANNELS_CACHE) {
+                console.log(`[KV] CHANNELS_CACHE binding not available for channel ${channelId}`);
+                return null;
+            }
+
+            const key = `messages:${channelId}:1h`;
+            const cachedData = await env.CHANNELS_CACHE.get(key);
+            if (!cachedData) {
+                console.log(`[KV] Cache miss for messages:${channelId}:1h`);
+                return null;
+            }
+
+            const data: CachedMessages = JSON.parse(cachedData);
+            const cachedTime = new Date(data.cachedAt).getTime();
+            const now = Date.now();
+            const oneHourAgo = now - 60 * 60 * 1000;
+
+            if (cachedTime > oneHourAgo) {
+                console.log(`[KV] Cache hit for channel ${channelId}, ${data.messageCount} messages, cached at ${data.cachedAt}`);
+                return data;
+            } else {
+                console.log(`[KV] Cache stale for channel ${channelId}, cached at ${data.cachedAt}`);
+                return null;
+            }
+        } catch (error) {
+            console.error(`[KV] Error retrieving cached messages for ${channelId}:`, error);
+            return null;
+        }
+    }
+
+    async fetchLastHourMessages(channelId: string, forceRefresh: boolean = false): Promise<{ count: number; messages: DiscordMessage[]; channelName: string }> {
+        if (!forceRefresh) {
+            const cached = await this.getCachedMessages(channelId);
+            if (cached) {
+                console.log(`[Discord] Returning ${cached.messageCount} cached messages for channel ${channelId}`);
+                return { count: cached.messageCount, messages: cached.messages, channelName: cached.channelName };
+            }
+        }
+        console.log(`[Discord] ${forceRefresh ? 'Forcing refresh' : 'Cache miss or stale'} for channel ${channelId}, fetching from Discord`);
+
         const now = Date.now();
         const since = now - 60 * 60 * 1000;
-
         let allMessages: DiscordMessage[] = [];
         let lastMessageId: string | undefined;
         let latestMessageTimestamp: string | undefined;
         let fetchCount = 0;
-        const maxFetches = 5; // Cap at 5 fetches (500 messages)
+        const maxFetches = 5;
 
         while (fetchCount < maxFetches) {
             const url = `${DISCORD_API}/channels/${channelId}/messages?limit=100${lastMessageId ? `&before=${lastMessageId}` : ''}`;
@@ -145,17 +213,15 @@ export class DiscordClient {
             fetchCount++;
         }
 
-        console.log(`[Discord] Completed fetching for channel ${channelId}: ${allMessages.length} messages found`);
-        const channelData: CachedChannel = {
-            channelId,
-            name: `Channel_${channelId}`,
-            lastMessageTimestamp: latestMessageTimestamp || new Date().toISOString(),
-            messageCounts: { "1h": allMessages.length },
-            cachedAt: new Date().toISOString()
-        };
-        await cacheChannel(channelId, channelData);
+        console.log(`[Discord] Fetched ${allMessages.length} messages for channel ${channelId}`);
+        allMessages.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
 
-        return { count: allMessages.length, messages: allMessages };
+        const channels = await this.fetchChannels();
+        const channel = channels.find(c => c.id === channelId);
+        const channelName = channel?.name || `Channel_${channelId}`;
+
+        await this.cacheMessages(channelId, allMessages, channelName);
+        return { count: allMessages.length, messages: allMessages, channelName };
     }
 }
 
@@ -166,91 +232,45 @@ export async function getChannels(): Promise<DiscordChannel[]> {
 
 export async function getActiveChannels(limit = 3): Promise<(DiscordChannel & { messageCounts: { "1h": number }; messages: DiscordMessage[]; lastMessageTimestamp?: string })[]> {
     const client = new DiscordClient();
-    const context = getCloudflareContext() as unknown as { env: CloudflareEnv };
-    const { env } = context;
     const channels = await client.fetchChannels();
     const result: (DiscordChannel & { messageCounts: { "1h": number }; messages: DiscordMessage[]; lastMessageTimestamp?: string })[] = [];
-    const now = Date.now();
-    const oneHourAgo = now - 60 * 60 * 1000;
+    const env = (getCloudflareContext() as unknown as { env: CloudflareEnv }).env;
 
-    // Check KV cache with freshness
-    let cachedChannels: CachedChannel[] = [];
     if (env.CHANNELS_CACHE) {
-        try {
-            const list = await env.CHANNELS_CACHE.list({ prefix: 'channel:' });
-            console.log(`[Discord] Cache check: ${list.keys.length} channels found in KV`);
+        const list = await env.CHANNELS_CACHE.list({ prefix: 'messages:' });
+        console.log(`[Discord] Message cache check: ${list.keys.length} channels found in KV`);
 
-            if (list.keys.length > 0) {
-                const promises = list.keys.map(async (key) => {
-                    const data = await env.CHANNELS_CACHE?.get(key.name);
-                    if (data) return JSON.parse(data) as CachedChannel;
-                    return null;
-                });
-                cachedChannels = (await Promise.all(promises)).filter(Boolean) as CachedChannel[];
-
-                let freshCount = 0;
-                let staleCount = 0;
-
-                for (const cachedChannel of cachedChannels) {
-                    const cachedTime = new Date(cachedChannel.cachedAt).getTime();
-                    const channelInfo = channels.find(c => c.id === cachedChannel.channelId);
-                    if (channelInfo && cachedTime > oneHourAgo && cachedChannel.messageCounts["1h"] >= 0) {
-                        freshCount++;
-                        result.push({
-                            ...channelInfo,
-                            messageCounts: cachedChannel.messageCounts,
-                            messages: [], // Fetch fresh messages if needed
-                            lastMessageTimestamp: cachedChannel.lastMessageTimestamp
-                        });
-                    } else {
-                        staleCount++;
-                    }
+        for (const key of list.keys) {
+            const channelId = key.name.split(':')[1];
+            const cached = await client.getCachedMessages(channelId);
+            if (cached) {
+                const channel = channels.find(c => c.id === channelId);
+                if (channel) {
+                    result.push({
+                        ...channel,
+                        messageCounts: { "1h": cached.messageCount },
+                        messages: cached.messages,
+                        lastMessageTimestamp: cached.lastMessageTimestamp,
+                    });
                 }
-                console.log(`[Discord] Cache results: ${freshCount} fresh, ${staleCount} stale channels`);
             }
-        } catch (error) {
-            console.error('[Discord] Error fetching cached active channels:', error);
         }
+        console.log(`[Discord] Found ${result.length} fresh cached active channels`);
     }
 
-    // Sample 20 channels with smallest position values not already in result
-    const channelsToCheck = channels
-        .filter(c => !result.some(r => r.id === c.id)) // Exclude already fresh cached channels
-        .sort((a, b) => a.position - b.position) // Sort by position ascending
-        .slice(0, 10); // Take top 20
-    console.log(`[Discord] Starting API check for ${channelsToCheck.length} channels (smallest positions)`);
+    const missingChannels = channels.filter(c => !result.some(r => r.id === c.id)).slice(0, Math.max(10, limit));
+    console.log(`[Discord] Fetching ${missingChannels.length} additional channels`);
 
-    const batchSize = 5;
-    const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
-
-    for (let i = 0; i < channelsToCheck.length; i += batchSize) {
-        const batch = channelsToCheck.slice(i, i + batchSize);
-        console.log(`[Discord] Processing batch ${Math.floor(i / batchSize) + 1}: ${batch.length} channels`);
-
-        const batchPromises = batch.map(async channel => {
-            try {
-                const { count, messages } = await client.fetchLastHourMessages(channel.id);
-                const lastMessageTimestamp = messages.length > 0
-                    ? messages.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())[0].timestamp
-                    : undefined;
-                result.push({
-                    ...channel,
-                    messageCounts: { "1h": count },
-                    messages,
-                    lastMessageTimestamp
-                });
-            } catch (error) {
-                console.error(`[Discord] Error fetching messages for channel ${channel.id}:`, error);
-                result.push({ ...channel, messageCounts: { "1h": 0 }, messages: [], lastMessageTimestamp: undefined });
-            }
+    for (const channel of missingChannels) {
+        const { count, messages } = await client.fetchLastHourMessages(channel.id);
+        result.push({
+            ...channel,
+            messageCounts: { "1h": count },
+            messages,
+            lastMessageTimestamp: messages[0]?.timestamp,
         });
-
-        await Promise.all(batchPromises);
-        await delay(1000); // 1s delay between batches
     }
 
-    console.log(`[Discord] API check complete: processed ${channelsToCheck.length} channels, found ${result.filter(r => r.messageCounts["1h"] > 0).length} active`);
-    return result
-        .sort((a, b) => b.messageCounts["1h"] - a.messageCounts["1h"])
-        .slice(0, limit);
+    console.log(`[Discord] Total active channels found: ${result.filter(r => r.messageCounts["1h"] > 0).length}`);
+    return result.sort((a, b) => b.messageCounts["1h"] - a.messageCounts["1h"]).slice(0, limit);
 }
