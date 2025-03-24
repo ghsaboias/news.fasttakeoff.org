@@ -6,7 +6,7 @@ import Link from "next/link"
 export default function Header() {
     return (
         <header className="border-b">
-            <div className="mx-auto flex h-16 items-center justify-between px-4">
+            <div className="mx-auto flex h-16 items-center justify-between px-8">
                 <div className="flex items-center gap-2">
                     <Link href="/" className="text-xl font-bold">
                         AI World News

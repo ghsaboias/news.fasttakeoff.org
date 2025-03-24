@@ -230,12 +230,13 @@ export async function getChannels(): Promise<DiscordChannel[]> {
     return client.fetchChannels();
 }
 
-export async function getActiveChannels(limit = 3): Promise<(DiscordChannel & { messageCounts: { "1h": number }; messages: DiscordMessage[]; lastMessageTimestamp?: string })[]> {
+export async function getActiveChannels(limit = 3, maxCandidates = 10): Promise<(DiscordChannel & { messageCounts: { "1h": number }; messages: DiscordMessage[]; lastMessageTimestamp?: string })[]> {
     const client = new DiscordClient();
     const channels = await client.fetchChannels();
     const result: (DiscordChannel & { messageCounts: { "1h": number }; messages: DiscordMessage[]; lastMessageTimestamp?: string })[] = [];
     const env = (getCloudflareContext() as unknown as { env: CloudflareEnv }).env;
 
+    // Step 1: Collect cached active channels
     if (env.CHANNELS_CACHE) {
         const list = await env.CHANNELS_CACHE.list({ prefix: 'messages:' });
         console.log(`[Discord] Message cache check: ${list.keys.length} channels found in KV`);
@@ -243,9 +244,9 @@ export async function getActiveChannels(limit = 3): Promise<(DiscordChannel & { 
         for (const key of list.keys) {
             const channelId = key.name.split(':')[1];
             const cached = await client.getCachedMessages(channelId);
-            if (cached) {
+            if (cached && cached.messageCount > 0) {
                 const channel = channels.find(c => c.id === channelId);
-                if (channel) {
+                if (channel && !result.some(r => r.id === channelId)) {
                     result.push({
                         ...channel,
                         messageCounts: { "1h": cached.messageCount },
@@ -254,23 +255,47 @@ export async function getActiveChannels(limit = 3): Promise<(DiscordChannel & { 
                     });
                 }
             }
+            if (result.length >= limit) break;
         }
         console.log(`[Discord] Found ${result.length} fresh cached active channels`);
     }
 
-    const missingChannels = channels.filter(c => !result.some(r => r.id === c.id)).slice(0, Math.max(10, limit));
-    console.log(`[Discord] Fetching ${missingChannels.length} additional channels`);
+    // Step 2: Fetch additional channels only if needed
+    if (result.length < limit) {
+        const remainingNeeded = limit - result.length;
+        const cachedIdsWithZero = new Set<string>();
+        if (env.CHANNELS_CACHE) {
+            const list = await env.CHANNELS_CACHE.list({ prefix: 'messages:' });
+            for (const key of list.keys) {
+                const channelId = key.name.split(':')[1];
+                const cached = await client.getCachedMessages(channelId);
+                if (cached && cached.messageCount === 0) cachedIdsWithZero.add(channelId);
+            }
+        }
 
-    for (const channel of missingChannels) {
-        const { count, messages } = await client.fetchLastHourMessages(channel.id);
-        result.push({
-            ...channel,
-            messageCounts: { "1h": count },
-            messages,
-            lastMessageTimestamp: messages[0]?.timestamp,
-        });
+        const missingChannels = channels
+            .filter(c => !result.some(r => r.id === c.id) && !cachedIdsWithZero.has(c.id))
+            .slice(0, Math.max(remainingNeeded, maxCandidates - result.length - cachedIdsWithZero.size)); // Fetch up to maxCandidates
+        console.log(`[Discord] Fetching ${missingChannels.length} additional channels to reach limit ${limit} (max candidates: ${maxCandidates})`);
+
+        for (const channel of missingChannels) {
+            const { count, messages } = await client.fetchLastHourMessages(channel.id);
+            if (count > 0) {
+                result.push({
+                    ...channel,
+                    messageCounts: { "1h": count },
+                    messages,
+                    lastMessageTimestamp: messages[0]?.timestamp,
+                });
+            }
+            if (result.length >= limit) break;
+        }
     }
 
-    console.log(`[Discord] Total active channels found: ${result.filter(r => r.messageCounts["1h"] > 0).length}`);
-    return result.sort((a, b) => b.messageCounts["1h"] - a.messageCounts["1h"]).slice(0, limit);
+    // Step 3: Sort and trim to limit
+    const sortedResult = result
+        .sort((a, b) => b.messageCounts["1h"] - a.messageCounts["1h"])
+        .slice(0, limit);
+    console.log(`[Discord] Returning ${sortedResult.length} active channels`);
+    return sortedResult;
 }

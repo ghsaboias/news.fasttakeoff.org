@@ -1,4 +1,3 @@
-// src/app/current-events/CurrentEventsClient.tsx
 "use client";
 
 import ChannelCard from "@/components/current-events/ChannelCard";
@@ -15,7 +14,7 @@ import {
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DiscordChannel, DiscordMessage, Report } from "@/lib/types/core";
 import { FilterX, RefreshCw, Search } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 export interface Props {
     channels: DiscordChannel[];
@@ -31,8 +30,8 @@ export default function CurrentEventsClient({ channels }: Props) {
     const [searchQuery, setSearchQuery] = useState("");
     const [sortBy, setSortBy] = useState<"position" | "name" | "recent" | "activity">("activity");
     const [view, setView] = useState<"all" | "withReports">("all");
-    const [isLoading, setIsLoading] = useState(true);
-    const [activeChannels, setActiveChannels] = useState<DiscordChannel[]>([]);
+    const [isLoading, setIsLoading] = useState(false); // Start as false to avoid initial flicker
+    const [activeChannels, setActiveChannels] = useState<DiscordChannel[]>(channels); // Initialize with server data
     const [metadata, setMetadata] = useState<{
         totalChannels: number;
         activeChannels: number;
@@ -42,43 +41,9 @@ export default function CurrentEventsClient({ channels }: Props) {
         activeChannels: 0,
         timestamp: new Date().toISOString(),
     });
+    const [lastFetchTime, setLastFetchTime] = useState<number>(0); // Track last fetch time
 
-    async function fetchActiveChannels() {
-        setIsLoading(true);
-        try {
-            const response = await fetch('/api/channels/active');
-            if (!response.ok) throw new Error(`Failed to fetch: ${response.status}`);
-
-            const data = await response.json() as {
-                channels: (DiscordChannel & { messageCounts: { "1h": number }, messages?: DiscordMessage[] })[],
-                metadata: typeof metadata
-            };
-            setActiveChannels(data.channels);
-            console.log(`[Client] Active channels loaded: ${data.channels.length}, total: ${channels.length}`);
-            setMetadata(data.metadata);
-
-            const newChannelData = new Map(channelData);
-            data.channels.forEach((channel: DiscordChannel & { messageCounts: { "1h": number }, messages?: DiscordMessage[] }) => {
-                if (channel.messageCounts["1h"] > 0) {
-                    newChannelData.set(channel.id, {
-                        count: channel.messageCounts["1h"],
-                        messages: channel.messages || [],
-                        loading: false
-                    });
-                }
-            });
-            setChannelData(newChannelData);
-
-            await Promise.all(data.channels.map(channel => fetchChannelReport(channel.id)));
-        } catch (error) {
-            console.error('Error fetching active channels:', error);
-            setActiveChannels(channels);
-        } finally {
-            setIsLoading(false);
-        }
-    }
-
-    async function fetchChannelReport(channelId: string) {
+    const fetchChannelReport = useCallback(async (channelId: string) => {
         setChannelReports(prev => {
             const newMap = new Map(prev);
             newMap.set(channelId, {
@@ -117,12 +82,54 @@ export default function CurrentEventsClient({ channels }: Props) {
                 return newMap;
             });
         }
-    }
+    }, []);
+
+    const fetchActiveChannels = useCallback(async (force = false) => {
+        const now = Date.now();
+        const oneMinuteAgo = now - 60 * 1000; // 1-minute cache
+        if (!force && lastFetchTime > oneMinuteAgo) {
+            console.log('[Client] Using cached active channels, last fetched:', new Date(lastFetchTime).toISOString());
+            return;
+        }
+
+        setIsLoading(true);
+        try {
+            const response = await fetch('/api/channels/active', { cache: 'no-store' });
+            if (!response.ok) throw new Error(`Failed to fetch: ${response.status}`);
+
+            const data = await response.json() as {
+                channels: (DiscordChannel & { messageCounts: { "1h": number }, messages?: DiscordMessage[] })[],
+                metadata: typeof metadata
+            };
+            setActiveChannels(data.channels);
+            console.log(`[Client] Active channels loaded: ${data.channels.length}, total: ${channels.length}`);
+            setMetadata(data.metadata);
+            setLastFetchTime(now);
+
+            const newChannelData = new Map(channelData);
+            data.channels.forEach((channel) => {
+                if (channel.messageCounts["1h"] > 0) {
+                    newChannelData.set(channel.id, {
+                        count: channel.messageCounts["1h"],
+                        messages: channel.messages || [],
+                        loading: false
+                    });
+                }
+            });
+            setChannelData(newChannelData);
+
+            await Promise.all(data.channels.map(channel => fetchChannelReport(channel.id)));
+        } catch (error) {
+            console.error('Error fetching active channels:', error);
+            setActiveChannels(channels); // Fallback to initial channels
+        } finally {
+            setIsLoading(false);
+        }
+    }, [channels, channelData, lastFetchTime, fetchChannelReport]);
 
     useEffect(() => {
-        fetchActiveChannels();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [channels]);
+        fetchActiveChannels(); // Initial fetch, respects cache if fresh channels
+    }, [fetchActiveChannels]);
 
     const fetchMessages = async (channelId: string) => {
         setChannelData(prev => {
@@ -168,7 +175,6 @@ export default function CurrentEventsClient({ channels }: Props) {
 
             if (!response.ok) {
                 const errorText = await response.text();
-                console.error(`[Client] Fetch failed with status ${response.status}: ${errorText}`);
                 throw new Error(`Failed to generate report: ${response.status} - ${errorText}`);
             }
 
@@ -194,18 +200,12 @@ export default function CurrentEventsClient({ channels }: Props) {
         }
     };
 
-    // Filter and sort channels, excluding those with failed reports
     const filteredChannels = activeChannels
         .filter(channel => {
             const channelReport = channelReports.get(channel.id);
-
-            // Filter by search query
             const matchesSearch = channel.name.toLowerCase().includes(searchQuery.toLowerCase());
-
-            // Filter by view type
             const matchesView = view === "all" ||
                 (view === "withReports" && channelReport?.report && !channelReport?.error);
-
             return matchesSearch && matchesView && !channelReport?.error;
         })
         .sort((a, b) => {
@@ -217,10 +217,8 @@ export default function CurrentEventsClient({ channels }: Props) {
                 case "recent":
                     const aReport = channelReports.get(a.id)?.report;
                     const bReport = channelReports.get(b.id)?.report;
-
                     if (!aReport?.lastMessageTimestamp) return 1;
                     if (!bReport?.lastMessageTimestamp) return -1;
-
                     return new Date(bReport.lastMessageTimestamp).getTime() -
                         new Date(aReport.lastMessageTimestamp).getTime();
                 case "activity":
@@ -239,17 +237,18 @@ export default function CurrentEventsClient({ channels }: Props) {
         return report && !channelReports.get(channel.id)?.error;
     }).length;
 
+    const handleRefresh = () => fetchActiveChannels(true);
+
     return (
         <div className="py-8 px-4">
             <div className="flex flex-col gap-6">
-                {/* Header */}
                 <div className="flex flex-col gap-4 md:flex-row md:items-center justify-between">
                     <div className="flex items-center gap-2">
                         <h1 className="text-2xl font-bold">Current Events</h1>
                         <Button
                             variant="outline"
                             size="sm"
-                            onClick={fetchActiveChannels}
+                            onClick={handleRefresh}
                             disabled={isLoading}
                             className="ml-2"
                         >
@@ -274,7 +273,6 @@ export default function CurrentEventsClient({ channels }: Props) {
                     </div>
                 </div>
 
-                {/* Search and Filter */}
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center justify-between">
                     <div className="relative max-w-sm">
                         <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -320,7 +318,6 @@ export default function CurrentEventsClient({ channels }: Props) {
                     </div>
                 </div>
 
-                {/* Grid of Cards */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-4">
                     {filteredChannels.map(channel => (
                         <ChannelCard
@@ -334,7 +331,6 @@ export default function CurrentEventsClient({ channels }: Props) {
                     ))}
                 </div>
 
-                {/* No active topics message */}
                 {!isLoading && filteredChannels.length === 0 && (
                     <div className="text-center py-8">
                         <p className="text-lg text-gray-500">No active topics found</p>
