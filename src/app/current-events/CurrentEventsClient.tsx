@@ -30,7 +30,7 @@ export default function CurrentEventsClient({ channels }: Props) {
     const [searchQuery, setSearchQuery] = useState("");
     const [sortBy, setSortBy] = useState<"position" | "name" | "recent" | "activity">("activity");
     const [view, setView] = useState<"all" | "withReports">("all");
-    const [isLoading, setIsLoading] = useState(false); // Start as false to avoid initial flicker
+    const [isLoading, setIsLoading] = useState(true); // Changed to true for initial loading state
     const [activeChannels, setActiveChannels] = useState<DiscordChannel[]>(channels); // Initialize with server data
     const [metadata, setMetadata] = useState<{
         totalChannels: number;
@@ -87,6 +87,8 @@ export default function CurrentEventsClient({ channels }: Props) {
     const fetchActiveChannels = useCallback(async (force = false) => {
         const now = Date.now();
         const oneMinuteAgo = now - 60 * 1000; // 1-minute cache
+        console.log('[Client] Last fetch time:', lastFetchTime);
+        console.log('[Client] One minute ago:', oneMinuteAgo);
         if (!force && lastFetchTime > oneMinuteAgo) {
             console.log('[Client] Using cached active channels, last fetched:', new Date(lastFetchTime).toISOString());
             return;
@@ -130,75 +132,6 @@ export default function CurrentEventsClient({ channels }: Props) {
     useEffect(() => {
         fetchActiveChannels(); // Initial fetch, respects cache if fresh channels
     }, [fetchActiveChannels]);
-
-    const fetchMessages = async (channelId: string) => {
-        setChannelData(prev => {
-            const newMap = new Map(prev);
-            newMap.set(channelId, { ...newMap.get(channelId) || { count: 0, messages: [] }, loading: true });
-            return newMap;
-        });
-
-        try {
-            const response = await fetch(`/api/channels/${channelId}/messages`);
-            if (!response.ok) throw new Error(`Failed to fetch messages: ${response.status}`);
-            const { count, messages } = await response.json() as { count: number, messages: DiscordMessage[] };
-
-            setChannelData(prev => {
-                const newMap = new Map(prev);
-                newMap.set(channelId, { count, messages, loading: false });
-                return newMap;
-            });
-        } catch (error) {
-            console.error(`[Client] Error fetching messages for channel ${channelId}:`, error);
-            setChannelData(prev => {
-                const newMap = new Map(prev);
-                newMap.set(channelId, { count: 0, messages: [], loading: false });
-                return newMap;
-            });
-        }
-    };
-
-    const generateChannelReport = async (channel: DiscordChannel) => {
-        setChannelReports(prev => {
-            const newMap = new Map(prev);
-            newMap.set(channel.id, { report: null, loading: true, error: null });
-            return newMap;
-        });
-
-        try {
-            console.log(`[Client] Sending POST to /api/reports with channelId: ${channel.id}`);
-            const response = await fetch('/api/reports', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ channelId: channel.id, timeframe: '1h' }),
-            });
-
-            if (!response.ok) {
-                const errorText = await response.text();
-                throw new Error(`Failed to generate report: ${response.status} - ${errorText}`);
-            }
-
-            const { report } = await response.json() as { report: Report };
-            console.log('[Client] Report received:', report);
-
-            setChannelReports(prev => {
-                const newMap = new Map(prev);
-                newMap.set(channel.id, { report, loading: false, error: null });
-                return newMap;
-            });
-        } catch (error) {
-            console.error('[Client] Error generating report:', error);
-            setChannelReports(prev => {
-                const newMap = new Map(prev);
-                newMap.set(channel.id, {
-                    report: null,
-                    loading: false,
-                    error: error instanceof Error ? error.message : 'Failed to generate report',
-                });
-                return newMap;
-            });
-        }
-    };
 
     const filteredChannels = activeChannels
         .filter(channel => {
@@ -318,6 +251,12 @@ export default function CurrentEventsClient({ channels }: Props) {
                     </div>
                 </div>
 
+                {isLoading && (
+                    <div className="flex justify-center items-center py-10">
+                        <p className="text-lg text-gray-500">Loading topics...</p>
+                    </div>
+                )}
+
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-4">
                     {filteredChannels.map(channel => (
                         <ChannelCard
@@ -325,16 +264,18 @@ export default function CurrentEventsClient({ channels }: Props) {
                             channel={channel}
                             channelData={channelData}
                             channelReports={channelReports}
-                            fetchMessages={fetchMessages}
-                            generateChannelReport={generateChannelReport}
                         />
                     ))}
                 </div>
 
                 {!isLoading && filteredChannels.length === 0 && (
                     <div className="text-center py-8">
-                        <p className="text-lg text-gray-500">No active topics found</p>
-                        {searchQuery && (
+                        {Array.from(channelReports.entries()).some(([_, state]) => state.error) ? (
+                            <p className="text-lg text-red-500">Error loading topics. Please try again later.</p>
+                        ) : (
+                            <p className="text-lg text-gray-500">No active topics found</p>
+                        )}
+                        {searchQuery && !Array.from(channelReports.entries()).some(([_, state]) => state.error) && (
                             <p className="text-sm text-gray-400 mt-2">
                                 Try adjusting your search criteria or
                                 <Button variant="link" onClick={clearSearch} className="px-1 py-0">
