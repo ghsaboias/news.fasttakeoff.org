@@ -37,7 +37,6 @@ export default function Home() {
     }
   }
 
-  // Function to load news summaries - updated to use new API
   async function loadNewsSummaries() {
     try {
       const response = await fetch('/api/reports', {
