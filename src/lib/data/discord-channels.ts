@@ -24,7 +24,7 @@ export class DiscordClient {
     }
 
     private async throttledFetch(url: string, retries = 3): Promise<Response> {
-        const delayMs = 500;
+        const delayMs = 250;
         for (let i = 0; i < retries; i++) {
             await this.delay(delayMs * (i + 1));
             this.apiCallCount++;
@@ -90,23 +90,24 @@ export class DiscordClient {
         const { env } = context;
         const key = `channels:guild:${guildId}`;
 
-        if (env.CHANNELS_CACHE) {
+        try {
             const cached = await env.CHANNELS_CACHE.get(key);
             if (cached) {
-                console.log(`[KV] Cache hit for guild channels ${guildId}`);
+                console.log(`Cache hit for guild channels ${guildId}`);
                 return this.filterChannels(JSON.parse(cached));
+            } else {
+                console.log(`Cache miss for guild channels ${guildId}, fetching from Discord API`);
+                const allChannels = await this.fetchAllChannels();
+                const filteredChannels = this.filterChannels(allChannels);
+                console.log(`Filtered ${filteredChannels.length} channels`);
+
+                await env.CHANNELS_CACHE.put(key, JSON.stringify(filteredChannels), { expirationTtl: 60 * 60 * 24 }); // 24 hours
+                return filteredChannels;
             }
+        } catch (error) {
+            console.error(`Error fetching channels for guild ${guildId}:`, error);
+            return [];
         }
-
-        const allChannels = await this.fetchAllChannels();
-        const filteredChannels = this.filterChannels(allChannels);
-
-        if (env.CHANNELS_CACHE) {
-            await env.CHANNELS_CACHE.put(key, JSON.stringify(allChannels), { expirationTtl: 60 * 60 * 24 }); // 24 hours
-            console.log(`[KV] Cached guild channels ${guildId}`);
-        }
-
-        return filteredChannels;
     }
 
     private async cacheMessages(channelId: string, messages: DiscordMessage[], channelName: string): Promise<void> {
