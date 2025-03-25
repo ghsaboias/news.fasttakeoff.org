@@ -4,315 +4,273 @@ import { getCloudflareContext } from '@opennextjs/cloudflare';
 import type { CloudflareEnv } from '../../../cloudflare-env.d';
 import { DiscordClient, getActiveChannels } from './discord-channels';
 
-// Cache report in KV (if available)
-async function cacheReport(channelId: string, report: Report): Promise<void> {
-    const context = getCloudflareContext() as unknown as { env: CloudflareEnv };
-    const { env } = context;
+// Cache functions
+const getCacheContext = (): { env: CloudflareEnv } => getCloudflareContext() as unknown as { env: CloudflareEnv };
+
+// Enhanced cache functions
+interface CacheResult { report: Report; isFresh: boolean; }
+
+async function getCachedReport(channelId: string): Promise<CacheResult | null> {
     try {
+        const { env } = getCacheContext();
+        if (!env.REPORTS_CACHE) return null;
 
-        const reportWithMetadata = {
-            ...report,
-            channelId,
-            generatedAt: report.generatedAt || new Date().toISOString()
-        };
-        const key = `report:${channelId}:1h`;
+        const data = await env.REPORTS_CACHE.get(`report:${channelId}:1h`);
+        if (!data) return null;
 
-        if (env.REPORTS_CACHE) {
-            await env.REPORTS_CACHE.put(
-                key,
-                JSON.stringify(reportWithMetadata),
-                { expirationTtl: 60 * 60 * 48 } // 48 hours
-            );
-            console.log(`[KV] Successfully cached report for ${channelId}, messageCount: ${report.messageCountLastHour || 0}`);
-            return;
-        }
+        const report = JSON.parse(data) as Report;
+        if (!report.generatedAt) return null;
 
-        console.log(`[KV] KV binding not accessible, report not cached`);
-    } catch (error) {
-        console.error(`[KV] Failed to cache report for channel ${channelId}:`, error);
-    }
-}
-
-// Get cached report from KV (if available)
-async function getCachedReport(channelId: string): Promise<Report | null> {
-    const context = getCloudflareContext() as unknown as { env: CloudflareEnv };
-    const { env } = context;
-    try {
-        const key = `report:${channelId}:1h`;
-
-        if (env.REPORTS_CACHE) {
-            const cachedData = await env.REPORTS_CACHE.get(key);
-            const cacheStatus = cachedData ? 'hit' : 'miss';
-            console.log(`[KV] Report cache for ${channelId}: ${cacheStatus}`);
-
-            if (cachedData) {
-                const report = JSON.parse(cachedData);
-                const generatedAt = report.generatedAt ? new Date(report.generatedAt).toISOString() : 'unknown';
-                console.log(`[KV] Cache hit for channel ${channelId}, generated at ${generatedAt}`);
-                return { ...report, cacheStatus: 'hit' };
-            }
-        }
-
-        return null;
-    } catch (error) {
-        console.error(`[KV] Failed to get cached report for channel ${channelId}:`, error);
-        return null;
-    }
-}
-
-// Get the top active channel IDs
-export async function getActiveChannelIds(): Promise<string[]> {
-    try {
-        const activeChannels = await getActiveChannels();
-        const channelIds = activeChannels.map(channel => channel.id);
-        console.log(`[Reports] Retrieved ${channelIds.length} active channel IDs: ${channelIds.join(', ')}`);
-        return channelIds;
-    } catch (error) {
-        console.error('Error getting active channel IDs:', error);
-        return [];
-    }
-}
-
-class ReportGenerator {
-    private subrequestCount = 0;
-
-    private async trackedFetch(url: string, options: RequestInit): Promise<Response> {
-        this.subrequestCount++;
-        const response = await fetch(url, options);
-        return response;
-    }
-
-    private formatMessages(messages: DiscordMessage[]): string {
-        return messages
-            .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
-            .map((message) => {
-                const timestamp = new Date(message.timestamp).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
-                const parts = [`[${timestamp}] Message: ${message.content}`];
-
-                if (message.embeds?.length) {
-                    message.embeds.forEach(embed => {
-                        if (embed.title) {
-                            parts.push(`Title: ${embed.title}`);
-                        }
-                        if (embed.description) {
-                            parts.push(`Content: ${embed.description}`);
-                        }
-                        if (embed.fields?.length) {
-                            embed.fields.forEach(field => {
-                                if (field.name.toLowerCase().includes('quote')) {
-                                    parts.push(`Quote: ${field.value}`);
-                                } else {
-                                    parts.push(`${field.name}: ${field.value}`);
-                                }
-                            });
-                        }
-                    });
-                }
-
-                if (message.referenced_message?.content) {
-                    parts.push(`Context: ${message.referenced_message.content}`);
-                }
-
-                return parts.join('\n');
-            })
-            .join('\n\n');
-    }
-
-    private createPrompt(formattedText: string): string {
-        return `
-            Create a concise, journalistic report covering the key developments.
-
-            Updates to analyze:
-            ${formattedText}
-
-            Requirements:
-            - Start with ONE clear and specific headline in ALL CAPS
-            - Second line must be in format: "City" (just the location name, no date)
-            - Paragraphs must summarize the most important verified developments, including key names, numbers, locations, dates, etc.
-            - Paragraphs must be in the order of most important to least important
-            - Do NOT include additional headlines - weave all events into a cohesive narrative
-            - Only include verified facts and direct quotes from official statements
-            - Maintain strictly neutral tone - avoid loaded terms or partisan framing
-            - NO analysis, commentary, or speculation
-            - NO use of terms like "likely", "appears to", or "is seen as"
-            - Remove any # that might be in the developments
-        `;
-    }
-
-    private parseSummary(text: string): Report {
-        const lines = text.split('\n').filter(Boolean);
-        if (lines.length < 3 || !lines[0] || !lines[1]) throw new Error('Invalid report format: missing headline or city');
-        return {
-            headline: lines[0].trim().replace(/\*+/g, '').trim(),
-            city: lines[1].trim(),
-            body: lines.slice(2).join('\n').trim(),
-            timestamp: new Date().toISOString(),
-        };
-    }
-
-    async generate(channelId: string, isUserGenerated = false): Promise<Report> {
-        // Reset counter for each report generation
-        this.subrequestCount = 0;
-
-        // Check cache first
-        const cachedReport = await getCachedReport(channelId);
         const now = Date.now();
+        const generatedAt = new Date(report.generatedAt).getTime();
+        const isFresh = generatedAt > (now - 60 * 60 * 1000); // 1 hour
 
-        // Use cached report if it's less than 1 hour old and not a user-initiated regeneration
-        if (cachedReport && !isUserGenerated) {
-            if (cachedReport.generatedAt) {
-                const generatedAt = new Date(cachedReport.generatedAt).getTime();
-                const oneHourAgo = now - 60 * 60 * 1000;
+        return { report: { ...report, cacheStatus: 'hit' as const }, isFresh };
+    } catch (error) {
+        console.error(`[KV] Cache error for ${channelId}:`, error);
+        return null;
+    }
+}
 
-                if (generatedAt > oneHourAgo) {
-                    console.log(`[Report] Using cached report for channel ${channelId}, generated at ${cachedReport.generatedAt}`);
-                    return cachedReport;
-                }
-                console.log(`[Report] Cached report for ${channelId} is stale (generated at ${cachedReport.generatedAt})`);
-            }
-        } else if (isUserGenerated) {
-            console.log(`[Report] User requested fresh report for channel ${channelId}, bypassing cache`);
-        } else {
-            console.log(`[Report] No cached report found for channel ${channelId}, generating new report`);
-        }
+async function cacheReport(channelId: string, report: Report): Promise<void> {
+    try {
+        const { env } = getCacheContext();
+        if (!env.REPORTS_CACHE) return;
 
-        const discordClient = new DiscordClient();
-        const messagesResult = await discordClient.fetchLastHourMessages(channelId);
-        if (!messagesResult.messages.length) throw new Error('No messages found');
-
-        // Get channel data to retrieve name
-        const channels = await discordClient.fetchChannels();
-        const channel = channels.find(c => c.id === channelId);
-        // Clean up channel name by removing emoji prefixes
-        const channelName = channel?.name || `Channel_${channelId}`;
-
-        console.log(`[Report] Processing ${messagesResult.messages.length} messages for channel ${channelId} (${channelName})`);
-        const formattedText = this.formatMessages(messagesResult.messages);
-        const prompt = this.createPrompt(formattedText);
-
-        console.log(`[Report] Sending prompt to Groq API for channel ${channelId}`);
-        const response = await this.trackedFetch('https://api.groq.com/openai/v1/chat/completions', {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${process.env.GROQ_API_KEY}`,
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                messages: [
-                    {
-                        role: "system",
-                        content: 'You are an experienced news wire journalist creating concise, clear updates. Your task is to report the latest developments. Focus on what\'s new and noteworthy.',
-                    },
-                    {
-                        role: "user",
-                        content: prompt,
-                    }
-                ],
-                model: "llama-3.3-70b-versatile",
+        await env.REPORTS_CACHE.put(
+            `report:${channelId}:1h`,
+            JSON.stringify({
+                ...report,
+                channelId,
+                generatedAt: report.generatedAt || new Date().toISOString(),
+                cacheStatus: 'miss' as const
             }),
-        });
+            { expirationTtl: 60 * 60 * 48 } // 48 hours
+        );
+    } catch (error) {
+        console.error(`[KV] Cache write error for ${channelId}:`, error);
+    }
+}
 
-        if (!response.ok) {
-            const errorText = await response.text();
-            throw new Error(`Groq API request failed: ${response.status} - ${errorText}`);
+// Report generation helpers
+function createReportFromMessages(messages: DiscordMessage[], channelInfo: { id: string, name: string, count: number }): Promise<Report> {
+    // Format messages for AI processing
+    const formattedText = messages
+        .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+        .map(message => {
+            const timestamp = new Date(message.timestamp).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
+            const parts = [`[${timestamp}] Message: ${message.content}`];
+
+            // Extract embed content
+            if (message.embeds?.length) {
+                message.embeds.forEach(embed => {
+                    if (embed.title) parts.push(`Title: ${embed.title}`);
+                    if (embed.description) parts.push(`Content: ${embed.description}`);
+                    if (embed.fields?.length) {
+                        embed.fields.forEach(field => {
+                            const prefix = field.name.toLowerCase().includes('quote') ? 'Quote' : field.name;
+                            parts.push(`${prefix}: ${field.value}`);
+                        });
+                    }
+                });
+            }
+
+            if (message.referenced_message?.content) parts.push(`Context: ${message.referenced_message.content}`);
+            return parts.join('\n');
+        })
+        .join('\n\n');
+
+    // Create AI prompt
+    const prompt = `
+        Create a concise, journalistic report covering the key developments.
+
+        Updates to analyze:
+        ${formattedText}
+
+        Requirements:
+        - Start with ONE clear and specific headline in ALL CAPS
+        - Second line must be in format: "City" (just the location name, no date)
+        - Paragraphs must summarize the most important verified developments, including key names, numbers, locations, dates, etc.
+        - Paragraphs must be in the order of most important to least important
+        - Do NOT include additional headlines - weave all events into a cohesive narrative
+        - Only include verified facts and direct quotes from official statements
+        - Maintain strictly neutral tone - avoid loaded terms or partisan framing
+        - NO analysis, commentary, or speculation
+        - NO use of terms like "likely", "appears to", or "is seen as"
+        - Remove any # that might be in the developments
+    `;
+
+    // Generate report with AI
+    return generateAIReport(prompt, messages, channelInfo);
+}
+
+async function generateAIReport(prompt: string, messages: DiscordMessage[], channelInfo: { id: string, name: string, count: number }): Promise<Report> {
+    // Make API request
+    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+            'Authorization': `Bearer ${process.env.GROQ_API_KEY}`,
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            messages: [
+                {
+                    role: "system",
+                    content: 'You are an experienced news wire journalist creating concise, clear updates. Your task is to report the latest developments. Focus on what\'s new and noteworthy.',
+                },
+                { role: "user", content: prompt }
+            ],
+            model: "llama-3.3-70b-versatile",
+        }),
+    });
+
+    if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`AI API request failed: ${response.status} - ${errorText}`);
+    }
+
+    const data = await response.json() as { choices?: Array<{ message?: { content?: string } }> };
+    const content = data.choices?.[0]?.message?.content;
+    if (!content) throw new Error('No content returned from AI API');
+
+    // Parse AI response
+    const lines = content.split('\n').filter(Boolean);
+    if (lines.length < 3) throw new Error('Invalid report format: missing content');
+
+    // Get latest message timestamp
+    const lastMessageTimestamp = messages.length > 0
+        ? messages.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())[0].timestamp
+        : new Date().toISOString();
+
+    // Build the report
+    return {
+        headline: lines[0].trim().replace(/\*+/g, '').trim(),
+        city: lines[1].trim(),
+        body: lines.slice(2).join('\n').trim(),
+        timestamp: new Date().toISOString(),
+        channelId: channelInfo.id,
+        channelName: channelInfo.name,
+        cacheStatus: 'miss' as const,
+        messageCountLastHour: channelInfo.count,
+        lastMessageTimestamp,
+        generatedAt: new Date().toISOString()
+    };
+}
+
+function createEmptyReport(channelId: string, channelName: string): Report {
+    return {
+        headline: "NO ACTIVITY IN THE LAST HOUR",
+        city: "N/A",
+        body: "No messages were posted in this channel within the last hour.",
+        timestamp: new Date().toISOString(),
+        channelId,
+        channelName: channelName || `Channel_${channelId}`,
+        messageCountLastHour: 0,
+        generatedAt: new Date().toISOString(),
+        cacheStatus: 'miss'
+    };
+}
+
+// API interface types
+export interface ReportOptions {
+    forceRefresh?: boolean;
+}
+
+export interface TopReportsOptions {
+    count?: number;
+    maxCandidates?: number;
+}
+
+/**
+ * Get a report for a specific Discord channel
+ * 
+ * @param channelId - The Discord channel ID to get a report for
+ * @param options - Options for report generation
+ * @returns A report object with channel activity summary
+ */
+export async function getChannelReport(
+    channelId: string,
+    options: ReportOptions = {}
+): Promise<Report> {
+    const { forceRefresh = false } = options;
+
+    try {
+        // Try cache first if not forcing refresh
+        if (!forceRefresh) {
+            const cached = await getCachedReport(channelId);
+            if (cached?.isFresh) return cached.report;
         }
 
-        const data = await response.json() as {
-            choices?: Array<{
-                message?: {
-                    content?: string
-                }
-            }>
-        };
-        const completionText = data.choices?.[0]?.message?.content;
+        // Fetch messages
+        const discord = new DiscordClient();
+        const { messages, count, channelName } = await discord.fetchLastHourMessages(channelId, forceRefresh);
 
-        if (!completionText) {
-            throw new Error('No content returned from Groq API');
-        }
+        // Handle empty channels
+        if (!messages.length) return createEmptyReport(channelId, channelName);
 
-        console.log(`[Report] Received response from Groq API for channel ${channelId}, total subrequests: ${this.subrequestCount}`);
+        // Generate report
+        const report = await createReportFromMessages(messages, { id: channelId, name: channelName, count });
 
-        const report = this.parseSummary(completionText);
-
-        // Find the latest message timestamp
-        const lastMessageTimestamp = messagesResult.messages.length > 0
-            ? messagesResult.messages.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())[0].timestamp
-            : new Date().toISOString();
-
-        // Create an object with all metadata
-        const reportWithMetadata: Report = {
-            ...report,
+        // Cache and return
+        await cacheReport(channelId, report);
+        return report;
+    } catch (error) {
+        console.error(`Error generating report for channel ${channelId}:`, error);
+        // Return empty report on error to prevent API failures
+        return createEmptyReport(
             channelId,
-            channelName,
-            cacheStatus: 'miss' as const,
-            messageCountLastHour: messagesResult.count,
-            lastMessageTimestamp,
-            generatedAt: new Date().toISOString(),
-            userGenerated: isUserGenerated
-        };
+            `Channel_${channelId}`
+        );
+    }
+}
 
-        console.log(`[Report] Generated report for channel ${channelId}, messageCountLastHour: ${messagesResult.count}`);
+/**
+ * Get reports for the most active Discord channels
+ * 
+ * @param options - Options for retrieving reports
+ * @returns Array of reports for the most active channels
+ */
+export async function getTopReports(
+    options: TopReportsOptions = {}
+): Promise<Report[]> {
+    const { count = 3, maxCandidates = 10 } = options;
 
-        // Cache the report with full metadata
-        await cacheReport(channelId, reportWithMetadata);
+    try {
+        // Get active channels
+        const activeChannels = await getActiveChannels(count, maxCandidates);
+        if (!activeChannels.length) return [];
 
-        return reportWithMetadata;
+        // Generate reports in parallel
+        const reportPromises = activeChannels.map(channel =>
+            getChannelReport(channel.id).catch(error => {
+                console.error(`Error getting report for ${channel.id}:`, error);
+                return createEmptyReport(channel.id, channel.name);
+            })
+        );
+
+        const results = await Promise.all(reportPromises);
+
+        // Pad with empty reports if needed
+        const reports = [...results];
+        while (reports.length < count) {
+            const i = reports.length;
+            const fallbackChannel = activeChannels[i] || { id: `fallback-${i}`, name: "Inactive Channel" };
+            reports.push(createEmptyReport(fallbackChannel.id, fallbackChannel.name));
+        }
+
+        // Sort by activity and return top results
+        return reports
+            .sort((a, b) => (b.messageCountLastHour || 0) - (a.messageCountLastHour || 0))
+            .slice(0, count);
+    } catch (error) {
+        console.error('Error getting top reports:', error);
+        // Return empty report array on error
+        return Array(count).fill(0).map((_, i) =>
+            createEmptyReport(`fallback-${i}`, `Channel ${i}`)
+        );
     }
 }
 
 export async function generateReport(channelId: string, isUserGenerated = false): Promise<Report> {
-    const discordClient = new DiscordClient();
-    const { messages: messagesToUse, channelName } = await discordClient.fetchLastHourMessages(channelId, isUserGenerated);
-
-    if (!messagesToUse.length) {
-        console.log(`[Report] No messages found for channel ${channelId}, returning fallback report`);
-        return {
-            headline: "NO ACTIVITY IN THE LAST HOUR",
-            city: "N/A",
-            body: "No messages were posted in this channel within the last hour.",
-            timestamp: new Date().toISOString(),
-            channelId,
-            channelName: channelName || `Channel_${channelId}`,
-            messageCountLastHour: 0,
-            generatedAt: new Date().toISOString(),
-            cacheStatus: 'miss'
-        };
-    }
-
-    const generator = new ReportGenerator();
-    return generator.generate(channelId, isUserGenerated);
-}
-
-export async function fetchNewsSummaries(): Promise<Report[]> {
-    const activeChannels = await getActiveChannels(3, 10); // Fetch up to 10 candidates, return 3 active
-    const summaries: Report[] = [];
-
-    // Generate reports for active channels
-    for (const channel of activeChannels) {
-        try {
-            const report = await generateReport(channel.id, false);
-            summaries.push(report);
-        } catch (error) {
-            console.error(`Error generating report for channel ${channel.id}:`, error);
-        }
-    }
-
-    // Pad with fallback reports if needed
-    while (summaries.length < 3) {
-        const fallbackChannel = activeChannels[summaries.length] || { id: `fallback-${summaries.length}`, name: "Inactive Channel" };
-        summaries.push({
-            headline: "NO ACTIVITY IN THE LAST HOUR",
-            city: "N/A",
-            body: "No messages were posted in this channel within the last hour.",
-            timestamp: new Date().toISOString(),
-            channelId: fallbackChannel.id,
-            channelName: fallbackChannel.name,
-            messageCountLastHour: 0,
-            generatedAt: new Date().toISOString(),
-            cacheStatus: 'miss'
-        });
-    }
-
-    const validSummaries = summaries.filter(Boolean) as Report[];
-    return validSummaries.slice(0, 3);
+    return getChannelReport(channelId, { forceRefresh: isUserGenerated });
 }
