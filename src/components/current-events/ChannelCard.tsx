@@ -17,8 +17,6 @@ interface ChannelCardProps {
         loading: boolean;
         error: string | null
     }>;
-    fetchMessages: (channelId: string) => Promise<void>;
-    generateChannelReport: (channel: DiscordChannel) => Promise<void>;
 }
 
 export default function ChannelCard({
@@ -87,7 +85,13 @@ export default function ChannelCard({
                             )}
                             {reportData?.report?.timestamp && (
                                 <span>
-                                    Generated: {new Date(reportData.report.timestamp).toLocaleTimeString()}
+                                    Generated: {channel.lastMessageTimestamp
+                                        ? new Date(channel.lastMessageTimestamp).toLocaleTimeString('en-US', {
+                                            hour: '2-digit',
+                                            minute: '2-digit',
+                                            hour12: false
+                                        })
+                                        : null}
                                 </span>
                             )}
                         </div>
