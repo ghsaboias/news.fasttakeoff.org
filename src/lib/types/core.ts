@@ -118,7 +118,7 @@ export interface PermissionOverwrite {
 
 export interface DiscordChannel {
     id: string;
-    type?: number;
+    type: number;
     guild_id?: string;
     position: number;
     permission_overwrites: PermissionOverwrite[];
