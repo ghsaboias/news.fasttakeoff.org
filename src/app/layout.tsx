@@ -16,7 +16,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "AI World News",
-  description: "Your trusted source for AI governance and policy news",
+  description: "AI-powered news for everyone.",
   icons: {
     icon: [
       {

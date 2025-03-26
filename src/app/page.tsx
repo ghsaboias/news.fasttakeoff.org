@@ -79,7 +79,7 @@ export default function Home() {
             AI World News
           </h1>
           <p className="max-w-[700px] text-lg text-muted-foreground md:text-xl">
-            Your trusted source for AI governance, policy updates, and the latest developments in artificial intelligence regulation.
+            AI-powered news for everyone.
           </p>
           <div className="flex flex-col gap-4 sm:flex-row">
             <Button
