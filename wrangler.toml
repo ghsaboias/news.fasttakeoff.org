@@ -3,6 +3,9 @@ name = "news-aiworld-com-br"
 compatibility_date = "2025-03-11"
 compatibility_flags = ["nodejs_compat"]
 
+[triggers]
+crons = ["*/15 * * * *"]
+
 [assets]
 directory = ".open-next/assets"
 binding = "ASSETS"
