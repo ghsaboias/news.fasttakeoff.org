@@ -1,5 +1,7 @@
+import { getCloudflareContext } from "@opennextjs/cloudflare"
 import { clsx, type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
+import type { CloudflareEnv } from "../../cloudflare-env.d"
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
@@ -105,3 +107,9 @@ export function formatTime(timestamp: string | undefined): string {
     return 'Invalid time';
   }
 }
+
+/**
+ * Returns the Cloudflare environment object from the cache context
+ * @returns Cloudflare environment object
+ */
+export const getCacheContext = (): { env: CloudflareEnv } => getCloudflareContext() as unknown as { env: CloudflareEnv };

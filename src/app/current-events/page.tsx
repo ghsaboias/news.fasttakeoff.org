@@ -1,4 +1,4 @@
-import { getChannels } from '@/lib/data/discord-channels';
+import { getChannels } from '@/lib/data/channels-service';
 import { unstable_cache } from 'next/cache';
 import CurrentEventsClient from './CurrentEventsClient';
 

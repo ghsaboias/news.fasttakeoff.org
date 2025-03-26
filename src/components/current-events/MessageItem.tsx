@@ -21,7 +21,7 @@ interface MessageItemProps {
 export default function MessageItem({ message, index, noAccordion = false }: MessageItemProps) {
     // The content to display inside the accordion or directly
     const MessageContent = () => (
-        <div className="space-y-4 p-4 bg-secondary-light rounded-lg">
+        <div className="space-y-4 bg-secondary-light rounded-lg">
             {/* Metadata Section */}
             <div className="flex items-center justify-between text-xs text-muted-foreground">
                 <div className="flex items-center gap-2">
