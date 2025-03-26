@@ -1,4 +1,4 @@
-import { getChannels } from '@/lib/data/discord-channels';
+import { getChannels } from '@/lib/data/channels-service';
 import { NextResponse } from 'next/server';
 
 export async function GET() {
