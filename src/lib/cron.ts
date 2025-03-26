@@ -12,6 +12,7 @@ interface ScheduledContext {
 export default {
     async scheduled(event: ScheduledContext): Promise<void> {
         console.log(`[CRON] Triggered at ${new Date().toISOString()}`);
+        console.log(event);
 
         try {
             // Step 1: Update messages for all channels
