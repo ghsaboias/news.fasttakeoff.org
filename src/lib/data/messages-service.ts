@@ -1,15 +1,6 @@
-import { DiscordMessage } from '@/lib/types/core'; // Import from core.ts
+import { CachedMessages, DiscordMessage } from '@/lib/types/core'; // Import from core.ts
 import type { CloudflareEnv } from '../../../cloudflare-env';
 import { getChannelName } from './channels-service';
-
-// Structure for cached data
-interface CachedMessages {
-    messages: DiscordMessage[];
-    cachedAt: string;
-    messageCount: number;
-    lastMessageTimestamp: string;
-    channelName: string;
-}
 
 const DISCORD_API = 'https://discord.com/api/v10';
 
@@ -104,14 +95,14 @@ export class MessagesService {
             lastMessageTimestamp: messages[0]?.timestamp || new Date().toISOString(),
             channelName: name,
         };
-        const cacheKey = `messages:${channelId}:1h`;
+        const cacheKey = `messages:${channelId}`;
         await this.env.MESSAGES_CACHE.put(cacheKey, JSON.stringify(data), { expirationTtl: 3600 });
         console.log(`[MESSAGES_CACHE] Cached ${messages.length} messages for ${channelId}`);
     }
 
     private async getCachedMessages(channelId: string): Promise<CachedMessages | null> {
         if (!this.env.MESSAGES_CACHE) return null;
-        const cacheKey = `messages:${channelId}:1h`;
+        const cacheKey = `messages:${channelId}`;
         const data = await this.env.MESSAGES_CACHE.get(cacheKey);
         return data ? JSON.parse(data) : null;
     }
