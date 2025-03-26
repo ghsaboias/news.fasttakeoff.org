@@ -7,21 +7,23 @@ import ChannelDetailClient from './ChannelDetailClient';
 
 export default async function ChannelDetailPage({ params }: { params: Promise<{ channelId: string }> }) {
     const { channelId } = await params;
+    const { env } = getCacheContext();
 
     // Fetch channel and messages
-    const { channel, messages } = await getChannelDetails(channelId);
+    const { channel, messages } = await getChannelDetails(env, channelId);
 
     if (!channel) {
         notFound(); // Return 404 if channel is not found
     }
 
     // Fetch report separately
-    const { env } = getCacheContext();
     const reportsService = new ReportsService(env);
     let report: Report | null = null;
     try {
-        const { report: newReport } = await reportsService.getChannelReport(channelId);
-        report = newReport;
+        const reportResponse = await reportsService.getChannelReport(channelId);
+        if (reportResponse) {
+            report = reportResponse.report;
+        }
     } catch (error) {
         console.error("Error generating report:", error);
     }

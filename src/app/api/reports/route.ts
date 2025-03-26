@@ -13,8 +13,11 @@ export async function GET(request: Request) {
         console.log(`[API] GET /api/reports: ${channelId ? `Fetching report for channel ${channelId}` : 'Fetching top reports'}`);
 
         if (channelId) {
-            const { report } = await reportsService.getChannelReport(channelId);
-            return NextResponse.json(report);
+            const reportResponse = await reportsService.getChannelReport(channelId);
+            if (reportResponse) {
+                return NextResponse.json(reportResponse.report);
+            }
+            return NextResponse.json({ error: 'Report not found' }, { status: 404 });
         }
 
         const reports = await reportsService.getTopReports();
@@ -41,7 +44,11 @@ export async function POST(request: Request) {
         }
 
         console.log(`[API] Generating report for channel ${channelId} with forceRefresh=${forceRefresh}`);
-        const { report, messages } = await reportsService.getChannelReport(channelId, { forceRefresh, forceRefreshMessages });
+        const reportResponse = await reportsService.getChannelReport(channelId);
+        if (!reportResponse) {
+            return NextResponse.json({ error: 'Report not found' }, { status: 404 });
+        }
+        const { report, messages } = reportResponse;
         console.log(`[API] Report generated for channel ${channelId}, messageCount: ${report.messageCountLastHour || 0}`);
         return NextResponse.json({ report, messages } as ReportResponse);
     } catch (error) {
