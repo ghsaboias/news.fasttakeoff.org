@@ -22,6 +22,10 @@ binding = "CHANNELS_CACHE"
 id = "8cf4b17a28e043059145354652cb7149"
 preview_id = "8cf4b17a28e043059145354652cb7149"
 
+[[kv_namespaces]]
+binding = "MESSAGES_CACHE"
+id = "b3ca706f58e44201a1f3d362c358cd1c"
+
 [[routes]]
 pattern = "news.aiworld.com.br"
 custom_domain = true
