@@ -1,4 +1,3 @@
-
 // Define a simple ScheduledContext interface instead of importing from @cloudflare/workers-types
 interface ScheduledContext {
     scheduledTime: number;
