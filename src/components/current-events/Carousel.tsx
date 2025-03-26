@@ -54,7 +54,7 @@ export default function ReportsCarousel() {
                     containScroll: "trimSnaps",
                 }}
             >
-                <CarouselContent className={`${loading ? 'flex items-center justify-center' : ''} ml-2 md:-ml-4 overflow-x-auto snap-x snap-mandatory`}>
+                <CarouselContent className={`${loading || (!loading && reports.length === 0) ? 'flex items-center justify-center' : ''} ml-2 md:-ml-4 overflow-x-auto snap-x snap-mandatory`}>
                     {loading ? (
                         <CarouselItem className="pl-2 md:pl-4 basis-full sm:basis-1/2 md:basis-1/3 lg:basis-1/4 min-w-[200px] sm:min-w-[330px]">
                             <Card className="h-[300px] flex flex-col">
