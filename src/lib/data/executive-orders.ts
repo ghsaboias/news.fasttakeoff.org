@@ -76,8 +76,13 @@ export async function fetchExecutiveOrderById(id: string, env?: CloudflareEnv): 
             return null;
         }
 
+        if (!env) {
+            console.log('No environment available for fetching executive order', id);
+            return null;
+        }
+
         console.log(`Fetching executive order ${id} at runtime`);
-        const kv = env?.NEXT_CACHE_WORKERS_KV;
+        const kv = env.EXECUTIVE_ORDERS_CACHE;
         const cacheKey = `order:${id}`;
         if (kv) {
             const cached = await kv.get(cacheKey, { type: 'json' });
@@ -130,7 +135,12 @@ export async function findExecutiveOrderByNumber(
         return null;
     }
 
-    const kv = env?.NEXT_CACHE_WORKERS_KV;
+    if (!env) {
+        console.log('No environment available for fetching executive order', eoNumber);
+        return null;
+    }
+
+    const kv = env.EXECUTIVE_ORDERS_CACHE;
     const cacheKey = `eo:${eoNumber}:${date || 'no-date'}`;
 
     if (kv) {
