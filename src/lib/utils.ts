@@ -100,7 +100,7 @@ export function formatTime(timestamp: string | undefined): string {
     return date.toLocaleTimeString('en-US', {
       hour: '2-digit',
       minute: '2-digit',
-      hour12: true
+      hour12: false
     });
   } catch (error) {
     console.error('Error formatting time:', error);

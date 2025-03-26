@@ -1,12 +1,11 @@
-// src/app/page.tsx
 'use client'
 
-import { Badge } from "@/components/ui/badge"
+import ReportsCarousel from "@/components/current-events/Carousel"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { fetchExecutiveOrders } from "@/lib/data/executive-orders"
-import { ExecutiveOrder, Report } from "@/lib/types/core"
-import { formatDate, formatTime, getStartDate } from "@/lib/utils"
+import { ExecutiveOrder } from "@/lib/types/core"
+import { formatDate, getStartDate } from "@/lib/utils"
 import Link from "next/link"
 import { useEffect, useState } from "react"
 
@@ -14,11 +13,8 @@ export const dynamic = 'force-dynamic';
 
 export default function Home() {
   const [latestExecutiveOrders, setLatestExecutiveOrders] = useState<ExecutiveOrder[]>([])
-  const [newsSummaries, setNewsSummaries] = useState<Report[]>([])
   const [loadingEO, setLoadingEO] = useState(true)
-  const [loadingNews, setLoadingNews] = useState(true)
 
-  // Function to load executive orders (unchanged)
   async function loadExecutiveOrders() {
     try {
       setLoadingEO(true)
@@ -37,35 +33,10 @@ export default function Home() {
     }
   }
 
-  async function loadNewsSummaries() {
-    try {
-      const response = await fetch('/api/reports', {
-        method: 'GET',
-        headers: { 'Cache-Control': 'no-cache' },
-        next: { revalidate: 0 },
-      });
-      if (!response.ok) throw new Error(`API error: ${response.status}`);
-      const summaries = await response.json() as Report[];
-      const sortedSummaries = summaries.sort((a, b) => {
-        const countA = a.messageCountLastHour || 0;
-        const countB = b.messageCountLastHour || 0;
-        return countB - countA;
-      });
-      setNewsSummaries(sortedSummaries);
-    } catch (error) {
-      console.error('Error loading news summaries:', error);
-      setNewsSummaries([{ headline: "NO NEWS IN THE LAST HOUR", city: "No updates", body: "No updates", timestamp: new Date().toISOString() }]);
-    } finally {
-      setLoadingNews(false);
-    }
-  }
-
   useEffect(() => {
     loadExecutiveOrders();
-    loadNewsSummaries();
     const refreshInterval = setInterval(() => {
       loadExecutiveOrders();
-      loadNewsSummaries();
     }, 60 * 60 * 1000);
     return () => clearInterval(refreshInterval);
   }, []);
@@ -82,18 +53,10 @@ export default function Home() {
             AI-powered news for everyone.
           </p>
           <div className="flex flex-col gap-4 sm:flex-row">
-            <Button
-              asChild
-              variant="default"
-              size="lg"
-            >
+            <Button asChild variant="default" size="lg">
               <Link href="/current-events">Latest News</Link>
             </Button>
-            <Button
-              asChild
-              size="lg"
-              variant="outline"
-            >
+            <Button asChild size="lg" variant="outline">
               <Link href="/executive-orders">Explore Executive Orders</Link>
             </Button>
           </div>
@@ -159,7 +122,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Latest News Section */}
+      {/* Latest News Carousel */}
       <section className="mx-auto px-4 w-[95%]">
         <div className="flex flex-col gap-6">
           <div className="flex items-center justify-between">
@@ -168,64 +131,7 @@ export default function Home() {
               View all news
             </Link>
           </div>
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-
-            {loadingNews ? (
-              Array(3).fill(0).map((_, index) => (
-                <Card key={index} className="animate-pulse min-h-[280px]">
-                  <CardHeader>
-                    <div className="h-6 bg-muted rounded w-3/4 mb-2"></div>
-                  </CardHeader>
-                  <CardContent className="flex flex-col h-full">
-                    <div className="h-4 bg-muted rounded w-full mb-auto"></div>
-                    <div className="mt-4 h-3 bg-muted rounded w-2/5"></div>
-                  </CardContent>
-                </Card>
-              ))
-            ) : newsSummaries.length > 0 ? (
-              newsSummaries.map((summary, index) => (
-                <Card key={index}>
-                  <CardHeader>
-                    <div className="flex justify-between gap-2 mb-2">
-                      {summary.channelName && (
-                        <Badge variant="outline" className="px-1 py-0 h-5">
-                          {summary.channelName}
-                        </Badge>
-                      )}
-                      <span className="text-xs text-muted-foreground">
-                        {summary.generatedAt ? formatTime(summary.generatedAt) : 'Recent'}
-                      </span>
-                    </div>
-                    <CardTitle>{summary.headline.toUpperCase()}</CardTitle>
-                    <CardDescription>{summary.city}</CardDescription>
-                  </CardHeader>
-                  <CardContent className="flex flex-col h-full">
-                    <p className="text-sm text-muted-foreground mb-auto">
-                      {summary.body.slice(0, 100)}...
-                    </p>
-                    <div className="mt-4 text-xs text-muted-foreground">
-                      {summary.messageCountLastHour && (
-                        <div className="mt-1">
-                          <span className="font-medium">{summary.messageCountLastHour}</span> updates in the last hour
-                        </div>
-                      )}
-                    </div>
-                  </CardContent>
-                  <CardFooter>
-                    <Button asChild variant="outline" size="sm">
-                      <Link href={`/current-events/${summary.channelId}`}>
-                        Read More
-                      </Link>
-                    </Button>
-                  </CardFooter>
-                </Card>
-              ))
-            ) : (
-              <div className="col-span-3 text-center py-8">
-                <p className="text-muted-foreground">No news available.</p>
-              </div>
-            )}
-          </div>
+          <ReportsCarousel />
         </div>
       </section>
     </div>
