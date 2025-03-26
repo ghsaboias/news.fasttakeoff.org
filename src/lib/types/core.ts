@@ -196,3 +196,21 @@ export interface CachedMessages {
     lastMessageTimestamp: string;
     channelName: string;
 }
+
+export interface ApiReport {
+    headline: string;
+    city: string;
+    body: string;
+    timestamp: string;
+    channelId: string;
+    channelName: string;
+    cacheStatus: "hit" | "miss";
+    messageCountLastHour: number;
+    lastMessageTimestamp: string;
+    generatedAt: string;
+}
+
+export interface ReportResponse {
+    report: ApiReport;
+    messages: DiscordMessage[];
+}
