@@ -188,3 +188,11 @@ export interface Report {
     generatedAt?: string;
     userGenerated?: boolean;
 }
+
+export interface CachedMessages {
+    messages: DiscordMessage[];
+    cachedAt: string;
+    messageCount: number;
+    lastMessageTimestamp: string;
+    channelName: string;
+}
