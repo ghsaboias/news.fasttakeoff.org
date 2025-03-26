@@ -48,15 +48,15 @@ export default function ReportsCarousel() {
                 className="w-full max-w-full"
                 opts={{
                     align: "start",
-                    loop: false, // Natural start/end
-                    dragFree: true, // Free-scroll with momentum
-                    slidesToScroll: 1, // Scroll one card at a time
-                    containScroll: "trimSnaps", // Prevents overscroll beyond content
+                    loop: false,
+                    dragFree: true,
+                    slidesToScroll: 1,
+                    containScroll: "trimSnaps",
                 }}
             >
-                <CarouselContent className="-ml-2 md:-ml-4 overflow-x-auto snap-x snap-mandatory">
+                <CarouselContent className={`${loading ? 'flex items-center justify-center' : ''} ml-2 md:-ml-4 overflow-x-auto snap-x snap-mandatory`}>
                     {loading ? (
-                        <CarouselItem className="pl-2 md:pl-4 basis-full sm:basis-1/2 md:basis-1/3 lg:basis-1/4 min-w-[200px] sm:min-w-[330px] snap-start">
+                        <CarouselItem className="pl-2 md:pl-4 basis-full sm:basis-1/2 md:basis-1/3 lg:basis-1/4 min-w-[200px] sm:min-w-[330px]">
                             <Card className="h-[300px] flex flex-col">
                                 <CardHeader>
                                     <CardTitle className="text-lg">Loading...</CardTitle>
