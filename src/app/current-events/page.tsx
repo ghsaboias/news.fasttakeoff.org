@@ -1,4 +1,5 @@
 import { getChannels } from '@/lib/data/channels-service';
+import { getCacheContext } from '@/lib/utils';
 import { unstable_cache } from 'next/cache';
 import CurrentEventsClient from './CurrentEventsClient';
 
@@ -15,7 +16,8 @@ export async function generateMetadata() {
 const getCachedChannels = unstable_cache(
     async () => {
         console.log('[Runtime] Fetching channels for /current-events');
-        const channels = await getChannels();
+        const { env } = getCacheContext();
+        const channels = await getChannels(env);
         console.log('[Runtime] Channels fetched:', channels.length);
         return channels;
     },

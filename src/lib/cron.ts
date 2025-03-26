@@ -1,3 +1,40 @@
-export async function scheduled() {
-    console.log("Cron triggered");
+import { Fetcher, KVNamespace } from '../../cloudflare-env';
+import { MessagesService } from './data/messages-service';
+import { ReportsService } from './data/reports-service';
+
+interface ScheduledEvent {
+    scheduledTime: number;
+    cron: string;
+    waitUntil: (promise: Promise<unknown>) => void;
+}
+
+interface CloudflareEnv {
+    MESSAGES_CACHE: KVNamespace;
+    REPORTS_CACHE: KVNamespace;
+    CHANNELS_CACHE: KVNamespace;
+    EXECUTIVE_ORDERS_CACHE: KVNamespace;
+    DISCORD_TOKEN: string;
+    DISCORD_GUILD_ID: string;
+    GROQ_API_KEY: string;
+    ASSETS: Fetcher;
+}
+
+export async function scheduled(event: ScheduledEvent, env: CloudflareEnv): Promise<void> {
+    console.log(`[CRON] Triggered at ${new Date().toISOString()}`);
+    try {
+        console.log('[CRON] Starting message update process');
+        const messagesService = new MessagesService(env);
+        await messagesService.updateMessages();
+        console.log('[CRON] Message update process completed');
+
+        console.log('[CRON] Starting report generation');
+        const reportsService = new ReportsService(env);
+        await reportsService.generateReports();
+        console.log('[CRON] Report generation completed');
+
+        console.log(`[CRON] Completed at ${new Date().toISOString()}`);
+    } catch (error) {
+        console.error('[CRON] Error in scheduled function:', error);
+        throw error;
+    }
 }

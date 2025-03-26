@@ -1,5 +1,4 @@
 import { DiscordChannel, DiscordMessage } from '@/lib/types/core';
-import { getCacheContext } from '@/lib/utils';
 import type { CloudflareEnv } from '../../../cloudflare-env';
 import { MessagesService } from './messages-service';
 const DISCORD_API = 'https://discord.com/api/v10';
@@ -130,14 +129,16 @@ export class ChannelsService {
     }
 }
 
-export async function getChannels(): Promise<DiscordChannel[]> {
-    const { env } = getCacheContext();
+export async function getChannels(env: CloudflareEnv): Promise<DiscordChannel[]> {
     const client = new ChannelsService(env);
     return client.fetchChannels();
 }
 
-export async function getActiveChannels(limit = 3, maxCandidates = 10): Promise<(DiscordChannel & { messageCounts: { "1h": number }; messages: DiscordMessage[]; lastMessageTimestamp?: string })[]> {
-    const { env } = getCacheContext();
+export async function getActiveChannels(
+    env: CloudflareEnv,
+    limit = 3,
+    maxCandidates = 10
+): Promise<(DiscordChannel & { messageCounts: { "1h": number }; messages: DiscordMessage[]; lastMessageTimestamp?: string })[]> {
     const client = new ChannelsService(env);
     const channels = await client.fetchChannels();
     const messagesService = new MessagesService(env);
@@ -196,17 +197,18 @@ export async function getActiveChannels(limit = 3, maxCandidates = 10): Promise<
     return sortedResult;
 }
 
-export async function getChannelDetails(channelId: string): Promise<{
+export async function getChannelDetails(
+    env: CloudflareEnv,
+    channelId: string
+): Promise<{
     channel: DiscordChannel | null;
     messages: { count: number; messages: DiscordMessage[] };
 }> {
-    const { env } = getCacheContext();
     const client = new ChannelsService(env);
     return client.getChannelDetails(channelId);
 }
 
-export async function getChannelName(channelId: string): Promise<string> {
-    const { env } = getCacheContext();
+export async function getChannelName(env: CloudflareEnv, channelId: string): Promise<string> {
     const client = new ChannelsService(env);
     return client.getChannelName(channelId);
 }
