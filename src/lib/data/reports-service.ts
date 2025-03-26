@@ -130,15 +130,8 @@ export class ReportsService {
         this.messagesService = new MessagesService(env);
     }
 
-    /**
-     * Get a report for a specific Discord channel
-     * 
-     * @param channelId - The Discord channel ID to get a report for
-     * @returns A report object with channel activity summary
-     */
     async getChannelReport(channelId: string): Promise<{ report: Report, messages: DiscordMessage[] } | null> {
         try {
-            // Fetch cached messages from MESSAGES_CACHE
             if (!this.messagesService.env.MESSAGES_CACHE) {
                 console.warn('[MESSAGES_CACHE] KV namespace not available');
                 return null;
@@ -150,22 +143,20 @@ export class ReportsService {
             const cachedMessages: CachedMessages = JSON.parse(data);
             if (!cachedMessages.messages || cachedMessages.messages.length === 0) return null;
 
-            // Check for messages in the last 15 minutes
             const fifteenMinutesAgo = Date.now() - 15 * 60 * 1000;
             const recentMessages = cachedMessages.messages.filter(
                 (msg: DiscordMessage) => new Date(msg.timestamp).getTime() >= fifteenMinutesAgo
             );
             if (recentMessages.length === 0) return null;
 
-            // Filter messages from the last 1 hour
             const oneHourAgo = Date.now() - 60 * 60 * 1000;
             const messagesLastHour = cachedMessages.messages.filter(
                 (msg: DiscordMessage) => new Date(msg.timestamp).getTime() >= oneHourAgo
             );
             if (messagesLastHour.length === 0) return null;
 
-            // Generate report
             const channelName = await getChannelName(this.env, channelId);
+
             const report = await createReportFromMessages(messagesLastHour, {
                 id: channelId,
                 name: channelName,
@@ -179,16 +170,52 @@ export class ReportsService {
         }
     }
 
-    /**
-     * Get reports for the most active Discord channels
-     * 
-     * @param options - Options for retrieving reports
-     * @returns Array of reports for the most active channels
-     */
+    async getAllReports(): Promise<Report[]> {
+        try {
+            if (!this.env.REPORTS_CACHE) {
+                console.warn('[REPORTS] REPORTS_CACHE KV namespace not available');
+                return [];
+            }
+
+            const { keys } = await this.env.REPORTS_CACHE.list({ prefix: 'report:' });
+            const reportKeys = keys.filter(key => key.name.endsWith(':1h'));
+
+            if (reportKeys.length === 0) {
+                console.log('[REPORTS] No reports found in REPORTS_CACHE');
+                return [];
+            }
+
+            const reportPromises = reportKeys.map(async (key) => {
+                const cachedReport = await this.env.REPORTS_CACHE.get(key.name);
+                if (cachedReport) {
+                    return JSON.parse(cachedReport) as Report;
+                }
+                return null;
+            });
+
+            const reports = (await Promise.all(reportPromises))
+                .filter((report): report is Report => report !== null)
+                .sort((a, b) => new Date(b.generatedAt || '').getTime() - new Date(a.generatedAt || '').getTime());
+
+            console.log(`[REPORTS] Fetched ${reports.length} reports from REPORTS_CACHE`);
+            return reports;
+        } catch (error) {
+            console.error('[REPORTS] Error fetching all reports:', error);
+            return [];
+        }
+    }
+
     async getTopReports(options: TopReportsOptions = {}): Promise<Report[]> {
         const { count = 3, maxCandidates = 10 } = options;
 
         try {
+            const allReports = await this.getAllReports();
+            if (allReports.length > 0) {
+                return allReports
+                    .sort((a, b) => (b.messageCountLastHour || 0) - (a.messageCountLastHour || 0))
+                    .slice(0, count);
+            }
+
             const activeChannels = await getActiveChannels(this.env, count, maxCandidates);
             if (!activeChannels.length) return [];
 
@@ -246,7 +273,6 @@ export class ReportsService {
                 return;
             }
 
-            // List all keys in MESSAGES_CACHE
             const { keys } = await this.messagesService.env.MESSAGES_CACHE.list();
             const messageKeys = keys.filter(key => key.name.startsWith('messages:'));
 

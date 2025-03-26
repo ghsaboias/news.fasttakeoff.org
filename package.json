@@ -28,6 +28,7 @@
     "autoprefixer": "^10.4.21",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "embla-carousel-react": "^8.5.2",
     "groq": "^3.79.0",
     "groq-sdk": "^0.16.0",
     "lucide-react": "^0.479.0",

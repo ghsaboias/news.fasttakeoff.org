@@ -10,7 +10,7 @@ export async function GET(request: Request) {
 
         const url = new URL(request.url);
         const channelId = url.searchParams.get('channelId');
-        console.log(`[API] GET /api/reports: ${channelId ? `Fetching report for channel ${channelId}` : 'Fetching top reports'}`);
+        console.log(`[API] GET /api/reports: ${channelId ? `Fetching report for channel ${channelId}` : 'Fetching all reports'}`);
 
         if (channelId) {
             const reportResponse = await reportsService.getChannelReport(channelId);
@@ -20,7 +20,7 @@ export async function GET(request: Request) {
             return NextResponse.json({ error: 'Report not found' }, { status: 404 });
         }
 
-        const reports = await reportsService.getTopReports();
+        const reports = await reportsService.getAllReports();
         return NextResponse.json(reports);
     } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'Unknown error';

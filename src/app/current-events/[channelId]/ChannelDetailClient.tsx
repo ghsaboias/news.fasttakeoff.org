@@ -61,6 +61,8 @@ export default function ChannelDetailClient({ channel, report, messages }: Chann
         ));
     };
 
+    console.log(channelReport.report);
+
     return (
         <div className="p-6 max-w-5xl mx-auto">
             <div className="flex flex-col space-y-4">
