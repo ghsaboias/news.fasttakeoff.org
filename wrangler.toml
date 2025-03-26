@@ -11,9 +11,9 @@ directory = ".open-next/assets"
 binding = "ASSETS"
 
 [[kv_namespaces]]
-binding = "NEXT_CACHE_WORKERS_KV"
-id = "2b5d6df3cfc54116b6e34000be4b71a3"
-preview_id = "2b5d6df3cfc54116b6e34000be4b71a3"
+binding = "EXECUTIVE_ORDERS_CACHE"
+id = "af457f4cbb8d43659858f3fdc7b9b697"
+preview_id = "af457f4cbb8d43659858f3fdc7b9b697"
 
 [[kv_namespaces]]
 binding = "REPORTS_CACHE"
