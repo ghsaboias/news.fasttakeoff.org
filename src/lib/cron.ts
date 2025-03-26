@@ -1,4 +1,3 @@
-import { getCacheContext } from './utils';
 
 // Define a simple ScheduledContext interface instead of importing from @cloudflare/workers-types
 interface ScheduledContext {
@@ -15,8 +14,6 @@ export default {
         console.log(`[CRON] Triggered at ${new Date().toISOString()}`);
 
         try {
-            const { env } = getCacheContext();
-
             // Step 1: Update messages for all channels
             // TODO: Implement updateMessages in MessagesService and call it here
             console.log('[CRON] Would update messages here');
