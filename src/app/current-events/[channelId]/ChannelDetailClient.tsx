@@ -2,10 +2,9 @@
 
 import MessageItem from "@/components/current-events/MessageItem";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { DiscordChannel, DiscordMessage, Report } from "@/lib/types/core";
-import { Clock, MessageSquare, RefreshCw } from "lucide-react";
+import { Clock, MessageSquare } from "lucide-react";
 import { useState } from 'react';
 
 interface ChannelDetailClientProps {
@@ -30,38 +29,12 @@ export default function ChannelDetailClient({ channel, report, messages }: Chann
         loading: false
     });
 
-    const refreshMessagesAndReport = async () => {
-        setChannelReport(prev => ({ ...prev, loading: true, error: null }));
-        setChannelData(prev => ({ ...prev, loading: true }));
-        try {
-            const response = await fetch('/api/reports', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ channelId: channel.id, forceRefresh: true, timeframe: '1h' }),
-            });
-            if (!response.ok) throw new Error(`Failed to refresh: ${response.status}`);
-            const { report: newReport, messages: newMessages } = await response.json();
-            setChannelReport({ report: newReport, loading: false, error: null });
-            setChannelData({ count: newMessages.length, messages: newMessages, loading: false });
-        } catch (error) {
-            console.error('Error refreshing data:', error);
-            setChannelReport({
-                report: null,
-                loading: false,
-                error: error instanceof Error ? error.message : 'Failed to refresh report'
-            });
-            setChannelData({ count: 0, messages: [], loading: false });
-        }
-    };
-
     const formatReportText = (text: string) => {
         const paragraphs = text.split(/\n{2,}|\n/).filter(p => p.trim().length > 0);
         return paragraphs.map((paragraph, index) => (
             <p key={index} className="mb-4 last:mb-0 leading-7 text-justify">{paragraph}</p>
         ));
     };
-
-    console.log(channelReport.report);
 
     return (
         <div className="p-6 max-w-5xl mx-auto">
@@ -77,16 +50,6 @@ export default function ChannelDetailClient({ channel, report, messages }: Chann
                         <div className="space-y-2">
                             <div className="flex justify-between items-center gap-2">
                                 <h3 className="text-xl font-bold tracking-tight">{channel.name}</h3>
-                                <Button
-                                    onClick={refreshMessagesAndReport}
-                                    disabled={channelReport.loading || channelData.loading}
-                                    variant="outline"
-                                    size="sm"
-                                    className="flex gap-2 items-center"
-                                >
-                                    {(channelReport.loading || channelData.loading) && <RefreshCw className="h-4 w-4 animate-spin" />}
-                                    {channelReport.loading || channelData.loading ? "Refreshing..." : "Update Report"}
-                                </Button>
                             </div>
                             <h1 className="text-2xl font-bold">{channelReport.report.headline.toUpperCase()}</h1>
                             <h2 className="text-lg font-medium text-muted-foreground">{channelReport.report.city}</h2>
@@ -115,7 +78,7 @@ export default function ChannelDetailClient({ channel, report, messages }: Chann
 
                 <Accordion type="single" collapsible className="w-full bg-gray-100 p-4 rounded-lg">
                     <AccordionItem value="sources">
-                        <AccordionTrigger className="text-xl font-semibold hover:no-underline py-0">
+                        <AccordionTrigger className="text-xl font-semibold hover:no-underline py-0 items-center">
                             <div className="flex items-center gap-2">
                                 <p className="text-lg font-semibold">
                                     Sources

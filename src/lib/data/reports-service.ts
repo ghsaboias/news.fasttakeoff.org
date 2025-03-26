@@ -137,10 +137,21 @@ export class ReportsService {
                 return null;
             }
             const cacheKey = `messages:${channelId}`;
-            const data = await this.messagesService.env.MESSAGES_CACHE.get(cacheKey);
-            if (!data) return null;
+            const messagesData = await this.messagesService.env.MESSAGES_CACHE.get(cacheKey);
+            if (!messagesData) return null;
 
-            const cachedMessages: CachedMessages = JSON.parse(data);
+            if (!this.messagesService.env.REPORTS_CACHE) {
+                console.warn('[REPORTS_CACHE] KV namespace not available');
+                return null;
+            }
+
+            const reportKey = `report:${channelId}:1h`;
+            const reportData = await this.messagesService.env.REPORTS_CACHE.get(reportKey);
+            if (reportData) {
+                return { report: JSON.parse(reportData) as Report, messages: [] };
+            }
+
+            const cachedMessages: CachedMessages = JSON.parse(messagesData);
             if (!cachedMessages.messages || cachedMessages.messages.length === 0) return null;
 
             const fifteenMinutesAgo = Date.now() - 15 * 60 * 1000;
