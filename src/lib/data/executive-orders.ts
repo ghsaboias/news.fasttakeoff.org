@@ -1,5 +1,6 @@
 import { ApiResponse, FederalRegisterOrder, FederalRegisterResponse } from '@/lib/types/api';
 import { ExecutiveOrder } from '@/lib/types/core';
+import { CloudflareEnv } from '../../../cloudflare-env';
 import { transformFederalRegisterOrder, transformFederalRegisterOrders } from '../transformers/executive-orders';
 
 const FEDERAL_REGISTER_API = 'https://www.federalregister.gov/api/v1';
@@ -127,7 +128,7 @@ export async function fetchExecutiveOrderById(id: string, env?: CloudflareEnv): 
 export async function findExecutiveOrderByNumber(
     eoNumber: string,
     date?: string,
-    env?: CloudflareEnv // Add env param
+    env?: CloudflareEnv
 ): Promise<string | null> {
     const isStaticGeneration = process.env.NEXT_PHASE === 'phase-production-build';
     if (isStaticGeneration) {

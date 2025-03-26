@@ -1,4 +1,5 @@
 import { ReportsService } from '@/lib/data/reports-service';
+import { ReportResponse } from '@/lib/types/core';
 import { getCacheContext } from '@/lib/utils';
 import { NextResponse } from 'next/server';
 
@@ -17,7 +18,7 @@ export async function GET(request: Request) {
         }
 
         const reports = await reportsService.getTopReports();
-        return NextResponse.json(reports); // Already Report[]
+        return NextResponse.json(reports);
     } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'Unknown error';
         console.error('[API] Error in /api/reports:', errorMessage);
@@ -42,7 +43,7 @@ export async function POST(request: Request) {
         console.log(`[API] Generating report for channel ${channelId} with forceRefresh=${forceRefresh}`);
         const { report, messages } = await reportsService.getChannelReport(channelId, { forceRefresh, forceRefreshMessages });
         console.log(`[API] Report generated for channel ${channelId}, messageCount: ${report.messageCountLastHour || 0}`);
-        return NextResponse.json({ report, messages });
+        return NextResponse.json({ report, messages } as ReportResponse);
     } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'Unknown error';
         console.error('[API] Error in /api/reports:', errorMessage);
