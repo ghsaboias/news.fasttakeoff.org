@@ -9,7 +9,7 @@ export default function Footer() {
                     <div className="space-y-4">
                         <h3 className="text-lg font-bold">AI World News</h3>
                         <p className="text-sm text-muted-foreground">
-                            Your trusted source for AI governance and policy news.
+                            AI-powered news for everyone.
                         </p>
                     </div>
                     <div className="space-y-4">
