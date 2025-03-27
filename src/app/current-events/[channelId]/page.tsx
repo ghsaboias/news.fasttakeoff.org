@@ -1,4 +1,4 @@
-import { getChannelDetails } from '@/lib/data/channels-service'; // Updated import
+import { getChannelDetails } from '@/lib/data/channels-service';
 import { ReportsService } from '@/lib/data/reports-service';
 import { Report } from '@/lib/types/core';
 import { getCacheContext } from '@/lib/utils';
