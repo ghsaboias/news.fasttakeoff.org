@@ -1,6 +1,6 @@
 import { CachedMessages, DiscordMessage, Report } from '@/lib/types/core';
 import type { CloudflareEnv } from '../../../cloudflare-env';
-import { getActiveChannels, getChannelName } from './channels-service';
+import { getChannelName } from './channels-service';
 import { MessagesService } from './messages-service';
 
 // Report generation helpers
@@ -213,56 +213,6 @@ export class ReportsService {
         } catch (error) {
             console.error('[REPORTS] Error fetching all reports:', error);
             return [];
-        }
-    }
-
-    async getTopReports(options: TopReportsOptions = {}): Promise<Report[]> {
-        const { count = 3, maxCandidates = 10 } = options;
-
-        try {
-            const allReports = await this.getAllReports();
-            if (allReports.length > 0) {
-                return allReports
-                    .sort((a, b) => (b.messageCountLastHour || 0) - (a.messageCountLastHour || 0))
-                    .slice(0, count);
-            }
-
-            const activeChannels = await getActiveChannels(this.env, count, maxCandidates);
-            if (!activeChannels.length) return [];
-
-            const reportPromises = activeChannels.map(channel =>
-                this.getChannelReport(channel.id).catch(error => {
-                    console.error(`Error getting report for ${channel.id}:`, error);
-                    return null;
-                })
-            );
-
-            const results = await Promise.all(reportPromises);
-
-            const reports: Report[] = [];
-            results.forEach((result, index) => {
-                if (result) {
-                    reports.push(result.report);
-                } else {
-                    const channel = activeChannels[index] || { id: `fallback-${index}`, name: "Inactive Channel" };
-                    reports.push(createEmptyReport(channel.id, channel.name));
-                }
-            });
-
-            while (reports.length < count) {
-                const i = reports.length;
-                const fallbackChannel = activeChannels[i] || { id: `fallback-${i}`, name: "Inactive Channel" };
-                reports.push(createEmptyReport(fallbackChannel.id, fallbackChannel.name));
-            }
-
-            return reports
-                .sort((a, b) => (b.messageCountLastHour || 0) - (a.messageCountLastHour || 0))
-                .slice(0, count);
-        } catch (error) {
-            console.error('Error getting top reports:', error);
-            return Array(count).fill(0).map((_, i) =>
-                createEmptyReport(`fallback-${i}`, `Channel ${i}`)
-            );
         }
     }
 

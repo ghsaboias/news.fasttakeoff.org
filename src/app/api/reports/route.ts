@@ -18,10 +18,11 @@ export async function GET(request: Request) {
                 return NextResponse.json(reportResponse.report);
             }
             return NextResponse.json({ error: 'Report not found' }, { status: 404 });
+        } else {
+            const reports = await reportsService.getAllReports();
+            return NextResponse.json(reports);
         }
 
-        const reports = await reportsService.getAllReports();
-        return NextResponse.json(reports);
     } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'Unknown error';
         console.error('[API] Error in /api/reports:', errorMessage);
