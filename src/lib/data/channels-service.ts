@@ -81,21 +81,31 @@ export class ChannelsService {
     async fetchChannels(): Promise<DiscordChannel[]> {
         const guildId = this.env.DISCORD_GUILD_ID || '';
         const key = `channels:guild:${guildId}`;
+        const metadataKey = `${key}:metadata`;
 
         try {
             const cached = await this.env.CHANNELS_CACHE.get(key);
-            if (cached) {
-                console.log(`Cache hit for guild channels ${guildId}`);
-                return this.filterChannels(JSON.parse(cached));
-            } else {
-                console.log(`Cache miss for guild channels ${guildId}, fetching from Discord API`);
-                const allChannels = await this.fetchAllChannels();
-                const filteredChannels = this.filterChannels(allChannels);
-                console.log(`Filtered ${filteredChannels.length} channels`);
+            const metadata = await this.env.CHANNELS_CACHE.get(metadataKey, { type: 'json' }) as { fetchedAt: string } | null;
 
-                await this.env.CHANNELS_CACHE.put(key, JSON.stringify(filteredChannels), { expirationTtl: 60 * 60 * 24 }); // 24 hours
-                return filteredChannels;
+            if (cached && metadata) {
+                const fetchedTime = new Date(metadata.fetchedAt).getTime();
+                const twentyFourHoursAgo = Date.now() - 24 * 60 * 60 * 1000;
+                if (fetchedTime > twentyFourHoursAgo) {
+                    console.log(`Cache hit for guild channels ${guildId}, fetched at ${metadata.fetchedAt}`);
+                    return this.filterChannels(JSON.parse(cached));
+                }
             }
+
+            console.log(`Cache miss or stale for guild channels ${guildId}, fetching from Discord API`);
+            const allChannels = await this.fetchAllChannels();
+            const filteredChannels = this.filterChannels(allChannels);
+            console.log(`Filtered ${filteredChannels.length} channels`);
+
+            await Promise.all([
+                this.env.CHANNELS_CACHE.put(key, JSON.stringify(filteredChannels), { expirationTtl: 60 * 60 * 24 }),
+                this.env.CHANNELS_CACHE.put(metadataKey, JSON.stringify({ fetchedAt: new Date().toISOString() }), { expirationTtl: 60 * 60 * 24 })
+            ]);
+            return filteredChannels;
         } catch (error) {
             console.error(`Error fetching channels for guild ${guildId}:`, error);
             return [];
