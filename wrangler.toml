@@ -4,7 +4,7 @@ compatibility_date = "2025-03-11"
 compatibility_flags = ["nodejs_compat"]
 
 [triggers]
-crons = []
+crons = ["*/15 * * * *"]
 
 [assets]
 directory = ".open-next/assets"
