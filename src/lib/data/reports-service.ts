@@ -82,7 +82,10 @@ async function generateAIReport(prompt: string, messages: DiscordMessage[], chan
     if (!content) throw new Error('No content returned from AI API');
 
     const lines = content.split('\n').filter(Boolean);
-    if (lines.length < 3) throw new Error('Invalid report format: missing content');
+    if (lines.length < 3) {
+        console.log(`[REPORTS] Invalid AI response for channel ${channelInfo.id}: "${content}"`);
+        throw new Error('Invalid report format: missing content');
+    }
 
     const lastMessageTimestamp = messages.length > 0
         ? messages.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())[0].timestamp
@@ -140,34 +143,22 @@ export class ReportsService {
             const messagesData = await this.messagesService.env.MESSAGES_CACHE.get(cacheKey);
             if (!messagesData) return null;
 
-            if (!this.messagesService.env.REPORTS_CACHE) {
-                console.warn('[REPORTS_CACHE] KV namespace not available');
-                return null;
-            }
-
-            const reportKey = `report:${channelId}:1h`;
-            const reportData = await this.messagesService.env.REPORTS_CACHE.get(reportKey);
-            if (reportData) {
-                return { report: JSON.parse(reportData) as Report, messages: [] };
-            }
-
             const cachedMessages: CachedMessages = JSON.parse(messagesData);
             if (!cachedMessages.messages || cachedMessages.messages.length === 0) return null;
-
-            const fifteenMinutesAgo = Date.now() - 15 * 60 * 1000;
-            const recentMessages = cachedMessages.messages.filter(
-                (msg: DiscordMessage) => new Date(msg.timestamp).getTime() >= fifteenMinutesAgo
-            );
-            if (recentMessages.length === 0) return null;
 
             const oneHourAgo = Date.now() - 60 * 60 * 1000;
             const messagesLastHour = cachedMessages.messages.filter(
                 (msg: DiscordMessage) => new Date(msg.timestamp).getTime() >= oneHourAgo
             );
-            if (messagesLastHour.length === 0) return null;
+            console.log(`[REPORTS] Channel ${channelId}: ${messagesLastHour.length} messages in last hour`);
 
+            if (messagesLastHour.length === 0) {
+                console.log(`[REPORTS] Channel ${channelId}: No messages in last hour`);
+                return null;
+            }
+
+            console.log(`[REPORTS] Channel ${channelId}: Generating new report`);
             const channelName = await getChannelName(this.env, channelId);
-
             const report = await createReportFromMessages(messagesLastHour, {
                 id: channelId,
                 name: channelName,
@@ -227,7 +218,6 @@ export class ReportsService {
 
     async generateReports(): Promise<void> {
         console.log('[REPORTS] Starting report generation for all channels');
-
         try {
             if (!this.messagesService.env.MESSAGES_CACHE || !this.messagesService.env.REPORTS_CACHE) {
                 console.warn('[REPORTS] KV namespaces not available');
@@ -251,6 +241,8 @@ export class ReportsService {
                         );
                         console.log(`[REPORTS] Cached report for channel ${channelId} with 72h TTL`);
                         generatedCount++;
+                    } else {
+                        console.log(`[REPORTS] No report generated for channel ${channelId} (no hourly messages)`);
                     }
                 } catch (error) {
                     console.error(`[REPORTS] Error generating report for key ${key.name}:`, error);
