@@ -46,18 +46,17 @@ function createReportFromMessages(messages: DiscordMessage[], channelInfo: { id:
         - Maintain a strictly neutral tone
         - DO NOT make any analysis, commentary, or speculation
         - DO NOT use of terms like "likely", "appears to", or "is seen as"
-        - Remove any # that might be in the developments
-        - All names must be spelled correctly.
+        - All names must be spelled correctly
     `;
 
     return generateAIReport(prompt, messages, channelInfo, env);
 }
 
 async function generateAIReport(prompt: string, messages: DiscordMessage[], channelInfo: { id: string, name: string, count: number }, env: CloudflareEnv): Promise<Report> {
-    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
         method: 'POST',
         headers: {
-            'Authorization': `Bearer ${env.GROQ_API_KEY}`,
+            'Authorization': `Bearer ${env.OPENROUTER_API_KEY}`,
             'Content-Type': 'application/json',
         },
         body: JSON.stringify({
@@ -68,7 +67,7 @@ async function generateAIReport(prompt: string, messages: DiscordMessage[], chan
                 },
                 { role: "user", content: prompt }
             ],
-            model: "llama3-70b-8192",
+            model: "google/gemini-2.0-flash-001",
         }),
     });
 

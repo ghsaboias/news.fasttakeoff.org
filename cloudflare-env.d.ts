@@ -9,6 +9,7 @@ export interface CloudflareEnv {
     DISCORD_GUILD_ID: string;
     GROQ_API_KEY: string;
     ASSETS: Fetcher;
+    OPENROUTER_API_KEY: string;
 }
 interface CloudflareEnv extends Cloudflare.Env { }
 
