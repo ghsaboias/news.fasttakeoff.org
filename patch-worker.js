@@ -12,15 +12,31 @@ try {
   process.exit(1);
 }
 
-// Add cron import at the top
-let newContent = `import { scheduled } from "../src/lib/cron";\n` + content;
+// Add cron import and fetch override at the top
+const fetchOverride = `
+const originalFetch = globalThis.fetch;
+globalThis.fetch = async (url, init = {}) => {
+  const parsedUrl = new URL(url instanceof Request ? url.url : url);
+  if (parsedUrl.pathname.startsWith('/_next/image')) {
+    const imageUrl = parsedUrl.searchParams.get('url');
+    if (imageUrl && imageUrl.includes('cdn.discordapp.com/attachments')) {
+      const headers = new Headers(init.headers || {});
+      headers.set('Authorization', process.env.DISCORD_TOKEN); // Raw user token
+      return originalFetch(url, { ...init, headers });
+    }
+  }
+  return originalFetch(url, init);
+};
+`;
+
+let newContent =
+  `import { scheduled } from "../src/lib/cron";\n${fetchOverride}\n` + content;
 
 // Find the default export and modify it to include scheduled
 const defaultExportRegex = /export default \{([^}]*)\}/;
 const match = newContent.match(defaultExportRegex);
 if (match) {
   const exportContent = match[1].trim();
-  // Add scheduled to the default export
   newContent = newContent.replace(
     defaultExportRegex,
     `export default {\n    scheduled,\n${exportContent}\n}`
@@ -33,7 +49,7 @@ if (match) {
 // Write the updated content back
 try {
   fs.writeFileSync(workerPath, newContent, "utf8");
-  console.log("Patched worker.js with cron handler");
+  console.log("Patched worker.js with cron handler and fetch override");
 } catch (error) {
   console.error(`Failed to write to ${workerPath}: ${error.message}`);
   process.exit(1);
