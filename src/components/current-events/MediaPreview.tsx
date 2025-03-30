@@ -2,6 +2,7 @@
 
 import { Dialog, DialogContent, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
+import Image from "next/image";
 
 interface MediaPreviewProps {
     url: string;
@@ -16,7 +17,7 @@ export default function MediaPreview({ url, type, contentType, alt }: MediaPrevi
             <DialogTrigger asChild>
                 <div className="cursor-pointer w-full aspect-video bg-muted rounded-lg overflow-hidden">
                     {type === 'image' ? (
-                        <img
+                        <Image
                             src={url}
                             alt={alt || 'Media content'}
                             className="w-full h-full object-cover hover:scale-105 transition-transform"
@@ -39,7 +40,7 @@ export default function MediaPreview({ url, type, contentType, alt }: MediaPrevi
                 </VisuallyHidden>
                 <div className="relative w-full h-full flex items-center justify-center">
                     {type === 'image' ? (
-                        <img
+                        <Image
                             src={url}
                             alt={alt || 'Media content'}
                             className="max-h-[90vh] max-w-full object-contain rounded-lg"
