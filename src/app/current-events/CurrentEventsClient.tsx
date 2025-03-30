@@ -51,7 +51,7 @@ export default function CurrentEventsClient({ channels }: Props) {
             return newMap;
         });
         try {
-            const response = await fetch(`/api/reports?channelId=${channelId}`);
+            const response = await fetch(`/api/reports?channelId=${channelId}&forceRefresh=false`);
             if (!response.ok) {
                 throw new Error(`Failed to fetch report: ${response.status}`);
             }

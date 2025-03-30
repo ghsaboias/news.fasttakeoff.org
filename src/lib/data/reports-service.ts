@@ -132,43 +132,87 @@ export class ReportsService {
         this.messagesService = new MessagesService(env);
     }
 
-    async getChannelReport(channelId: string): Promise<{ report: Report, messages: DiscordMessage[] } | null> {
+    async getChannelReport(channelId: string, options: { forceRefresh?: boolean } = {}): Promise<{ report: Report, messages: DiscordMessage[] } | null> {
+        try {
+            const { forceRefresh = false } = options;
+
+            // First try to get from cache (unless forceRefresh is true)
+            if (!forceRefresh && this.env.REPORTS_CACHE) {
+                const cacheKey = `report:${channelId}:1h`;
+                const cachedReport = await this.env.REPORTS_CACHE.get(cacheKey);
+
+                if (cachedReport) {
+                    console.log(`[REPORTS] Cache hit for report ${channelId}`);
+                    const report = JSON.parse(cachedReport) as Report;
+
+                    // Get messages separately for consistency with return format
+                    const messages = await this.getReportMessages(channelId);
+
+                    return { report, messages };
+                }
+                console.log(`[REPORTS] Cache miss for report ${channelId}`);
+            }
+
+            // Generate a new report
+            return this.generateChannelReport(channelId);
+        } catch (error) {
+            console.error(`Error getting/generating report for channel ${channelId}:`, error);
+            return null;
+        }
+    }
+
+    // Renamed from the old getChannelReport
+    async generateChannelReport(channelId: string): Promise<{ report: Report, messages: DiscordMessage[] } | null> {
         try {
             if (!this.messagesService.env.MESSAGES_CACHE) {
                 console.warn('[MESSAGES_CACHE] KV namespace not available');
                 return null;
             }
-            const cacheKey = `messages:${channelId}`;
-            const messagesData = await this.messagesService.env.MESSAGES_CACHE.get(cacheKey);
-            if (!messagesData) return null;
 
-            const cachedMessages: CachedMessages = JSON.parse(messagesData);
-            if (!cachedMessages.messages || cachedMessages.messages.length === 0) return null;
-
-            const oneHourAgo = Date.now() - 60 * 60 * 1000;
-            const messagesLastHour = cachedMessages.messages.filter(
-                (msg: DiscordMessage) => new Date(msg.timestamp).getTime() >= oneHourAgo
-            );
-            console.log(`[REPORTS] Channel ${channelId}: ${messagesLastHour.length} messages in last hour`);
-
-            if (messagesLastHour.length === 0) {
+            const messages = await this.getReportMessages(channelId);
+            if (!messages || messages.length === 0) {
                 console.log(`[REPORTS] Channel ${channelId}: No messages in last hour`);
                 return null;
             }
 
-            console.log(`[REPORTS] Channel ${channelId}: Generating new report`);
+            console.log(`[REPORTS] Channel ${channelId}: Generating new report from ${messages.length} messages`);
             const channelName = await getChannelName(this.env, channelId);
-            const report = await createReportFromMessages(messagesLastHour, {
+            const report = await createReportFromMessages(messages, {
                 id: channelId,
                 name: channelName,
-                count: messagesLastHour.length
+                count: messages.length
             }, this.env);
 
-            return { report, messages: messagesLastHour };
+            // Cache the newly generated report
+            if (this.env.REPORTS_CACHE) {
+                await this.env.REPORTS_CACHE.put(
+                    `report:${channelId}:1h`,
+                    JSON.stringify(report),
+                    { expirationTtl: 259200 } // 72h TTL
+                );
+                console.log(`[REPORTS] Cached report for channel ${channelId} with 72h TTL`);
+            }
+
+            return { report, messages };
         } catch (error) {
             console.error(`Error generating report for channel ${channelId}:`, error);
             return null;
         }
+    }
+
+    // Helper method to get messages from the last hour
+    private async getReportMessages(channelId: string): Promise<DiscordMessage[]> {
+        const cacheKey = `messages:${channelId}`;
+        const messagesData = await this.messagesService.env.MESSAGES_CACHE.get(cacheKey);
+        if (!messagesData) return [];
+
+        const cachedMessages: CachedMessages = JSON.parse(messagesData);
+        if (!cachedMessages.messages || cachedMessages.messages.length === 0) return [];
+
+        const oneHourAgo = Date.now() - 60 * 60 * 1000;
+        return cachedMessages.messages.filter(
+            (msg: DiscordMessage) => new Date(msg.timestamp).getTime() >= oneHourAgo
+        );
     }
 
     async getAllReports(): Promise<Report[]> {
@@ -206,8 +250,8 @@ export class ReportsService {
         }
     }
 
-    async generateReport(channelId: string): Promise<{ report: Report, messages: DiscordMessage[] }> {
-        const result = await this.getChannelReport(channelId);
+    async generateReport(channelId: string, options: { forceRefresh?: boolean } = {}): Promise<{ report: Report, messages: DiscordMessage[] }> {
+        const result = await this.getChannelReport(channelId, options);
         if (!result) {
             const channelName = await getChannelName(this.env, channelId);
             return { report: createEmptyReport(channelId, channelName), messages: [] };
@@ -230,7 +274,7 @@ export class ReportsService {
             for (const key of messageKeys) {
                 try {
                     const channelId = key.name.replace('messages:', '');
-                    const result = await this.getChannelReport(channelId);
+                    const result = await this.generateChannelReport(channelId);
                     if (result) {
                         const { report } = result;
                         await this.messagesService.env.REPORTS_CACHE.put(
