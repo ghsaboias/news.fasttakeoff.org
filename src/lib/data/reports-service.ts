@@ -114,7 +114,8 @@ export function createEmptyReport(channelId: string, channelName: string): Repor
         channelName,
         messageCountLastHour: 0,
         generatedAt: new Date().toISOString(),
-        cacheStatus: 'miss'
+        cacheStatus: 'miss',
+        messageIds: []
     };
 }
 
@@ -145,8 +146,8 @@ export class ReportsService {
                     console.log(`[REPORTS] Cache hit for report ${channelId}`);
                     const report = JSON.parse(cachedReport) as Report;
 
-                    // Get messages separately for consistency with return format
-                    const messages = await this.getReportMessages(channelId);
+                    // Get messages using the saved message IDs if available, otherwise fall back to time-based filtering
+                    const messages = await this.getReportMessages(channelId, report.messageIds);
 
                     return { report, messages };
                 }
@@ -177,11 +178,18 @@ export class ReportsService {
 
             console.log(`[REPORTS] Channel ${channelId}: Generating new report from ${messages.length} messages`);
             const channelName = await getChannelName(this.env, channelId);
+
+            // Extract message IDs for storing with the report
+            const messageIds = messages.map(msg => msg.id);
+
             const report = await createReportFromMessages(messages, {
                 id: channelId,
                 name: channelName,
                 count: messages.length
             }, this.env);
+
+            // Add message IDs to the report
+            report.messageIds = messageIds;
 
             // Cache the newly generated report
             if (this.env.REPORTS_CACHE) {
@@ -200,8 +208,8 @@ export class ReportsService {
         }
     }
 
-    // Helper method to get messages from the last hour
-    private async getReportMessages(channelId: string): Promise<DiscordMessage[]> {
+    // Helper method to get messages from the last hour or by specific IDs
+    private async getReportMessages(channelId: string, messageIds?: string[]): Promise<DiscordMessage[]> {
         const cacheKey = `messages:${channelId}`;
         const messagesData = await this.messagesService.env.MESSAGES_CACHE.get(cacheKey);
         if (!messagesData) return [];
@@ -209,6 +217,15 @@ export class ReportsService {
         const cachedMessages: CachedMessages = JSON.parse(messagesData);
         if (!cachedMessages.messages || cachedMessages.messages.length === 0) return [];
 
+        // If specific message IDs are provided, return only those messages
+        if (messageIds && messageIds.length > 0) {
+            const messageIdSet = new Set(messageIds);
+            const filteredMessages = cachedMessages.messages.filter(msg => messageIdSet.has(msg.id));
+            console.log(`[REPORTS] Retrieved ${filteredMessages.length}/${messageIds.length} specific messages for report`);
+            return filteredMessages;
+        }
+
+        // Otherwise, filter by time (last hour)
         const oneHourAgo = Date.now() - 60 * 60 * 1000;
         return cachedMessages.messages.filter(
             (msg: DiscordMessage) => new Date(msg.timestamp).getTime() >= oneHourAgo

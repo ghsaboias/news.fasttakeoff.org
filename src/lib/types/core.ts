@@ -187,6 +187,7 @@ export interface Report {
     lastMessageTimestamp?: string;
     generatedAt?: string;
     userGenerated?: boolean;
+    messageIds?: string[];
 }
 
 export interface CachedMessages {
@@ -208,6 +209,7 @@ export interface ApiReport {
     messageCountLastHour: number;
     lastMessageTimestamp: string;
     generatedAt: string;
+    messageIds?: string[];
 }
 
 export interface ReportResponse {

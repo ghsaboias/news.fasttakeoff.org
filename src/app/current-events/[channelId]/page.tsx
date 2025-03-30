@@ -1,6 +1,6 @@
 import { getChannelDetails } from '@/lib/data/channels-service';
 import { ReportsService } from '@/lib/data/reports-service';
-import { Report } from '@/lib/types/core';
+import { DiscordMessage, Report } from '@/lib/types/core';
 import { getCacheContext } from '@/lib/utils';
 import { notFound } from 'next/navigation';
 import ChannelDetailClient from './ChannelDetailClient';
@@ -9,28 +9,35 @@ export default async function ChannelDetailPage({ params }: { params: Promise<{ 
     const { channelId } = await params;
     const { env } = getCacheContext();
 
-    // Fetch channel and messages
-    const { channel, messages } = await getChannelDetails(env, channelId);
+    // Fetch channel details
+    const { channel } = await getChannelDetails(env, channelId);
 
     if (!channel) {
         notFound(); // Return 404 if channel is not found
     }
 
-    // Fetch report separately
+    // Fetch report and its associated messages
     const reportsService = new ReportsService(env);
     let report: Report | null = null;
+    let reportMessages = { count: 0, messages: [] as DiscordMessage[] };
     try {
         const reportResponse = await reportsService.getChannelReport(channelId, { forceRefresh: false });
-        report = reportResponse?.report || null;
+        if (reportResponse) {
+            report = reportResponse.report;
+            reportMessages = {
+                count: reportResponse.messages.length,
+                messages: reportResponse.messages
+            };
+        }
     } catch (error) {
-        console.error("Error generating report:", error);
+        console.error("Error fetching report:", error);
     }
 
     return (
         <ChannelDetailClient
             channel={channel}
             report={report}
-            messages={messages}
+            messages={reportMessages}
         />
     );
 }
