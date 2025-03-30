@@ -25,9 +25,7 @@ export default function MediaPreview({ url, type, contentType, alt }: MediaPrevi
                             height={1000}
                         />
                     ) : (
-                        <video
-                            className="w-full h-full object-cover hover:scale-105 transition-transform"
-                        >
+                        <video className="w-full h-full object-cover hover:scale-105 transition-transform">
                             <source src={url} type={contentType} />
                             Your browser does not support the video tag.
                         </video>
@@ -48,10 +46,7 @@ export default function MediaPreview({ url, type, contentType, alt }: MediaPrevi
                             height={1000}
                         />
                     ) : (
-                        <video
-                            controls
-                            className="max-h-[90vh] max-w-full rounded-lg"
-                        >
+                        <video controls className="max-h-[90vh] max-w-full rounded-lg">
                             <source src={url} type={contentType} />
                             Your browser does not support the video tag.
                         </video>
@@ -60,4 +55,4 @@ export default function MediaPreview({ url, type, contentType, alt }: MediaPrevi
             </DialogContent>
         </Dialog>
     );
-} 
+}
