@@ -16,7 +16,8 @@ export async function GET(request: Request) {
         if (channelId) {
             const reportResponse = await reportsService.getChannelReport(channelId, { forceRefresh });
             if (reportResponse) {
-                return NextResponse.json(reportResponse.report);
+                const { report, messages } = reportResponse;
+                return NextResponse.json({ report, messages });
             }
             return NextResponse.json({ error: 'Report not found' }, { status: 404 });
         } else {

@@ -55,16 +55,28 @@ export default function CurrentEventsClient({ channels }: Props) {
             if (!response.ok) {
                 throw new Error(`Failed to fetch report: ${response.status}`);
             }
-            const report = await response.json() as Report;
+            const data = await response.json() as { report: Report, messages: DiscordMessage[] };
             setChannelReports(prev => {
                 const newMap = new Map(prev);
                 newMap.set(channelId, {
-                    report,
+                    report: data.report,
                     loading: false,
                     error: null
                 });
                 return newMap;
             });
+
+            if (data.messages && data.messages.length > 0) {
+                setChannelData(prev => {
+                    const newMap = new Map(prev);
+                    newMap.set(channelId, {
+                        count: data.messages.length,
+                        messages: data.messages,
+                        loading: false
+                    });
+                    return newMap;
+                });
+            }
         } catch (error) {
             console.error(`[Client] Error fetching report for channel ${channelId}:`, error);
             setChannelReports(prev => {
