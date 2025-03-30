@@ -1,4 +1,4 @@
-import { Fetcher, KVNamespace } from '../../cloudflare-env';
+import { CloudflareEnv } from '../../cloudflare-env';
 import { MessagesService } from './data/messages-service';
 import { ReportsService } from './data/reports-service';
 
@@ -6,17 +6,6 @@ interface ScheduledEvent {
     scheduledTime: number;
     cron: string;
     waitUntil: (promise: Promise<unknown>) => void;
-}
-
-interface CloudflareEnv {
-    MESSAGES_CACHE: KVNamespace;
-    REPORTS_CACHE: KVNamespace;
-    CHANNELS_CACHE: KVNamespace;
-    EXECUTIVE_ORDERS_CACHE: KVNamespace;
-    DISCORD_TOKEN: string;
-    DISCORD_GUILD_ID: string;
-    GROQ_API_KEY: string;
-    ASSETS: Fetcher;
 }
 
 export async function scheduled(event: ScheduledEvent, env: CloudflareEnv): Promise<void> {

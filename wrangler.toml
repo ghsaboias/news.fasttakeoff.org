@@ -34,10 +34,5 @@ pattern = "news.aiworld.com.br"
 custom_domain = true
 zone_name = "aiworld.com.br"
 
-[vars]
-DISCORD_TOKEN = "***REMOVED***"
-DISCORD_GUILD_ID = "1108138416660557926"
-GROQ_API_KEY = "***REMOVED***"
-
 [observability.logs]
 enabled = true

@@ -90,7 +90,7 @@ export default function ReportsCarousel() {
                                         <p className="text-sm text-muted-foreground line-clamp-1">{report.city}</p>
                                     </CardHeader>
                                     <CardContent className="flex-grow flex flex-col pt-0 gap-2">
-                                        <p className="text-sm text-muted-foreground line-clamp-3 flex-grow overflow-scroll">
+                                        <p className="text-sm text-muted-foreground flex-grow overflow-scroll">
                                             {report.body}
                                         </p>
                                         <div className="mt-2 text-xs text-muted-foreground">

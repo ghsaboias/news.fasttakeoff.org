@@ -1,4 +1,3 @@
-import ReportsCarousel from '@/components/current-events/Carousel';
 import { getChannels } from '@/lib/data/channels-service';
 import { getCacheContext } from '@/lib/utils';
 import { unstable_cache } from 'next/cache';
@@ -30,7 +29,6 @@ export default async function CurrentEventsPage() {
     const channels = await getCachedChannels();
     return (
         <div className="flex flex-col gap-8">
-            <ReportsCarousel />
             <CurrentEventsClient channels={channels} />
         </div>
     );
