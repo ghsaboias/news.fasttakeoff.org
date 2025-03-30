@@ -45,18 +45,15 @@ export default function ReportsCarousel() {
     return (
         <div className="w-full px-4">
             <Carousel
-                className="w-full max-w-full"
                 opts={{
                     align: "start",
                     loop: false,
-                    dragFree: true,
-                    slidesToScroll: 1,
-                    containScroll: "trimSnaps",
                 }}
+                className="w-full max-w-full"
             >
-                <CarouselContent className={`${loading || (!loading && reports.length === 0) ? 'flex items-center justify-center' : ''} ml-2 md:-ml-4 overflow-x-auto snap-x snap-mandatory`}>
+                <CarouselContent>
                     {loading ? (
-                        <CarouselItem className="pl-2 md:pl-4 basis-full sm:basis-1/2 md:basis-1/3 lg:basis-1/4 min-w-[200px] sm:min-w-[330px]">
+                        <CarouselItem className="basis-full sm:basis-1/2 md:basis-1/3 lg:basis-1/4 min-w-[200px] sm:min-w-[330px]">
                             <Card className="h-[300px] flex flex-col">
                                 <CardHeader>
                                     <CardTitle className="text-lg">Loading...</CardTitle>
@@ -70,7 +67,7 @@ export default function ReportsCarousel() {
                         reports.map((report, index) => (
                             <CarouselItem
                                 key={index}
-                                className="pl-2 md:pl-4 basis-full sm:basis-1/2 md:basis-1/3 lg:basis-1/4 min-w-[200px] sm:min-w-[330px] snap-start"
+                                className="basis-full sm:basis-1/2 md:basis-1/3 lg:basis-1/4 min-w-[200px] sm:min-w-[330px]"
                             >
                                 <Card className="h-[350px] flex flex-col gap-2">
                                     <CardHeader>
@@ -112,7 +109,7 @@ export default function ReportsCarousel() {
                             </CarouselItem>
                         ))
                     ) : (
-                        <CarouselItem className="pl-2 md:pl-4 basis-full sm:basis-1/2 md:basis-1/3 lg:basis-1/4 min-w-[200px] sm:min-w-[330px] snap-start">
+                        <CarouselItem className="basis-full sm:basis-1/2 md:basis-1/3 lg:basis-1/4 min-w-[200px] sm:min-w-[330px]">
                             <Card className="h-[350px] flex flex-col">
                                 <CardHeader>
                                     <CardTitle className="text-lg">No Active Reports</CardTitle>
@@ -124,8 +121,10 @@ export default function ReportsCarousel() {
                         </CarouselItem>
                     )}
                 </CarouselContent>
-                <CarouselPrevious className="hidden sm:flex" />
-                <CarouselNext className="hidden sm:flex" />
+                <div className="hidden md:flex">
+                    <CarouselPrevious />
+                    <CarouselNext />
+                </div>
             </Carousel>
         </div>
     );
