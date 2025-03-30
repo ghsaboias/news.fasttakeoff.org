@@ -20,7 +20,7 @@ export default async function ChannelDetailPage({ params }: { params: Promise<{ 
     const reportsService = new ReportsService(env);
     let report: Report | null = null;
     try {
-        const reportResponse = await reportsService.getChannelReport(channelId);
+        const reportResponse = await reportsService.getChannelReport(channelId, { forceRefresh: false });
         report = reportResponse?.report || null;
     } catch (error) {
         console.error("Error generating report:", error);

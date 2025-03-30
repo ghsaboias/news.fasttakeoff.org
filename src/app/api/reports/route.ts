@@ -10,10 +10,11 @@ export async function GET(request: Request) {
 
         const url = new URL(request.url);
         const channelId = url.searchParams.get('channelId');
-        console.log(`[API] GET /api/reports: ${channelId ? `Fetching report for channel ${channelId}` : 'Fetching all reports'}`);
+        const forceRefresh = url.searchParams.get('forceRefresh') === 'true';
+        console.log(`[API] GET /api/reports: ${channelId ? `Fetching report for channel ${channelId}` : 'Fetching all reports'} ${forceRefresh ? '(force refresh)' : ''}`);
 
         if (channelId) {
-            const reportResponse = await reportsService.getChannelReport(channelId);
+            const reportResponse = await reportsService.getChannelReport(channelId, { forceRefresh });
             if (reportResponse) {
                 return NextResponse.json(reportResponse.report);
             }
@@ -45,7 +46,7 @@ export async function POST(request: Request) {
         }
 
         console.log(`[API] Generating report for channel ${channelId} with forceRefresh=${forceRefresh}`);
-        const reportResponse = await reportsService.getChannelReport(channelId);
+        const reportResponse = await reportsService.getChannelReport(channelId, { forceRefresh });
         if (!reportResponse) {
             return NextResponse.json({ error: 'Report not found' }, { status: 404 });
         }
