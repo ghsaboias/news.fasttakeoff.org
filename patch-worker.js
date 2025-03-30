@@ -7,39 +7,48 @@ const workerPath = path.resolve(".open-next/worker.js");
 let content = "";
 try {
   content = fs.readFileSync(workerPath, "utf8");
-  console.log("Successfully read worker.js");
+  console.log("[Patch] Successfully read worker.js");
 } catch (error) {
-  console.error(`Failed to read ${workerPath}: ${error.message}`);
+  console.error(`[Patch] Failed to read ${workerPath}: ${error.message}`);
   process.exit(1);
 }
 
-// Add cron import and fetch override with logging at the top
+// Add cron import and enhanced fetch override with comprehensive logging
 const fetchOverride = `
 const originalFetch = globalThis.fetch;
 globalThis.fetch = async (url, init = {}) => {
-  console.log("[Worker] Fetch called for URL: " + url);
+  console.log("[Worker] Fetch intercepted: " + url);
+  console.log("[Worker] Request headers: " + JSON.stringify([...(init.headers || [])]));
   const parsedUrl = new URL(url instanceof Request ? url.url : url);
+  console.log("[Worker] Pathname: " + parsedUrl.pathname);
   if (parsedUrl.pathname.startsWith('/_next/image')) {
     const imageUrl = parsedUrl.searchParams.get('url');
-    console.log("[Worker] Detected /_next/image request, target URL: " + imageUrl);
+    console.log("[Worker] /_next/image detected, target URL: " + imageUrl);
     if (imageUrl && imageUrl.includes('cdn.discordapp.com/attachments')) {
-      console.log("[Worker] Patching fetch for Discord attachment: " + imageUrl);
+      console.log("[Worker] Patching Discord attachment: " + imageUrl);
       const headers = new Headers(init.headers || {});
-      headers.set('Authorization', process.env.DISCORD_TOKEN);
-      console.log("[Worker] Added Authorization header with token length: " + process.env.DISCORD_TOKEN.length);
+      const token = process.env.DISCORD_TOKEN;
+      headers.set('Authorization', token);
+      console.log("[Worker] Added Authorization header, token length: " + (token ? token.length : 'undefined'));
       const response = await originalFetch(url, { ...init, headers });
-      console.log("[Worker] Fetch response status: " + response.status);
+      console.log("[Worker] Response status: " + response.status);
       return response;
+    } else {
+      console.log("[Worker] /_next/image but not a Discord attachment: " + imageUrl);
     }
+  } else {
+    console.log("[Worker] Not an /_next/image request");
   }
-  return originalFetch(url, init);
+  const response = await originalFetch(url, init);
+  console.log("[Worker] Non-patched response status: " + response.status);
+  return response;
 };
 `;
 
 let newContent =
   `import { scheduled } from "../src/lib/cron";\n${fetchOverride}\n` + content;
 
-// Find the default export and modify it to include scheduled
+// Patch the default export to include scheduled
 const defaultExportRegex = /export default \{([^}]*)\}/;
 const match = newContent.match(defaultExportRegex);
 if (match) {
@@ -48,17 +57,17 @@ if (match) {
     defaultExportRegex,
     `export default {\n    scheduled,\n${exportContent}\n}`
   );
-  console.log("Successfully patched default export with scheduled");
+  console.log("[Patch] Successfully patched default export with scheduled");
 } else {
-  console.error("Could not find default export in worker.js");
+  console.error("[Patch] Could not find default export in worker.js");
   process.exit(1);
 }
 
 // Write the updated content back
 try {
   fs.writeFileSync(workerPath, newContent, "utf8");
-  console.log("Patched worker.js with cron handler and fetch override");
+  console.log("[Patch] Successfully wrote patched worker.js");
 } catch (error) {
-  console.error(`Failed to write to ${workerPath}: ${error.message}`);
+  console.error(`[Patch] Failed to write to ${workerPath}: ${error.message}`);
   process.exit(1);
 }
