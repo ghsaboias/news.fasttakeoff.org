@@ -4,13 +4,11 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { DiscordChannel, DiscordMessage, Report } from "@/lib/types/core";
 import { formatTime } from "@/lib/utils";
-import { RefreshCw } from "lucide-react";
 import Link from "next/link";
 interface ChannelCardProps {
     channel: DiscordChannel;
     channelData: Map<string, { count: number; messages: DiscordMessage[]; loading: boolean }>;
     channelReports: Map<string, { report: Report | null; loading: boolean; error: string | null }>;
-    generateChannelReport: (channel: DiscordChannel) => Promise<void>;
     isLoading: boolean;
 }
 
@@ -18,7 +16,6 @@ export default function ChannelCard({
     channel,
     channelData,
     channelReports,
-    generateChannelReport,
     isLoading
 }: ChannelCardProps) {
     const channelDataEntry = channelData.get(channel.id) || { count: 0, messages: [], loading: false };
@@ -51,16 +48,6 @@ export default function ChannelCard({
                         Read more
                     </Button>
                 </Link>
-                <Button
-                    variant="outline"
-                    size="sm"
-                    className="w-full"
-                    onClick={() => generateChannelReport(channel)}
-                    disabled={channelReport.loading}
-                >
-                    {channelReport.loading && <RefreshCw className="h-4 w-4 mr-2 animate-spin" />}
-                    {channelReport.loading ? "Generating..." : "Generate Report"}
-                </Button>
             </div>
         </Card>
     );

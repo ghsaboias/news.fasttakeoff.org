@@ -1,4 +1,4 @@
-import { CachedMessages, DiscordMessage, Report } from '@/lib/types/core';
+import { DiscordMessage, Report } from '@/lib/types/core';
 import type { CloudflareEnv } from '../../../cloudflare-env';
 import { getChannelName } from './channels-service';
 import { MessagesService } from './messages-service';
@@ -27,7 +27,7 @@ function formatSingleMessage(message: DiscordMessage): string {
     return parts.join('\n');
 }
 
-function formatMessagesForReport(messages: DiscordMessage[]): string {
+function createPrompt(messages: DiscordMessage[]): string {
     const formattedText = messages.map(formatSingleMessage).join('\n\n');
     return `
     Create a journalistic report covering the key developments.
@@ -37,7 +37,7 @@ function formatMessagesForReport(messages: DiscordMessage[]): string {
 
     Requirements:
     - Start with ONE clear and specific headline in ALL CAPS
-    - Second line must be a single city name, related to the news
+    - Second line must be a single city name, related to the news, with just the first letter capitalized
     - Paragraphs must summarize the most important verified developments, including key names, numbers, locations, dates, etc.
     - If multiple sources are reporting the same thing, only include it once
     - Paragraphs must be in order of most important to least important
@@ -50,7 +50,7 @@ function formatMessagesForReport(messages: DiscordMessage[]): string {
   `;
 }
 
-async function generateReportFromAI(prompt: string, messages: DiscordMessage[], channelInfo: { id: string; name: string; count: number }, env: CloudflareEnv): Promise<Report> {
+async function createReportWithAI(prompt: string, messages: DiscordMessage[], channelInfo: { id: string; name: string; count: number }, env: CloudflareEnv): Promise<Report> {
     const apiUrl = 'https://api.groq.com/openai/v1/chat/completions';
     const model = 'llama3-8b-8192';
     let attempts = 0;
@@ -92,7 +92,7 @@ async function generateReportFromAI(prompt: string, messages: DiscordMessage[], 
 
             return {
                 headline: lines[0].trim().replace(/[\*_]+/g, '').trim(),
-                city: lines[1].trim(),
+                city: lines[1].trim().charAt(0).toUpperCase() + lines[1].trim().slice(1),
                 body: lines.slice(2).join('\n').trim(),
                 timestamp: new Date().toISOString(),
                 channelId: channelInfo.id,
@@ -137,11 +137,6 @@ async function tryCatch<T>(fn: () => Promise<T>, context: string): Promise<T | n
     }
 }
 
-export interface TopReportsOptions {
-    count?: number;
-    maxCandidates?: number;
-}
-
 export class ReportsService {
     private messagesService: MessagesService;
     private env: CloudflareEnv;
@@ -154,44 +149,6 @@ export class ReportsService {
         this.messagesService = new MessagesService(env);
     }
 
-    // Private helpers
-    private async fetchReportMessages(channelId: string, messageIds?: string[]): Promise<DiscordMessage[]> {
-        const cacheKey = `messages:${channelId}`;
-        const messagesData = await this.messagesService.env.MESSAGES_CACHE.get(cacheKey);
-        if (!messagesData) return [];
-
-        const cachedMessages: CachedMessages = JSON.parse(messagesData);
-        if (!cachedMessages.messages || cachedMessages.messages.length === 0) return [];
-
-        const sortedMessages = cachedMessages.messages.sort(
-            (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
-        );
-
-        if (messageIds && messageIds.length > 0) {
-            const messageIdSet = new Set(messageIds);
-            const filtered = sortedMessages.filter(msg => messageIdSet.has(msg.id));
-            console.log(`[REPORTS] Retrieved ${filtered.length}/${messageIds.length} specific messages for channel ${channelId}`);
-            return filtered;
-        }
-
-        const oneHourAgo = Date.now() - 60 * 60 * 1000;
-        return sortedMessages.filter(msg => new Date(msg.timestamp).getTime() >= oneHourAgo);
-    }
-
-    private async tryGetCachedReport(channelId: string): Promise<{ report: Report; messages: DiscordMessage[] } | null> {
-        const cacheKey = `report:${channelId}:1h`;
-        const cachedReport = await this.env.REPORTS_CACHE.get(cacheKey);
-        if (!cachedReport) {
-            console.log(`[REPORTS] Cache miss for report ${channelId}`);
-            return null;
-        }
-
-        console.log(`[REPORTS] Cache hit for report ${channelId}`);
-        const report = JSON.parse(cachedReport) as Report;
-        const messages = await this.fetchReportMessages(channelId, report.messageIds);
-        return { report, messages };
-    }
-
     private async cacheReport(channelId: string, result: { report: Report; messages: DiscordMessage[] }): Promise<void> {
         result.report.messageIds = result.messages.map(msg => msg.id);
         await this.env.REPORTS_CACHE.put(
@@ -202,16 +159,10 @@ export class ReportsService {
         console.log(`[REPORTS] Cached report for channel ${channelId} with 72h TTL`);
     }
 
-    // Public methods
-    async getChannelReport(channelId: string): Promise<{ report: Report; messages: DiscordMessage[] }> {
-        const cached = await this.tryGetCachedReport(channelId);
-        if (cached) return cached;
-        return this.buildChannelReport(channelId);
-    }
-
-    async buildChannelReport(channelId: string): Promise<{ report: Report; messages: DiscordMessage[] }> {
+    // Get report and messages for a channel
+    async getReportAndMessages(channelId: string): Promise<{ report: Report; messages: DiscordMessage[] }> {
         const [messages, channelName] = await Promise.all([
-            this.fetchReportMessages(channelId),
+            this.messagesService.getMessages(channelId),
             getChannelName(this.env, channelId),
         ]);
 
@@ -222,8 +173,8 @@ export class ReportsService {
 
         console.log(`[REPORTS] Channel ${channelId}: Generating new report from ${messages.length} messages`);
         const report = await tryCatch(
-            () => generateReportFromAI(
-                formatMessagesForReport(messages),
+            () => createReportWithAI(
+                createPrompt(messages),
                 messages,
                 { id: channelId, name: channelName, count: messages.length },
                 this.env
@@ -238,7 +189,8 @@ export class ReportsService {
         return result;
     }
 
-    async getAllReports(): Promise<Report[]> {
+    // Get all reports from cache
+    async getAllReportsFromCache(): Promise<Report[]> {
         const { keys } = await this.env.REPORTS_CACHE.list({ prefix: 'report:' });
         const reportKeys = keys.filter(key => key.name.endsWith(':1h'));
 
@@ -262,13 +214,13 @@ export class ReportsService {
         return validReports;
     }
 
-    async generateReports(): Promise<void> {
+    async createFreshReports(): Promise<void> {
         console.log('[REPORTS] Starting report generation for all channels');
         const { keys } = await this.messagesService.env.MESSAGES_CACHE.list();
         const messageKeys = keys.filter(key => key.name.startsWith('messages:'));
 
         const results = await Promise.all(
-            messageKeys.map(key => this.buildChannelReport(key.name.replace('messages:', '')))
+            messageKeys.map(key => this.getReportAndMessages(key.name.replace('messages:', '')))
         );
 
         const generatedCount = results.filter(result => result.messages.length > 0).length;

@@ -1,7 +1,5 @@
 "use client";
 
-import ChannelCard from "@/components/current-events/ChannelCard";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -11,7 +9,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-import { DiscordChannel, DiscordMessage, Report } from "@/lib/types/core";
+import { DiscordChannel } from "@/lib/types/core";
 import { FilterX, Search } from "lucide-react";
 import { useState } from "react";
 
@@ -20,95 +18,25 @@ export interface Props {
 }
 
 export default function CurrentEventsClient({ channels }: Props) {
-    let channelData = new Map<string, { count: number; messages: DiscordMessage[]; loading: boolean }>();
-    const [channelReports, setChannelReports] = useState<Map<string, { report: Report | null; loading: boolean; error: string | null }>>(
-        new Map()
-    );
+    console.log(channels);
     const [searchQuery, setSearchQuery] = useState("");
     const [sortBy, setSortBy] = useState<"position" | "name" | "recent" | "activity">("activity");
-    const [isLoading, setIsLoading] = useState(false);
-    const [activeChannels, setActiveChannels] = useState<DiscordChannel[]>(channels);
-    const [metadata, setMetadata] = useState<{
-        totalChannels: number;
-        activeChannels: number;
-        timestamp: string;
-    }>({
-        totalChannels: channels.length,
-        activeChannels: 0,
-        timestamp: new Date().toISOString(),
-    });
-
-    const generateChannelReport = async (channel: DiscordChannel) => {
-        setChannelReports(prev => {
-            const newMap = new Map(prev);
-            newMap.set(channel.id, { report: null, loading: true, error: null });
-            return newMap;
-        });
-        try {
-            console.log(`[Client] Sending POST to /api/reports with channelId: ${channel.id}`);
-            const response = await fetch('/api/reports', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ channelId: channel.id, timeframe: '1h' }),
-            });
-            if (!response.ok) {
-                const errorText = await response.text();
-                throw new Error(`Failed to generate report: ${response.status} - ${errorText}`);
-            }
-            const { report } = await response.json() as { report: Report, messages: DiscordMessage[] };
-            console.log('[Client] Report received:', report);
-            setChannelReports(prev => {
-                const newMap = new Map(prev);
-                newMap.set(channel.id, { report, loading: false, error: null });
-                return newMap;
-            });
-        } catch (error) {
-            console.error('[Client] Error generating report:', error);
-            setChannelReports(prev => {
-                const newMap = new Map(prev);
-                newMap.set(channel.id, {
-                    report: null,
-                    loading: false,
-                    error: error instanceof Error ? error.message : 'Failed to generate report',
-                });
-                return newMap;
-            });
-        }
-    };
-
-    const filteredChannels = activeChannels
-        .filter(channel => {
-            const channelReport = channelReports.get(channel.id);
-            const matchesSearch = channel.name.toLowerCase().includes(searchQuery.toLowerCase());
-            return matchesSearch && !channelReport?.error;
-        })
-        .sort((a, b) => {
-            switch (sortBy) {
-                case "position":
-                    return a.position - b.position;
-                case "name":
-                    return a.name.localeCompare(b.name);
-                case "recent":
-                    const aReport = channelReports.get(a.id)?.report;
-                    const bReport = channelReports.get(b.id)?.report;
-                    if (!aReport?.lastMessageTimestamp) return 1;
-                    if (!bReport?.lastMessageTimestamp) return -1;
-                    return new Date(bReport.lastMessageTimestamp).getTime() -
-                        new Date(aReport.lastMessageTimestamp).getTime();
-                case "activity":
-                    const aData = channelData.get(a.id);
-                    const bData = channelData.get(b.id);
-                    return (bData?.count || 0) - (aData?.count || 0);
-                default:
-                    return 0;
-            }
-        });
+    // const [isLoading, setIsLoading] = useState(false);
+    // const [metadata, setMetadata] = useState<{
+    //     totalChannels: number;
+    //     activeChannels: number;
+    //     timestamp: string;
+    // }>({
+    //     totalChannels: channels.length,
+    //     activeChannels: 0,
+    //     timestamp: new Date().toISOString(),
+    // });
 
     const clearSearch = () => setSearchQuery("");
-    const reportCount = filteredChannels.filter(channel => {
-        const report = channelReports.get(channel.id)?.report;
-        return report && !channelReports.get(channel.id)?.error;
-    }).length;
+    // const reportCount = channels.filter(channel => {
+    //     const report = channelReports.get(channel.id)?.report;
+    //     return report && !channelReports.get(channel.id)?.error;
+    // }).length;
 
     return (
         <div className="py-8 px-4">
@@ -118,19 +46,19 @@ export default function CurrentEventsClient({ channels }: Props) {
                         <h1 className="text-2xl font-bold">Current Events</h1>
                     </div>
                     <div className="flex flex-col items-end gap-1">
-                        <div className="flex gap-2">
+                        {/* <div className="flex gap-2">
                             <Badge variant="secondary">
                                 Active Topics: {metadata.activeChannels}
                             </Badge>
                             <Badge variant="outline">
                                 With Reports: {reportCount}
                             </Badge>
-                        </div>
-                        {metadata.timestamp && (
+                        </div> */}
+                        {/* {metadata.timestamp && (
                             <span className="text-xs text-muted-foreground">
                                 Last updated: {new Date(metadata.timestamp).toISOString().substring(11, 19)}
                             </span>
-                        )}
+                        )} */}
                     </div>
                 </div>
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center justify-between">
@@ -167,14 +95,13 @@ export default function CurrentEventsClient({ channels }: Props) {
                         </Select>
                     </div>
                 </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-4">
+                {/* <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-4">
                     {filteredChannels.map(channel => (
                         <ChannelCard
                             key={channel.id}
                             channel={channel}
                             channelData={channelData}
                             channelReports={channelReports}
-                            generateChannelReport={generateChannelReport}
                             isLoading={isLoading}
                         />
                     ))}
@@ -191,7 +118,7 @@ export default function CurrentEventsClient({ channels }: Props) {
                             </p>
                         )}
                     </div>
-                )}
+                )} */}
             </div>
         </div>
     );
