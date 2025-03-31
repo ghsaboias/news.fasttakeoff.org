@@ -1,6 +1,6 @@
 import { getChannelDetails } from '@/lib/data/channels-service';
 import { ReportsService } from '@/lib/data/reports-service';
-import { DiscordMessage, Report } from '@/lib/types/core';
+import { Report } from '@/lib/types/core';
 import { getCacheContext } from '@/lib/utils';
 import { notFound } from 'next/navigation';
 import ChannelDetailClient from './ChannelDetailClient';
@@ -17,19 +17,14 @@ export default async function ChannelDetailPage({ params }: { params: Promise<{ 
 
     // Fetch report and its associated messages
     const reportsService = new ReportsService(env);
-    let report: Report | null = null;
-    let reportMessages = { count: 0, messages: [] as DiscordMessage[] };
-
+    let reports: Report[] = [];
     try {
-        const reports = await reportsService.getAllChannelReportsFromCache(channelId);
+        reports = await reportsService.getAllChannelReportsFromCache(channelId);
         console.log(`[CHANNEL] Found ${reports.length} reports for channel ${channelId}`);
         console.log(reports);
         if (reports.length === 0) {
             notFound();
         }
-        const { report: reportFromCache, messages } = await reportsService.getReportAndMessages(channelId);
-        report = reportFromCache;
-        reportMessages = { count: messages.length, messages };
     } catch (error) {
         console.error("Error fetching report:", error);
         // Fallback to empty report is handled by getChannelReport, no need to override here
@@ -38,8 +33,7 @@ export default async function ChannelDetailPage({ params }: { params: Promise<{ 
     return (
         <ChannelDetailClient
             channel={channel}
-            report={report}
-            messages={reportMessages}
+            reports={reports}
         />
     );
 }
