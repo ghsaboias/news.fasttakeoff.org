@@ -11,7 +11,6 @@ export default async function ChannelDetailPage({ params }: { params: Promise<{ 
 
     // Fetch channel details
     const { channel } = await getChannelDetails(env, channelId);
-
     if (!channel) {
         notFound(); // Return 404 if channel is not found
     }
@@ -20,17 +19,14 @@ export default async function ChannelDetailPage({ params }: { params: Promise<{ 
     const reportsService = new ReportsService(env);
     let report: Report | null = null;
     let reportMessages = { count: 0, messages: [] as DiscordMessage[] };
+
     try {
-        const reportResponse = await reportsService.getChannelReport(channelId, { forceRefresh: false });
-        if (reportResponse) {
-            report = reportResponse.report;
-            reportMessages = {
-                count: reportResponse.messages.length,
-                messages: reportResponse.messages
-            };
-        }
+        const { report: fetchedReport, messages } = await reportsService.getChannelReport(channelId, { forceRefresh: false });
+        report = fetchedReport;
+        reportMessages = { count: messages.length, messages };
     } catch (error) {
         console.error("Error fetching report:", error);
+        // Fallback to empty report is handled by getChannelReport, no need to override here
     }
 
     return (
