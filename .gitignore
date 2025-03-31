@@ -60,3 +60,5 @@ repomix-output.txt
 .repomixignore
 
 delete-cache.js
+
+related_files.txt
