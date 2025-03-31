@@ -78,16 +78,14 @@ export class MessagesService {
         }
     }
 
-    async getMessages(channelId: string, options: { since?: Date; limit?: number; forceRefresh?: boolean } = {}): Promise<DiscordMessage[]> {
-        const { since = new Date(Date.now() - 3600000), limit = 100, forceRefresh = false } = options;
+    async getMessages(channelId: string, options: { since?: Date; limit?: number } = {}): Promise<DiscordMessage[]> {
+        const { since = new Date(Date.now() - 3600000), limit = 100 } = options;
 
-        if (!forceRefresh) {
-            const cached = await this.getCachedMessages(channelId);
-            if (cached && new Date(cached.cachedAt).getTime() > Date.now() - 3600000) {
-                console.log(`[MESSAGES_CACHE] Cache hit for ${channelId}`);
-                const filteredCached = cached.messages.filter(msg => new Date(msg.timestamp) >= since);
-                return filteredCached.slice(0, limit);
-            }
+        const cached = await this.getCachedMessages(channelId);
+        if (cached && new Date(cached.cachedAt).getTime() > Date.now() - 3600000) {
+            console.log(`[MESSAGES_CACHE] Cache hit for ${channelId}`);
+            const filteredCached = cached.messages.filter(msg => new Date(msg.timestamp) >= since);
+            return filteredCached.slice(0, limit);
         }
 
         const messages = await this.fetchFromDiscord(channelId, since);
