@@ -11,21 +11,20 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-import { Report } from "@/lib/types/core";
-import { formatTime } from "@/lib/utils";
+import { ReportsService } from "@/lib/data/reports-service";
+import { formatTime, getCacheContext } from "@/lib/utils";
 import { FilterX, Search } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 
-export interface Props {
-    reports: Report[];
-}
-
-export default function CurrentEventsClient({ reports }: Props) {
+export default async function CurrentEventsClient() {
     const [searchQuery, setSearchQuery] = useState("");
     const [sortBy, setSortBy] = useState<"name" | "recent" | "activity">("activity");
 
     const clearSearch = () => setSearchQuery("");
+
+    const reportsService = new ReportsService(getCacheContext().env);
+    const reports = await reportsService.getAllReportsFromCache();
 
     const metadata = {
         reportCount: reports.length,
