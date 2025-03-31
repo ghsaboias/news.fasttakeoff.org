@@ -144,69 +144,6 @@ export async function getChannels(env: CloudflareEnv): Promise<DiscordChannel[]>
     return client.fetchChannels();
 }
 
-export async function getActiveChannels(
-    env: CloudflareEnv,
-    limit = 3,
-    maxCandidates = 10
-): Promise<(DiscordChannel & { messageCounts: { "1h": number }; messages: DiscordMessage[]; lastMessageTimestamp?: string })[]> {
-    const client = new ChannelsService(env);
-    const channels = await client.fetchChannels();
-    const messagesService = new MessagesService(env);
-    const result: (DiscordChannel & { messageCounts: { "1h": number }; messages: DiscordMessage[]; lastMessageTimestamp?: string })[] = [];
-
-    if (env.MESSAGES_CACHE) {
-        const list = await env.MESSAGES_CACHE.list({ prefix: 'messages:' });
-        console.log(`[Discord] Message cache check: ${list.keys.length} channels found in MESSAGES_CACHE`);
-
-        for (const key of list.keys) {
-            const channelId = key.name.split(':')[1];
-            const messages = await messagesService.getMessages(channelId, { since: new Date(Date.now() - 60 * 60 * 1000) });
-            const messageCount = messages.length;
-            if (messageCount > 0) {
-                const channel = channels.find(c => c.id === channelId);
-                if (channel && !result.some(r => r.id === channelId)) {
-                    result.push({
-                        ...channel,
-                        messageCounts: { "1h": messageCount },
-                        messages,
-                        lastMessageTimestamp: messages[0]?.timestamp,
-                    });
-                }
-            }
-            if (result.length >= limit) break;
-        }
-        console.log(`[Discord] Found ${result.length} fresh cached active channels`);
-    }
-
-    if (result.length < limit) {
-        const remainingNeeded = limit - result.length;
-        const missingChannels = channels
-            .filter(c => !result.some(r => r.id === c.id))
-            .slice(0, Math.max(remainingNeeded, maxCandidates - result.length));
-        console.log(`[Discord] Fetching ${missingChannels.length} additional channels to reach limit ${limit} (max candidates: ${maxCandidates})`);
-
-        for (const channel of missingChannels) {
-            const messages = await messagesService.getMessages(channel.id, { since: new Date(Date.now() - 60 * 60 * 1000) });
-            const count = messages.length;
-            if (count > 0) {
-                result.push({
-                    ...channel,
-                    messageCounts: { "1h": count },
-                    messages,
-                    lastMessageTimestamp: messages[0]?.timestamp,
-                });
-            }
-            if (result.length >= limit) break;
-        }
-    }
-
-    const sortedResult = result
-        .sort((a, b) => b.messageCounts["1h"] - a.messageCounts["1h"])
-        .slice(0, limit);
-    console.log(`[Discord] Returning ${sortedResult.length} active channels`);
-    return sortedResult;
-}
-
 export async function getChannelDetails(
     env: CloudflareEnv,
     channelId: string
