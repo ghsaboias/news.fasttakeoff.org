@@ -189,6 +189,16 @@ export class ReportsService {
         return result;
     }
 
+    async getReportAndMessages(channelId: string): Promise<{ report: Report; messages: DiscordMessage[] }> {
+        const cachedReport = await this.env.REPORTS_CACHE.get(`report:${channelId}:1h`);
+        if (cachedReport) {
+            const messages = await this.messagesService.getMessages(channelId);
+            return { report: JSON.parse(cachedReport) as Report, messages };
+        } else {
+            return this.createReportAndGetMessages(channelId);
+        }
+    }
+
     // Get all reports from cache
     async getAllReportsFromCache(): Promise<Report[]> {
         const { keys } = await this.env.REPORTS_CACHE.list({ prefix: 'report:' });
