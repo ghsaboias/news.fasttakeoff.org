@@ -10,11 +10,10 @@ export async function GET(request: Request) {
 
         const url = new URL(request.url);
         const channelId = url.searchParams.get('channelId');
-        const forceRefresh = url.searchParams.get('forceRefresh') === 'true';
-        console.log(`[API] GET /api/reports: ${channelId ? `Fetching report for channel ${channelId}` : 'Fetching all reports'} ${forceRefresh ? '(force refresh)' : ''}`);
+        console.log(`[API] GET /api/reports: ${channelId ? `Fetching report for channel ${channelId}` : 'Fetching all reports'}`);
 
         if (channelId) {
-            const { report, messages } = await reportsService.getChannelReport(channelId, { forceRefresh });
+            const { report, messages } = await reportsService.getChannelReport(channelId);
             return NextResponse.json({ report, messages });
         } else {
             const reports = await reportsService.getAllReports();
@@ -32,7 +31,7 @@ export async function POST(request: Request) {
         const { env } = getCacheContext();
         const reportsService = new ReportsService(env);
 
-        const body = await request.json() as { channelId?: string; timeframe?: string; forceRefresh?: boolean; forceRefreshMessages?: boolean };
+        const body = await request.json() as { channelId?: string; timeframe?: string };
         const { channelId, timeframe } = body;
         console.log(`[API] POST /api/reports: channelId=${channelId}, timeframe=${timeframe}`);
 

@@ -37,7 +37,7 @@ function formatMessagesForReport(messages: DiscordMessage[]): string {
 
     Requirements:
     - Start with ONE clear and specific headline in ALL CAPS
-    - Second line must be in format: "City" (just the location name, no date)
+    - Second line must be a single city name, related to the news
     - Paragraphs must summarize the most important verified developments, including key names, numbers, locations, dates, etc.
     - If multiple sources are reporting the same thing, only include it once
     - Paragraphs must be in order of most important to least important
@@ -203,12 +203,9 @@ export class ReportsService {
     }
 
     // Public methods
-    async getChannelReport(channelId: string, options: { forceRefresh?: boolean } = {}): Promise<{ report: Report; messages: DiscordMessage[] }> {
-        const { forceRefresh = false } = options;
-        if (!forceRefresh) {
-            const cached = await this.tryGetCachedReport(channelId);
-            if (cached) return cached;
-        }
+    async getChannelReport(channelId: string): Promise<{ report: Report; messages: DiscordMessage[] }> {
+        const cached = await this.tryGetCachedReport(channelId);
+        if (cached) return cached;
         return this.buildChannelReport(channelId);
     }
 
