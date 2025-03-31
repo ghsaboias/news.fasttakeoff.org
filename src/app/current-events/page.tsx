@@ -1,10 +1,9 @@
-import { getChannels } from '@/lib/data/channels-service';
+import { ReportsService } from '@/lib/data/reports-service';
 import { getCacheContext } from '@/lib/utils';
 import { unstable_cache } from 'next/cache';
 import CurrentEventsClient from './CurrentEventsClient';
 
-export const dynamic = 'force-dynamic';
-export const revalidate = 3600;
+export const dynamic = 'force-dynamic'
 
 export async function generateMetadata() {
     return {
@@ -13,23 +12,23 @@ export async function generateMetadata() {
     };
 }
 
-const getCachedChannels = unstable_cache(
+const getCachedReports = unstable_cache(
     async () => {
-        console.log('[Runtime] Fetching channels for /current-events');
+        console.log('[Runtime] Fetching reports for /current-events');
         const { env } = getCacheContext();
-        const channels = await getChannels(env);
-        console.log('[Runtime] Channels fetched:', channels.length);
-        return channels;
+        const reportsService = new ReportsService(env);
+        const reports = await reportsService.getAllReportsFromCache();
+        return reports;
     },
-    ['discord-channels'],
+    ['discord-reports'],
     { revalidate: 3600 } // Cache for 1 hour
 );
 
 export default async function CurrentEventsPage() {
-    const channels = await getCachedChannels();
+    const reports = await getCachedReports();
     return (
         <div className="flex flex-col gap-8">
-            <CurrentEventsClient channels={channels} />
+            <CurrentEventsClient reports={reports} />
         </div>
     );
 }

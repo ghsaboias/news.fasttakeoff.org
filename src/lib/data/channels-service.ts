@@ -114,7 +114,6 @@ export class ChannelsService {
                 console.log(`Cache miss or stale for guild channels ${guildId}, fetching from Discord API`);
                 const allChannels = await this.fetchAllChannelsFromAPI();
                 const filteredChannels = this.filterChannels(allChannels);
-                console.log(`Filtered ${filteredChannels.length} channels`);
 
                 await Promise.all([
                     this.env.CHANNELS_CACHE.put(key, JSON.stringify(filteredChannels), { expirationTtl: 60 * 60 * 24 }),
@@ -141,7 +140,7 @@ export class ChannelsService {
         }
 
         const messagesService = new MessagesService(this.env);
-        const messages = await messagesService.getMessages(channelId, { since: new Date(Date.now() - 3600000) });
+        const messages = await messagesService.getMessages(channelId);
 
         return {
             channel,

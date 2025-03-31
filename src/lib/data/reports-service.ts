@@ -30,14 +30,12 @@ function formatSingleMessage(message: DiscordMessage): string {
 function createPrompt(messages: DiscordMessage[]): string {
     const formattedText = messages.map(formatSingleMessage).join('\n\n');
     return `
-    Create a journalistic report covering the key developments.
+    Create a journalistic report in the format mentioned, covering the key developments.
 
     Updates to analyze:
     ${formattedText}
 
     Requirements:
-    - Start with ONE clear and specific headline in ALL CAPS
-    - Second line must be a single city name, related to the news, with just the first letter capitalized
     - Paragraphs must summarize the most important verified developments, including key names, numbers, locations, dates, etc., in a cohesive narrative
     - Do NOT include additional headlines - weave all events into a cohesive narrative
     - If multiple sources are reporting the same thing, only include it once
@@ -67,11 +65,12 @@ async function createReportWithAI(prompt: string, messages: DiscordMessage[], ch
                     messages: [
                         {
                             role: "system",
-                            content: 'You are an experienced news wire journalist creating concise, clear updates. Your task is to report the latest developments. Focus on what\'s new and noteworthy. Don\'t speculate, just report the facts.',
+                            content: 'You are an experienced news wire journalist that responds in JSON. The schema must include {"headline": "clear, specific, non-sensational headline in all caps", "city": "single city name, related to the news, with just the first letter capitalized", "body": "cohesive narrative of the most important verified developments, including key names, numbers, locations, dates, etc."}',
                         },
                         { role: "user", content: prompt }
                     ],
                     model,
+                    response_format: { type: "json_object" },
                 }),
             });
 
@@ -90,9 +89,9 @@ async function createReportWithAI(prompt: string, messages: DiscordMessage[], ch
             const lastMessageTimestamp = messages[0]?.timestamp || new Date().toISOString();
 
             return {
-                headline: lines[0].trim().replace(/[\*_]+/g, '').trim(),
-                city: lines[1].trim().charAt(0).toUpperCase() + lines[1].trim().slice(1),
-                body: lines.slice(2).join('\n').trim(),
+                headline: JSON.parse(content).headline.toUpperCase(),
+                city: JSON.parse(content).city,
+                body: JSON.parse(content).body,
                 timestamp: new Date().toISOString(),
                 channelId: channelInfo.id,
                 channelName: channelInfo.name,
@@ -221,6 +220,11 @@ export class ReportsService {
 
         console.log(`[REPORTS] Fetched ${validReports.length} reports from REPORTS_CACHE`);
         return validReports;
+    }
+
+    async getAllChannelReportsFromCache(channelId: string): Promise<Report[]> {
+        const reports = await this.getAllReportsFromCache();
+        return reports.filter(report => report.channelId === channelId);
     }
 
     async createFreshReports(): Promise<void> {

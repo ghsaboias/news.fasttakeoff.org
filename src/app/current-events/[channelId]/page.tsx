@@ -21,8 +21,14 @@ export default async function ChannelDetailPage({ params }: { params: Promise<{ 
     let reportMessages = { count: 0, messages: [] as DiscordMessage[] };
 
     try {
-        const { report: fetchedReport, messages } = await reportsService.getReportAndMessages(channelId);
-        report = fetchedReport;
+        const reports = await reportsService.getAllChannelReportsFromCache(channelId);
+        console.log(`[CHANNEL] Found ${reports.length} reports for channel ${channelId}`);
+        console.log(reports);
+        if (reports.length === 0) {
+            notFound();
+        }
+        const { report: reportFromCache, messages } = await reportsService.getReportAndMessages(channelId);
+        report = reportFromCache;
         reportMessages = { count: messages.length, messages };
     } catch (error) {
         console.error("Error fetching report:", error);

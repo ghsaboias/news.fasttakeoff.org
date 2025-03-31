@@ -1,6 +1,8 @@
 "use client";
 
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import {
     Select,
@@ -9,34 +11,46 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-import { DiscordChannel } from "@/lib/types/core";
+import { Report } from "@/lib/types/core";
+import { formatTime } from "@/lib/utils";
 import { FilterX, Search } from "lucide-react";
+import Link from "next/link";
 import { useState } from "react";
 
 export interface Props {
-    channels: DiscordChannel[];
+    reports: Report[];
 }
 
-export default function CurrentEventsClient({ channels }: Props) {
-    console.log(channels);
+export default function CurrentEventsClient({ reports }: Props) {
     const [searchQuery, setSearchQuery] = useState("");
-    const [sortBy, setSortBy] = useState<"position" | "name" | "recent" | "activity">("activity");
-    // const [isLoading, setIsLoading] = useState(false);
-    // const [metadata, setMetadata] = useState<{
-    //     totalChannels: number;
-    //     activeChannels: number;
-    //     timestamp: string;
-    // }>({
-    //     totalChannels: channels.length,
-    //     activeChannels: 0,
-    //     timestamp: new Date().toISOString(),
-    // });
+    const [sortBy, setSortBy] = useState<"name" | "recent" | "activity">("activity");
 
     const clearSearch = () => setSearchQuery("");
-    // const reportCount = channels.filter(channel => {
-    //     const report = channelReports.get(channel.id)?.report;
-    //     return report && !channelReports.get(channel.id)?.error;
-    // }).length;
+
+    const metadata = {
+        reportCount: reports.length,
+        lastUpdated: reports[0]?.generatedAt
+    }
+
+    const filteredReports = reports.filter(report =>
+        report.channelName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        report.headline?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        report.city?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        report.body?.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+
+    const sortedReports = [...filteredReports].sort((a, b) => {
+        switch (sortBy) {
+            case "activity":
+                return (b.messageCountLastHour || 0) - (a.messageCountLastHour || 0);
+            case "recent":
+                return new Date(b.generatedAt || 0).getTime() - new Date(a.generatedAt || 0).getTime();
+            case "name":
+                return (a.channelName || "").localeCompare(b.channelName || "");
+            default:
+                return 0;
+        }
+    });
 
     return (
         <div className="py-8 px-4">
@@ -46,19 +60,16 @@ export default function CurrentEventsClient({ channels }: Props) {
                         <h1 className="text-2xl font-bold">Current Events</h1>
                     </div>
                     <div className="flex flex-col items-end gap-1">
-                        {/* <div className="flex gap-2">
+                        <div className="flex gap-2">
                             <Badge variant="secondary">
-                                Active Topics: {metadata.activeChannels}
+                                Active Topics: {reports.length}
                             </Badge>
-                            <Badge variant="outline">
-                                With Reports: {reportCount}
-                            </Badge>
-                        </div> */}
-                        {/* {metadata.timestamp && (
+                        </div>
+                        {metadata.lastUpdated && (
                             <span className="text-xs text-muted-foreground">
-                                Last updated: {new Date(metadata.timestamp).toISOString().substring(11, 19)}
+                                Last updated: {new Date(metadata.lastUpdated).toISOString().substring(11, 19)}
                             </span>
-                        )} */}
+                        )}
                     </div>
                 </div>
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center justify-between">
@@ -82,43 +93,78 @@ export default function CurrentEventsClient({ channels }: Props) {
                         )}
                     </div>
                     <div className="flex gap-2 items-center">
-                        <Select value={sortBy} onValueChange={(value: "position" | "name" | "recent" | "activity") => setSortBy(value)}>
+                        <Select value={sortBy} onValueChange={(value: "name" | "recent" | "activity") => setSortBy(value)}>
                             <SelectTrigger className="w-[150px]">
                                 <SelectValue placeholder="Sort by..." />
                             </SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="activity">Most Active</SelectItem>
                                 <SelectItem value="recent">Most Recent</SelectItem>
-                                <SelectItem value="position">Position</SelectItem>
                                 <SelectItem value="name">Name</SelectItem>
                             </SelectContent>
                         </Select>
                     </div>
                 </div>
-                {/* <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-4">
-                    {filteredChannels.map(channel => (
-                        <ChannelCard
-                            key={channel.id}
-                            channel={channel}
-                            channelData={channelData}
-                            channelReports={channelReports}
-                            isLoading={isLoading}
-                        />
-                    ))}
+                <div className="grid grid-cols-1 sm:grid-cols- lg:grid-cols-2 xl:grid-cols-3 gap-4">
+                    {
+                        sortedReports.length > 0 ? (
+                            sortedReports.map((report) => (
+                                <Card className="h-[350px] flex flex-col gap-2 py-4" key={report.channelId}>
+                                    <CardHeader>
+                                        <div className="flex justify-between gap-2 mb-1 items-center">
+                                            {report.channelName && (
+                                                <Badge variant="outline" className="px-1 py-0 h-5">
+                                                    {report.channelName}
+                                                </Badge>
+                                            )}
+                                        </div>
+                                        <CardTitle className="text-lg font-semibold line-clamp-2 leading-tight">
+                                            {report.headline}
+                                        </CardTitle>
+                                        <p className="text-sm text-muted-foreground line-clamp-1">{report.city}</p>
+                                    </CardHeader>
+                                    <CardContent className="flex-grow flex flex-col pt-0">
+                                        <p className="text-sm text-muted-foreground flex-grow overflow-scroll h-16">
+                                            {report.body}
+                                        </p>
+                                    </CardContent>
+                                    <CardFooter className="flex flex-col gap-2 justify-between items-start my-2">
+                                        <Button asChild variant="outline" size="sm" className="w-full">
+                                            <Link href={`/current-events/${report.channelId}`}>
+                                                Read More
+                                            </Link>
+                                        </Button>
+                                        <div>
+
+                                            <span className="text-xs text-muted-foreground">
+                                                Generated: {report.generatedAt ? formatTime(report.generatedAt) : 'Recent'}
+                                            </span>
+                                            <div className="text-xs text-muted-foreground">
+                                                {report.messageCountLastHour && (
+                                                    <div>
+                                                        <span className="font-medium">{report.messageCountLastHour}</span> update{report.messageCountLastHour === 1 ? '' : 's'} in the last hour
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </CardFooter>
+                                </Card>
+                            ))
+                        ) : (
+                            <div className="col-span-full text-center py-8">
+                                <p className="text-lg text-muted-foreground">No reports found</p>
+                                {searchQuery && (
+                                    <p className="text-sm text-muted-foreground mt-2">
+                                        Try adjusting your search criteria or
+                                        <Button variant="link" onClick={clearSearch} className="px-1 py-0">
+                                            clear your search
+                                        </Button>
+                                    </p>
+                                )}
+                            </div>
+                        )
+                    }
                 </div>
-                {!isLoading && filteredChannels.length === 0 && (
-                    <div className="text-center py-8">
-                        <p className="text-lg text-gray-500">No active topics found</p>
-                        {searchQuery && (
-                            <p className="text-sm text-gray-400 mt-2">
-                                Try adjusting your search criteria or
-                                <Button variant="link" onClick={clearSearch} className="px-1 py-0">
-                                    clear your search
-                                </Button>
-                            </p>
-                        )}
-                    </div>
-                )} */}
             </div>
         </div>
     );
