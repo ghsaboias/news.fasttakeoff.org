@@ -20,7 +20,8 @@ export class MessagesService {
         return botMessages;
     }
 
-    private async fetchFromDiscord(channelId: string, since: Date): Promise<DiscordMessage[]> {
+    // Fetch messages from Discord API
+    private async fetchMessagesFromAPI(channelId: string, since: Date = new Date(Date.now() - 3600000)): Promise<DiscordMessage[]> {
         const urlBase = `${DISCORD_API}/channels/${channelId}/messages?limit=100`;
         const token = this.env.DISCORD_TOKEN;
         if (!token) throw new Error('DISCORD_TOKEN is not set');
@@ -78,17 +79,15 @@ export class MessagesService {
         }
     }
 
+    // Get messages from cache or fetch from Discord API
     async getMessages(channelId: string, options: { since?: Date; limit?: number } = {}): Promise<DiscordMessage[]> {
         const { since = new Date(Date.now() - 3600000), limit = 100 } = options;
-
-        const cached = await this.getCachedMessages(channelId);
-        if (cached && new Date(cached.cachedAt).getTime() > Date.now() - 3600000) {
-            console.log(`[MESSAGES_CACHE] Cache hit for ${channelId}`);
-            const filteredCached = cached.messages.filter(msg => new Date(msg.timestamp) >= since);
-            return filteredCached.slice(0, limit);
+        const cachedMessages = await this.getCachedMessagesSince(channelId, since);
+        if (cachedMessages) {
+            return cachedMessages.messages.slice(0, limit);
         }
 
-        const messages = await this.fetchFromDiscord(channelId, since);
+        const messages = await this.fetchMessagesFromAPI(channelId, since);
         const channelName = await getChannelName(this.env, channelId);
         await this.cacheMessages(channelId, messages, channelName);
         return messages.slice(0, limit);
@@ -117,11 +116,24 @@ export class MessagesService {
         console.log(`[MESSAGES_CACHE] Cached ${messages.length} messages for ${channelId} with 72h TTL`);
     }
 
-    private async getCachedMessages(channelId: string): Promise<CachedMessages | null> {
+    private async getCachedMessagesSince(channelId: string, since: Date = new Date(Date.now() - 3600000)): Promise<CachedMessages | null> {
+        console.log(`[MESSAGES_CACHE] Getting cached messages for ${channelId} since ${since}`);
         if (!this.env.MESSAGES_CACHE) return null;
         const cacheKey = `messages:${channelId}`;
         const data = await this.env.MESSAGES_CACHE.get(cacheKey);
         return data ? JSON.parse(data) : null;
+    }
+
+    private async purgeMessagesOlderThanFromCache(messages: DiscordMessage[], channelId: string, channelName: string, cutoffTime: number = 48 * 60 * 60 * 1000): Promise<DiscordMessage[]> {
+        const purgedMessages = messages.filter(msg => new Date(msg.timestamp).getTime() >= cutoffTime);
+
+        if (purgedMessages.length < messages.length) {
+            console.log(`[MESSAGES_CACHE] Purged ${messages.length - purgedMessages.length} messages older than 48h for channel ${channelId}`);
+        }
+
+        purgedMessages.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+        await this.cacheMessages(channelId, purgedMessages, channelName);
+        return purgedMessages;
     }
 
     /**
@@ -132,39 +144,29 @@ export class MessagesService {
         console.log('[MESSAGES_CACHE] Starting updateMessages for all channels');
         try {
             const channelsService = new ChannelsService(this.env);
-            const channels = await channelsService.fetchChannels();
-            console.log(`[MESSAGES_CACHE] Found ${channels.length} channels to check for updates`);
+            const channels = await channelsService.getChannels();
+            console.log(`[messages-service] Found ${channels.length} channels to check for updates`);
 
             let updatedCount = 0;
             let skippedCount = 0;
 
             for (const channel of channels) {
                 try {
-                    const sinceTime = new Date(Date.now() - 60 * 60 * 1000); // 1 hour ago
-                    console.log(`[MESSAGES_CACHE] Using sinceTime ${sinceTime.toISOString()} for channel ${channel.id}`);
-                    const newMessages = await this.fetchFromDiscord(channel.id, sinceTime);
+                    console.log(`[<messages-service>] Using sinceTime 1h ago for channel ${channel.id}`);
+                    const newMessages = await this.fetchMessagesFromAPI(channel.id);
 
                     if (newMessages.length > 0) {
-                        console.log(`[MESSAGES_CACHE] Found ${newMessages.length} new messages for channel ${channel.id}`);
-                        const cached = await this.getCachedMessages(channel.id);
+                        console.log(`[<messages-service>] Found ${newMessages.length} new messages for channel ${channel.id}`);
+                        const cached = await this.getCachedMessagesSince(channel.id);
                         let allMessages: DiscordMessage[] = newMessages;
 
                         if (cached?.messages) {
-                            const existingIds = new Set(cached.messages.map(msg => msg.id));
+                            const existingIds = new Set(cached.messages.map((msg: DiscordMessage) => msg.id));
                             const uniqueNewMessages = newMessages.filter(msg => !existingIds.has(msg.id));
                             allMessages = [...uniqueNewMessages, ...cached.messages];
                             console.log(`[MESSAGES_CACHE] Combined ${uniqueNewMessages.length} new messages with ${cached.messages.length} existing messages`);
                         }
-
-                        const cutoffTime = Date.now() - 48 * 60 * 60 * 1000; // 48 hours ago
-                        const purgedMessages = allMessages.filter(msg => new Date(msg.timestamp).getTime() >= cutoffTime);
-
-                        if (purgedMessages.length < allMessages.length) {
-                            console.log(`[MESSAGES_CACHE] Purged ${allMessages.length - purgedMessages.length} messages older than 48h for channel ${channel.id}`);
-                        }
-
-                        purgedMessages.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
-                        await this.cacheMessages(channel.id, purgedMessages, channel.name);
+                        await this.purgeMessagesOlderThanFromCache(allMessages, channel.id, channel.name);
                         updatedCount++;
                     } else {
                         console.log(`[MESSAGES_CACHE] No new messages for channel ${channel.id}`);

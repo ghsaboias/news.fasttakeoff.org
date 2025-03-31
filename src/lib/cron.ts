@@ -18,7 +18,7 @@ export async function scheduled(event: ScheduledEvent, env: CloudflareEnv): Prom
 
         console.log('[CRON] Starting report generation');
         const reportsService = new ReportsService(env);
-        await reportsService.generateReports();
+        await reportsService.createFreshReports();
         console.log('[CRON] Report generation completed');
 
         console.log(`[CRON] Completed at ${new Date().toISOString()}`);
