@@ -69,7 +69,7 @@ export default function ReportsCarousel() {
                                 key={index}
                                 className="basis-full sm:basis-1/2 md:basis-1/3 lg:basis-1/4 min-w-[200px] sm:min-w-[330px]"
                             >
-                                <Card className="h-[350px] flex flex-col gap-2">
+                                <Card className="h-[350px] flex flex-col gap-2 py-4">
                                     <CardHeader>
                                         <div className="flex justify-between gap-2 mb-1 items-center">
                                             {report.channelName && (
@@ -77,37 +77,40 @@ export default function ReportsCarousel() {
                                                     {report.channelName}
                                                 </Badge>
                                             )}
-                                            <span className="text-xs text-muted-foreground">
-                                                {report.generatedAt ? formatTime(report.generatedAt) : 'Recent'}
-                                            </span>
                                         </div>
                                         <CardTitle className="text-lg font-semibold line-clamp-2 leading-tight">
                                             {report.headline}
                                         </CardTitle>
                                         <p className="text-sm text-muted-foreground line-clamp-1">{report.city}</p>
                                     </CardHeader>
-                                    <CardContent className="flex-grow flex flex-col pt-0 gap-2">
+                                    <CardContent className="flex-grow flex flex-col pt-0">
                                         <p className="text-sm text-muted-foreground flex-grow overflow-scroll h-16">
                                             {report.body}
                                         </p>
-                                        <div className="mt-2 text-xs text-muted-foreground">
-                                            {report.messageCountLastHour && (
-                                                <div>
-                                                    <span className="font-medium">{report.messageCountLastHour}</span> updates in the last hour
-                                                </div>
-                                            )}
-                                        </div>
                                     </CardContent>
-                                    <CardFooter>
+                                    <CardFooter className="flex flex-col gap-2 justify-between items-start my-2">
                                         <Button asChild variant="outline" size="sm" className="w-full">
                                             <Link href={`/current-events/${report.channelId}`}>
                                                 Read More
                                             </Link>
                                         </Button>
+                                        <div>
+
+                                            <span className="text-xs text-muted-foreground">
+                                                Generated: {report.generatedAt ? formatTime(report.generatedAt) : 'Recent'}
+                                            </span>
+                                            <div className="text-xs text-muted-foreground">
+                                                {report.messageCountLastHour && (
+                                                    <div>
+                                                        <span className="font-medium">{report.messageCountLastHour}</span> update{report.messageCountLastHour === 1 ? '' : 's'} in the last hour
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
                                     </CardFooter>
                                 </Card>
                             </CarouselItem>
-                        ))
+                        ))?.slice(0, 10)
                     ) : (
                         <CarouselItem className="basis-full sm:basis-1/2 md:basis-1/3 lg:basis-1/4 min-w-[200px] sm:min-w-[330px]">
                             <Card className="h-[350px] flex flex-col">

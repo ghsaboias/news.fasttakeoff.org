@@ -35,7 +35,7 @@ export class MessagesService {
         try {
             while (batchCount < MAX_BATCHES) {
                 const url = lastMessageId ? `${urlBase}&before=${lastMessageId}` : urlBase;
-                console.log(`[Discord] Fetching batch ${batchCount + 1}/${MAX_BATCHES} from ${url}`);
+                console.log(`[Discord] Fetching messages for channel ${channelId}`);
 
                 const response = await fetch(url, {
                     headers: { Authorization: token },
@@ -145,14 +145,13 @@ export class MessagesService {
         try {
             const channelsService = new ChannelsService(this.env);
             const channels = await channelsService.getChannels();
-            console.log(`[messages-service] Found ${channels.length} channels to check for updates`);
+            console.log(`[messages-service] Getting messages for ${channels.length} channels`);
 
             let updatedCount = 0;
             let skippedCount = 0;
 
             for (const channel of channels) {
                 try {
-                    console.log(`[<messages-service>] Using sinceTime 1h ago for channel ${channel.id}`);
                     const newMessages = await this.fetchMessagesFromAPI(channel.id);
 
                     if (newMessages.length > 0) {

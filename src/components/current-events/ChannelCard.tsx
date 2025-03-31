@@ -34,7 +34,7 @@ export default function ChannelCard({
                 </div>
                 {channelDataEntry.count > 0 && (
                     <CardDescription className="text-sm">
-                        {channelDataEntry.count} updates in the last hour
+                        {channelDataEntry.count} update{channelDataEntry.count === 1 ? '' : 's'} in the last hour
                     </CardDescription>
                 )}
             </CardHeader>
