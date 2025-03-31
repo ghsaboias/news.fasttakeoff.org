@@ -1,6 +1,5 @@
 import { Button } from "@/components/ui/button";
 import { DiscordChannel, Report } from "@/lib/types/core";
-import { getCacheContext } from "@/lib/utils";
 import Link from "next/link";
 
 interface ChannelDetailClientProps {
@@ -9,8 +8,6 @@ interface ChannelDetailClientProps {
 }
 
 export default function ChannelDetailClient({ channel, reports }: ChannelDetailClientProps) {
-    const { env } = getCacheContext();
-
     return (
         <div className="p-6 max-w-5xl mx-auto gap-4 flex flex-col">
             <h3 className="text-xl font-bold tracking-tight">{channel.name}</h3>
