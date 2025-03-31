@@ -38,10 +38,9 @@ function createPrompt(messages: DiscordMessage[]): string {
     Requirements:
     - Start with ONE clear and specific headline in ALL CAPS
     - Second line must be a single city name, related to the news, with just the first letter capitalized
-    - Paragraphs must summarize the most important verified developments, including key names, numbers, locations, dates, etc.
-    - If multiple sources are reporting the same thing, only include it once
-    - Paragraphs must be in order of most important to least important
+    - Paragraphs must summarize the most important verified developments, including key names, numbers, locations, dates, etc., in a cohesive narrative
     - Do NOT include additional headlines - weave all events into a cohesive narrative
+    - If multiple sources are reporting the same thing, only include it once
     - Only include verified facts and direct quotes from official statements
     - Maintain a strictly neutral tone
     - DO NOT make any analysis, commentary, or speculation
