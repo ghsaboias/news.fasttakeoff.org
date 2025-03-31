@@ -160,7 +160,7 @@ export class ReportsService {
     }
 
     // Get report and messages for a channel
-    async getReportAndMessages(channelId: string): Promise<{ report: Report; messages: DiscordMessage[] }> {
+    async createReportAndGetMessages(channelId: string): Promise<{ report: Report; messages: DiscordMessage[] }> {
         const [messages, channelName] = await Promise.all([
             this.messagesService.getMessages(channelId),
             getChannelName(this.env, channelId),
@@ -220,7 +220,7 @@ export class ReportsService {
         const messageKeys = keys.filter(key => key.name.startsWith('messages:'));
 
         const results = await Promise.all(
-            messageKeys.map(key => this.getReportAndMessages(key.name.replace('messages:', '')))
+            messageKeys.map(key => this.createReportAndGetMessages(key.name.replace('messages:', '')))
         );
 
         const generatedCount = results.filter(result => result.messages.length > 0).length;

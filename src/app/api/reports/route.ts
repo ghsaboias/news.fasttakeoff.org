@@ -13,7 +13,7 @@ export async function GET(request: Request) {
         console.log(`[API] GET /api/reports: ${channelId ? `Fetching report for channel ${channelId}` : 'Fetching all reports'}`);
 
         if (channelId) {
-            const { report, messages } = await reportsService.getReportAndMessages(channelId);
+            const { report, messages } = await reportsService.createReportAndGetMessages(channelId);
             return NextResponse.json({ report, messages });
         } else {
             const reports = await reportsService.getAllReportsFromCache();
@@ -41,7 +41,7 @@ export async function POST(request: Request) {
         }
 
         console.log(`[API] Generating report for channel ${channelId}`);
-        const { report, messages } = await reportsService.getReportAndMessages(channelId);
+        const { report, messages } = await reportsService.createReportAndGetMessages(channelId);
         console.log(`[API] Report generated for channel ${channelId}, messageCount: ${report.messageCountLastHour || 0}`);
         return NextResponse.json({ report, messages } as ReportResponse);
     } catch (error) {

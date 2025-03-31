@@ -21,7 +21,7 @@ export default async function ChannelDetailPage({ params }: { params: Promise<{ 
     let reportMessages = { count: 0, messages: [] as DiscordMessage[] };
 
     try {
-        const { report: fetchedReport, messages } = await reportsService.getReportAndMessages(channelId);
+        const { report: fetchedReport, messages } = await reportsService.createReportAndGetMessages(channelId);
         report = fetchedReport;
         reportMessages = { count: messages.length, messages };
     } catch (error) {
