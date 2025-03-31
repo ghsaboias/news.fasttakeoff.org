@@ -1,5 +1,4 @@
 import { Button } from "@/components/ui/button";
-import { MessagesService } from "@/lib/data/messages-service";
 import { DiscordChannel, Report } from "@/lib/types/core";
 import { getCacheContext } from "@/lib/utils";
 import Link from "next/link";
@@ -11,13 +10,6 @@ interface ChannelDetailClientProps {
 
 export default function ChannelDetailClient({ channel, reports }: ChannelDetailClientProps) {
     const { env } = getCacheContext();
-    const messagesService = new MessagesService(env);
-    const formatReportText = (text: string) => {
-        const paragraphs = text.split(/\n{2,}|\n/).filter(p => p.trim().length > 0);
-        return paragraphs.map((paragraph, index) => (
-            <p key={index} className="mb-4 last:mb-0 leading-7 text-justify">{paragraph}</p>
-        ));
-    };
 
     return (
         <div className="p-6 max-w-5xl mx-auto gap-4 flex flex-col">
