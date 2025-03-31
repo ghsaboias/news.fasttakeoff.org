@@ -63,6 +63,19 @@ export default function Home() {
         </div>
       </section>
 
+      {/* Latest News Carousel */}
+      <section className="mx-auto px-4 w-[95%]">
+        <div className="flex flex-col gap-6">
+          <div className="flex items-center justify-between">
+            <h2 className="text-2xl font-bold tracking-tight md:text-3xl">Latest News</h2>
+            <Link href="/current-events" className="text-sm font-medium hover:underline">
+              View all news
+            </Link>
+          </div>
+          <ReportsCarousel />
+        </div>
+      </section>
+
       {/* Latest Executive Orders Section */}
       <section className="mx-auto px-4 w-[95%]">
         <div className="flex flex-col gap-6">
@@ -119,19 +132,6 @@ export default function Home() {
               </div>
             )}
           </div>
-        </div>
-      </section>
-
-      {/* Latest News Carousel */}
-      <section className="mx-auto px-4 w-[95%]">
-        <div className="flex flex-col gap-6">
-          <div className="flex items-center justify-between">
-            <h2 className="text-2xl font-bold tracking-tight md:text-3xl">Latest News</h2>
-            <Link href="/current-events" className="text-sm font-medium hover:underline">
-              View all news
-            </Link>
-          </div>
-          <ReportsCarousel />
         </div>
       </section>
     </div>
