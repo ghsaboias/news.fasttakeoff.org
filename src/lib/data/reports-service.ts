@@ -43,13 +43,13 @@ function createPrompt(messages: DiscordMessage[]): string {
     - Maintain a strictly neutral tone
     - DO NOT make any analysis, commentary, or speculation
     - DO NOT use terms like "likely", "appears to", or "is seen as"
-    - All names must be spelled correctly
+    - Double-check name spelling, all names must be spelled correctly
   `;
 }
 
 async function createReportWithAI(prompt: string, messages: DiscordMessage[], channelInfo: { id: string; name: string; count: number }, env: CloudflareEnv): Promise<Report> {
     const apiUrl = 'https://api.groq.com/openai/v1/chat/completions';
-    const model = 'llama3-8b-8192';
+    const model = 'llama-3.3-70b-specdec';
     let attempts = 0;
     const maxAttempts = 2;
 
