@@ -92,16 +92,26 @@ export function parseDispositionNotes(dispositionNotes?: string): RelatedEOInfo[
  * @param timestamp ISO timestamp string
  * @returns Time in HH:MM format
  */
-export function formatTime(timestamp: string | undefined): string {
+export function formatTime(timestamp: string | undefined, showDate: boolean = false): string {
   if (!timestamp) return 'Time unavailable';
 
   try {
     const date = new Date(timestamp);
-    return date.toLocaleTimeString('en-US', {
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: false
-    });
+    if (showDate) {
+      return date.toLocaleTimeString('en-US', {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false,
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
+    } else {
+      return date.toLocaleTimeString('en-US', {
+        hour: '2-digit',
+        minute: '2-digit',
+      });
+    }
   } catch (error) {
     console.error('Error formatting time:', error);
     return 'Invalid time';
