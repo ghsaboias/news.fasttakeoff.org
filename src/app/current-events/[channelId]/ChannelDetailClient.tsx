@@ -81,7 +81,7 @@ export default function ChannelDetailClient() {
                 {reports && reports.length > 0 ? (
                     reports.map((report) => (
                         <div className="border border-gray-200 rounded-lg p-4 overflow-scroll gap-2 flex flex-col" key={report.timestamp}>
-                            <h1 className="text-2xl font-bold">{report.headline.toUpperCase()}</h1>
+                            <h1 className="text-2xl font-bold">{report.headline?.toUpperCase()}</h1>
                             <h2 className="text-lg font-medium text-muted-foreground">{report.city}</h2>
                             <div className="prose prose-zinc max-w-none overflow-y-auto">
                                 {report.body.slice(0, 100)}...

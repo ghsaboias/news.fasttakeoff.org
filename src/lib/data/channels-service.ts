@@ -23,7 +23,7 @@ export class ChannelsService {
             await this.delay(delayMs * (i + 1));
             this.apiCallCount++;
 
-            console.log(`[Discord] Fetching ${url}`);
+            console.log(`Fetching ${url}`);
             const token = this.env.DISCORD_TOKEN;
             const guildId = this.env.DISCORD_GUILD_ID;
 
@@ -90,7 +90,6 @@ export class ChannelsService {
             const fetchedTime = new Date(metadata.fetchedAt).getTime();
             const twentyFourHoursAgo = Date.now() - 24 * 60 * 60 * 1000;
             if (fetchedTime > twentyFourHoursAgo) {
-                console.log(`Cache hit for guild channels ${guildId}, fetched at ${metadata.fetchedAt}`);
                 return { channels: this.filterChannels(JSON.parse(cached)), fetchedAt: metadata.fetchedAt };
             }
         }
@@ -107,7 +106,6 @@ export class ChannelsService {
             // Check cache. If fresh, return cached channel data
             const cachedChannels = await this.fetchAllChannelsFromCache();
             if (cachedChannels) {
-                console.log(`Cache hit for guild channels ${guildId}, fetched at ${cachedChannels.fetchedAt}`);
                 return cachedChannels.channels;
             } else {
                 // Cache miss or stale, fetch from Discord API

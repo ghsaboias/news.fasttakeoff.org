@@ -9,7 +9,7 @@ interface ScheduledEvent {
 }
 
 export async function scheduled(event: ScheduledEvent, env: CloudflareEnv): Promise<void> {
-    console.log(`[CRON] Triggered at ${new Date().toISOString()}`);
+    console.log(`[CRON] Triggered at ${new Date(event.scheduledTime).toISOString()}`);
     try {
         console.log('[CRON] Starting message update process');
         const messagesService = new MessagesService(env);
