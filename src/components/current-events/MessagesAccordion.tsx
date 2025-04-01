@@ -36,7 +36,7 @@ export default function MessagesAccordion({ channelData, channelMessages = [], i
                         </AccordionTrigger>
                         <AccordionContent className="px-4">
                             <div className="space-y-4">
-                                <Accordion type="single" collapsible className="w-full">
+                                <Accordion type="multiple" className="w-full">
                                     {messages.map((message, index) => (
                                         <MessageItem
                                             key={message.id}
