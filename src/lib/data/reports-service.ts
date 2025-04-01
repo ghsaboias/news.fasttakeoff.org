@@ -29,7 +29,7 @@ function formatSingleMessage(message: DiscordMessage): string {
 
 function createPrompt(messages: DiscordMessage[]): string {
     const formattedText = messages.map(formatSingleMessage).join('\n\n');
-    return `
+    const prompt = `
     Create a journalistic report in the format mentioned, covering the key developments.
 
     Updates to analyze:
@@ -45,11 +45,13 @@ function createPrompt(messages: DiscordMessage[]): string {
     - DO NOT use terms like "likely", "appears to", or "is seen as"
     - Double-check name spelling, all names must be spelled correctly
   `;
+    console.log(prompt.length);
+    return prompt;
 }
 
-async function createReportWithAI(prompt: string, messages: DiscordMessage[], channelInfo: { id: string; name: string; count: number }, env: CloudflareEnv): Promise<Report> {
+async function createReportWithAI(prompt: string, messages: DiscordMessage[], channelInfo: { id: string; name: string; count: number }, env: CloudflareEnv, timeframe: string): Promise<Report> {
     const apiUrl = 'https://api.groq.com/openai/v1/chat/completions';
-    const model = 'llama-3.3-70b-specdec';
+    const model = 'llama-3.3-70b-versatile';
     let attempts = 0;
     const maxAttempts = 2;
 
@@ -69,7 +71,7 @@ async function createReportWithAI(prompt: string, messages: DiscordMessage[], ch
                         },
                         { role: "user", content: prompt }
                     ],
-                    model,
+                    model: attempts >= 0 ? model : 'llama-3.3-70b-specdec',
                     response_format: { type: "json_object" },
                 }),
             });
@@ -89,7 +91,7 @@ async function createReportWithAI(prompt: string, messages: DiscordMessage[], ch
             const lastMessageTimestamp = messages[0]?.timestamp || new Date().toISOString();
 
             return {
-                headline: JSON.parse(content).headline.toUpperCase(),
+                headline: JSON.parse(content).headline?.toUpperCase(),
                 city: JSON.parse(content).city,
                 body: JSON.parse(content).body,
                 timestamp: new Date().toISOString(),
@@ -99,22 +101,24 @@ async function createReportWithAI(prompt: string, messages: DiscordMessage[], ch
                 messageCountLastHour: channelInfo.count,
                 lastMessageTimestamp,
                 generatedAt: new Date().toISOString(),
+                timeframe,
+                messageIds: messages.map(msg => msg.id),
             };
         } catch (error) {
             attempts++;
             if (attempts === maxAttempts) throw error;
             console.log(`[REPORTS] Retrying AI request for channel ${channelInfo.id} (${attempts}/${maxAttempts})`);
-            await new Promise(resolve => setTimeout(resolve, 1000)); // 1s delay
+            await new Promise(resolve => setTimeout(resolve, 1000));
         }
     }
     throw new Error('Unreachable code');
 }
 
-function createEmptyReport(channelId: string, channelName: string): Report {
+function createEmptyReport(channelId: string, channelName: string, timeframe: string): Report {
     return {
-        headline: "NO ACTIVITY IN THE LAST HOUR",
+        headline: `NO ACTIVITY IN THE LAST ${timeframe}`,
         city: "N/A",
-        body: "No messages were posted in this channel within the last hour.",
+        body: `No messages were posted in this channel within the last ${timeframe}.`,
         timestamp: new Date().toISOString(),
         channelId,
         channelName,
@@ -122,6 +126,7 @@ function createEmptyReport(channelId: string, channelName: string): Report {
         generatedAt: new Date().toISOString(),
         cacheStatus: 'miss' as const,
         messageIds: [],
+        timeframe,
     };
 }
 
@@ -147,105 +152,203 @@ export class ReportsService {
         this.messagesService = new MessagesService(env);
     }
 
-    private async cacheReport(channelId: string, result: { report: Report; messages: DiscordMessage[] }): Promise<void> {
-        result.report.messageIds = result.messages.map(msg => msg.id);
-        await this.env.REPORTS_CACHE.put(
-            `report:${channelId}:1h`,
-            JSON.stringify(result.report),
-            { expirationTtl: 259200 } // 72h TTL
-        );
-        console.log(`[REPORTS] Cached report for channel ${channelId} with 72h TTL`);
+    private getTTL(timeframe: string): number {
+        const ttlMap: Record<string, number> = {
+            '1h': 24 * 60 * 60,  // 24 hours
+            '6h': 48 * 60 * 60,  // 48 hours
+            '12h': 72 * 60 * 60, // 72 hours
+        };
+        return ttlMap[timeframe] || 72 * 60 * 60; // Default to 72h if timeframe unknown
     }
 
-    // Get report and messages for a channel
-    async createReportAndGetMessages(channelId: string): Promise<{ report: Report; messages: DiscordMessage[] }> {
+    private async cacheReport(channelId: string, timeframe: string, reports: Report[]): Promise<void> {
+        const cacheKey = `reports:${channelId}:${timeframe}`;
+        await this.env.REPORTS_CACHE.put(
+            cacheKey,
+            JSON.stringify(reports),
+            { expirationTtl: this.getTTL(timeframe) }
+        );
+        console.log(`Cached ${reports.length} reports for ${cacheKey} with ${this.getTTL(timeframe) / 3600}h TTL`);
+    }
+
+    private async getMessagesForTimeframe(channelId: string, timeframe: string): Promise<DiscordMessage[]> {
+        const hours = { '1h': 1, '6h': 6, '12h': 12 }[timeframe] || 1;
+        const since = new Date(Date.now() - hours * 60 * 60 * 1000);
+        return this.messagesService.getMessages(channelId, { since });
+    }
+
+    async createReportAndGetMessages(channelId: string, timeframe: string): Promise<{ report: Report; messages: DiscordMessage[] }> {
         const [messages, channelName] = await Promise.all([
-            this.messagesService.getMessages(channelId),
+            this.getMessagesForTimeframe(channelId, timeframe),
             getChannelName(this.env, channelId),
         ]);
 
         if (!messages.length) {
-            console.log(`[REPORTS] Channel ${channelId}: No messages in last hour`);
-            return { report: createEmptyReport(channelId, channelName), messages: [] };
+            console.log(`[REPORTS] Channel ${channelId}: No messages in last ${timeframe}`);
+            return { report: createEmptyReport(channelId, channelName, timeframe), messages: [] };
         }
 
-        console.log(`[REPORTS] Channel ${channelId}: Generating new report from ${messages.length} messages`);
         const report = await tryCatch(
             () => createReportWithAI(
                 createPrompt(messages),
                 messages,
                 { id: channelId, name: channelName, count: messages.length },
-                this.env
+                this.env,
+                timeframe
             ),
-            `Error generating report for channel ${channelId}`
+            `Error generating ${timeframe} report for channel ${channelId}`
         );
 
-        if (!report) throw new Error(`Failed to generate report for channel ${channelId}`);
+        if (!report) throw new Error(`Failed to generate ${timeframe} report for channel ${channelId}`);
 
-        const result = { report, messages };
-        await this.cacheReport(channelId, result);
-        return result;
+        const cachedReports = await this.getReportsFromCache(channelId, timeframe) || [];
+        const updatedReports = [report, ...cachedReports.filter(r => r.timestamp !== report.timestamp)];
+        await this.cacheReport(channelId, timeframe, updatedReports);
+
+        return { report, messages };
     }
 
-    async getLastReportAndMessages(channelId: string): Promise<{ report: Report; messages: DiscordMessage[] }> {
-        const cachedReport = await this.env.REPORTS_CACHE.get(`report:${channelId}:1h`);
-        if (cachedReport) {
-            const messages = await this.messagesService.getMessages(channelId);
-            return { report: JSON.parse(cachedReport) as Report, messages };
-        } else {
-            return this.createReportAndGetMessages(channelId);
+    async getLastReportAndMessages(channelId: string, timeframe: string = '1h'): Promise<{ report: Report; messages: DiscordMessage[] }> {
+        const cachedReports = await this.getReportsFromCache(channelId, timeframe);
+        console.log(cachedReports?.length)
+        if (cachedReports && cachedReports.length > 0) {
+            const latestReport = cachedReports[0];
+            const messages = await this.getMessagesForTimeframe(channelId, timeframe);
+            return { report: latestReport, messages };
         }
+        return this.createReportAndGetMessages(channelId, timeframe);
     }
 
-    async getReportAndMessages(channelId: string, reportId: string): Promise<{ report: Report; messages: DiscordMessage[] }> {
-        const cachedReport = await this.env.REPORTS_CACHE.get(`report:${channelId}:${reportId}`);
-        if (cachedReport) {
-            const messages = await this.messagesService.getMessages(channelId);
-            return { report: JSON.parse(cachedReport) as Report, messages };
+    async getReportAndMessages(channelId: string, reportId: string, timeframe: string = '1h'): Promise<{ report: Report; messages: DiscordMessage[] }> {
+        const cachedReports = await this.getReportsFromCache(channelId, timeframe);
+        if (cachedReports) {
+            const report = cachedReports.find(r => r.timestamp === reportId);
+            if (report) {
+                const messages = await this.getMessagesForTimeframe(channelId, timeframe);
+                return { report, messages };
+            }
         }
-        return { report: createEmptyReport(channelId, ""), messages: [] };
+        return { report: createEmptyReport(channelId, "", timeframe), messages: [] };
     }
 
-    // Get all reports from cache
+    private async getReportsFromCache(channelId: string, timeframe: string): Promise<Report[] | null> {
+        const cacheKey = `reports:${channelId}:${timeframe}`;
+        const cached = await this.env.REPORTS_CACHE.get(cacheKey);
+        return cached ? JSON.parse(cached) as Report[] : null;
+    }
+
     async getAllReportsFromCache(): Promise<Report[]> {
-        const { keys } = await this.env.REPORTS_CACHE.list({ prefix: 'report:' });
-        const reportKeys = keys.filter(key => key.name.endsWith(':1h'));
-
-        if (reportKeys.length === 0) {
+        const { keys } = await this.env.REPORTS_CACHE.list({ prefix: 'reports:' });
+        if (keys.length === 0) {
             console.log('[REPORTS] No reports found in REPORTS_CACHE');
             return [];
         }
 
         const reports = await Promise.all(
-            reportKeys.map(async key => {
-                const cachedReport = await this.env.REPORTS_CACHE.get(key.name);
-                return cachedReport ? JSON.parse(cachedReport) as Report : null;
+            keys.map(async key => {
+                const cachedReports = await this.env.REPORTS_CACHE.get(key.name);
+                return cachedReports ? JSON.parse(cachedReports) as Report[] : [];
             })
         );
 
         const validReports = reports
-            .filter((report): report is Report => report !== null)
+            .flat()
             .sort((a, b) => new Date(b.generatedAt || '').getTime() - new Date(a.generatedAt || '').getTime());
 
         console.log(`[REPORTS] Fetched ${validReports.length} reports from REPORTS_CACHE`);
         return validReports;
     }
 
-    async getAllReportsForChannelFromCache(channelId: string): Promise<Report[]> {
-        const reports = await this.getAllReportsFromCache();
-        return reports.filter(report => report.channelId === channelId);
+    async getAllReportsForChannelFromCache(channelId: string, timeframe?: string): Promise<Report[]> {
+        if (timeframe) {
+            const reports = await this.getReportsFromCache(channelId, timeframe);
+            return reports || [];
+        }
+        const { keys } = await this.env.REPORTS_CACHE.list({ prefix: `reports:${channelId}:` });
+        const reports = await Promise.all(
+            keys.map(async key => {
+                const cachedReports = await this.env.REPORTS_CACHE.get(key.name);
+                return cachedReports ? JSON.parse(cachedReports) as Report[] : [];
+            })
+        );
+        return reports.flat();
     }
 
     async createFreshReports(): Promise<void> {
         console.log('[REPORTS] Starting report generation for all channels');
         const { keys } = await this.messagesService.env.MESSAGES_CACHE.list();
         const messageKeys = keys.filter(key => key.name.startsWith('messages:'));
+        const timeframes = ['1h', '6h', '12h'];
+        const now = new Date();
+        const hour = now.getUTCHours();
 
-        const results = await Promise.all(
-            messageKeys.map(key => this.createReportAndGetMessages(key.name.replace('messages:', '')))
-        );
+        const activeTimeframes = timeframes.filter(tf => {
+            if (tf === '1h') return true; // Hourly
+            if (tf === '6h' && hour % 6 === 0) return true; // Every 6h (placeholder—adjust as needed)
+            if (tf === '12h' && hour % 12 === 0) return true; // Every 12h
+            return false;
+        }).sort((a, b) => { // Sort by timeframe duration (largest first)
+            const hours: { [key: string]: number } = { '1h': 1, '6h': 6, '12h': 12 };
+            return hours[b] - hours[a];
+        });
 
-        const generatedCount = results.filter(result => result.messages.length > 0).length;
-        console.log(`[REPORTS] Generated ${generatedCount} reports`);
+        let generatedCount = 0;
+
+        for (const key of messageKeys) {
+            const channelId = key.name.replace('messages:', '');
+            console.log(`[REPORTS] Processing channel ${channelId}`);
+
+            // Fetch messages for the largest timeframe once
+            const largestTimeframe = activeTimeframes[0]; // e.g., '6h'
+            const hours: { [key: string]: number } = { '1h': 1, '6h': 6, '12h': 12 };
+            const since = new Date(Date.now() - hours[largestTimeframe] * 60 * 60 * 1000);
+            const allMessages = await this.messagesService.getMessages(channelId, { since });
+
+            if (allMessages.length === 0) {
+                console.log(`[REPORTS] No messages for channel ${channelId} in last ${largestTimeframe}`);
+                const channelName = await getChannelName(this.env, channelId);
+                for (const timeframe of activeTimeframes) {
+                    const emptyReport = createEmptyReport(channelId, channelName, timeframe);
+                    await this.cacheReport(channelId, timeframe, [emptyReport]);
+                }
+                continue;
+            }
+
+            // Process each timeframe using the same message set
+            for (const timeframe of activeTimeframes) {
+                const timeframeHours = hours[timeframe];
+                const timeframeSince = new Date(Date.now() - timeframeHours * 60 * 60 * 1000);
+                const filteredMessages = allMessages.filter(msg => new Date(msg.timestamp).getTime() >= timeframeSince.getTime());
+
+                if (filteredMessages.length > 0) {
+                    const channelName = await getChannelName(this.env, channelId);
+                    const report = await tryCatch(
+                        () => createReportWithAI(
+                            createPrompt(filteredMessages),
+                            filteredMessages,
+                            { id: channelId, name: channelName, count: filteredMessages.length },
+                            this.env,
+                            timeframe
+                        ),
+                        `Error generating ${timeframe} report for channel ${channelId}`
+                    );
+
+                    if (report) {
+                        const cachedReports = await this.getReportsFromCache(channelId, timeframe) || [];
+                        const updatedReports = [report, ...cachedReports.filter(r => r.timestamp !== report.timestamp)];
+                        await this.cacheReport(channelId, timeframe, updatedReports);
+                        generatedCount++;
+                        console.log(`[REPORTS] Generated ${timeframe} report for channel ${channelId} with ${filteredMessages.length} messages`);
+                    }
+                } else {
+                    console.log(`[REPORTS] No messages for channel ${channelId} in last ${timeframe}`);
+                    const channelName = await getChannelName(this.env, channelId);
+                    const emptyReport = createEmptyReport(channelId, channelName, timeframe);
+                    await this.cacheReport(channelId, timeframe, [emptyReport]);
+                }
+            }
+        }
+
+        console.log(`[REPORTS] Generated ${generatedCount} reports for timeframes: ${activeTimeframes.join(', ')}`);
     }
 }

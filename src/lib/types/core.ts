@@ -188,6 +188,7 @@ export interface Report {
     generatedAt?: string;
     userGenerated?: boolean;
     messageIds?: string[];
+    timeframe?: string;
 }
 
 export interface CachedMessages {
