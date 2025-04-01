@@ -5,43 +5,10 @@ import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious
 import { Report } from "@/lib/types/core";
 import { convertTimestampToUnixTimestamp, formatTime } from "@/lib/utils";
 import Link from "next/link";
-import { useEffect, useState } from "react";
 import { Button } from "../ui/button";
 import LinkBadge from "./LinkBadge";
 
-export default function ReportsCarousel() {
-    const [reports, setReports] = useState<Report[]>([]);
-    const [loading, setLoading] = useState(true);
-
-    async function fetchReports() {
-        try {
-            setLoading(true);
-            const response = await fetch('/api/reports', {
-                method: 'GET',
-                headers: { 'Cache-Control': 'no-cache' },
-            });
-            if (!response.ok) throw new Error(`Failed to fetch reports: ${response.status}`);
-            const data = await response.json() as Report[];
-            const activeReports = data.filter(report => !report.headline.includes("NO ACTIVITY"));
-            setReports(activeReports);
-        } catch (error) {
-            console.error('[Carousel] Error fetching reports:', error);
-            setReports([]);
-        } finally {
-            setLoading(false);
-        }
-    }
-
-    useEffect(() => {
-        fetchReports(); // Initial fetch
-        const interval = setInterval(() => {
-            fetchReports(); // Refresh every 16 minutes
-            console.log('[Carousel] Auto-updated reports at', new Date().toISOString());
-        }, 16 * 60 * 1000); // 960,000 ms = 16 minutes
-
-        return () => clearInterval(interval); // Cleanup on unmount
-    }, []);
-
+export default function ReportsCarousel({ reports, loading }: { reports: Report[], loading: boolean }) {
     return (
         <div className="w-full px-4">
             <Carousel
