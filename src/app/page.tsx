@@ -4,7 +4,7 @@ import ReportsCarousel from "@/components/current-events/Carousel"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { fetchExecutiveOrders } from "@/lib/data/executive-orders"
-import { ExecutiveOrder } from "@/lib/types/core"
+import { ExecutiveOrder, Report } from "@/lib/types/core"
 import { formatDate, getStartDate } from "@/lib/utils"
 import Link from "next/link"
 import { useEffect, useState } from "react"
@@ -14,6 +14,8 @@ export const dynamic = 'force-dynamic';
 export default function Home() {
   const [latestExecutiveOrders, setLatestExecutiveOrders] = useState<ExecutiveOrder[]>([])
   const [loadingEO, setLoadingEO] = useState(true)
+  const [reports, setReports] = useState<Report[]>([])
+  const [loadingReports, setLoadingReports] = useState(true)
 
   async function loadExecutiveOrders() {
     try {
@@ -33,12 +35,28 @@ export default function Home() {
     }
   }
 
+  async function loadReports() {
+    try {
+      setLoadingReports(true);
+      const response = await fetch('/api/reports', {
+        method: 'GET',
+        headers: { 'Cache-Control': 'no-cache' },
+      });
+      if (!response.ok) throw new Error(`Failed to fetch reports: ${response.status}`);
+      const data = await response.json() as Report[];
+      const activeReports = data.filter(report => !report.headline.includes("NO ACTIVITY"));
+      setReports(activeReports);
+    } catch (error) {
+      console.error('[Carousel] Error fetching reports:', error);
+      setReports([]);
+    } finally {
+      setLoadingReports(false);
+    }
+  }
+
   useEffect(() => {
     loadExecutiveOrders();
-    const refreshInterval = setInterval(() => {
-      loadExecutiveOrders();
-    }, 60 * 60 * 1000);
-    return () => clearInterval(refreshInterval);
+    loadReports();
   }, []);
 
   return (
@@ -72,7 +90,7 @@ export default function Home() {
               View all news
             </Link>
           </div>
-          <ReportsCarousel />
+          <ReportsCarousel reports={reports} loading={loadingReports} />
         </div>
       </section>
 
