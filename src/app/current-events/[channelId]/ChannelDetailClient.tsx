@@ -86,11 +86,11 @@ export default function ChannelDetailClient() {
                             <div className="prose prose-zinc max-w-none overflow-y-auto">
                                 {report.body.slice(0, 100)}...
                             </div>
-                            <Link href={`/current-events/${channelId}/${convertTimestampToUnixTimestamp(report.timestamp)}`}>
-                                <Button>
+                            <Button asChild>
+                                <Link href={`/current-events/${channelId}/${convertTimestampToUnixTimestamp(report.timestamp)}`}>
                                     Read More
-                                </Button>
-                            </Link>
+                                </Link>
+                            </Button>
                         </div>
                     ))
                 ) : (
