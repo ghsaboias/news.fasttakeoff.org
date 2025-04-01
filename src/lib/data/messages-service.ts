@@ -20,74 +20,87 @@ export class MessagesService {
         return botMessages;
     }
 
-    // Fetch messages from Discord API
-    private async fetchMessagesFromAPI(channelId: string, since: Date = new Date(Date.now() - 3600000)): Promise<DiscordMessage[]> {
+    private async fetchBotMessagesFromAPI(channelId: string, since: Date = new Date(Date.now() - 3600000)): Promise<DiscordMessage[]> {
         const urlBase = `${DISCORD_API}/channels/${channelId}/messages?limit=100`;
         const token = this.env.DISCORD_TOKEN;
         if (!token) throw new Error('DISCORD_TOKEN is not set');
 
-        let allMessages: DiscordMessage[] = [];
-        let lastMessageId: string | undefined;
+        const allMessages: DiscordMessage[] = [];
         const sinceTime = since.getTime();
-        let batchCount = 0;
-        const MAX_BATCHES = 2;
+        const retries = 3;
+        let lastMessageId: string | undefined;
+        let attempt = 0;
+        let batch = 1;
 
-        try {
-            while (batchCount < MAX_BATCHES) {
-                const url = lastMessageId ? `${urlBase}&before=${lastMessageId}` : urlBase;
-                console.log(`[Discord] Fetching messages for channel ${channelId}`);
+        while (true) {
+            const url = lastMessageId ? `${urlBase}&before=${lastMessageId}` : urlBase;
 
-                const response = await fetch(url, {
-                    headers: { Authorization: token },
-                });
+            const response = await (async () => {
+                for (let i = attempt; i < retries; i++) {
+                    attempt++;
+                    const delayMs = 1000 * (i + 1);
+                    await new Promise(resolve => setTimeout(resolve, delayMs));
 
-                if (!response.ok) {
-                    const errorBody = await response.text();
-                    console.error(`[Discord] Error Body: ${errorBody}`);
-                    throw new Error(`Discord API error: ${response.status}`);
+                    const headers = {
+                        Authorization: token,
+                        'User-Agent': 'NewsApp/0.1.0 (https://news.aiworld.com.br)',
+                        'Content-Type': 'application/json',
+                    };
+
+                    const resp = await fetch(url, { headers });
+
+                    if (resp.status === 429) {
+                        const retryAfter = parseFloat(resp.headers.get('retry-after') || '1') * 1000;
+                        console.log(`[Discord] Rate limited, retrying after ${retryAfter}ms (attempt ${i + 1}/${retries})`);
+                        await new Promise(resolve => setTimeout(resolve, retryAfter));
+                        continue;
+                    }
+                    if (!resp.ok) {
+                        const errorBody = await resp.text();
+                        console.error(`[Discord] Error Body: ${errorBody}`);
+                        throw new Error(`Discord API error: ${resp.status}`);
+                    }
+                    attempt = 0; // Reset on success
+                    return resp;
                 }
+                throw new Error("Max retries reached due to rate limits");
+            })();
 
-                const messages: DiscordMessage[] = await response.json();
-                if (!messages.length) break;
+            const messages: DiscordMessage[] = await response.json();
+            if (!messages.length) break;
 
-                const botMessages = this.filterMessages(messages);
-                allMessages.push(...botMessages);
+            // Filter bot messages and filter new messages
+            const newBotMessages = this.filterMessages(messages).filter(msg => new Date(msg.timestamp).getTime() >= sinceTime);
+            const oldestMessageTime = new Date(messages[messages.length - 1].timestamp).getTime();
+            allMessages.push(...newBotMessages);
+            console.log(`BATCH ${batch} FOR CHANNEL ${channelId} - Found ${newBotMessages.length} bot messages`);
 
-                batchCount++;
-
-                // Check if oldest message in this batch is older than 'since'
-                const oldestMessageTime = new Date(messages[messages.length - 1].timestamp).getTime();
-                if (oldestMessageTime < sinceTime) {
-                    // Filter out messages older than 'since' from this batch
-                    allMessages = allMessages.filter(msg => new Date(msg.timestamp).getTime() >= sinceTime);
-                    break;
-                }
-
-                // If we've reached our MAX_BATCHES limit, log a warning
-                if (batchCount >= MAX_BATCHES) {
-                    console.log(`[Discord] Reached maximum batch limit (${MAX_BATCHES}) for channel ${channelId}. There may be more messages.`);
-                    break;
-                }
-
-                lastMessageId = messages[messages.length - 1].id;
+            if (oldestMessageTime < sinceTime) {
+                console.log(`TOTAL BOT MESSAGES FOR CHANNEL ${channelId}: ${allMessages.length}`);
+                break;
             }
-
-            return allMessages;
-        } catch (error) {
-            console.error(`[Discord] Fetch failed for channel ${channelId}:`, error);
-            throw error;
+            lastMessageId = messages[messages.length - 1].id;
+            batch++;
         }
+
+        return allMessages;
     }
 
-    // Get messages from cache or fetch from Discord API
     async getMessages(channelId: string, options: { since?: Date; limit?: number } = {}): Promise<DiscordMessage[]> {
-        const { since = new Date(Date.now() - 3600000), limit = 100 } = options;
+        const { since = new Date(Date.now() - 3600000), limit = 500 } = options;
         const cachedMessages = await this.getCachedMessagesSince(channelId, since);
+
         if (cachedMessages) {
-            return cachedMessages.messages.slice(0, limit);
+            const cachedOldestTime = new Date(cachedMessages.messages[cachedMessages.messages.length - 1]?.timestamp || Date.now()).getTime();
+            if (cachedOldestTime <= since.getTime()) {
+                return cachedMessages.messages
+                    .filter(msg => new Date(msg.timestamp).getTime() >= since.getTime())
+                    .slice(0, limit);
+            }
+            // Cache exists but doesn’t go back far enough—fetch from API
         }
 
-        const messages = await this.fetchMessagesFromAPI(channelId, since);
+        const messages = await this.fetchBotMessagesFromAPI(channelId, since);
         const channelName = await getChannelName(this.env, channelId);
         await this.cacheMessages(channelId, messages, channelName);
         return messages.slice(0, limit);
@@ -112,50 +125,53 @@ export class MessagesService {
             channelName: name,
         };
         const cacheKey = `messages:${channelId}`;
-        await this.env.MESSAGES_CACHE.put(cacheKey, JSON.stringify(data), { expirationTtl: 259200 }); // 72 hours TTL
-        console.log(`[MESSAGES_CACHE] Cached ${messages.length} messages for ${channelId} with 72h TTL`);
+        await this.env.MESSAGES_CACHE.put(cacheKey, JSON.stringify(data), { expirationTtl: 259200 });
     }
 
     private async getCachedMessagesSince(channelId: string, since: Date = new Date(Date.now() - 3600000)): Promise<CachedMessages | null> {
-        console.log(`Getting cached messages for ${channelId} since ${since}`);
         if (!this.env.MESSAGES_CACHE) return null;
         const cacheKey = `messages:${channelId}`;
         const data = await this.env.MESSAGES_CACHE.get(cacheKey);
-        return data ? JSON.parse(data) : null;
+        if (!data) return null;
+        const parsedData = JSON.parse(data);
+        const recentMessages = parsedData.messages.filter((msg: DiscordMessage) => new Date(msg.timestamp).getTime() >= since.getTime());
+        return {
+            messages: recentMessages,
+            cachedAt: parsedData.cachedAt,
+            messageCount: recentMessages.length,
+            lastMessageTimestamp: recentMessages[recentMessages.length - 1]?.timestamp || new Date().toISOString(),
+            channelName: parsedData.channelName,
+        };
     }
 
-    /**
-     * Update messages for all channels and store in MESSAGES_CACHE
-     * Called by the cron job every hour
-     */
     async updateMessages(): Promise<void> {
-        console.log('[MESSAGES_CACHE] Starting updateMessages for all channels');
+        console.log('Starting updateMessages for all channels');
         try {
             const channelsService = new ChannelsService(this.env);
             const channels = await channelsService.getChannels();
-            console.log(`[messages-service] Getting messages for ${channels.length} channels`);
 
             let updatedCount = 0;
             let skippedCount = 0;
 
+            const since = new Date(Date.now() - 3600000);
+
             for (const channel of channels) {
                 try {
-                    const newMessages = await this.fetchMessagesFromAPI(channel.id);
+                    const newMessages = await this.fetchBotMessagesFromAPI(channel.id, since); // Default 1h
+                    // console.log(`TOTAL: ${newMessages.length} new messages for channel ${channel.id} - ${updatedCount + skippedCount + 1}/${channels.length}`);
 
                     if (newMessages.length > 0) {
-                        console.log(`[<messages-service>] Found ${newMessages.length} new messages for channel ${channel.id}`);
-                        const cached = await this.getCachedMessagesSince(channel.id);
+                        const cached = await this.getCachedMessagesSince(channel.id, since);
                         let allMessages: DiscordMessage[] = newMessages;
 
                         if (cached?.messages) {
                             const existingIds = new Set(cached.messages.map((msg: DiscordMessage) => msg.id));
                             const uniqueNewMessages = newMessages.filter(msg => !existingIds.has(msg.id));
                             allMessages = [...uniqueNewMessages, ...cached.messages];
-                            console.log(`[MESSAGES_CACHE] Combined ${uniqueNewMessages.length} new messages with ${cached.messages.length} existing messages`);
                         }
+                        await this.cacheMessages(channel.id, allMessages, channel.name);
                         updatedCount++;
                     } else {
-                        console.log(`[MESSAGES_CACHE] No new messages for channel ${channel.id}`);
                         skippedCount++;
                     }
                 } catch (error) {
