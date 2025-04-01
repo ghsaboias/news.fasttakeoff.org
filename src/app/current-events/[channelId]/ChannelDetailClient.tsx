@@ -2,6 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { DiscordChannel, Report } from "@/lib/types/core";
+import { convertTimestampToUnixTimestamp } from "@/lib/utils";
 import { Loader2 } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
@@ -11,10 +12,11 @@ export default function ChannelDetailClient() {
     const params = useParams();
     const channelId = Array.isArray(params.channelId) ? params.channelId[0] : params.channelId;
 
-    const [channel, setChannel] = useState<DiscordChannel | null>(null);
     const [reports, setReports] = useState<Report[] | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+
+    const [channel, setChannel] = useState<DiscordChannel | null>(null);
 
     useEffect(() => {
         async function fetchData() {
@@ -22,7 +24,6 @@ export default function ChannelDetailClient() {
                 setIsLoading(true);
                 setError(null);
 
-                // Fetch channel details first
                 const channelsResponse = await fetch('/api/channels');
                 if (!channelsResponse.ok) throw new Error('Failed to fetch channels');
                 const channels = await channelsResponse.json();
@@ -32,10 +33,8 @@ export default function ChannelDetailClient() {
                     setError('Channel not found');
                     return;
                 }
-
                 setChannel(currentChannel);
 
-                // Then fetch reports
                 const reportsResponse = await fetch(`/api/reports?channelId=${channelId}`);
                 if (!reportsResponse.ok) throw new Error('Failed to fetch reports');
                 const data = await reportsResponse.json();
@@ -62,7 +61,7 @@ export default function ChannelDetailClient() {
         );
     }
 
-    if (error || !channel) {
+    if (error || !channelId) {
         return (
             <div className="p-6 max-w-5xl mx-auto flex flex-col items-center justify-center py-12">
                 <p className="text-lg text-red-500">{error || 'Channel not found'}</p>
@@ -77,8 +76,7 @@ export default function ChannelDetailClient() {
 
     return (
         <div className="p-6 max-w-5xl mx-auto gap-4 flex flex-col">
-            <h3 className="text-xl font-bold tracking-tight">{channel.name}</h3>
-
+            <h3 className="text-xl font-bold tracking-tight">{channel?.name}</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {reports && reports.length > 0 ? (
                     reports.map((report) => (
@@ -88,7 +86,7 @@ export default function ChannelDetailClient() {
                             <div className="prose prose-zinc max-w-none overflow-y-auto">
                                 {report.body.slice(0, 100)}...
                             </div>
-                            <Link href={`/current-events/${channel.id}/${report.timestamp}`}>
+                            <Link href={`/current-events/${channelId}/${convertTimestampToUnixTimestamp(report.timestamp)}`}>
                                 <Button>
                                     Read More
                                 </Button>

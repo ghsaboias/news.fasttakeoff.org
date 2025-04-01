@@ -12,7 +12,7 @@ import {
     SelectValue,
 } from "@/components/ui/select";
 import { Report } from "@/lib/types/core";
-import { formatTime } from "@/lib/utils";
+import { convertTimestampToUnixTimestamp, formatTime } from "@/lib/utils";
 import { FilterX, Loader2, Search } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
@@ -24,7 +24,7 @@ export interface Props {
 
 export default function CurrentEventsClient({ reports: initialReports, isLoading: initialLoading = false }: Props) {
     const [searchQuery, setSearchQuery] = useState("");
-    const [sortBy, setSortBy] = useState<"name" | "recent" | "activity">("activity");
+    const [sortBy, setSortBy] = useState<"name" | "recent" | "activity">("recent");
     const [reports, setReports] = useState<Report[]>(initialReports);
     const [isLoading, setIsLoading] = useState(initialLoading);
 
@@ -158,7 +158,7 @@ export default function CurrentEventsClient({ reports: initialReports, isLoading
                                 </CardContent>
                                 <CardFooter className="flex flex-col gap-2 justify-between items-start my-2">
                                     <Button asChild variant="outline" size="sm" className="w-full">
-                                        <Link href={`/current-events/${report.channelId}`}>
+                                        <Link href={`/current-events/${report.channelId}/${convertTimestampToUnixTimestamp(report.timestamp)}`}>
                                             Read More
                                         </Link>
                                     </Button>

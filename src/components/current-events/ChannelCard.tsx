@@ -3,7 +3,7 @@ import ReportAccordion from "@/components/current-events/ReportAccordion";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { DiscordChannel, DiscordMessage, Report } from "@/lib/types/core";
-import { formatTime } from "@/lib/utils";
+import { convertTimestampToUnixTimestamp, formatTime } from "@/lib/utils";
 import Link from "next/link";
 interface ChannelCardProps {
     channel: DiscordChannel;
@@ -43,7 +43,7 @@ export default function ChannelCard({
                 <MessagesAccordion channelData={channelDataEntry} isLoading={isLoading} />
             </CardContent>
             <div className="px-4 mt-auto flex flex-col gap-2">
-                <Link href={`/current-events/${channel.id}`}>
+                <Link href={`/current-events/${channel.id}/${convertTimestampToUnixTimestamp(channelReport.report?.timestamp || "")}`}>
                     <Button size="sm" className="w-full">
                         Read more
                     </Button>
