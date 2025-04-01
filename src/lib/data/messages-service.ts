@@ -148,10 +148,6 @@ export class MessagesService {
         try {
             const channelsService = new ChannelsService(this.env);
             const channels = await channelsService.getChannels();
-
-            let updatedCount = 0;
-            let skippedCount = 0;
-
             const since = new Date(Date.now() - 3600000);
 
             for (const channel of channels) {
@@ -168,9 +164,6 @@ export class MessagesService {
                             allMessages = [...uniqueNewMessages, ...cached.messages];
                         }
                         await this.cacheMessages(channel.id, allMessages, channel.name);
-                        updatedCount++;
-                    } else {
-                        skippedCount++;
                     }
                 } catch (error) {
                     console.error(`[MESSAGES_CACHE] Error updating messages for channel ${channel.id}:`, error);
