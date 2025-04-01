@@ -22,7 +22,7 @@ export default function ReportsCarousel() {
             });
             if (!response.ok) throw new Error(`Failed to fetch reports: ${response.status}`);
             const data = await response.json() as Report[];
-            const activeReports = data.filter(report => report.headline !== "NO ACTIVITY IN THE LAST HOUR");
+            const activeReports = data.filter(report => !report.headline.includes("NO ACTIVITY"));
             setReports(activeReports);
         } catch (error) {
             console.error('[Carousel] Error fetching reports:', error);

@@ -9,9 +9,8 @@ export async function GET(request: Request) {
 
         const url = new URL(request.url);
         const channelId = url.searchParams.get('channelId');
-        // const reportId = url.searchParams.get('reportId');
 
-        console.log(`[API] GET /api/report: ${channelId ? `Fetching report for channel ${channelId}` : 'Fetching all reports'}`);
+        console.log(`[API] GET /api/report: Fetching report for channel ${channelId}`);
 
         if (!channelId) {
             console.log('[API] GET request missing required parameters');
