@@ -7,9 +7,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 
-interface ChannelDetailClientProps { }
-
-export default function ChannelDetailClient({ }: ChannelDetailClientProps) {
+export default function ChannelDetailClient() {
     const params = useParams();
     const channelId = Array.isArray(params.channelId) ? params.channelId[0] : params.channelId;
 
