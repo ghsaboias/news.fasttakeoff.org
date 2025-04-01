@@ -3,11 +3,11 @@
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 import { Report } from "@/lib/types/core";
-import { formatTime } from "@/lib/utils";
+import { convertTimestampToUnixTimestamp, formatTime } from "@/lib/utils";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
+import LinkBadge from "./LinkBadge";
 
 export default function ReportsCarousel() {
     const [reports, setReports] = useState<Report[]>([]);
@@ -73,9 +73,9 @@ export default function ReportsCarousel() {
                                     <CardHeader>
                                         <div className="flex justify-between gap-2 mb-1 items-center">
                                             {report.channelName && (
-                                                <Badge variant="outline" className="px-1 py-0 h-5">
+                                                <LinkBadge href={`/current-events/${report.channelId}`} variant="outline" className="px-1 py-0 h-5 hover:bg-muted">
                                                     {report.channelName}
-                                                </Badge>
+                                                </LinkBadge>
                                             )}
                                         </div>
                                         <CardTitle className="text-lg font-semibold line-clamp-2 leading-tight">
@@ -90,7 +90,7 @@ export default function ReportsCarousel() {
                                     </CardContent>
                                     <CardFooter className="flex flex-col gap-2 justify-between items-start my-2">
                                         <Button asChild variant="outline" size="sm" className="w-full">
-                                            <Link href={`/current-events/${report.channelId}`}>
+                                            <Link href={`/current-events/${report.channelId}/${convertTimestampToUnixTimestamp(report.timestamp)}`}>
                                                 Read More
                                             </Link>
                                         </Button>

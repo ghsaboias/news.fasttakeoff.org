@@ -123,3 +123,8 @@ export function formatTime(timestamp: string | undefined, showDate: boolean = fa
  * @returns Cloudflare environment object
  */
 export const getCacheContext = (): { env: CloudflareEnv } => getCloudflareContext() as unknown as { env: CloudflareEnv };
+
+export function convertTimestampToUnixTimestamp(timestamp: string): number {
+  const date = new Date(timestamp);
+  return Math.floor(date.getTime() / 1000);
+}

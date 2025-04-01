@@ -2,7 +2,6 @@ import { DiscordMessage, Report } from '@/lib/types/core';
 import type { CloudflareEnv } from '../../../cloudflare-env';
 import { getChannelName } from './channels-service';
 import { MessagesService } from './messages-service';
-
 // Helpers for report generation
 function formatSingleMessage(message: DiscordMessage): string {
     const timestamp = new Date(message.timestamp).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
@@ -187,7 +186,7 @@ export class ReportsService {
         return result;
     }
 
-    async getReportAndMessages(channelId: string): Promise<{ report: Report; messages: DiscordMessage[] }> {
+    async getLastReportAndMessages(channelId: string): Promise<{ report: Report; messages: DiscordMessage[] }> {
         const cachedReport = await this.env.REPORTS_CACHE.get(`report:${channelId}:1h`);
         if (cachedReport) {
             const messages = await this.messagesService.getMessages(channelId);
@@ -195,6 +194,15 @@ export class ReportsService {
         } else {
             return this.createReportAndGetMessages(channelId);
         }
+    }
+
+    async getReportAndMessages(channelId: string, reportId: string): Promise<{ report: Report; messages: DiscordMessage[] }> {
+        const cachedReport = await this.env.REPORTS_CACHE.get(`report:${channelId}:${reportId}`);
+        if (cachedReport) {
+            const messages = await this.messagesService.getMessages(channelId);
+            return { report: JSON.parse(cachedReport) as Report, messages };
+        }
+        return { report: createEmptyReport(channelId, ""), messages: [] };
     }
 
     // Get all reports from cache

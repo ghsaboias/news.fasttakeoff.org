@@ -117,7 +117,7 @@ export class MessagesService {
     }
 
     private async getCachedMessagesSince(channelId: string, since: Date = new Date(Date.now() - 3600000)): Promise<CachedMessages | null> {
-        console.log(`[MESSAGES_CACHE] Getting cached messages for ${channelId} since ${since}`);
+        console.log(`Getting cached messages for ${channelId} since ${since}`);
         if (!this.env.MESSAGES_CACHE) return null;
         const cacheKey = `messages:${channelId}`;
         const data = await this.env.MESSAGES_CACHE.get(cacheKey);
