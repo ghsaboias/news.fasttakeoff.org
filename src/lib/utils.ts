@@ -98,16 +98,16 @@ export function formatTime(timestamp: string | undefined, showDate: boolean = fa
   try {
     const date = new Date(timestamp);
     if (showDate) {
-      return date.toLocaleTimeString('en-US', {
+      return date.toLocaleTimeString('en-GB', {
         hour: '2-digit',
         minute: '2-digit',
         hour12: false,
         year: 'numeric',
-        month: 'long',
+        month: 'numeric',
         day: 'numeric'
       });
     } else {
-      return date.toLocaleTimeString('en-US', {
+      return date.toLocaleTimeString('en-GB', {
         hour: '2-digit',
         minute: '2-digit',
       });
