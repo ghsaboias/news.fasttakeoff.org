@@ -124,18 +124,6 @@ export class MessagesService {
         return data ? JSON.parse(data) : null;
     }
 
-    private async purgeMessagesOlderThanFromCache(messages: DiscordMessage[], channelId: string, channelName: string, cutoffTime: number = 48 * 60 * 60 * 1000): Promise<DiscordMessage[]> {
-        const purgedMessages = messages.filter(msg => new Date(msg.timestamp).getTime() >= cutoffTime);
-
-        if (purgedMessages.length < messages.length) {
-            console.log(`[MESSAGES_CACHE] Purged ${messages.length - purgedMessages.length} messages older than 48h for channel ${channelId}`);
-        }
-
-        purgedMessages.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
-        await this.cacheMessages(channelId, purgedMessages, channelName);
-        return purgedMessages;
-    }
-
     /**
      * Update messages for all channels and store in MESSAGES_CACHE
      * Called by the cron job every hour
@@ -165,7 +153,6 @@ export class MessagesService {
                             allMessages = [...uniqueNewMessages, ...cached.messages];
                             console.log(`[MESSAGES_CACHE] Combined ${uniqueNewMessages.length} new messages with ${cached.messages.length} existing messages`);
                         }
-                        await this.purgeMessagesOlderThanFromCache(allMessages, channel.id, channel.name);
                         updatedCount++;
                     } else {
                         console.log(`[MESSAGES_CACHE] No new messages for channel ${channel.id}`);
