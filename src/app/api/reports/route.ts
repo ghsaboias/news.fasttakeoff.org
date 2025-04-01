@@ -13,8 +13,8 @@ export async function GET(request: Request) {
         console.log(`[API] GET /api/reports: ${channelId ? `Fetching report for channel ${channelId}` : 'Fetching all reports'}`);
 
         if (channelId) {
-            const { report, messages } = await reportsService.createReportAndGetMessages(channelId);
-            return NextResponse.json({ report, messages });
+            const reports = await reportsService.getAllReportsForChannelFromCache(channelId);
+            return NextResponse.json(reports);
         } else {
             const reports = await reportsService.getAllReportsFromCache();
             return NextResponse.json(reports);

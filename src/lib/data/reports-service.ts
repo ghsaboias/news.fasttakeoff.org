@@ -2,6 +2,7 @@ import { DiscordMessage, Report } from '@/lib/types/core';
 import type { CloudflareEnv } from '../../../cloudflare-env';
 import { getChannelName } from './channels-service';
 import { MessagesService } from './messages-service';
+
 // Helpers for report generation
 function formatSingleMessage(message: DiscordMessage): string {
     const timestamp = new Date(message.timestamp).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
@@ -230,7 +231,7 @@ export class ReportsService {
         return validReports;
     }
 
-    async getAllChannelReportsFromCache(channelId: string): Promise<Report[]> {
+    async getAllReportsForChannelFromCache(channelId: string): Promise<Report[]> {
         const reports = await this.getAllReportsFromCache();
         return reports.filter(report => report.channelId === channelId);
     }
