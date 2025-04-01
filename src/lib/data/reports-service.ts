@@ -210,7 +210,6 @@ export class ReportsService {
 
     async getLastReportAndMessages(channelId: string, timeframe: string = '1h'): Promise<{ report: Report; messages: DiscordMessage[] }> {
         const cachedReports = await this.getReportsFromCache(channelId, timeframe);
-        console.log(cachedReports?.length)
         if (cachedReports && cachedReports.length > 0) {
             const latestReport = cachedReports[0];
             const messages = await this.getMessagesForTimeframe(channelId, timeframe);
@@ -240,7 +239,7 @@ export class ReportsService {
     async getAllReportsFromCache(): Promise<Report[]> {
         const { keys } = await this.env.REPORTS_CACHE.list({ prefix: 'reports:' });
         if (keys.length === 0) {
-            console.log('[REPORTS] No reports found in REPORTS_CACHE');
+            console.log('No reports found in REPORTS_CACHE');
             return [];
         }
 
@@ -275,7 +274,6 @@ export class ReportsService {
     }
 
     async createFreshReports(): Promise<void> {
-        console.log('[REPORTS] Starting report generation for all channels');
         const { keys } = await this.messagesService.env.MESSAGES_CACHE.list();
         const messageKeys = keys.filter(key => key.name.startsWith('messages:'));
         const timeframes = ['1h', '6h', '12h'];
@@ -296,16 +294,15 @@ export class ReportsService {
 
         for (const key of messageKeys) {
             const channelId = key.name.replace('messages:', '');
-            console.log(`[REPORTS] Processing channel ${channelId}`);
 
-            // Fetch messages for the largest timeframe once
+            // Get messages for the largest timeframe once
             const largestTimeframe = activeTimeframes[0]; // e.g., '6h'
             const hours: { [key: string]: number } = { '1h': 1, '6h': 6, '12h': 12 };
             const since = new Date(Date.now() - hours[largestTimeframe] * 60 * 60 * 1000);
             const allMessages = await this.messagesService.getMessages(channelId, { since });
 
             if (allMessages.length === 0) {
-                console.log(`[REPORTS] No messages for channel ${channelId} in last ${largestTimeframe}`);
+                console.log(`No messages for channel ${channelId} in last ${largestTimeframe}`);
                 const channelName = await getChannelName(this.env, channelId);
                 for (const timeframe of activeTimeframes) {
                     const emptyReport = createEmptyReport(channelId, channelName, timeframe);
@@ -338,7 +335,7 @@ export class ReportsService {
                         const updatedReports = [report, ...cachedReports.filter(r => r.timestamp !== report.timestamp)];
                         await this.cacheReport(channelId, timeframe, updatedReports);
                         generatedCount++;
-                        console.log(`[REPORTS] Generated ${timeframe} report for channel ${channelId} with ${filteredMessages.length} messages`);
+                        console.log(`Generated ${timeframe} report for channel ${channelId} with ${filteredMessages.length} messages`);
                     }
                 } else {
                     console.log(`[REPORTS] No messages for channel ${channelId} in last ${timeframe}`);

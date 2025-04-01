@@ -73,8 +73,8 @@ export class MessagesService {
             const newBotMessages = this.filterMessages(messages).filter(msg => new Date(msg.timestamp).getTime() >= sinceTime);
             const oldestMessageTime = new Date(messages[messages.length - 1].timestamp).getTime();
             allMessages.push(...newBotMessages);
-            console.log(`BATCH ${batch} FOR CHANNEL ${channelId} - Found ${newBotMessages.length} bot messages`);
 
+            console.log(`BATCH ${batch} FOR CHANNEL ${channelId} - Found ${newBotMessages.length} bot messages`);
             if (oldestMessageTime < sinceTime) {
                 console.log(`TOTAL BOT MESSAGES FOR CHANNEL ${channelId}: ${allMessages.length}`);
                 break;
@@ -145,7 +145,6 @@ export class MessagesService {
     }
 
     async updateMessages(): Promise<void> {
-        console.log('Starting updateMessages for all channels');
         try {
             const channelsService = new ChannelsService(this.env);
             const channels = await channelsService.getChannels();
@@ -158,7 +157,6 @@ export class MessagesService {
             for (const channel of channels) {
                 try {
                     const newMessages = await this.fetchBotMessagesFromAPI(channel.id, since); // Default 1h
-                    // console.log(`TOTAL: ${newMessages.length} new messages for channel ${channel.id} - ${updatedCount + skippedCount + 1}/${channels.length}`);
 
                     if (newMessages.length > 0) {
                         const cached = await this.getCachedMessagesSince(channel.id, since);
@@ -178,8 +176,6 @@ export class MessagesService {
                     console.error(`[MESSAGES_CACHE] Error updating messages for channel ${channel.id}:`, error);
                 }
             }
-
-            console.log(`[MESSAGES_CACHE] Completed updateMessages: ${updatedCount} channels updated, ${skippedCount} channels skipped`);
         } catch (error) {
             console.error('[MESSAGES_CACHE] Error in updateMessages:', error);
             throw error;
