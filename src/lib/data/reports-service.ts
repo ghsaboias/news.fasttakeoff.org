@@ -28,7 +28,30 @@ function formatSingleMessage(message: DiscordMessage): string {
 }
 
 function createPrompt(messages: DiscordMessage[]): string {
-    const formattedText = messages.map(formatSingleMessage).join('\n\n');
+    const tokenPerChar = 1 / 4;
+    const overheadTokens = 1000; // Buffer for instructions
+    const outputBuffer = 4096;   // Reserve space for output (adjustable)
+
+    // Dynamic maxTokens based on model context window
+    const maxTokens = 128000 - overheadTokens - outputBuffer; // Versatile: 128,000 total context
+
+    let totalTokens = overheadTokens;
+    const formattedMessages: string[] = [];
+
+    for (const message of messages) {
+        const formatted = formatSingleMessage(message);
+        const estimatedTokens = Math.ceil(formatted.length * tokenPerChar);
+
+        if (totalTokens + estimatedTokens > maxTokens) {
+            console.log(`[PROMPT] Token limit reached (${totalTokens}/${maxTokens}), slicing older messages`);
+            break;
+        }
+
+        formattedMessages.push(formatted);
+        totalTokens += estimatedTokens;
+    }
+
+    const formattedText = formattedMessages.join('\n\n');
     const prompt = `
     Create a journalistic report in the format mentioned, covering the key developments.
 
@@ -44,19 +67,21 @@ function createPrompt(messages: DiscordMessage[]): string {
     - DO NOT make any analysis, commentary, or speculation
     - DO NOT use terms like "likely", "appears to", or "is seen as"
     - Double-check name spelling, all names must be spelled correctly
-  `;
-    console.log(prompt.length);
+    `;
+
+    const finalTokenEstimate = Math.ceil(prompt.length * tokenPerChar);
+    console.log(`[PROMPT] Estimated tokens: ${finalTokenEstimate}/${maxTokens} (messages: ${formattedMessages.length}/${messages.length})`);
     return prompt;
 }
 
 async function createReportWithAI(prompt: string, messages: DiscordMessage[], channelInfo: { id: string; name: string; count: number }, env: CloudflareEnv, timeframe: string): Promise<Report> {
     const apiUrl = 'https://api.groq.com/openai/v1/chat/completions';
-    const model = 'llama-3.3-70b-versatile';
     let attempts = 0;
     const maxAttempts = 2;
 
     while (attempts < maxAttempts) {
         try {
+            const promptWithAttempt = createPrompt(messages);
             const response = await fetch(apiUrl, {
                 method: 'POST',
                 headers: {
@@ -69,9 +94,9 @@ async function createReportWithAI(prompt: string, messages: DiscordMessage[], ch
                             role: "system",
                             content: 'You are an experienced news wire journalist that responds in JSON. The schema must include {"headline": "clear, specific, non-sensational headline in all caps", "city": "single city name, related to the news, with just the first letter capitalized", "body": "cohesive narrative of the most important verified developments, including key names, numbers, locations, dates, etc."}',
                         },
-                        { role: "user", content: prompt }
+                        { role: "user", content: promptWithAttempt }
                     ],
-                    model: attempts >= 0 ? model : 'llama-3.3-70b-specdec',
+                    model: 'llama-3.3-70b-versatile',
                     response_format: { type: "json_object" },
                 }),
             });
@@ -113,7 +138,6 @@ async function createReportWithAI(prompt: string, messages: DiscordMessage[], ch
     }
     throw new Error('Unreachable code');
 }
-
 function createEmptyReport(channelId: string, channelName: string, timeframe: string): Report {
     return {
         headline: `NO ACTIVITY IN THE LAST ${timeframe}`,
@@ -174,7 +198,49 @@ export class ReportsService {
     private async getMessagesForTimeframe(channelId: string, timeframe: string): Promise<DiscordMessage[]> {
         const hours = { '1h': 1, '6h': 6, '12h': 12 }[timeframe] || 1;
         const since = new Date(Date.now() - hours * 60 * 60 * 1000);
-        return this.messagesService.getMessages(channelId, { since });
+
+        // For 1h timeframe, fetch directly as before
+        if (timeframe === '1h') {
+            return this.messagesService.getMessages(channelId, { since });
+        }
+
+        // For 6h and 12h, rely on cache (assumed non-empty)
+        try {
+            const cacheKey = `messages:${channelId}`;
+            const cachedData = await this.env.MESSAGES_CACHE.get(cacheKey);
+
+            if (!cachedData) {
+                console.log(`[REPORTS] Unexpected: No cached messages for channel ${channelId} for ${timeframe}`);
+                return []; // No fetch, just return empty
+            }
+
+            const parsedData = JSON.parse(cachedData);
+            if (!parsedData.messages || !Array.isArray(parsedData.messages)) {
+                console.log(`[REPORTS] Invalid cached message format for channel ${channelId}`);
+                return [];
+            }
+
+            // Filter messages for the timeframe
+            const filteredMessages = parsedData.messages.filter(
+                (msg: DiscordMessage) => new Date(msg.timestamp).getTime() >= since.getTime()
+            );
+
+            // Check and log if cache doesn’t cover full timeframe
+            const oldestCachedTime = new Date(parsedData.messages[parsedData.messages.length - 1]?.timestamp || Date.now()).getTime();
+            if (oldestCachedTime > since.getTime()) {
+                console.log(`[REPORTS] Cache for ${channelId} only goes back to ${new Date(oldestCachedTime).toISOString()}, less than ${timeframe}`);
+            }
+
+            console.log(`[REPORTS] Using ${filteredMessages.length} cached messages for ${timeframe} report of channel ${channelId}`);
+            if (filteredMessages.length === 0) {
+                console.log(`[REPORTS] Note: No messages in cache for the last ${hours} hours for channel ${channelId}`);
+            }
+
+            return filteredMessages;
+        } catch (error) {
+            console.error(`[REPORTS] Error processing cached messages for ${timeframe} report of channel ${channelId}:`, error);
+            return []; // Fail gracefully, no fetch
+        }
     }
 
     async createReportAndGetMessages(channelId: string, timeframe: string): Promise<{ report: Report; messages: DiscordMessage[] }> {
@@ -280,68 +346,51 @@ export class ReportsService {
         const now = new Date();
         const hour = now.getUTCHours();
 
+        // Determine which timeframes should be active based on the current hour
         const activeTimeframes = timeframes.filter(tf => {
             if (tf === '1h') return true; // Hourly
-            if (tf === '6h' && hour % 6 === 0) return true; // Every 6h (placeholder—adjust as needed)
-            if (tf === '12h' && hour % 12 === 0) return true; // Every 12h
+            if (tf === '6h' && hour % 6 === 0) return true; // Every 6h (at hours 0, 6, 12, 18)
+            if (tf === '12h' && hour % 12 === 0) return true; // Every 12h (at hours 0 and 12)
             return false;
-        }).sort((a, b) => { // Sort by timeframe duration (largest first)
-            const hours: { [key: string]: number } = { '1h': 1, '6h': 6, '12h': 12 };
-            return hours[b] - hours[a];
         });
 
+        console.log(`[REPORTS] Active timeframes for this run: ${activeTimeframes.join(', ')}`);
         let generatedCount = 0;
 
         for (const key of messageKeys) {
             const channelId = key.name.replace('messages:', '');
+            const channelName = await getChannelName(this.env, channelId);
 
-            // Get messages for the largest timeframe once
-            const largestTimeframe = activeTimeframes[0]; // e.g., '6h'
-            const hours: { [key: string]: number } = { '1h': 1, '6h': 6, '12h': 12 };
-            const since = new Date(Date.now() - hours[largestTimeframe] * 60 * 60 * 1000);
-            const allMessages = await this.messagesService.getMessages(channelId, { since });
-
-            if (allMessages.length === 0) {
-                console.log(`No messages for channel ${channelId} in last ${largestTimeframe}`);
-                const channelName = await getChannelName(this.env, channelId);
-                for (const timeframe of activeTimeframes) {
-                    const emptyReport = createEmptyReport(channelId, channelName, timeframe);
-                    await this.cacheReport(channelId, timeframe, [emptyReport]);
-                }
-                continue;
-            }
-
-            // Process each timeframe using the same message set
+            // Process each timeframe using our updated getMessagesForTimeframe method
             for (const timeframe of activeTimeframes) {
-                const timeframeHours = hours[timeframe];
-                const timeframeSince = new Date(Date.now() - timeframeHours * 60 * 60 * 1000);
-                const filteredMessages = allMessages.filter(msg => new Date(msg.timestamp).getTime() >= timeframeSince.getTime());
+                // Get messages using our updated method that leverages the cache
+                const messages = await this.getMessagesForTimeframe(channelId, timeframe);
 
-                if (filteredMessages.length > 0) {
-                    const channelName = await getChannelName(this.env, channelId);
-                    const report = await tryCatch(
-                        () => createReportWithAI(
-                            createPrompt(filteredMessages),
-                            filteredMessages,
-                            { id: channelId, name: channelName, count: filteredMessages.length },
-                            this.env,
-                            timeframe
-                        ),
-                        `Error generating ${timeframe} report for channel ${channelId}`
-                    );
-
-                    if (report) {
-                        const cachedReports = await this.getReportsFromCache(channelId, timeframe) || [];
-                        const updatedReports = [report, ...cachedReports.filter(r => r.timestamp !== report.timestamp)];
-                        await this.cacheReport(channelId, timeframe, updatedReports);
-                        generatedCount++;
-                        console.log(`Generated ${timeframe} report for channel ${channelId} with ${filteredMessages.length} messages`);
-                    }
-                } else {
+                if (messages.length === 0) {
                     console.log(`[REPORTS] No messages for channel ${channelId} in last ${timeframe}`);
-                    const channelName = await getChannelName(this.env, channelId);
                     const emptyReport = createEmptyReport(channelId, channelName, timeframe);
                     await this.cacheReport(channelId, timeframe, [emptyReport]);
+                    continue;
+                }
+
+                // Generate report for this timeframe
+                const report = await tryCatch(
+                    () => createReportWithAI(
+                        createPrompt(messages),
+                        messages,
+                        { id: channelId, name: channelName, count: messages.length },
+                        this.env,
+                        timeframe
+                    ),
+                    `Error generating ${timeframe} report for channel ${channelId}`
+                );
+
+                if (report) {
+                    const cachedReports = await this.getReportsFromCache(channelId, timeframe) || [];
+                    const updatedReports = [report, ...cachedReports.filter(r => r.timestamp !== report.timestamp)];
+                    await this.cacheReport(channelId, timeframe, updatedReports);
+                    generatedCount++;
+                    console.log(`[REPORTS] Generated ${timeframe} report for channel ${channelId} with ${messages.length} messages`);
                 }
             }
         }
