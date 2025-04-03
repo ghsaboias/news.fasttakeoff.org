@@ -8,7 +8,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 
-export default function ChannelDetailClient({ initialReports, initialChannel }: { initialReports: Report[], initialChannel: DiscordChannel }) {
+export default function ChannelDetailClient({ initialReports, initialChannel }: { initialReports: Report[], initialChannel: DiscordChannel | null }) {
     const params = useParams();
     const channelId = Array.isArray(params.channelId) ? params.channelId[0] : params.channelId;
 
@@ -16,7 +16,7 @@ export default function ChannelDetailClient({ initialReports, initialChannel }: 
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
-    const [channel, setChannel] = useState<DiscordChannel>(initialChannel);
+    const [channel, setChannel] = useState<DiscordChannel | null>(initialChannel);
 
     useEffect(() => {
         async function fetchData() {
@@ -76,7 +76,7 @@ export default function ChannelDetailClient({ initialReports, initialChannel }: 
 
     return (
         <div className="p-6 max-w-5xl mx-auto gap-4 flex flex-col">
-            <h3 className="text-xl font-bold tracking-tight">{channel?.name}</h3>
+            <h3 className="text-xl font-bold tracking-tight">{channel?.name ?? 'Unknown Channel'}</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {reports && reports.length > 0 ? (
                     reports.map((report) => (
