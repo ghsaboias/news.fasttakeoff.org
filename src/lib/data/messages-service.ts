@@ -170,4 +170,19 @@ export class MessagesService {
             throw error;
         }
     }
+
+    async hasRecentBotMessages(channelId: string, since: Date = new Date(Date.now() - 3600000)): Promise<boolean> {
+        if (!this.env.MESSAGES_CACHE) {
+            console.warn('[MESSAGES] No MESSAGES_CACHE available, assuming recent messages');
+            return true; // Fallback to processing if no cache
+        }
+        const cached = await this.getCachedMessagesSince(channelId, since);
+        if (!cached) {
+            console.log(`[MESSAGES] No cache for channel ${channelId}, will process to gauge activity`);
+            return true; // Process channel to check for messages
+        }
+        const hasMessages = cached.messages.length > 0;
+        console.log(`[MESSAGES] Channel ${channelId} has ${hasMessages ? '' : 'no '}recent bot messages since ${since.toISOString()}`);
+        return hasMessages;
+    }
 }

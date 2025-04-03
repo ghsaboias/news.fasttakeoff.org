@@ -345,11 +345,10 @@ export class ReportsService {
         const now = new Date();
         const hour = now.getUTCHours();
 
-        // Determine which timeframes should be active based on the current hour
         const activeTimeframes = timeframes.filter(tf => {
-            if (tf === '1h') return true; // Hourly
-            if (tf === '6h' && hour % 6 === 0) return true; // Every 6h (at hours 0, 6, 12, 18)
-            if (tf === '12h' && hour % 12 === 0) return true; // Every 12h (at hours 0 and 12)
+            if (tf === '1h') return true;
+            if (tf === '6h' && hour % 6 === 0) return true;
+            if (tf === '12h' && hour % 12 === 0) return true;
             return false;
         });
 
@@ -358,19 +357,19 @@ export class ReportsService {
 
         for (const key of messageKeys) {
             const channelId = key.name.replace('messages:', '');
+            if (!(await this.messagesService.hasRecentBotMessages(channelId))) {
+                console.log(`[REPORTS] Skipping channel ${channelId}: No recent bot messages`);
+                continue;
+            }
             const channelName = await getChannelName(this.env, channelId);
 
-            // Process each timeframe using our updated getMessagesForTimeframe method
             for (const timeframe of activeTimeframes) {
-                // Get messages using our updated method that leverages the cache
                 const messages = await this.getMessagesForTimeframe(channelId, timeframe);
-
                 if (messages.length === 0) {
-                    console.log(`[REPORTS] No messages for channel ${channelId} in last ${timeframe}`);
+                    console.log(`[REPORTS] Skipping channel ${channelId}: No messages in last ${timeframe}`);
                     continue;
                 }
 
-                // Generate report for this timeframe
                 const report = await tryCatch(
                     () => createReportWithAI(
                         createPrompt(messages),
