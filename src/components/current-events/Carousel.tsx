@@ -1,12 +1,9 @@
 "use client";
 
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 import { Report } from "@/lib/types/core";
-import { convertTimestampToUnixTimestamp, formatTime } from "@/lib/utils";
-import Link from "next/link";
-import { Button } from "../ui/button";
-import LinkBadge from "./LinkBadge";
+import ReportCard from "./ReportCard";
 
 export default function ReportsCarousel({ reports, loading }: { reports: Report[], loading: boolean }) {
     return (
@@ -20,8 +17,8 @@ export default function ReportsCarousel({ reports, loading }: { reports: Report[
             >
                 <CarouselContent className={`${loading || (!loading && reports.length === 0) ? 'flex items-center justify-center' : ''}`}>
                     {loading ? (
-                        <CarouselItem className="basis-full sm:basis-1/2 md:basis-1/3 lg:basis-1/4 min-w-[200px] sm:min-w-[330px]">
-                            <Card className="h-[350px] flex flex-col">
+                        <CarouselItem className="basis-full sm:basis-1/2 md:basis-1/3 lg:basis-1/3 min-w-[200px] sm:min-w-[330px]">
+                            <Card className="h-[380px] flex flex-col">
                                 <CardHeader>
                                     <CardTitle className="text-lg">Loading...</CardTitle>
                                 </CardHeader>
@@ -34,53 +31,14 @@ export default function ReportsCarousel({ reports, loading }: { reports: Report[
                         reports.map((report, index) => (
                             <CarouselItem
                                 key={index}
-                                className="basis-full sm:basis-1/2 md:basis-1/3 lg:basis-1/4 min-w-[200px] sm:min-w-[330px]"
+                                className="basis-full sm:basis-1/2 md:basis-1/3 lg:basis-1/3 min-w-[200px] sm:min-w-[330px]"
                             >
-                                <Card className="h-[350px] flex flex-col gap-2 py-4">
-                                    <CardHeader>
-                                        <div className="flex justify-between gap-2 mb-1 items-center">
-                                            {report.channelName && (
-                                                <LinkBadge href={`/current-events/${report.channelId}`} variant="outline" className="px-1 py-0 h-5 hover:bg-muted">
-                                                    {report.channelName}
-                                                </LinkBadge>
-                                            )}
-                                        </div>
-                                        <CardTitle className="text-lg font-semibold line-clamp-2 leading-tight">
-                                            {report.headline}
-                                        </CardTitle>
-                                        <p className="text-sm text-muted-foreground line-clamp-1">{report.city}</p>
-                                    </CardHeader>
-                                    <CardContent className="flex-grow flex flex-col pt-0">
-                                        <p className="text-sm text-muted-foreground flex-grow overflow-scroll h-16">
-                                            {report.body}
-                                        </p>
-                                    </CardContent>
-                                    <CardFooter className="flex flex-col gap-2 justify-between items-start my-2">
-                                        <Button asChild variant="outline" size="sm" className="w-full">
-                                            <Link href={`/current-events/${report.channelId}/${convertTimestampToUnixTimestamp(report.timestamp)}`}>
-                                                Read More
-                                            </Link>
-                                        </Button>
-                                        <div>
-
-                                            <span className="text-xs text-muted-foreground">
-                                                Generated: {report.generatedAt ? formatTime(report.generatedAt) : 'Recent'}
-                                            </span>
-                                            <div className="text-xs text-muted-foreground">
-                                                {report.messageCountLastHour && (
-                                                    <div>
-                                                        <span className="font-medium">{report.messageCountLastHour}</span> update{report.messageCountLastHour === 1 ? '' : 's'} in the last hour
-                                                    </div>
-                                                )}
-                                            </div>
-                                        </div>
-                                    </CardFooter>
-                                </Card>
+                                <ReportCard report={report} />
                             </CarouselItem>
                         ))?.slice(0, 10)
                     ) : (
-                        <CarouselItem className="basis-full sm:basis-1/2 md:basis-1/3 lg:basis-1/4 min-w-[200px] sm:min-w-[330px]">
-                            <Card className="h-[350px] flex flex-col">
+                        <CarouselItem className="basis-full sm:basis-1/2 md:basis-1/3 lg:basis-1/3 min-w-[200px] sm:min-w-[330px]">
+                            <Card className="h-[380px] flex flex-col">
                                 <CardHeader>
                                     <CardTitle className="text-lg">No Active Reports</CardTitle>
                                 </CardHeader>
