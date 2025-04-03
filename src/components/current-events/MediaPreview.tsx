@@ -22,6 +22,7 @@ export default function MediaPreview({ url, type, contentType, alt }: MediaPrevi
                             className="w-full h-full object-cover hover:scale-105 transition-transform"
                             width={1000}
                             height={1000}
+                            unoptimized={url.includes('discordapp.com')}
                         />
                     ) : (
                         <video className="w-full h-full object-cover hover:scale-105 transition-transform">
@@ -43,6 +44,7 @@ export default function MediaPreview({ url, type, contentType, alt }: MediaPrevi
                             className="max-h-[90vh] max-w-full object-contain rounded-lg"
                             width={1000}
                             height={1000}
+                            unoptimized={url.includes('discordapp.com')}
                         />
                     ) : (
                         <video controls className="max-h-[90vh] max-w-full rounded-lg">
