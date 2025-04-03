@@ -195,51 +195,41 @@ export class ReportsService {
         console.log(`Cached ${reports.length} reports for ${cacheKey} with ${this.getTTL(timeframe) / 3600}h TTL`);
     }
 
-    private async getMessagesForTimeframe(channelId: string, timeframe: string): Promise<DiscordMessage[]> {
+    async getMessagesForTimeframe(channelId: string, timeframe: string): Promise<DiscordMessage[]> {
         const hours = { '1h': 1, '6h': 6, '12h': 12 }[timeframe] || 1;
         const since = new Date(Date.now() - hours * 60 * 60 * 1000);
 
-        // For 1h timeframe, fetch directly as before
         if (timeframe === '1h') {
-            return this.messagesService.getMessages(channelId, { since });
+            const cached = await this.messagesService.getCachedMessagesSince(channelId, since);
+            if (cached && cached.messages.length >= 0) { // Always returns an array, even empty
+                console.log(`[REPORTS] Using cached messages for channel ${channelId} for ${timeframe} (${cached.messages.length} messages)`);
+                return cached.messages;
+            }
+            console.log(`[REPORTS] Cache miss for channel ${channelId} for ${timeframe}, fetching fresh messages`);
+            return this.messagesService.getMessages(channelId, { since }); // Fallback fetch
         }
 
-        // For 6h and 12h, rely on cache (assumed non-empty)
+        // Existing logic for 6h and 12h (unchanged)
         try {
             const cacheKey = `messages:${channelId}`;
             const cachedData = await this.env.MESSAGES_CACHE.get(cacheKey);
-
             if (!cachedData) {
                 console.log(`[REPORTS] Unexpected: No cached messages for channel ${channelId} for ${timeframe}`);
-                return []; // No fetch, just return empty
+                return [];
             }
-
             const parsedData = JSON.parse(cachedData);
             if (!parsedData.messages || !Array.isArray(parsedData.messages)) {
                 console.log(`[REPORTS] Invalid cached message format for channel ${channelId}`);
                 return [];
             }
-
-            // Filter messages for the timeframe
             const filteredMessages = parsedData.messages.filter(
                 (msg: DiscordMessage) => new Date(msg.timestamp).getTime() >= since.getTime()
             );
-
-            // Check and log if cache doesn’t cover full timeframe
-            const oldestCachedTime = new Date(parsedData.messages[parsedData.messages.length - 1]?.timestamp || Date.now()).getTime();
-            if (oldestCachedTime > since.getTime()) {
-                console.log(`[REPORTS] Cache for ${channelId} only goes back to ${new Date(oldestCachedTime).toISOString()}, less than ${timeframe}`);
-            }
-
             console.log(`[REPORTS] Using ${filteredMessages.length} cached messages for ${timeframe} report of channel ${channelId}`);
-            if (filteredMessages.length === 0) {
-                console.log(`[REPORTS] Note: No messages in cache for the last ${hours} hours for channel ${channelId}`);
-            }
-
             return filteredMessages;
         } catch (error) {
             console.error(`[REPORTS] Error processing cached messages for ${timeframe} report of channel ${channelId}:`, error);
-            return []; // Fail gracefully, no fetch
+            return [];
         }
     }
 
