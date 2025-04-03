@@ -3,7 +3,7 @@ import { DiscordChannel, Report } from '@/lib/types/core';
 import { getCacheContext } from '@/lib/utils';
 import ChannelDetailClient from './ChannelDetailClient';
 
-export async function generateMetadata({ params }: { params: { channelId: string } }) {
+export async function generateMetadata() {
     return {
         title: `Channel Details - News AI World`,
         description: 'View reports for this channel',
