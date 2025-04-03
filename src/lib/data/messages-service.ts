@@ -28,44 +28,28 @@ export class MessagesService {
 
         const allMessages: DiscordMessage[] = [];
         const sinceTime = since.getTime();
-        const retries = 3;
         let lastMessageId: string | undefined;
-        let attempt = 0;
         let batch = 1;
 
         while (true) {
             const url = lastMessageId ? `${urlBase}&before=${lastMessageId}` : urlBase;
 
-            const response = await (async () => {
-                for (let i = attempt; i < retries; i++) {
-                    attempt++;
-                    const delayMs = 1000 * (i + 1);
-                    await new Promise(resolve => setTimeout(resolve, delayMs));
+            const headers = {
+                Authorization: token,
+                'User-Agent': 'NewsApp/0.1.0 (https://news.aiworld.com.br)',
+                'Content-Type': 'application/json',
+            };
 
-                    const headers = {
-                        Authorization: token,
-                        'User-Agent': 'NewsApp/0.1.0 (https://news.aiworld.com.br)',
-                        'Content-Type': 'application/json',
-                    };
+            const response = await fetch(url, { headers });
 
-                    const resp = await fetch(url, { headers });
-
-                    if (resp.status === 429) {
-                        const retryAfter = parseFloat(resp.headers.get('retry-after') || '1') * 1000;
-                        console.log(`[Discord] Rate limited, retrying after ${retryAfter}ms (attempt ${i + 1}/${retries})`);
-                        await new Promise(resolve => setTimeout(resolve, retryAfter));
-                        continue;
-                    }
-                    if (!resp.ok) {
-                        const errorBody = await resp.text();
-                        console.error(`[Discord] Error Body: ${errorBody}`);
-                        throw new Error(`Discord API error: ${resp.status}`);
-                    }
-                    attempt = 0; // Reset on success
-                    return resp;
-                }
-                throw new Error("Max retries reached due to rate limits");
-            })();
+            if (response.status === 429) {
+                throw new Error('Rate limited');
+            }
+            if (!response.ok) {
+                const errorBody = await response.text();
+                console.error(`[Discord] Error Body: ${errorBody}`);
+                throw new Error(`Discord API error: ${response.status}`);
+            }
 
             const messages: DiscordMessage[] = await response.json();
             if (!messages.length) break;

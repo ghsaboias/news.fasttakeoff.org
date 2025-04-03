@@ -42,7 +42,7 @@ export async function POST(request: Request) {
 
         console.log(`[API] Generating report for channel ${channelId}`);
         const { report, messages } = await reportsService.createReportAndGetMessages(channelId, timeframe);
-        console.log(`[API] Report generated for channel ${channelId}, messageCount: ${report.messageCountLastHour || 0}`);
+        console.log(`[API] Report generated for channel ${channelId}, messageCount: ${report?.messageCountLastHour || 0}`);
         return NextResponse.json({ report, messages } as ReportResponse);
     } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'Unknown error';

@@ -13,47 +13,6 @@ export class ChannelsService {
         this.env = env;
     }
 
-    private delay(ms: number): Promise<void> {
-        return new Promise(resolve => setTimeout(resolve, ms));
-    }
-
-    private async throttledFetch(url: string, retries = 3): Promise<Response> {
-        const delayMs = 250;
-        for (let i = 0; i < retries; i++) {
-            await this.delay(delayMs * (i + 1));
-            this.apiCallCount++;
-
-            console.log(`Fetching ${url}`);
-            const token = this.env.DISCORD_TOKEN;
-            const guildId = this.env.DISCORD_GUILD_ID;
-
-            if (!token) throw new Error('DISCORD_TOKEN is not set');
-            if (!guildId) throw new Error('DISCORD_GUILD_ID is not set');
-
-            const headers = {
-                Authorization: token,
-                'User-Agent': 'NewsApp/0.1.0 (https://news.aiworld.com.br)',
-                'Content-Type': 'application/json',
-            };
-
-            const response = await fetch(url, { headers });
-
-            if (response.status === 429) {
-                const retryAfter = parseFloat(response.headers.get('retry-after') || '1') * 1000;
-                console.log(`[Discord] Rate limited, retrying after ${retryAfter}ms (attempt ${i + 1}/${retries})`);
-                await this.delay(retryAfter);
-                continue;
-            }
-            if (!response.ok) {
-                const errorBody = await response.text();
-                console.log(`[Discord] Error Body: ${errorBody}`);
-                throw new Error(`Discord API error: ${response.status} - ${errorBody}`);
-            }
-            return response;
-        }
-        throw new Error("Max retries reached due to rate limits");
-    }
-
     filterChannels(channels: DiscordChannel[]): DiscordChannel[] {
         const guildId = this.env.DISCORD_GUILD_ID || '';
         return channels
@@ -74,8 +33,29 @@ export class ChannelsService {
     async fetchAllChannelsFromAPI(): Promise<DiscordChannel[]> {
         const guildId = this.env.DISCORD_GUILD_ID;
         const url = `${DISCORD_API}/guilds/${guildId}/channels`;
-        const response = await this.throttledFetch(url);
-        return response.json();
+        try {
+            const response = await fetch(url, {
+                headers: {
+                    Authorization: this.env.DISCORD_TOKEN || '',
+                    'User-Agent': 'NewsApp/0.1.0 (https://news.aiworld.com.br)',
+                    'Content-Type': 'application/json',
+                },
+            });
+
+            if (response.status === 429) {
+                const retryAfter = parseFloat(response.headers.get('retry-after') || '1') * 1000;
+                console.log(`[Discord] Rate limited, retrying after ${retryAfter}ms`);
+            }
+            if (!response.ok) {
+                const errorBody = await response.text();
+                console.log(`[Discord] Error Body: ${errorBody}`);
+                throw new Error(`Discord API error: ${response.status} - ${errorBody}`);
+            }
+            return response.json();
+        } catch (error) {
+            console.error(`Error fetching channels for guild ${guildId}:`, error);
+            return [];
+        }
     }
 
     async fetchAllChannelsFromCache(): Promise<{ channels: DiscordChannel[], fetchedAt: string } | null> {

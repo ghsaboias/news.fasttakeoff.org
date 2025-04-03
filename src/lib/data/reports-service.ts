@@ -81,7 +81,6 @@ async function createReportWithAI(prompt: string, messages: DiscordMessage[], ch
 
     while (attempts < maxAttempts) {
         try {
-            const promptWithAttempt = createPrompt(messages);
             const response = await fetch(apiUrl, {
                 method: 'POST',
                 headers: {
@@ -94,7 +93,7 @@ async function createReportWithAI(prompt: string, messages: DiscordMessage[], ch
                             role: "system",
                             content: 'You are an experienced news wire journalist that responds in JSON. The schema must include {"headline": "clear, specific, non-sensational headline in all caps", "city": "single city name, related to the news, with just the first letter capitalized", "body": "cohesive narrative of the most important verified developments, including key names, numbers, locations, dates, etc."}',
                         },
-                        { role: "user", content: promptWithAttempt }
+                        { role: "user", content: prompt }
                     ],
                     model: 'llama-3.3-70b-versatile',
                     response_format: { type: "json_object" },
@@ -137,21 +136,6 @@ async function createReportWithAI(prompt: string, messages: DiscordMessage[], ch
         }
     }
     throw new Error('Unreachable code');
-}
-function createEmptyReport(channelId: string, channelName: string, timeframe: string): Report {
-    return {
-        headline: `NO ACTIVITY IN THE LAST ${timeframe}`,
-        city: "N/A",
-        body: `No messages were posted in this channel within the last ${timeframe}.`,
-        timestamp: new Date().toISOString(),
-        channelId,
-        channelName,
-        messageCountLastHour: 0,
-        generatedAt: new Date().toISOString(),
-        cacheStatus: 'miss' as const,
-        messageIds: [],
-        timeframe,
-    };
 }
 
 // Utility for consistent error handling
@@ -233,7 +217,7 @@ export class ReportsService {
         }
     }
 
-    async createReportAndGetMessages(channelId: string, timeframe: string): Promise<{ report: Report; messages: DiscordMessage[] }> {
+    async createReportAndGetMessages(channelId: string, timeframe: string): Promise<{ report: Report | null; messages: DiscordMessage[] }> {
         const [messages, channelName] = await Promise.all([
             this.getMessagesForTimeframe(channelId, timeframe),
             getChannelName(this.env, channelId),
@@ -241,7 +225,7 @@ export class ReportsService {
 
         if (!messages.length) {
             console.log(`[REPORTS] Channel ${channelId}: No messages in last ${timeframe}`);
-            return { report: createEmptyReport(channelId, channelName, timeframe), messages: [] };
+            return { report: null, messages: [] };
         }
 
         const report = await tryCatch(
@@ -264,7 +248,7 @@ export class ReportsService {
         return { report, messages };
     }
 
-    async getLastReportAndMessages(channelId: string, timeframe: string = '1h'): Promise<{ report: Report; messages: DiscordMessage[] }> {
+    async getLastReportAndMessages(channelId: string, timeframe: string = '1h'): Promise<{ report: Report | null; messages: DiscordMessage[] }> {
         const cachedReports = await this.getReportsFromCache(channelId, timeframe);
         if (cachedReports && cachedReports.length > 0) {
             const latestReport = cachedReports[0];
@@ -274,7 +258,7 @@ export class ReportsService {
         return this.createReportAndGetMessages(channelId, timeframe);
     }
 
-    async getReportAndMessages(channelId: string, reportId: string, timeframe: string = '1h'): Promise<{ report: Report; messages: DiscordMessage[] }> {
+    async getReportAndMessages(channelId: string, reportId: string, timeframe: string = '1h'): Promise<{ report: Report | null; messages: DiscordMessage[] }> {
         const cachedReports = await this.getReportsFromCache(channelId, timeframe);
         if (cachedReports) {
             const report = cachedReports.find(r => r.timestamp === reportId);
@@ -283,7 +267,7 @@ export class ReportsService {
                 return { report, messages };
             }
         }
-        return { report: createEmptyReport(channelId, "", timeframe), messages: [] };
+        return { report: null, messages: [] };
     }
 
     private async getReportsFromCache(channelId: string, timeframe: string): Promise<Report[] | null> {
