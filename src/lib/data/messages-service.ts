@@ -1,8 +1,7 @@
+import { API, CACHE, DISCORD, TIME } from '@/lib/config';
 import { CachedMessages, DiscordMessage } from '@/lib/types/core';
 import type { CloudflareEnv } from '../../../cloudflare-env';
 import { ChannelsService, getChannelName } from './channels-service';
-
-const DISCORD_API = 'https://discord.com/api/v10';
 
 export class MessagesService {
     public env: CloudflareEnv;
@@ -13,16 +12,16 @@ export class MessagesService {
 
     filterMessages(messages: DiscordMessage[]): DiscordMessage[] {
         const botMessages = messages.filter(
-            msg => msg.author?.username === 'FaytuksBot' &&
-                msg.author?.discriminator === '7032' &&
+            msg => msg.author?.username === DISCORD.BOT.USERNAME &&
+                msg.author?.discriminator === DISCORD.BOT.DISCRIMINATOR &&
                 (msg.content?.includes('http') || (msg.embeds && msg.embeds.length > 0))
         );
         return botMessages;
     }
 
     async fetchBotMessagesFromAPI(channelId: string): Promise<DiscordMessage[]> {
-        const since = new Date(Date.now() - 3600000);
-        const urlBase = `${DISCORD_API}/channels/${channelId}/messages?limit=100`;
+        const since = new Date(Date.now() - TIME.ONE_HOUR_MS);
+        const urlBase = `${API.DISCORD.BASE_URL}/channels/${channelId}/messages?limit=${DISCORD.MESSAGES.BATCH_SIZE}`;
         const token = this.env.DISCORD_TOKEN;
         if (!token) throw new Error('DISCORD_TOKEN is not set');
 
@@ -36,7 +35,7 @@ export class MessagesService {
 
             const headers = {
                 Authorization: token,
-                'User-Agent': 'NewsApp/0.1.0 (https://news.aiworld.com.br)',
+                'User-Agent': API.DISCORD.USER_AGENT,
                 'Content-Type': 'application/json',
             };
 
@@ -71,12 +70,12 @@ export class MessagesService {
     }
 
     async getMessages(channelId: string, options: { since?: Date; limit?: number } = {}): Promise<DiscordMessage[]> {
-        const { since = new Date(Date.now() - 3600000), limit = 500 } = options;
+        const { since = new Date(Date.now() - TIME.ONE_HOUR_MS), limit = DISCORD.MESSAGES.DEFAULT_LIMIT } = options;
         const cachedMessages = await this.getCachedMessagesSince(channelId, since);
 
         if (cachedMessages) {
             const age = (Date.now() - new Date(cachedMessages.cachedAt).getTime()) / 1000;
-            const refreshThreshold = 5 * 60; // 5 minutes
+            const refreshThreshold = CACHE.REFRESH.MESSAGES; // 5 minutes
 
             if (age < 72 * 60 * 60) { // Within 72h TTL
                 if (age > refreshThreshold) {
@@ -119,10 +118,10 @@ export class MessagesService {
             channelName: name,
         };
         const cacheKey = `messages:${channelId}`;
-        await this.env.MESSAGES_CACHE.put(cacheKey, JSON.stringify(data), { expirationTtl: 259200 });
+        await this.env.MESSAGES_CACHE.put(cacheKey, JSON.stringify(data), { expirationTtl: CACHE.TTL.MESSAGES });
     }
 
-    async getCachedMessagesSince(channelId: string, since: Date = new Date(Date.now() - 3600000)): Promise<CachedMessages | null> {
+    async getCachedMessagesSince(channelId: string, since: Date = new Date(Date.now() - TIME.ONE_HOUR_MS)): Promise<CachedMessages | null> {
         if (!this.env.MESSAGES_CACHE) return null;
         const cacheKey = `messages:${channelId}`;
         const data = await this.env.MESSAGES_CACHE.get(cacheKey);

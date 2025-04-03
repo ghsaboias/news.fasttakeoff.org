@@ -1,3 +1,4 @@
+import { TimeframeKey } from '@/lib/config';
 import { ReportsService } from '@/lib/data/reports-service';
 import { ReportResponse } from '@/lib/types/core';
 import { getCacheContext } from '@/lib/utils';
@@ -32,7 +33,7 @@ export async function POST(request: Request) {
         }
 
         console.log(`[API] Generating report for channel ${channelId}`);
-        const { report, messages } = await reportsService.createReportAndGetMessages(channelId, timeframe);
+        const { report, messages } = await reportsService.createReportAndGetMessages(channelId, timeframe as TimeframeKey);
         console.log(`[API] Report generated for channel ${channelId}, messageCount: ${report?.messageCountLastHour || 0}`);
         return NextResponse.json({ report, messages } as ReportResponse);
     } catch (error) {

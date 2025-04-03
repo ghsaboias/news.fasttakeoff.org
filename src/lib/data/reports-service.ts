@@ -1,3 +1,4 @@
+import { AI, API, CACHE, TIME, TimeframeKey } from '@/lib/config';
 import { DiscordMessage, Report } from '@/lib/types/core';
 import { v4 as uuidv4 } from 'uuid';
 import type { CloudflareEnv } from '../../../cloudflare-env';
@@ -29,12 +30,12 @@ function formatSingleMessage(message: DiscordMessage): string {
 }
 
 function createPrompt(messages: DiscordMessage[]): string {
-    const tokenPerChar = 1 / 4;
-    const overheadTokens = 1000; // Buffer for instructions
-    const outputBuffer = 4096;   // Reserve space for output (adjustable)
+    const tokenPerChar = AI.REPORT_GENERATION.TOKEN_PER_CHAR;
+    const overheadTokens = AI.REPORT_GENERATION.OVERHEAD_TOKENS;
+    const outputBuffer = AI.REPORT_GENERATION.OUTPUT_BUFFER;
 
     // Dynamic maxTokens based on model context window
-    const maxTokens = 128000 - overheadTokens - outputBuffer; // Versatile: 128,000 total context
+    const maxTokens = AI.REPORT_GENERATION.MAX_CONTEXT_TOKENS - overheadTokens - outputBuffer;
 
     let totalTokens = overheadTokens;
     const formattedMessages: string[] = [];
@@ -53,22 +54,7 @@ function createPrompt(messages: DiscordMessage[]): string {
     }
 
     const formattedText = formattedMessages.join('\n\n');
-    const prompt = `
-    Create a journalistic report in the format mentioned, covering the key developments.
-
-    Updates to analyze:
-    ${formattedText}
-
-    Requirements:
-    - Paragraphs must summarize the most important verified developments, including key names, numbers, locations, dates, etc., in a cohesive narrative
-    - Do NOT include additional headlines - weave all events into a cohesive narrative
-    - If multiple sources are reporting the same thing, only include it once
-    - Only include verified facts and direct quotes from official statements
-    - Maintain a strictly neutral tone
-    - DO NOT make any analysis, commentary, or speculation
-    - DO NOT use terms like "likely", "appears to", or "is seen as"
-    - Double-check name spelling, all names must be spelled correctly
-    `;
+    const prompt = AI.REPORT_GENERATION.PROMPT_TEMPLATE.replace('{messages}', formattedText);
 
     const finalTokenEstimate = Math.ceil(prompt.length * tokenPerChar);
     console.log(`[PROMPT] Estimated tokens: ${finalTokenEstimate}/${maxTokens} (messages: ${formattedMessages.length}/${messages.length})`);
@@ -76,9 +62,9 @@ function createPrompt(messages: DiscordMessage[]): string {
 }
 
 async function createReportWithAI(prompt: string, messages: DiscordMessage[], channelInfo: { id: string; name: string; count: number }, env: CloudflareEnv, timeframe: string): Promise<Report> {
-    const apiUrl = 'https://api.groq.com/openai/v1/chat/completions';
+    const apiUrl = API.GROQ.ENDPOINT;
     let attempts = 0;
-    const maxAttempts = 2;
+    const maxAttempts = AI.REPORT_GENERATION.MAX_ATTEMPTS;
 
     while (attempts < maxAttempts) {
         try {
@@ -96,7 +82,7 @@ async function createReportWithAI(prompt: string, messages: DiscordMessage[], ch
                         },
                         { role: "user", content: prompt }
                     ],
-                    model: 'llama-3.3-70b-versatile',
+                    model: API.GROQ.MODEL,
                     response_format: { type: "json_object" },
                 }),
             });
@@ -161,16 +147,11 @@ export class ReportsService {
         this.messagesService = new MessagesService(env);
     }
 
-    private getTTL(timeframe: string): number {
-        const ttlMap: Record<string, number> = {
-            '1h': 24 * 60 * 60,  // 24 hours
-            '6h': 48 * 60 * 60,  // 48 hours
-            '12h': 72 * 60 * 60, // 72 hours
-        };
-        return ttlMap[timeframe] || 72 * 60 * 60; // Default to 72h if timeframe unknown
+    private getTTL(timeframe: TimeframeKey): number {
+        return CACHE.TTL.REPORTS[timeframe] || CACHE.TTL.REPORTS.DEFAULT;
     }
 
-    private async cacheReport(channelId: string, timeframe: string, reports: Report[]): Promise<void> {
+    private async cacheReport(channelId: string, timeframe: TimeframeKey, reports: Report[]): Promise<void> {
         const cacheKey = `reports:${channelId}:${timeframe}`;
         await this.env.REPORTS_CACHE.put(
             cacheKey,
@@ -180,7 +161,7 @@ export class ReportsService {
         console.log(`Cached ${reports.length} reports for ${cacheKey} with ${this.getTTL(timeframe) / 3600}h TTL`);
     }
 
-    async getMessagesForTimeframe(channelId: string, timeframe: string): Promise<DiscordMessage[]> {
+    async getMessagesForTimeframe(channelId: string, timeframe: TimeframeKey): Promise<DiscordMessage[]> {
         const hours = { '1h': 1, '6h': 6, '12h': 12 }[timeframe] || 1;
         const since = new Date(Date.now() - hours * 60 * 60 * 1000);
 
@@ -218,7 +199,7 @@ export class ReportsService {
         }
     }
 
-    async createReportAndGetMessages(channelId: string, timeframe: string): Promise<{ report: Report | null; messages: DiscordMessage[] }> {
+    async createReportAndGetMessages(channelId: string, timeframe: TimeframeKey): Promise<{ report: Report | null; messages: DiscordMessage[] }> {
         const [messages, channelName] = await Promise.all([
             this.getMessagesForTimeframe(channelId, timeframe),
             getChannelName(this.env, channelId),
@@ -249,14 +230,14 @@ export class ReportsService {
         return { report, messages };
     }
 
-    async getLastReportAndMessages(channelId: string, timeframe: string = '1h'): Promise<{ report: Report | null; messages: DiscordMessage[] }> {
+    async getLastReportAndMessages(channelId: string, timeframe: TimeframeKey = '1h'): Promise<{ report: Report | null; messages: DiscordMessage[] }> {
         const cacheKey = `reports:${channelId}:${timeframe}`;
         const cachedReports = await this.getReportsFromCache(channelId, timeframe);
 
         if (cachedReports?.length) {
             const latestReport = cachedReports[0];
             const age = (Date.now() - new Date(latestReport.generatedAt || '').getTime()) / 1000;
-            const refreshThreshold = 5 * 60; // 5 minutes
+            const refreshThreshold = CACHE.REFRESH.MESSAGES; // 5 minutes
 
             if (age < this.getTTL(timeframe)) { // Within TTL
                 if (age > refreshThreshold) {
@@ -272,7 +253,7 @@ export class ReportsService {
         return this.createReportAndGetMessages(channelId, timeframe);
     }
 
-    async refreshReportInBackground(channelId: string, timeframe: string, cacheKey: string): Promise<void> {
+    async refreshReportInBackground(channelId: string, timeframe: TimeframeKey, cacheKey: string): Promise<void> {
         const { report } = await this.createReportAndGetMessages(channelId, timeframe);
         if (report) {
             const cachedReports = (await this.getReportsFromCache(channelId, timeframe)) || [];
@@ -281,7 +262,7 @@ export class ReportsService {
         }
     }
 
-    async getReportAndMessages(channelId: string, reportId: string, timeframe: string = '1h'): Promise<{ report: Report | null; messages: DiscordMessage[] }> {
+    async getReportAndMessages(channelId: string, reportId: string, timeframe: TimeframeKey = '1h'): Promise<{ report: Report | null; messages: DiscordMessage[] }> {
         const cachedReports = await this.getReportsFromCache(channelId, timeframe);
         if (cachedReports) {
             const report = cachedReports.find(r => r.reportId === reportId);
@@ -293,7 +274,7 @@ export class ReportsService {
         return { report: null, messages: [] };
     }
 
-    private async getReportsFromCache(channelId: string, timeframe: string): Promise<Report[] | null> {
+    private async getReportsFromCache(channelId: string, timeframe: TimeframeKey): Promise<Report[] | null> {
         const cacheKey = `reports:${channelId}:${timeframe}`;
         const cached = await this.env.REPORTS_CACHE.get(cacheKey);
         return cached ? JSON.parse(cached) as Report[] : null;
@@ -321,7 +302,7 @@ export class ReportsService {
         return validReports;
     }
 
-    async getAllReportsForChannelFromCache(channelId: string, timeframe?: string): Promise<Report[]> {
+    async getAllReportsForChannelFromCache(channelId: string, timeframe?: TimeframeKey): Promise<Report[]> {
         if (timeframe) {
             const reports = await this.getReportsFromCache(channelId, timeframe);
             return reports || [];
@@ -338,14 +319,14 @@ export class ReportsService {
 
     async createFreshReports(): Promise<void> {
         const { keys: messageKeys } = await this.messagesService.env.MESSAGES_CACHE.list();
-        const timeframes = ['1h', '6h', '12h'];
+        const timeframes = TIME.TIMEFRAMES;
         const now = new Date();
         const hour = now.getUTCHours();
 
         const activeTimeframes = timeframes.filter(tf => {
             if (tf === '1h') return true;
-            if (tf === '6h' && hour % 6 === 0) return true;
-            if (tf === '12h' && hour % 12 === 0) return true;
+            if (tf === '6h' && hour % TIME.CRON.REPORTING_INTERVALS['6h'] === 0) return true;
+            if (tf === '12h' && hour % TIME.CRON.REPORTING_INTERVALS['12h'] === 0) return true;
             return false;
         });
 
