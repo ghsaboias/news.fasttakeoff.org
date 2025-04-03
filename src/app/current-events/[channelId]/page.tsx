@@ -1,3 +1,4 @@
+import { getChannels } from '@/lib/data/channels-service';
 import { ReportsService } from '@/lib/data/reports-service';
 import { DiscordChannel, Report } from '@/lib/types/core';
 import { getCacheContext } from '@/lib/utils';
@@ -15,9 +16,7 @@ export default async function ChannelDetailPage({ params }: { params: Promise<{ 
     const { env } = getCacheContext();
     const reportsService = new ReportsService(env);
 
-    // Fetch channels
-    const channelsResponse = await fetch('/api/channels', { cache: 'no-store' });
-    const channels: DiscordChannel[] = await channelsResponse.json();
+    const channels: DiscordChannel[] = await getChannels(env);
     const currentChannel = channels.find((c) => c.id === channelId) || null;
 
     // Fetch reports
