@@ -9,8 +9,8 @@ import { useEffect, useState } from "react";
 
 export default function ReportClient() {
     const params = useParams();
-    const reportId = Array.isArray(params.reportId) ? params.reportId[0] : params.reportId;
     const channelId = Array.isArray(params.channelId) ? params.channelId[0] : params.channelId;
+    const reportTimestamp = Array.isArray(params.reportTimestamp) ? params.reportTimestamp[0] : params.reportTimestamp; // Fix: use reportTimestamp
 
     const [report, setReport] = useState<Report | null>(null);
     const [messages, setMessages] = useState<DiscordMessage[]>([]);
@@ -19,16 +19,15 @@ export default function ReportClient() {
     useEffect(() => {
         const fetchReportAndMessages = async () => {
             setIsLoading(true);
-            const reportResponse = await fetch(`/api/report?channelId=${channelId}`);
-            if (!reportResponse.ok) throw new Error('Failed to fetch reports');
+            const reportResponse = await fetch(`/api/report?channelId=${channelId}&reportTimestamp=${reportTimestamp}`);
+            if (!reportResponse.ok) throw new Error('Failed to fetch report');
             const data = await reportResponse.json();
-            const { report, messages } = data;
-            setReport(report);
-            setMessages(messages);
+            setReport(data.report);
+            setMessages(data.messages);
             setIsLoading(false);
-        }
+        };
         fetchReportAndMessages();
-    }, [reportId, channelId]);
+    }, [channelId, reportTimestamp]); // Fix: use reportTimestamp in deps
 
     return (
         <div className="p-6 max-w-5xl mx-auto gap-4 flex flex-col">
@@ -53,5 +52,5 @@ export default function ReportClient() {
                 </div>
             )}
         </div>
-    )
+    );
 }

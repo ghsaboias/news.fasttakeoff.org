@@ -12,7 +12,7 @@ import {
     SelectValue,
 } from "@/components/ui/select";
 import { Report } from "@/lib/types/core";
-import { convertTimestampToUnixTimestamp, formatTime } from "@/lib/utils";
+import { formatTime } from "@/lib/utils";
 import { FilterX, Loader2, Search } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
@@ -158,7 +158,7 @@ export default function CurrentEventsClient({ reports: initialReports, isLoading
                                 </CardContent>
                                 <CardFooter className="flex flex-col gap-2 justify-between items-start my-2">
                                     <Button asChild variant="outline" size="sm" className="w-full">
-                                        <Link href={`/current-events/${report.channelId}/${convertTimestampToUnixTimestamp(report.timestamp)}`}>
+                                        <Link href={`/current-events/${report.channelId}/${report.timestamp}`}>
                                             Read More
                                         </Link>
                                     </Button>

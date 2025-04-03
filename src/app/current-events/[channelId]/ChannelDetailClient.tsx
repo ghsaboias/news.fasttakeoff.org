@@ -2,7 +2,6 @@
 
 import { Button } from "@/components/ui/button";
 import { DiscordChannel, Report } from "@/lib/types/core";
-import { convertTimestampToUnixTimestamp } from "@/lib/utils";
 import { Loader2 } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
@@ -87,7 +86,7 @@ export default function ChannelDetailClient({ initialReports, initialChannel }: 
                                 {report.body.slice(0, 100)}...
                             </div>
                             <Button asChild>
-                                <Link href={`/current-events/${channelId}/${convertTimestampToUnixTimestamp(report.timestamp)}`}>
+                                <Link href={`/current-events/${channelId}/${report.timestamp}`}>
                                     Read More
                                 </Link>
                             </Button>
