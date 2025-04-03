@@ -70,58 +70,46 @@ export async function fetchExecutiveOrders(
 }
 
 export async function fetchExecutiveOrderById(id: string, env?: CloudflareEnv): Promise<ExecutiveOrder | null> {
-    try {
-        const isStaticGeneration = process.env.NEXT_PHASE === 'phase-production-build';
-        if (isStaticGeneration) {
-            console.log('Static generation detected: skipping fetch for order ID', id);
-            return null;
-        }
+    if (!env) return null;
+    const kv = env.EXECUTIVE_ORDERS_CACHE;
+    const cacheKey = `order:${id}`;
 
-        if (!env) {
-            console.log('No environment available for fetching executive order', id);
-            return null;
-        }
+    const cached = await kv.get(cacheKey, { type: 'json' }) as ExecutiveOrder | null;
+    if (cached) {
+        const age = (Date.now() - new Date(cached.publication?.publicationDate || cached.date).getTime()) / 1000;
+        const refreshThreshold = 60 * 60; // 1 hour
 
-        console.log(`Fetching executive order ${id} at runtime`);
-        const kv = env.EXECUTIVE_ORDERS_CACHE;
-        const cacheKey = `order:${id}`;
-        if (kv) {
-            const cached = await kv.get(cacheKey, { type: 'json' });
-            if (cached) {
-                console.log(`Cache hit for ${id}:`, cached);
-                return cached as ExecutiveOrder;
+        if (age < 24 * 60 * 60) { // Within 24h TTL
+            if (age > refreshThreshold) {
+                refreshOrderInBackground(id, env, cacheKey).catch(err =>
+                    console.error(`[EXEC_ORDERS] Background refresh failed for ${id}: ${err}`)
+                );
             }
-            console.log(`No cache hit for ${id}`);
-        } else {
-            console.log(`No KV environment available for ${id}`);
+            return cached;
         }
+    }
 
-        const apiUrl = `${FEDERAL_REGISTER_API}/documents/${id}.json`;
-        console.log(`Fetching from ${apiUrl}`);
-        const response = await fetch(apiUrl, { cache: 'no-store' });
-        console.log(`API response status for ${id}: ${response.status}`);
-        if (!response.ok) {
-            console.log(`Fetch failed for ${id}: ${response.status}`);
-            return null;
-        }
+    const apiUrl = `${FEDERAL_REGISTER_API}/documents/${id}.json`;
+    const response = await fetch(apiUrl, { cache: 'no-store' });
+    if (!response.ok) return null;
 
+    const data = await response.json() as FederalRegisterOrder;
+    const orderData = transformFederalRegisterOrder(data);
+    if (orderData && kv) {
+        await kv.put(cacheKey, JSON.stringify(orderData), { expirationTtl: 86400 });
+    }
+    return orderData;
+}
+
+async function refreshOrderInBackground(id: string, env: CloudflareEnv, cacheKey: string): Promise<void> {
+    const apiUrl = `${FEDERAL_REGISTER_API}/documents/${id}.json`;
+    const response = await fetch(apiUrl, { cache: 'no-store' });
+    if (response.ok) {
         const data = await response.json() as FederalRegisterOrder;
-        console.log(`API data received for ${id}:`, JSON.stringify(data).slice(0, 200)); // Truncate for brevity
         const orderData = transformFederalRegisterOrder(data);
-        if (!orderData) {
-            console.log(`Transformation failed for ${id}`);
-            return null;
+        if (orderData) {
+            await env.EXECUTIVE_ORDERS_CACHE.put(cacheKey, JSON.stringify(orderData), { expirationTtl: 86400 });
         }
-
-        if (kv && orderData) {
-            console.log(`Caching order ${id} in KV`);
-            await kv.put(cacheKey, JSON.stringify(orderData), { expirationTtl: 86400 });
-        }
-
-        return orderData;
-    } catch (error) {
-        console.error(`Server Error fetching executive order ${id}:`, error);
-        return null;
     }
 }
 

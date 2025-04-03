@@ -249,13 +249,35 @@ export class ReportsService {
     }
 
     async getLastReportAndMessages(channelId: string, timeframe: string = '1h'): Promise<{ report: Report | null; messages: DiscordMessage[] }> {
+        const cacheKey = `reports:${channelId}:${timeframe}`;
         const cachedReports = await this.getReportsFromCache(channelId, timeframe);
-        if (cachedReports && cachedReports.length > 0) {
+
+        if (cachedReports?.length) {
             const latestReport = cachedReports[0];
-            const messages = await this.getMessagesForTimeframe(channelId, timeframe);
-            return { report: latestReport, messages };
+            const age = (Date.now() - new Date(latestReport.generatedAt || '').getTime()) / 1000;
+            const refreshThreshold = 5 * 60; // 5 minutes
+
+            if (age < this.getTTL(timeframe)) { // Within TTL
+                if (age > refreshThreshold) {
+                    this.refreshReportInBackground(channelId, timeframe, cacheKey).catch(err =>
+                        console.error(`[REPORTS] Background refresh failed for ${channelId}: ${err}`)
+                    );
+                }
+                const messages = await this.getMessagesForTimeframe(channelId, timeframe);
+                return { report: { ...latestReport, cacheStatus: 'hit' }, messages };
+            }
         }
+
         return this.createReportAndGetMessages(channelId, timeframe);
+    }
+
+    async refreshReportInBackground(channelId: string, timeframe: string, cacheKey: string): Promise<void> {
+        const { report } = await this.createReportAndGetMessages(channelId, timeframe);
+        if (report) {
+            const cachedReports = (await this.getReportsFromCache(channelId, timeframe)) || [];
+            const updatedReports = [report, ...cachedReports.filter(r => r.timestamp !== report.timestamp)];
+            await this.env.REPORTS_CACHE.put(cacheKey, JSON.stringify(updatedReports), { expirationTtl: this.getTTL(timeframe) });
+        }
     }
 
     async getReportAndMessages(channelId: string, reportId: string, timeframe: string = '1h'): Promise<{ report: Report | null; messages: DiscordMessage[] }> {
