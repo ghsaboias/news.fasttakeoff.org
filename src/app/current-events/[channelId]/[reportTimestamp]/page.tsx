@@ -1,4 +1,4 @@
-import ReportDetailClient from './ReportDetailClient';
+import ReportClient from './ReportClient';
 
 export const metadata = {
     title: 'Report Details - News AI World',
@@ -6,5 +6,5 @@ export const metadata = {
 };
 
 export default function ReportDetailPage() {
-    return <ReportDetailClient />;
+    return <ReportClient />;
 }
