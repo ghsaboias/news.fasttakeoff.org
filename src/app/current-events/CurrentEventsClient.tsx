@@ -158,7 +158,7 @@ export default function CurrentEventsClient({ reports: initialReports, isLoading
                                 </CardContent>
                                 <CardFooter className="flex flex-col gap-2 justify-between items-start my-2">
                                     <Button asChild variant="outline" size="sm" className="w-full">
-                                        <Link href={`/current-events/${report.channelId}/${report.timestamp}`}>
+                                        <Link href={`/current-events/${report.channelId}/${report.reportId}`}>
                                             Read More
                                         </Link>
                                     </Button>

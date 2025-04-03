@@ -179,13 +179,13 @@ export interface Report {
     headline: string;
     city: string;
     body: string;
-    timestamp: string;
+    reportId: string;
+    generatedAt: string;
     channelId?: string;
     channelName?: string;
     cacheStatus?: 'hit' | 'miss';
     messageCountLastHour?: number;
     lastMessageTimestamp?: string;
-    generatedAt?: string;
     userGenerated?: boolean;
     messageIds?: string[];
     timeframe?: string;
@@ -199,21 +199,7 @@ export interface CachedMessages {
     channelName: string;
 }
 
-export interface ApiReport {
-    headline: string;
-    city: string;
-    body: string;
-    timestamp: string;
-    channelId: string;
-    channelName: string;
-    cacheStatus: "hit" | "miss";
-    messageCountLastHour: number;
-    lastMessageTimestamp: string;
-    generatedAt: string;
-    messageIds?: string[];
-}
-
 export interface ReportResponse {
-    report: ApiReport;
+    report: Report;
     messages: DiscordMessage[];
 }
