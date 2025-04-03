@@ -1,8 +1,7 @@
+import { API, CACHE, DISCORD } from '@/lib/config';
 import { DiscordChannel, DiscordMessage } from '@/lib/types/core';
 import type { CloudflareEnv } from '../../../cloudflare-env';
 import { MessagesService } from './messages-service';
-const DISCORD_API = 'https://discord.com/api/v10';
-const ALLOWED_EMOJIS = ['🔵', '🟡', '🔴', '🟠'];
 
 export class ChannelsService {
     private env: CloudflareEnv;
@@ -18,26 +17,26 @@ export class ChannelsService {
         return channels
             .filter(c => {
                 const isValidType = c.type === 0;
-                const hasAllowedEmoji = ALLOWED_EMOJIS.includes(Array.from(c.name)[0] || '');
+                const hasAllowedEmoji = DISCORD.CHANNELS.ALLOWED_EMOJIS.includes(Array.from(c.name)[0] || '');
                 if (!isValidType || !hasAllowedEmoji) return false;
 
                 const guildPermission = c.permission_overwrites?.find(p => p.id === guildId);
                 if (!guildPermission) return true;
-                if (guildPermission.allow === "1024") return true;
+                if (guildPermission.allow === DISCORD.CHANNELS.PERMISSIONS.VIEW_CHANNEL) return true;
                 const denyBits = parseInt(guildPermission.deny);
-                return (denyBits & 1024) !== 1024;
+                return (denyBits & DISCORD.CHANNELS.PERMISSIONS.VIEW_CHANNEL_BIT) !== DISCORD.CHANNELS.PERMISSIONS.VIEW_CHANNEL_BIT;
             })
             .sort((a, b) => a.position - b.position);
     }
 
     async fetchAllChannelsFromAPI(): Promise<DiscordChannel[]> {
         const guildId = this.env.DISCORD_GUILD_ID;
-        const url = `${DISCORD_API}/guilds/${guildId}/channels`;
+        const url = `${API.DISCORD.BASE_URL}/guilds/${guildId}/channels`;
         try {
             const response = await fetch(url, {
                 headers: {
                     Authorization: this.env.DISCORD_TOKEN || '',
-                    'User-Agent': 'NewsApp/0.1.0 (https://news.aiworld.com.br)',
+                    'User-Agent': API.DISCORD.USER_AGENT,
                     'Content-Type': 'application/json',
                 },
             });
@@ -86,7 +85,7 @@ export class ChannelsService {
         if (cachedData) {
             const { channels, fetchedAt } = cachedData;
             const age = (Date.now() - new Date(fetchedAt).getTime()) / 1000; // seconds
-            const refreshThreshold = 60 * 60; // 1 hour
+            const refreshThreshold = CACHE.REFRESH.CHANNELS; // 1 hour 
 
             if (age < 24 * 60 * 60) { // Within 24h TTL
                 if (age > refreshThreshold) {
@@ -112,8 +111,8 @@ export class ChannelsService {
 
     async updateCache(key: string, metadataKey: string, channels: DiscordChannel[]): Promise<void> {
         await Promise.all([
-            this.env.CHANNELS_CACHE.put(key, JSON.stringify(channels), { expirationTtl: 60 * 60 * 24 }),
-            this.env.CHANNELS_CACHE.put(metadataKey, JSON.stringify({ fetchedAt: new Date().toISOString() }), { expirationTtl: 60 * 60 * 24 })
+            this.env.CHANNELS_CACHE.put(key, JSON.stringify(channels), { expirationTtl: CACHE.TTL.CHANNELS }),
+            this.env.CHANNELS_CACHE.put(metadataKey, JSON.stringify({ fetchedAt: new Date().toISOString() }), { expirationTtl: CACHE.TTL.CHANNELS })
         ]);
     }
 
