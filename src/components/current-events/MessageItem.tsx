@@ -33,6 +33,7 @@ export default function MessageItem({ message, index, noAccordion = false }: Mes
                                     className="w-5 h-5 rounded-full"
                                     width={20}
                                     height={20}
+                                    unoptimized
                                 />
                             )}
                             <span>{message.author.global_name || message.author.username}</span>
@@ -94,6 +95,7 @@ export default function MessageItem({ message, index, noAccordion = false }: Mes
                                     className="w-4 h-4 rounded-full"
                                     width={16}
                                     height={16}
+                                    unoptimized
                                 />
                             )}
                             <span className="text-sm text-muted-foreground">
