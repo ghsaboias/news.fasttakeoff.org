@@ -10,17 +10,18 @@ export async function generateMetadata() {
     };
 }
 
-export default async function ChannelDetailPage({ params }: { params: { channelId: string } }) {
+export default async function ChannelDetailPage({ params }: { params: Promise<{ channelId: string }> }) {
+    const { channelId } = await params;
     const { env } = getCacheContext();
     const reportsService = new ReportsService(env);
 
     // Fetch channels
     const channelsResponse = await fetch('/api/channels', { cache: 'no-store' });
     const channels: DiscordChannel[] = await channelsResponse.json();
-    const currentChannel = channels.find((c) => c.id === params.channelId) || null;
+    const currentChannel = channels.find((c) => c.id === channelId) || null;
 
     // Fetch reports
-    const reports: Report[] = await reportsService.getAllReportsForChannelFromCache(params.channelId) || [];
+    const reports: Report[] = await reportsService.getAllReportsForChannelFromCache(channelId) || [];
 
     return <ChannelDetailClient initialReports={reports} initialChannel={currentChannel} />;
 }
