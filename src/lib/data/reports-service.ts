@@ -357,10 +357,6 @@ export class ReportsService {
 
         for (const key of messageKeys) {
             const channelId = key.name.replace('messages:', '');
-            if (!(await this.messagesService.hasRecentBotMessages(channelId))) {
-                console.log(`[REPORTS] Skipping channel ${channelId}: No recent bot messages`);
-                continue;
-            }
             const channelName = await getChannelName(this.env, channelId);
 
             for (const timeframe of activeTimeframes) {
