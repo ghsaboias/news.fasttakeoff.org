@@ -75,11 +75,16 @@ export class MessagesService {
         const cachedMessages = await this.getCachedMessagesSince(channelId, since);
 
         if (cachedMessages) {
-            const cachedOldestTime = new Date(cachedMessages.messages[cachedMessages.messages.length - 1]?.timestamp || Date.now()).getTime();
-            if (cachedOldestTime <= since.getTime()) {
-                return cachedMessages.messages
-                    .filter(msg => new Date(msg.timestamp).getTime() >= since.getTime())
-                    .slice(0, limit);
+            const age = (Date.now() - new Date(cachedMessages.cachedAt).getTime()) / 1000;
+            const refreshThreshold = 5 * 60; // 5 minutes
+
+            if (age < 72 * 60 * 60) { // Within 72h TTL
+                if (age > refreshThreshold) {
+                    this.refreshMessagesInBackground(channelId).catch(err =>
+                        console.error(`[MESSAGES] Background refresh failed for ${channelId}: ${err}`)
+                    );
+                }
+                return cachedMessages.messages.slice(0, limit);
             }
         }
 
@@ -87,6 +92,12 @@ export class MessagesService {
         const channelName = await getChannelName(this.env, channelId);
         await this.cacheMessages(channelId, messages, channelName);
         return messages.slice(0, limit);
+    }
+
+    async refreshMessagesInBackground(channelId: string): Promise<void> {
+        const messages = await this.fetchBotMessagesFromAPI(channelId);
+        const channelName = await getChannelName(this.env, channelId);
+        await this.cacheMessages(channelId, messages, channelName);
     }
 
     async getMessageCount(channelId: string, since: Date): Promise<number> {

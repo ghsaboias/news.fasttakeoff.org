@@ -82,27 +82,39 @@ export class ChannelsService {
         const key = `channels:guild:${guildId}`;
         const metadataKey = `${key}:metadata`;
 
-        try {
-            // Check cache. If fresh, return cached channel data
-            const cachedChannels = await this.fetchAllChannelsFromCache();
-            if (cachedChannels) {
-                return cachedChannels.channels;
-            } else {
-                // Cache miss or stale, fetch from Discord API
-                console.log(`Cache miss or stale for guild channels ${guildId}, fetching from Discord API`);
-                const allChannels = await this.fetchAllChannelsFromAPI();
-                const filteredChannels = this.filterChannels(allChannels);
+        const cachedData = await this.fetchAllChannelsFromCache();
+        if (cachedData) {
+            const { channels, fetchedAt } = cachedData;
+            const age = (Date.now() - new Date(fetchedAt).getTime()) / 1000; // seconds
+            const refreshThreshold = 60 * 60; // 1 hour
 
-                await Promise.all([
-                    this.env.CHANNELS_CACHE.put(key, JSON.stringify(filteredChannels), { expirationTtl: 60 * 60 * 24 }),
-                    this.env.CHANNELS_CACHE.put(metadataKey, JSON.stringify({ fetchedAt: new Date().toISOString() }), { expirationTtl: 60 * 60 * 24 })
-                ]);
-                return filteredChannels;
+            if (age < 24 * 60 * 60) { // Within 24h TTL
+                if (age > refreshThreshold) {
+                    this.refreshChannelsInBackground(key, metadataKey).catch(err =>
+                        console.error(`[CHANNELS] Background refresh failed: ${err}`)
+                    );
+                }
+                return channels;
             }
-        } catch (error) {
-            console.error(`Error fetching channels for guild ${guildId}:`, error);
-            return [];
         }
+
+        const channels = await this.fetchAllChannelsFromAPI();
+        const filteredChannels = this.filterChannels(channels);
+        await this.updateCache(key, metadataKey, filteredChannels);
+        return filteredChannels;
+    }
+
+    async refreshChannelsInBackground(key: string, metadataKey: string): Promise<void> {
+        const channels = await this.fetchAllChannelsFromAPI();
+        const filteredChannels = this.filterChannels(channels);
+        await this.updateCache(key, metadataKey, filteredChannels);
+    }
+
+    async updateCache(key: string, metadataKey: string, channels: DiscordChannel[]): Promise<void> {
+        await Promise.all([
+            this.env.CHANNELS_CACHE.put(key, JSON.stringify(channels), { expirationTtl: 60 * 60 * 24 }),
+            this.env.CHANNELS_CACHE.put(metadataKey, JSON.stringify({ fetchedAt: new Date().toISOString() }), { expirationTtl: 60 * 60 * 24 })
+        ]);
     }
 
     // Get channel details

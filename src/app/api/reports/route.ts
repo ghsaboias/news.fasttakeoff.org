@@ -4,26 +4,17 @@ import { getCacheContext } from '@/lib/utils';
 import { NextResponse } from 'next/server';
 
 export async function GET(request: Request) {
-    try {
-        const { env } = getCacheContext();
-        const reportsService = new ReportsService(env);
+    const { env } = getCacheContext();
+    const reportsService = new ReportsService(env);
+    const url = new URL(request.url);
+    const channelId = url.searchParams.get('channelId');
 
-        const url = new URL(request.url);
-        const channelId = url.searchParams.get('channelId');
-        console.log(`[API] GET /api/reports: ${channelId ? `Fetching report for channel ${channelId}` : 'Fetching all reports'}`);
-
-        if (channelId) {
-            const reports = await reportsService.getAllReportsForChannelFromCache(channelId);
-            return NextResponse.json(reports);
-        } else {
-            const reports = await reportsService.getAllReportsFromCache();
-            return NextResponse.json(reports);
-        }
-    } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-        console.error('[API] Error in /api/reports:', errorMessage);
-        return NextResponse.json({ error: errorMessage }, { status: 500 });
-    }
+    const reports = channelId
+        ? await reportsService.getAllReportsForChannelFromCache(channelId)
+        : await reportsService.getAllReportsFromCache();
+    return NextResponse.json(reports, {
+        headers: { 'Cache-Control': 'public, max-age=300, s-maxage=300' }
+    });
 }
 
 export async function POST(request: Request) {
