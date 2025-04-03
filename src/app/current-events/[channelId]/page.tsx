@@ -22,5 +22,5 @@ export default async function ChannelDetailPage({ params }: { params: Promise<{ 
     // Fetch reports
     const reports: Report[] = await reportsService.getAllReportsForChannelFromCache(channelId) || [];
 
-    return <ChannelDetailClient initialReports={reports} initialChannel={currentChannel} />;
+    return <ChannelDetailClient reports={reports} channel={currentChannel} />;
 }
