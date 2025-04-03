@@ -39,7 +39,7 @@ export default function ReportClient() {
             ) : (
                 <div className="flex flex-col gap-4">
                     <h1 className="text-2xl font-bold">{report?.headline}</h1>
-                    <p className="text-muted-foreground">{formatTime(report?.timestamp, true)} - {report?.city}</p>
+                    <p className="text-muted-foreground">{formatTime(report?.generatedAt, true)} - {report?.city}</p>
                     <p className="prose prose-zinc max-w-none overflow-y-auto text-justify">{report?.body}</p>
                     <MessagesAccordion
                         channelData={{

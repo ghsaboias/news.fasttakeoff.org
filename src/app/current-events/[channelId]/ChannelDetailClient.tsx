@@ -79,14 +79,14 @@ export default function ChannelDetailClient({ initialReports, initialChannel }: 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {reports && reports.length > 0 ? (
                     reports.map((report) => (
-                        <div className="border border-gray-200 rounded-lg p-4 overflow-scroll gap-2 flex flex-col" key={report.timestamp}>
+                        <div className="border border-gray-200 rounded-lg p-4 overflow-scroll gap-2 flex flex-col" key={report.reportId}>
                             <h1 className="text-2xl font-bold">{report.headline?.toUpperCase()}</h1>
                             <h2 className="text-lg font-medium text-muted-foreground">{report.city}</h2>
                             <div className="prose prose-zinc max-w-none overflow-y-auto">
                                 {report.body.slice(0, 100)}...
                             </div>
                             <Button asChild>
-                                <Link href={`/current-events/${channelId}/${report.timestamp}`}>
+                                <Link href={`/current-events/${channelId}/${report.reportId}`}>
                                     Read More
                                 </Link>
                             </Button>

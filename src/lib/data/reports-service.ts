@@ -1,4 +1,5 @@
 import { DiscordMessage, Report } from '@/lib/types/core';
+import { v4 as uuidv4 } from 'uuid';
 import type { CloudflareEnv } from '../../../cloudflare-env';
 import { getChannelName } from './channels-service';
 import { MessagesService } from './messages-service';
@@ -118,7 +119,7 @@ async function createReportWithAI(prompt: string, messages: DiscordMessage[], ch
                 headline: JSON.parse(content).headline?.toUpperCase(),
                 city: JSON.parse(content).city,
                 body: JSON.parse(content).body,
-                timestamp: new Date().toISOString(),
+                reportId: uuidv4(),
                 channelId: channelInfo.id,
                 channelName: channelInfo.name,
                 cacheStatus: 'miss' as const,
@@ -242,7 +243,7 @@ export class ReportsService {
         if (!report) throw new Error(`Failed to generate ${timeframe} report for channel ${channelId}`);
 
         const cachedReports = await this.getReportsFromCache(channelId, timeframe) || [];
-        const updatedReports = [report, ...cachedReports.filter(r => r.timestamp !== report.timestamp)];
+        const updatedReports = [report, ...cachedReports.filter(r => r.reportId !== report.reportId)];
         await this.cacheReport(channelId, timeframe, updatedReports);
 
         return { report, messages };
@@ -275,7 +276,7 @@ export class ReportsService {
         const { report } = await this.createReportAndGetMessages(channelId, timeframe);
         if (report) {
             const cachedReports = (await this.getReportsFromCache(channelId, timeframe)) || [];
-            const updatedReports = [report, ...cachedReports.filter(r => r.timestamp !== report.timestamp)];
+            const updatedReports = [report, ...cachedReports.filter(r => r.reportId !== report.reportId)];
             await this.env.REPORTS_CACHE.put(cacheKey, JSON.stringify(updatedReports), { expirationTtl: this.getTTL(timeframe) });
         }
     }
@@ -283,7 +284,7 @@ export class ReportsService {
     async getReportAndMessages(channelId: string, reportId: string, timeframe: string = '1h'): Promise<{ report: Report | null; messages: DiscordMessage[] }> {
         const cachedReports = await this.getReportsFromCache(channelId, timeframe);
         if (cachedReports) {
-            const report = cachedReports.find(r => r.timestamp === reportId);
+            const report = cachedReports.find(r => r.reportId === reportId);
             if (report) {
                 const messages = await this.getMessagesForTimeframe(channelId, timeframe);
                 return { report, messages };
@@ -343,8 +344,8 @@ export class ReportsService {
 
         const activeTimeframes = timeframes.filter(tf => {
             if (tf === '1h') return true;
-            if (tf === '6h' && hour % 6 === 0) return true;
-            if (tf === '12h' && hour % 12 === 0) return true;
+            if (tf === '6h' && true) return true;
+            if (tf === '12h' && true) return true;
             return false;
         });
 
@@ -375,7 +376,7 @@ export class ReportsService {
 
                 if (report) {
                     const cachedReports = await this.getReportsFromCache(channelId, timeframe) || [];
-                    const updatedReports = [report, ...cachedReports.filter(r => r.timestamp !== report.timestamp)];
+                    const updatedReports = [report, ...cachedReports.filter(r => r.reportId !== report.reportId)];
                     await this.cacheReport(channelId, timeframe, updatedReports);
                     generatedCount++;
                     console.log(`[REPORTS] Generated ${timeframe} report for channel ${channelId} with ${messages.length} messages`);
