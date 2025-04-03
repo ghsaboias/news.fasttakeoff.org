@@ -7,7 +7,7 @@ import { Loader2 } from "lucide-react";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 
-export default function ReportDetailClient() {
+export default function ReportClient() {
     const params = useParams();
     const reportId = Array.isArray(params.reportId) ? params.reportId[0] : params.reportId;
     const channelId = Array.isArray(params.channelId) ? params.channelId[0] : params.channelId;
