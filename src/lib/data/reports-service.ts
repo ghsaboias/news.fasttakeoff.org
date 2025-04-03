@@ -340,8 +340,7 @@ export class ReportsService {
     }
 
     async createFreshReports(): Promise<void> {
-        const { keys } = await this.messagesService.env.MESSAGES_CACHE.list();
-        const messageKeys = keys.filter(key => key.name.startsWith('messages:'));
+        const { keys: messageKeys } = await this.messagesService.env.MESSAGES_CACHE.list();
         const timeframes = ['1h', '6h', '12h'];
         const now = new Date();
         const hour = now.getUTCHours();
@@ -368,8 +367,6 @@ export class ReportsService {
 
                 if (messages.length === 0) {
                     console.log(`[REPORTS] No messages for channel ${channelId} in last ${timeframe}`);
-                    const emptyReport = createEmptyReport(channelId, channelName, timeframe);
-                    await this.cacheReport(channelId, timeframe, [emptyReport]);
                     continue;
                 }
 
