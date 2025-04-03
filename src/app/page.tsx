@@ -60,7 +60,7 @@ export default function Home() {
   }, []);
 
   return (
-    <div className="flex flex-col gap-16 py-8 md:py-12">
+    <div className="flex flex-col py-16 gap-16">
       {/* Hero Section */}
       <section className="mx-auto px-4">
         <div className="flex flex-col items-center gap-6 text-center">
@@ -70,24 +70,16 @@ export default function Home() {
           <p className="max-w-[700px] text-lg text-muted-foreground md:text-xl">
             AI-powered news for everyone.
           </p>
-          <div className="flex flex-col gap-4 sm:flex-row">
-            <Button asChild variant="default" size="lg">
-              <Link href="/current-events">Latest News</Link>
-            </Button>
-            <Button asChild size="lg" variant="outline">
-              <Link href="/executive-orders">Explore Executive Orders</Link>
-            </Button>
-          </div>
         </div>
       </section>
 
-      {/* Latest News Carousel */}
+      {/* Current Events Carousel */}
       <section className="mx-auto px-4 w-[95%]">
         <div className="flex flex-col gap-6">
           <div className="flex items-center justify-between">
-            <h2 className="text-2xl font-bold tracking-tight md:text-3xl">Latest News</h2>
+            <h2 className="text-2xl font-bold tracking-tight md:text-3xl">Current Events</h2>
             <Link href="/current-events" className="text-sm font-medium hover:underline">
-              View all news
+              View all events
             </Link>
           </div>
           <ReportsCarousel reports={reports} loading={loadingReports} />
