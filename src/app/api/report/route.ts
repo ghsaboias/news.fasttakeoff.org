@@ -6,22 +6,19 @@ export async function GET(request: Request) {
     try {
         const { env } = getCacheContext();
         const reportsService = new ReportsService(env);
-
         const url = new URL(request.url);
         const channelId = url.searchParams.get('channelId');
 
-        console.log(`[API] GET /api/report: Fetching report for channel ${channelId}`);
-
         if (!channelId) {
-            console.log('[API] GET request missing required parameters');
             return NextResponse.json({ error: 'Missing channelId' }, { status: 400 });
         }
 
         const { report, messages } = await reportsService.getLastReportAndMessages(channelId);
-        return NextResponse.json({ report, messages });
+        const response = NextResponse.json({ report, messages });
+        response.headers.set('Cache-Control', 'public, max-age=300, s-maxage=300'); // Cache for 5 minutes
+        return response;
     } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-        console.error('[API] Error in /api/report:', errorMessage);
-        return NextResponse.json({ error: errorMessage }, { status: 500 });
+        console.error('[API] Error in /api/report:', error);
+        return NextResponse.json({ error: 'Failed to fetch report' }, { status: 500 });
     }
 }

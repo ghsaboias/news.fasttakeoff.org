@@ -8,15 +8,15 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 
-export default function ChannelDetailClient() {
+export default function ChannelDetailClient({ initialReports, initialChannel }: { initialReports: Report[], initialChannel: DiscordChannel }) {
     const params = useParams();
     const channelId = Array.isArray(params.channelId) ? params.channelId[0] : params.channelId;
 
-    const [reports, setReports] = useState<Report[] | null>(null);
+    const [reports, setReports] = useState<Report[]>(initialReports);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
-    const [channel, setChannel] = useState<DiscordChannel | null>(null);
+    const [channel, setChannel] = useState<DiscordChannel>(initialChannel);
 
     useEffect(() => {
         async function fetchData() {
