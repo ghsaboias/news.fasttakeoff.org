@@ -1,10 +1,10 @@
 import { Report } from "@/lib/types/core";
 import { convertTimestampToUnixTimestamp, formatTime } from "@/lib/utils";
 import Link from "next/link";
+import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "../ui/card";
 import LinkBadge from "./LinkBadge";
-
 
 export default function ReportCard({ report }: { report: Report }) {
     return (
@@ -16,6 +16,9 @@ export default function ReportCard({ report }: { report: Report }) {
                             {report.channelName}
                         </LinkBadge>
                     )}
+                    <Badge variant="secondary">
+                        {report?.timeframe}
+                    </Badge>
                 </div>
                 <CardTitle className="text-lg font-semibold line-clamp-2 leading-tight">
                     {report.headline}
