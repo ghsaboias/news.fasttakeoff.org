@@ -11,7 +11,7 @@ export class MessagesService {
         this.env = env;
     }
 
-    private filterMessages(messages: DiscordMessage[]): DiscordMessage[] {
+    filterMessages(messages: DiscordMessage[]): DiscordMessage[] {
         const botMessages = messages.filter(
             msg => msg.author?.username === 'FaytuksBot' &&
                 msg.author?.discriminator === '7032' &&
@@ -20,7 +20,8 @@ export class MessagesService {
         return botMessages;
     }
 
-    private async fetchBotMessagesFromAPI(channelId: string, since: Date = new Date(Date.now() - 3600000)): Promise<DiscordMessage[]> {
+    async fetchBotMessagesFromAPI(channelId: string): Promise<DiscordMessage[]> {
+        const since = new Date(Date.now() - 3600000);
         const urlBase = `${DISCORD_API}/channels/${channelId}/messages?limit=100`;
         const token = this.env.DISCORD_TOKEN;
         if (!token) throw new Error('DISCORD_TOKEN is not set');
@@ -74,9 +75,8 @@ export class MessagesService {
             const oldestMessageTime = new Date(messages[messages.length - 1].timestamp).getTime();
             allMessages.push(...newBotMessages);
 
-            console.log(`BATCH ${batch} FOR CHANNEL ${channelId} - Found ${newBotMessages.length} bot messages`);
+            console.log(`BATCH ${batch} FOR CHANNEL ${channelId} - Found ${newBotMessages.length} bot messages - TOTAL: ${allMessages.length}`);
             if (oldestMessageTime < sinceTime) {
-                console.log(`TOTAL BOT MESSAGES FOR CHANNEL ${channelId}: ${allMessages.length}`);
                 break;
             }
             lastMessageId = messages[messages.length - 1].id;
@@ -97,10 +97,9 @@ export class MessagesService {
                     .filter(msg => new Date(msg.timestamp).getTime() >= since.getTime())
                     .slice(0, limit);
             }
-            // Cache exists but doesn’t go back far enough—fetch from API
         }
 
-        const messages = await this.fetchBotMessagesFromAPI(channelId, since);
+        const messages = await this.fetchBotMessagesFromAPI(channelId);
         const channelName = await getChannelName(this.env, channelId);
         await this.cacheMessages(channelId, messages, channelName);
         return messages.slice(0, limit);
@@ -111,7 +110,7 @@ export class MessagesService {
         return messages.length;
     }
 
-    private async cacheMessages(channelId: string, messages: DiscordMessage[], channelName?: string): Promise<void> {
+    async cacheMessages(channelId: string, messages: DiscordMessage[], channelName?: string): Promise<void> {
         if (!this.env.MESSAGES_CACHE) {
             console.warn('[MESSAGES_CACHE] KV namespace not available');
             return;
@@ -128,7 +127,7 @@ export class MessagesService {
         await this.env.MESSAGES_CACHE.put(cacheKey, JSON.stringify(data), { expirationTtl: 259200 });
     }
 
-    private async getCachedMessagesSince(channelId: string, since: Date = new Date(Date.now() - 3600000)): Promise<CachedMessages | null> {
+    async getCachedMessagesSince(channelId: string, since: Date = new Date(Date.now() - 3600000)): Promise<CachedMessages | null> {
         if (!this.env.MESSAGES_CACHE) return null;
         const cacheKey = `messages:${channelId}`;
         const data = await this.env.MESSAGES_CACHE.get(cacheKey);
@@ -148,20 +147,17 @@ export class MessagesService {
         try {
             const channelsService = new ChannelsService(this.env);
             const channels = await channelsService.getChannels();
-            const since = new Date(Date.now() - 3600000);
 
             for (const channel of channels) {
                 try {
-                    const newMessages = await this.fetchBotMessagesFromAPI(channel.id, since); // Default 1h
+                    const newMessages = await this.fetchBotMessagesFromAPI(channel.id); // Default 1h
 
                     if (newMessages.length > 0) {
-                        const cached = await this.getCachedMessagesSince(channel.id, since);
+                        const cached = await this.getCachedMessagesSince(channel.id);
                         let allMessages: DiscordMessage[] = newMessages;
 
                         if (cached?.messages) {
-                            const existingIds = new Set(cached.messages.map((msg: DiscordMessage) => msg.id));
-                            const uniqueNewMessages = newMessages.filter(msg => !existingIds.has(msg.id));
-                            allMessages = [...uniqueNewMessages, ...cached.messages];
+                            allMessages = [...newMessages, ...cached.messages];
                         }
                         await this.cacheMessages(channel.id, allMessages, channel.name);
                     }
