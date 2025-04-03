@@ -2,8 +2,8 @@
 
 import { AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { DiscordMessage } from "@/lib/types/core";
+import Image from "next/image";
 import MediaPreview from "./MediaPreview";
-
 function formatDate(timestamp: string) {
     return new Date(timestamp).toLocaleString('en-US', {
         dateStyle: 'medium',
@@ -27,13 +27,12 @@ export default function MessageItem({ message, index, noAccordion = false }: Mes
                     {message.author && (
                         <div className="flex items-center gap-2">
                             {message.author.avatar && (
-                                <img
+                                <Image
                                     src={`https://cdn.discordapp.com/avatars/${message.author.id}/${message.author.avatar}.png`}
                                     alt={message.author.username}
                                     className="w-5 h-5 rounded-full"
                                     width={20}
                                     height={20}
-                                    loading="lazy"
                                 />
                             )}
                             <span>{message.author.global_name || message.author.username}</span>
@@ -89,13 +88,12 @@ export default function MessageItem({ message, index, noAccordion = false }: Mes
                     {embed.author && (
                         <div className="flex items-center gap-2 mt-2">
                             {embed.author.icon_url && (
-                                <img
+                                <Image
                                     src={embed.author.icon_url}
                                     alt={embed.author.name || "Author"}
                                     className="w-4 h-4 rounded-full"
                                     width={16}
                                     height={16}
-                                    loading="lazy"
                                 />
                             )}
                             <span className="text-sm text-muted-foreground">
