@@ -344,8 +344,8 @@ export class ReportsService {
 
         const activeTimeframes = timeframes.filter(tf => {
             if (tf === '1h') return true;
-            if (tf === '6h' && true) return true;
-            if (tf === '12h' && true) return true;
+            if (tf === '6h' && hour % 6 === 0) return true;
+            if (tf === '12h' && hour % 12 === 0) return true;
             return false;
         });
 
