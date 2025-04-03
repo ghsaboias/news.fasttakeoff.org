@@ -1,5 +1,5 @@
 import { Report } from "@/lib/types/core";
-import { convertTimestampToUnixTimestamp, formatTime } from "@/lib/utils";
+import { formatTime } from "@/lib/utils";
 import Link from "next/link";
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
@@ -32,7 +32,7 @@ export default function ReportCard({ report }: { report: Report }) {
             </CardContent>
             <CardFooter className="flex flex-col gap-2 justify-between items-start my-2">
                 <Button asChild variant="outline" size="sm" className="w-full">
-                    <Link href={`/current-events/${report.channelId}/${convertTimestampToUnixTimestamp(report.timestamp)}`}>
+                    <Link href={`/current-events/${report.channelId}/${report.timestamp}`}>
                         Read More
                     </Link>
                 </Button>
