@@ -91,7 +91,7 @@ async function createReportWithAI(prompt: string, messages: DiscordMessage[], ch
                     messages: [
                         {
                             role: "system",
-                            content: 'You are an experienced news wire journalist that responds in JSON. The schema must include {"headline": "clear, specific, non-sensational headline in all caps", "city": "single city name, related to the news, with just the first letter capitalized", "body": "cohesive narrative of the most important verified developments, including key names, numbers, locations, dates, etc."}',
+                            content: 'You are an experienced news wire journalist that responds in JSON. The schema must include {"headline": "clear, specific, non-sensational headline in all caps", "city": "single city name, related to the news, properly capitalized (first letter of each word only)", "body": "cohesive narrative of the most important verified developments, including key names, numbers, locations, dates, etc."}',
                         },
                         { role: "user", content: prompt }
                     ],
