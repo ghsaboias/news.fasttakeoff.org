@@ -2,7 +2,9 @@
 
 import ReportsCarousel from "@/components/current-events/Carousel"
 import OrderCard from "@/components/executive-orders/OrderCard"
+import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
+import { TimeframeKey } from "@/lib/config"
 import { fetchExecutiveOrders } from "@/lib/data/executive-orders"
 import { ExecutiveOrder, Report } from "@/lib/types/core"
 import { getStartDate } from "@/lib/utils"
@@ -15,7 +17,9 @@ export default function Home() {
   const [latestExecutiveOrders, setLatestExecutiveOrders] = useState<ExecutiveOrder[]>([])
   const [loadingEO, setLoadingEO] = useState(true)
   const [reports, setReports] = useState<Report[]>([])
+  const [filteredReports, setFilteredReports] = useState<Report[]>([])
   const [loadingReports, setLoadingReports] = useState(true)
+  const [activeTimeframes, setActiveTimeframes] = useState<Set<TimeframeKey>>(new Set([]))
 
   async function loadExecutiveOrders() {
     try {
@@ -37,27 +41,59 @@ export default function Home() {
 
   async function loadReports() {
     try {
-      setLoadingReports(true);
+      setLoadingReports(true)
       const response = await fetch('/api/reports', {
         method: 'GET',
         headers: { 'Cache-Control': 'no-cache' },
-      });
-      if (!response.ok) throw new Error(`Failed to fetch reports: ${response.status}`);
-      const data = await response.json() as Report[];
-      const activeReports = data.filter(report => !report.headline.includes("NO ACTIVITY"));
-      setReports(activeReports);
+      })
+      if (!response.ok) throw new Error(`Failed to fetch reports: ${response.status}`)
+      const data = await response.json() as Report[]
+      const activeReports = data.filter(report => !report.headline.includes("NO ACTIVITY"))
+      setReports(activeReports)
+      // Note: We no longer set filteredReports here; it’s handled in useEffect
     } catch (error) {
-      console.error('[Carousel] Error fetching reports:', error);
-      setReports([]);
+      console.error('[Carousel] Error fetching reports:', error)
+      setReports([])
+      setFilteredReports([])
     } finally {
-      setLoadingReports(false);
+      setLoadingReports(false)
     }
   }
 
+  // Synchronize filteredReports with activeTimeframes and reports
   useEffect(() => {
-    loadExecutiveOrders();
-    loadReports();
-  }, []);
+    setFilteredReports(
+      activeTimeframes.size === 0
+        ? reports
+        : reports.filter(report =>
+          report.timeframe && activeTimeframes.has(report.timeframe as TimeframeKey)
+        )
+    )
+  }, [reports, activeTimeframes])
+
+  useEffect(() => {
+    loadExecutiveOrders()
+    loadReports()
+  }, [])
+
+  function toggleTimeframeFilter(timeframe: TimeframeKey) {
+    setActiveTimeframes(prev => {
+      const newSet = new Set(prev)
+      newSet.has(timeframe) ? newSet.delete(timeframe) : newSet.add(timeframe)
+      // Update filteredReports based on the new activeTimeframes
+      setFilteredReports(
+        newSet.size === 0
+          ? reports
+          : reports.filter(report =>
+            report.timeframe && newSet.has(report.timeframe as TimeframeKey)
+          )
+      )
+      return newSet
+    })
+  }
+
+  const isTimeframeActive = (timeframe: TimeframeKey): boolean =>
+    activeTimeframes.has(timeframe)
 
   return (
     <div className="flex flex-col py-16 gap-16">
@@ -78,11 +114,31 @@ export default function Home() {
         <div className="flex flex-col gap-6">
           <div className="flex items-center justify-between">
             <h2 className="text-2xl font-bold tracking-tight md:text-3xl">Current Events</h2>
-            <Link href="/current-events" className="text-sm font-medium hover:underline">
-              View all events
-            </Link>
+            <div className="flex items-center gap-2">
+              <Button
+                size="icon"
+                variant={isTimeframeActive('1h') ? 'default' : 'outline'}
+                onClick={() => toggleTimeframeFilter('1h')}
+              >
+                1h
+              </Button>
+              <Button
+                size="icon"
+                variant={isTimeframeActive('6h') ? 'default' : 'outline'}
+                onClick={() => toggleTimeframeFilter('6h')}
+              >
+                6h
+              </Button>
+              <Button
+                size="icon"
+                variant={isTimeframeActive('12h') ? 'default' : 'outline'}
+                onClick={() => toggleTimeframeFilter('12h')}
+              >
+                12h
+              </Button>
+            </div>
           </div>
-          <ReportsCarousel reports={reports} loading={loadingReports} />
+          <ReportsCarousel reports={filteredReports} loading={loadingReports} />
         </div>
       </section>
 
@@ -97,24 +153,26 @@ export default function Home() {
           </div>
           <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
             {loadingEO ? (
-              Array(3).fill(0).map((_, index) => (
-                <Card key={index} className="animate-pulse">
-                  <CardHeader>
-                    <div className="h-6 bg-muted rounded w-3/4 mb-2"></div>
-                    <div className="h-4 bg-muted rounded w-1/4"></div>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="h-4 bg-muted rounded w-full mb-2"></div>
-                    <div className="h-4 bg-muted rounded w-full mb-2"></div>
-                    <div className="h-4 bg-muted rounded w-3/4"></div>
-                  </CardContent>
-                  <CardFooter>
-                    <div className="h-8 bg-muted rounded w-1/3"></div>
-                  </CardFooter>
-                </Card>
-              ))
+              Array(3)
+                .fill(0)
+                .map((_, index) => (
+                  <Card key={index} className="animate-pulse">
+                    <CardHeader>
+                      <div className="h-6 bg-muted rounded w-3/4 mb-2"></div>
+                      <div className="h-4 bg-muted rounded w-1/4"></div>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="h-4 bg-muted rounded w-full mb-2"></div>
+                      <div className="h-4 bg-muted rounded w-full mb-2"></div>
+                      <div className="h-4 bg-muted rounded w-3/4"></div>
+                    </CardContent>
+                    <CardFooter>
+                      <div className="h-8 bg-muted rounded w-1/3"></div>
+                    </CardFooter>
+                  </Card>
+                ))
             ) : latestExecutiveOrders.length > 0 ? (
-              latestExecutiveOrders.map((order) => (
+              latestExecutiveOrders.map(order => (
                 <OrderCard key={order.id} order={order} />
               ))
             ) : (
