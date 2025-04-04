@@ -79,15 +79,11 @@ export default function Home() {
   function toggleTimeframeFilter(timeframe: TimeframeKey) {
     setActiveTimeframes(prev => {
       const newSet = new Set(prev)
-      newSet.has(timeframe) ? newSet.delete(timeframe) : newSet.add(timeframe)
-      // Update filteredReports based on the new activeTimeframes
-      setFilteredReports(
-        newSet.size === 0
-          ? reports
-          : reports.filter(report =>
-            report.timeframe && newSet.has(report.timeframe as TimeframeKey)
-          )
-      )
+      if (newSet.has(timeframe)) {
+        newSet.delete(timeframe)
+      } else {
+        newSet.add(timeframe)
+      }
       return newSet
     })
   }

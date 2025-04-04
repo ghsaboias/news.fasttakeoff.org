@@ -7,13 +7,16 @@ export async function GET(request: Request) {
     const reportsService = new ReportsService(env);
     const url = new URL(request.url);
     const channelId = url.searchParams.get('channelId');
-    const reportTimestamp = url.searchParams.get('reportTimestamp');
+    const reportId = url.searchParams.get('reportId');
 
     if (!channelId) return NextResponse.json({ error: 'Missing channelId' }, { status: 400 });
+    if (!reportId) return NextResponse.json({ error: 'Missing reportId' }, { status: 400 });
+    const timeframe = await reportsService.getReportTimeframe(reportId);
+    console.log()
 
-    const { report, messages } = reportTimestamp
-        ? await reportsService.getReportAndMessages(channelId, reportTimestamp)
-        : await reportsService.getLastReportAndMessages(channelId);
+    const { report, messages } = reportId
+        ? await reportsService.getReportAndMessages(channelId, reportId, timeframe)
+        : await reportsService.getLastReportAndMessages(channelId, timeframe);
 
     if (!report) return NextResponse.json({ error: 'Report not found' }, { status: 404 });
 
