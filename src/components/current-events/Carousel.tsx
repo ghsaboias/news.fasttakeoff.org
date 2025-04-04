@@ -25,7 +25,7 @@ export default function ReportsCarousel({ reports, loading }: { reports: Report[
         return () => {
             api.off('select', handleSelect)
         }
-    }, [api])
+    }, [api, reports])
 
     return (
         <div className="w-full sm:px-4">
