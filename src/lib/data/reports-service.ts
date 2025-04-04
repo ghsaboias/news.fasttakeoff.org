@@ -175,7 +175,6 @@ export class ReportsService {
             return this.messagesService.getMessages(channelId, { since }); // Fallback fetch
         }
 
-        // Existing logic for 6h and 12h (unchanged)
         try {
             const cacheKey = `messages:${channelId}`;
             const cachedData = await this.env.MESSAGES_CACHE.get(cacheKey);

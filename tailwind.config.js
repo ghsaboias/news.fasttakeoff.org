@@ -7,7 +7,7 @@ module.exports = {
         primary: {
           DEFAULT: "var(--primary)",
           foreground: "var(--primary-foreground)",
-          hover: "var(--primary-hover)", // Optional: enables bg-primary-hover
+          hover: "var(--primary-hover)",
           light: "var(--primary-light)",
         },
         secondary: {
