@@ -9,7 +9,6 @@ export default function ChannelDetailClient({ reports, channel }: { reports: Rep
     const params = useParams();
     const channelId = Array.isArray(params.channelId) ? params.channelId[0] : params.channelId;
 
-    // No need to fetch data since initial props are provided
     if (!channelId || !channel) {
         return (
             <div className="p-6 max-w-5xl mx-auto flex flex-col items-center justify-center py-12">

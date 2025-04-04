@@ -18,7 +18,6 @@ interface MessageItemProps {
 }
 
 export default function MessageItem({ message, index, noAccordion = false }: MessageItemProps) {
-    // The content to display inside the accordion or directly
     const MessageContent = () => (
         <div className="space-y-4 bg-secondary-light rounded-lg">
             {/* Metadata Section */}
@@ -141,12 +140,10 @@ export default function MessageItem({ message, index, noAccordion = false }: Mes
         </div>
     );
 
-    // If noAccordion is true, render content directly
     if (noAccordion) {
         return <MessageContent />;
     }
 
-    // Otherwise use the accordion structure
     return (
         <AccordionItem
             value={`message-${index}`}

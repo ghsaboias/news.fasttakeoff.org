@@ -50,7 +50,6 @@ export default function Home() {
       const data = await response.json() as Report[]
       const activeReports = data.filter(report => !report.headline.includes("NO ACTIVITY"))
       setReports(activeReports)
-      // Note: We no longer set filteredReports here; it’s handled in useEffect
     } catch (error) {
       console.error('[Carousel] Error fetching reports:', error)
       setReports([])

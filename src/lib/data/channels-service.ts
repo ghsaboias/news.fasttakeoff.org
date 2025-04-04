@@ -116,7 +116,6 @@ export class ChannelsService {
         ]);
     }
 
-    // Get channel details
     async getChannelDetails(channelId: string): Promise<{
         channel: DiscordChannel | null;
         messages: { count: number; messages: DiscordMessage[] };

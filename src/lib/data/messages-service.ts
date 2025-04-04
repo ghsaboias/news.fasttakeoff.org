@@ -197,27 +197,6 @@ export class MessagesService {
         }
     }
 
-    async getCachedMessagesForChannelSince(
-        channelId: string,
-        since: Date
-    ): Promise<DiscordMessage[]> {
-        const cached = await this.getAllCachedMessages(channelId);
-        if (!cached || !cached.messages || !Array.isArray(cached.messages)) {
-            console.log(`[MESSAGES] No valid cached messages for channel ${channelId}`);
-            return [];
-        }
-
-        const filteredMessages = cached.messages.filter(
-            msg => new Date(msg.timestamp).getTime() >= since.getTime()
-        );
-
-        console.log(
-            `[MESSAGES] Retrieved ${filteredMessages.length} messages for channel ${channelId} since ${since.toISOString()}`
-        );
-        return filteredMessages;
-    }
-
-    // Ensure updateMessages (from previous response) is included for 24-hour filtering
     async updateMessages(): Promise<void> {
         try {
             const channelsService = new ChannelsService(this.env);

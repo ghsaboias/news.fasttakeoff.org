@@ -10,7 +10,7 @@ import { useEffect, useState } from "react";
 export default function ReportClient() {
     const params = useParams();
     const channelId = Array.isArray(params.channelId) ? params.channelId[0] : params.channelId;
-    const reportId = Array.isArray(params.reportId) ? params.reportId[0] : params.reportId; // Fix: use reportTimestamp
+    const reportId = Array.isArray(params.reportId) ? params.reportId[0] : params.reportId;
 
     const [report, setReport] = useState<Report | null>(null);
     const [messages, setMessages] = useState<DiscordMessage[]>([]);

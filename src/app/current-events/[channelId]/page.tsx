@@ -19,7 +19,6 @@ export default async function ChannelDetailPage({ params }: { params: Promise<{ 
     const channels: DiscordChannel[] = await getChannels(env);
     const currentChannel = channels.find((c) => c.id === channelId) || null;
 
-    // Fetch reports
     const reports: Report[] = await reportsService.getAllReportsForChannelFromCache(channelId) || [];
 
     return <ChannelDetailClient reports={reports} channel={currentChannel} />;
