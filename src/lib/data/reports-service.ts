@@ -267,7 +267,6 @@ export class ReportsService {
         if (cachedReports) {
             const report = cachedReports.find(r => r.reportId === reportId);
             if (report) {
-                // Use messageIds if available, otherwise fallback to getMessagesForTimeframe
                 if (report.messageIds && report.messageIds.length > 0) {
                     const messages = await this.messagesService.getMessagesForReport(channelId, report.messageIds);
                     return { report, messages };
@@ -278,6 +277,16 @@ export class ReportsService {
             }
         }
         return { report: null, messages: [] };
+    }
+
+    async getReport(reportId: string): Promise<Report | null> {
+        const cachedReports = await this.getAllReportsFromCache();
+        return cachedReports?.find(r => r.reportId === reportId) || null;
+    }
+
+    async getReportTimeframe(reportId: string): Promise<TimeframeKey> {
+        const report = await this.getReport(reportId);
+        return report?.timeframe as TimeframeKey;
     }
 
     private async getReportsFromCache(channelId: string, timeframe: TimeframeKey): Promise<Report[] | null> {
