@@ -1,21 +1,43 @@
 "use client";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
+import { Carousel, CarouselApi, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 import { Report } from "@/lib/types/core";
+import { useEffect, useState } from "react";
 import ReportCard from "./ReportCard";
 
 export default function ReportsCarousel({ reports, loading }: { reports: Report[], loading: boolean }) {
+    const [api, setApi] = useState<CarouselApi | null>(null)
+    const [current, setCurrent] = useState(0)
+    const [count, setCount] = useState(0)
+
+    useEffect(() => {
+        if (!api) return
+
+        setCount(api.scrollSnapList().length)
+        setCurrent(api.selectedScrollSnap())
+
+        const handleSelect = () => {
+            setCurrent(api.selectedScrollSnap())
+        }
+
+        api.on('select', handleSelect)
+        return () => {
+            api.off('select', handleSelect)
+        }
+    }, [api])
+
     return (
-        <div className="w-full px-4">
+        <div className="w-full sm:px-4">
             <Carousel
                 opts={{
                     align: "start",
                     loop: false,
                 }}
+                setApi={setApi}
                 className="w-full max-w-full"
             >
-                <CarouselContent className={`${loading || (!loading && reports.length === 0) ? 'flex items-center justify-center' : ''}`}>
+                <CarouselContent className={`${loading || (!loading && reports.length === 0) ? 'flex items-center justify-center' : 'md:-ml-4'}`}>
                     {loading ? (
                         <CarouselItem className="basis-full sm:basis-1/2 md:basis-1/3 lg:basis-1/3 min-w-[200px] sm:min-w-[330px]">
                             <Card className="h-[380px] flex flex-col">
@@ -53,6 +75,19 @@ export default function ReportsCarousel({ reports, loading }: { reports: Report[
                     <CarouselPrevious />
                     <CarouselNext />
                 </div>
+                {/* Navigation Dots (visible on all screens) */}
+                {reports.length > 1 && !loading && (
+                    <div className="flex justify-center mt-4 space-x-2">
+                        {Array.from({ length: count }).map((_, index) => (
+                            <button
+                                key={index}
+                                className={`h-2 w-2 rounded-full transition-colors ${current === index ? 'bg-primary' : 'bg-muted'}`}
+                                onClick={() => api?.scrollTo(index)}
+                                aria-label={`Go to slide ${index + 1}`}
+                            />
+                        ))}
+                    </div>
+                )}
             </Carousel>
         </div>
     );
