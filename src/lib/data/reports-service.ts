@@ -267,8 +267,14 @@ export class ReportsService {
         if (cachedReports) {
             const report = cachedReports.find(r => r.reportId === reportId);
             if (report) {
-                const messages = await this.getMessagesForTimeframe(channelId, timeframe);
-                return { report, messages };
+                // Use messageIds if available, otherwise fallback to getMessagesForTimeframe
+                if (report.messageIds && report.messageIds.length > 0) {
+                    const messages = await this.messagesService.getMessagesForReport(channelId, report.messageIds);
+                    return { report, messages };
+                } else {
+                    const messages = await this.getMessagesForTimeframe(channelId, timeframe);
+                    return { report, messages };
+                }
             }
         }
         return { report: null, messages: [] };

@@ -44,7 +44,7 @@ export default function ReportCard({ report }: { report: Report }) {
                     <div className="text-xs text-muted-foreground">
                         {report.messageCountLastHour && (
                             <div>
-                                <span className="font-medium">{report.messageCountLastHour}</span> update{report.messageCountLastHour === 1 ? '' : 's'} in the last hour
+                                <span className="font-medium">{report.messageCountLastHour}</span> update{report.messageCountLastHour === 1 ? '' : 's'} in the last {report.timeframe}
                             </div>
                         )}
                     </div>

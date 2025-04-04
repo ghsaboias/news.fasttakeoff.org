@@ -137,6 +137,44 @@ export class MessagesService {
         };
     }
 
+    /**
+     * Retrieves specific messages by their IDs from the cache
+     * Used primarily to fetch messages associated with a particular report
+     * @param channelId The Discord channel ID
+     * @param messageIds Array of message IDs to retrieve
+     * @returns Array of messages that were found in the cache
+     */
+    async getMessagesForReport(channelId: string, messageIds: string[]): Promise<DiscordMessage[]> {
+        if (!this.env.MESSAGES_CACHE || !messageIds.length) return [];
+
+        const cacheKey = `messages:${channelId}`;
+        const data = await this.env.MESSAGES_CACHE.get(cacheKey);
+        if (!data) return [];
+
+        try {
+            const parsedData = JSON.parse(data);
+            if (!parsedData.messages || !Array.isArray(parsedData.messages)) {
+                console.log(`[MESSAGES] Invalid cached message format for channel ${channelId}`);
+                return [];
+            }
+
+            const messagesMap = new Map<string, DiscordMessage>();
+            parsedData.messages.forEach((msg: DiscordMessage) => {
+                if (msg.id) messagesMap.set(msg.id, msg);
+            });
+
+            const result = messageIds
+                .map(id => messagesMap.get(id))
+                .filter((msg): msg is DiscordMessage => msg !== undefined);
+
+            console.log(`[MESSAGES] Retrieved ${result.length}/${messageIds.length} messages by ID for channel ${channelId}`);
+            return result;
+        } catch (error) {
+            console.error(`[MESSAGES] Error retrieving messages by ID for channel ${channelId}:`, error);
+            return [];
+        }
+    }
+
     async updateMessages(): Promise<void> {
         try {
             const channelsService = new ChannelsService(this.env);
