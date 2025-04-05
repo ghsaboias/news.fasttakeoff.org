@@ -44,12 +44,10 @@ export default function Home() {
       setLoadingReports(true)
       const response = await fetch('/api/reports', {
         method: 'GET',
-        headers: { 'Cache-Control': 'no-cache' },
       })
       if (!response.ok) throw new Error(`Failed to fetch reports: ${response.status}`)
-      const data = await response.json() as Report[]
-      const activeReports = data.filter(report => !report.headline.includes("NO ACTIVITY"))
-      setReports(activeReports)
+      const fetchedReports = await response.json() as Report[]
+      setReports(fetchedReports)
     } catch (error) {
       console.error('[Carousel] Error fetching reports:', error)
       setReports([])
@@ -59,7 +57,6 @@ export default function Home() {
     }
   }
 
-  // Synchronize filteredReports with activeTimeframes and reports
   useEffect(() => {
     setFilteredReports(
       activeTimeframes.size === 0
