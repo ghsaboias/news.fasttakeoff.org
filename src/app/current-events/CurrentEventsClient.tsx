@@ -63,8 +63,6 @@ export default function CurrentEventsClient({ reports, isLoading = false }: Prop
         setSearchQuery("");
     }
 
-    console.log("reportData", reportData);
-
     // Memoize filtered reports based on search query
     const filteredReports = useMemo(() => {
         if (!searchQuery.trim()) {
