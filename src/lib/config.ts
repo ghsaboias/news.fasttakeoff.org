@@ -94,10 +94,22 @@ export const AI = {
         MAX_ATTEMPTS: 2,
         // Prompt template for report generation
         PROMPT_TEMPLATE: `
-    Create a journalistic report in the format mentioned, covering the key developments.
+    You are generating a news report based on sources.
 
-    Updates to analyze:
-    {messages}
+    <previous_report>
+    {previousReport}
+    </previous_report>
+
+    <new_sources>
+    {sources}
+    </new_sources>
+
+    Create a concise news report. If there's a previous report:
+    1. Update any ongoing stories with the latest information
+    2. Add new significant developments not covered previously
+    3. Maintain stories from previous report if still relevant
+    4. Remove stories that are outdated or no longer relevant
+    5. Prioritize newer information if there are conflicts
 
     Requirements:
     - Paragraphs must summarize the most important verified developments, including key names, numbers, locations, dates, etc., in a cohesive narrative
