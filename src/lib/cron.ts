@@ -9,17 +9,22 @@ interface ScheduledEvent {
 }
 
 export async function scheduled(event: ScheduledEvent, env: CloudflareEnv): Promise<void> {
-    console.log(`[CRON] Triggered at ${new Date(event.scheduledTime).toISOString()}`);
+    console.log(`[CRON] Triggered at ${new Date(event.scheduledTime).toISOString()} with pattern ${event.cron}`);
     try {
-        console.log('[CRON] Starting message update process');
         const messagesService = new MessagesService(env);
-        await messagesService.updateMessages();
-        console.log('[CRON] Message update process completed');
-
-        console.log('[CRON] Starting report generation');
         const reportsService = new ReportsService(env);
-        await reportsService.createFreshReports();
-        console.log('[CRON] Report generation completed');
+
+        if (event.cron === '0 * * * *') {
+            console.log('[CRON] Running message update');
+            await messagesService.updateMessages();
+            console.log('[CRON] Message update completed');
+        } else if (event.cron === '2 * * * *') {
+            console.log('[CRON] Running report generation');
+            await reportsService.createFreshReports();
+            console.log('[CRON] Report generation completed');
+        } else {
+            console.warn('[CRON] Unknown cron pattern, skipping');
+        }
 
         console.log(`[CRON] Completed at ${new Date().toISOString()}`);
     } catch (error) {
