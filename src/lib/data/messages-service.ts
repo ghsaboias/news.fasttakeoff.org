@@ -213,7 +213,7 @@ export class MessagesService {
             const snowflake = BigInt(Math.floor(since.getTime() - discordEpoch)) << BigInt(22); // Shift 22 bits for worker/thread IDs
             const urlBase = `${API.DISCORD.BASE_URL}/channels/${channel.id}/messages?limit=${DISCORD.MESSAGES.BATCH_SIZE}`;
             let after = snowflake.toString();
-            let allMessages: DiscordMessage[] = [];
+            const allMessages: DiscordMessage[] = [];
 
             while (true) {
                 const url = `${urlBase}&after=${after}`;
