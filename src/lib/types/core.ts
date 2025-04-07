@@ -184,7 +184,7 @@ export interface Report {
     channelId?: string;
     channelName?: string;
     cacheStatus?: 'hit' | 'miss';
-    messageCountLastHour?: number;
+    messageCount?: number;
     lastMessageTimestamp?: string;
     userGenerated?: boolean;
     messageIds?: string[];

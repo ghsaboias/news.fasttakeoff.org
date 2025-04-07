@@ -1,4 +1,4 @@
-import { CloudflareEnv } from '../../cloudflare-env';
+import { CloudflareEnv } from '@cloudflare/types';
 import { MessagesService } from './data/messages-service';
 import { ReportsService } from './data/reports-service';
 

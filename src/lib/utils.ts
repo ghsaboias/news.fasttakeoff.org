@@ -1,7 +1,7 @@
+import type { CloudflareEnv } from "@cloudflare/types"
 import { getCloudflareContext } from "@opennextjs/cloudflare"
 import { clsx, type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
-import type { CloudflareEnv } from "../../cloudflare-env.d"
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))

@@ -1,7 +1,7 @@
 import { AI, API, CACHE, TIME, TimeframeKey } from '@/lib/config';
 import { DiscordMessage, Report } from '@/lib/types/core';
+import { CloudflareEnv } from '@cloudflare/types';
 import { v4 as uuidv4 } from 'uuid';
-import type { CloudflareEnv } from '../../../cloudflare-env';
 import { getChannelName } from './channels-service';
 import { MessagesService } from './messages-service';
 
@@ -133,7 +133,7 @@ async function createReportWithAI(
                 channelId: channelInfo.id,
                 channelName: channelInfo.name,
                 cacheStatus: 'miss' as const,
-                messageCountLastHour: channelInfo.count,
+                messageCount: channelInfo.count,
                 lastMessageTimestamp,
                 generatedAt: new Date().toISOString(),
                 timeframe,
@@ -312,14 +312,6 @@ export class ReportsService {
         const cacheKey = `reports:${channelId}:${timeframe}`;
         const cached = await this.env.REPORTS_CACHE.get(cacheKey);
         return cached ? JSON.parse(cached) as Report[] : null;
-    }
-
-    private async getLastReportForChannel(channelId: string): Promise<Report | null> {
-        const cachedReports = await this.getReportsFromCache(channelId, '1h');
-        if (!cachedReports || cachedReports.length === 0) return null;
-
-        return cachedReports
-            .sort((a, b) => new Date(b.generatedAt || '').getTime() - new Date(a.generatedAt || '').getTime())[0];
     }
 
     async getAllReportsFromCache(): Promise<Report[]> {
