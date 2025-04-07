@@ -198,42 +198,50 @@ export class MessagesService {
     }
 
     async updateMessages(): Promise<void> {
-        try {
-            const channelsService = new ChannelsService(this.env);
-            const channels = await channelsService.getChannels();
-            const since24h = new Date(Date.now() - 24 * 60 * 60 * 1000); // 24 hours ago
+        const channelsService = new ChannelsService(this.env);
+        const channels = await channelsService.getChannels();
+        console.log(`[MESSAGES] Updating ${channels.length} channels`);
+        const since24h = new Date(Date.now() - 24 * 60 * 60 * 1000);
+        let fetchedAny = false;
 
-            for (const channel of channels) {
-                try {
-                    const newMessages = await this.fetchBotMessagesFromAPI(channel.id); // Fetches last hour
-                    if (newMessages.length > 0) {
-                        const cached = await this.getAllCachedMessages(channel.id);
-                        let allMessages: DiscordMessage[] = newMessages;
+        for (const channel of channels) {
+            console.log(`[MESSAGES] Fetching channel ${channel.id}`);
+            const cached = await this.getAllCachedMessages(channel.id);
+            const since = cached?.lastMessageTimestamp ? new Date(cached.lastMessageTimestamp) : new Date(Date.now() - TIME.ONE_HOUR_MS);
+            const url = `${API.DISCORD.BASE_URL}/channels/${channel.id}/messages?limit=${DISCORD.MESSAGES.BATCH_SIZE}&after=${since.toISOString()}`;
 
-                        if (cached?.messages) {
-                            const messageMap = new Map<string, DiscordMessage>();
-                            cached.messages.forEach(msg => messageMap.set(msg.id, msg));
-                            newMessages.forEach(msg => messageMap.set(msg.id, msg));
-                            allMessages = Array.from(messageMap.values());
-                        }
-
-                        allMessages = allMessages.filter(
-                            msg => new Date(msg.timestamp).getTime() >= since24h.getTime()
-                        );
-
-                        allMessages.sort(
-                            (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
-                        );
-
-                        await this.cacheMessages(channel.id, allMessages, channel.name);
-                    }
-                } catch (error) {
-                    console.error(`[MESSAGES_CACHE] Error updating messages for channel ${channel.id}:`, error);
+            const response = await fetch(url, {
+                headers: {
+                    Authorization: this.env.DISCORD_TOKEN || '',
+                    'User-Agent': API.DISCORD.USER_AGENT,
+                    'Content-Type': 'application/json',
                 }
+            });
+
+            if (!response.ok) {
+                const errorBody = await response.text();
+                throw new Error(`[MESSAGES] Discord API error for ${channel.id}: ${response.status} - ${errorBody}`);
             }
-        } catch (error) {
-            console.error('[MESSAGES_CACHE] Error in updateMessages:', error);
-            throw error;
+
+            const messages = await response.json();
+            const newMessages = this.filterMessages(messages);
+            console.log(`[MESSAGES] Channel ${channel.id}: ${newMessages.length} new messages`);
+
+            if (newMessages.length > 0) {
+                fetchedAny = true;
+                const allMessages = cached?.messages
+                    ? [...new Map([...cached.messages, ...newMessages].map(m => [m.id, m])).values()]
+                    : newMessages;
+                const filteredMessages = allMessages
+                    .filter(msg => new Date(msg.timestamp).getTime() >= since24h.getTime())
+                    .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+                await this.cacheMessages(channel.id, filteredMessages, channel.name);
+            }
         }
+
+        if (!fetchedAny) {
+            throw new Error('[MESSAGES] No messages fetched across all channels—possible API failure');
+        }
+        console.log('[MESSAGES] Update completed');
     }
 }
