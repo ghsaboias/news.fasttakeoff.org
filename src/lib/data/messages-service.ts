@@ -202,40 +202,54 @@ export class MessagesService {
         const channels = await channelsService.getChannels();
         console.log(`[MESSAGES] Updating ${channels.length} channels`);
         const since24h = new Date(Date.now() - 24 * 60 * 60 * 1000);
+        const since1h = new Date(Date.now() - TIME.ONE_HOUR_MS);
         let fetchedAny = false;
 
         for (const channel of channels) {
             console.log(`[MESSAGES] Fetching channel ${channel.id}`);
             const cached = await this.getAllCachedMessages(channel.id);
-            const since = cached?.lastMessageTimestamp ? new Date(cached.lastMessageTimestamp) : new Date(Date.now() - TIME.ONE_HOUR_MS);
-            const url = `${API.DISCORD.BASE_URL}/channels/${channel.id}/messages?limit=${DISCORD.MESSAGES.BATCH_SIZE}&after=${since.toISOString()}`;
+            const since = cached?.lastMessageTimestamp ? new Date(cached.lastMessageTimestamp) : since1h;
+            const discordEpoch = 1420070400000; // 2015-01-01T00:00:00.000Z
+            const snowflake = BigInt(Math.floor(since.getTime() - discordEpoch)) << BigInt(22); // Shift 22 bits for worker/thread IDs
+            const urlBase = `${API.DISCORD.BASE_URL}/channels/${channel.id}/messages?limit=${DISCORD.MESSAGES.BATCH_SIZE}`;
+            let after = snowflake.toString();
+            let allMessages: DiscordMessage[] = [];
 
-            const response = await fetch(url, {
-                headers: {
-                    Authorization: this.env.DISCORD_TOKEN || '',
-                    'User-Agent': API.DISCORD.USER_AGENT,
-                    'Content-Type': 'application/json',
+            while (true) {
+                const url = `${urlBase}&after=${after}`;
+                const response = await fetch(url, {
+                    headers: {
+                        Authorization: this.env.DISCORD_TOKEN || '',
+                        'User-Agent': API.DISCORD.USER_AGENT,
+                        'Content-Type': 'application/json',
+                    }
+                });
+
+                if (!response.ok) {
+                    const errorBody = await response.text();
+                    throw new Error(`[MESSAGES] Discord API error for ${channel.id}: ${response.status} - ${errorBody}`);
                 }
-            });
 
-            if (!response.ok) {
-                const errorBody = await response.text();
-                throw new Error(`[MESSAGES] Discord API error for ${channel.id}: ${response.status} - ${errorBody}`);
+                const messages = await response.json();
+                if (!messages.length) break;
+
+                const botMessages = this.filterMessages(messages);
+                allMessages.push(...botMessages);
+                console.log(`[MESSAGES] Channel ${channel.id}: ${botMessages.length} bot messages, total ${allMessages.length}`);
+
+                const oldestTimestamp = new Date(messages[messages.length - 1].timestamp);
+                if (oldestTimestamp < since1h) break;
+
+                after = messages[0].id; // Use message ID for next batch
             }
 
-            const messages = await response.json();
-            const newMessages = this.filterMessages(messages);
-            console.log(`[MESSAGES] Channel ${channel.id}: ${newMessages.length} new messages`);
-
-            if (newMessages.length > 0) {
+            if (allMessages.length > 0) {
                 fetchedAny = true;
-                const allMessages = cached?.messages
-                    ? [...new Map([...cached.messages, ...newMessages].map(m => [m.id, m])).values()]
-                    : newMessages;
-                const filteredMessages = allMessages
+                const cachedMessages = cached?.messages || [];
+                const updated = [...new Map([...cachedMessages, ...allMessages].map(m => [m.id, m])).values()]
                     .filter(msg => new Date(msg.timestamp).getTime() >= since24h.getTime())
                     .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
-                await this.cacheMessages(channel.id, filteredMessages, channel.name);
+                await this.cacheMessages(channel.id, updated, channel.name);
             }
         }
 
