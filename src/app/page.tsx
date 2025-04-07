@@ -51,7 +51,6 @@ export default function Home() {
     } catch (error) {
       console.error('[Carousel] Error fetching reports:', error)
       setReports([])
-      setFilteredReports([])
     } finally {
       setLoadingReports(false)
     }
