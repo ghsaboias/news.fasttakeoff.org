@@ -1,6 +1,6 @@
 import { API, CACHE, DISCORD, TIME } from '@/lib/config';
 import { CachedMessages, DiscordMessage } from '@/lib/types/core';
-import type { CloudflareEnv } from '../../../cloudflare-env';
+import type { CloudflareEnv } from '@cloudflare/types';
 import { ChannelsService, getChannelName } from './channels-service';
 
 export class MessagesService {

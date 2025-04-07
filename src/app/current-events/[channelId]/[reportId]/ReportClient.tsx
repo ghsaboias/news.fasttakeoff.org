@@ -19,7 +19,7 @@ export default function ReportClient() {
     useEffect(() => {
         const fetchReportAndMessages = async () => {
             setIsLoading(true);
-            const reportResponse = await fetch(`/api/report?channelId=${channelId}&reportId=${reportId}`);
+            const reportResponse = await fetch(`/api/reports?channelId=${channelId}&reportId=${reportId}`);
             if (!reportResponse.ok) throw new Error('Failed to fetch report');
             const data = await reportResponse.json();
             setReport(data.report);

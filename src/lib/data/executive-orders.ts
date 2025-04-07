@@ -1,6 +1,6 @@
 import { ApiResponse, FederalRegisterOrder, FederalRegisterResponse } from '@/lib/types/api';
 import { ExecutiveOrder } from '@/lib/types/core';
-import { CloudflareEnv } from '../../../cloudflare-env';
+import type { CloudflareEnv } from '@cloudflare/types';
 import { transformFederalRegisterOrder, transformFederalRegisterOrders } from '../transformers/executive-orders';
 
 const FEDERAL_REGISTER_API = 'https://www.federalregister.gov/api/v1';

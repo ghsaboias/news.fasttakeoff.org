@@ -37,14 +37,13 @@ export default function ReportCard({ report }: { report: Report }) {
                     </Link>
                 </Button>
                 <div>
-
                     <span className="text-xs text-muted-foreground">
                         Generated: {report.generatedAt ? formatTime(report.generatedAt) : 'Recent'}
                     </span>
                     <div className="text-xs text-muted-foreground">
-                        {report.messageCountLastHour && (
+                        {report.messageCount && (
                             <div>
-                                <span className="font-medium">{report.messageCountLastHour}</span> update{report.messageCountLastHour === 1 ? '' : 's'} in the last {report.timeframe}
+                                <span className="font-medium">{report.messageCount}</span> update{report.messageCount === 1 ? '' : 's'} in the last {report.timeframe}
                             </div>
                         )}
                     </div>

@@ -19,7 +19,8 @@
       }
     ],
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@cloudflare/*": ["./cloudflare-env.d.ts"]
     }
   },
   "include": [
