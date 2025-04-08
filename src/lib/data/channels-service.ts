@@ -1,15 +1,18 @@
 import { API, CACHE, DISCORD } from '@/lib/config';
 import { DiscordChannel, DiscordMessage } from '@/lib/types/core';
 import type { CloudflareEnv } from '@cloudflare/types';
+import { CacheManager } from '../cache-utils';
 import { MessagesService } from './messages-service';
 
 export class ChannelsService {
     private env: CloudflareEnv;
+    private cache: CacheManager;
     apiCallCount = 0;
     callStartTime = Date.now();
 
     constructor(env: CloudflareEnv) {
         this.env = env;
+        this.cache = new CacheManager(env);
     }
 
     filterChannels(channels: DiscordChannel[]): DiscordChannel[] {
@@ -57,63 +60,21 @@ export class ChannelsService {
         }
     }
 
-    async fetchAllChannelsFromCache(): Promise<{ channels: DiscordChannel[], fetchedAt: string } | null> {
-        const guildId = this.env.DISCORD_GUILD_ID || '';
-        const key = `channels:guild:${guildId}`;
-        const metadataKey = `${key}:metadata`;
-
-        const cached = await this.env.CHANNELS_CACHE.get(key);
-        const metadata = await this.env.CHANNELS_CACHE.get(metadataKey, { type: 'json' }) as { fetchedAt: string } | null;
-
-        if (cached && metadata) {
-            const fetchedTime = new Date(metadata.fetchedAt).getTime();
-            const twentyFourHoursAgo = Date.now() - 24 * 60 * 60 * 1000;
-            if (fetchedTime > twentyFourHoursAgo) {
-                return { channels: this.filterChannels(JSON.parse(cached)), fetchedAt: metadata.fetchedAt };
-            }
-        }
-        return null;
-    }
-
-    // Fetch channels from cache or Discord API
     async getChannels(): Promise<DiscordChannel[]> {
-        const guildId = this.env.DISCORD_GUILD_ID || '';
-        const key = `channels:guild:${guildId}`;
-        const metadataKey = `${key}:metadata`;
+        const key = `channels:guild:${this.env.DISCORD_GUILD_ID}`;
+        const cached = await this.cache.get<{ channels: DiscordChannel[], fetchedAt: string }>('CHANNELS_CACHE', key);
 
-        const cachedData = await this.fetchAllChannelsFromCache();
-        if (cachedData) {
-            const { channels, fetchedAt } = cachedData;
-            const age = (Date.now() - new Date(fetchedAt).getTime()) / 1000; // seconds
-            const refreshThreshold = CACHE.REFRESH.CHANNELS; // 1 hour 
-
-            if (age < 24 * 60 * 60) { // Within 24h TTL
-                if (age > refreshThreshold) {
-                    this.refreshChannelsInBackground(key, metadataKey).catch(err =>
-                        console.error(`[CHANNELS] Background refresh failed: ${err}`)
-                    );
-                }
-                return channels;
+        if (cached && (Date.now() - new Date(cached.fetchedAt).getTime()) / 1000 < CACHE.TTL.CHANNELS) {
+            const age = (Date.now() - new Date(cached.fetchedAt).getTime()) / 1000;
+            if (age > CACHE.REFRESH.CHANNELS) {
+                this.cache.refreshInBackground(key, 'CHANNELS_CACHE', () => this.fetchAllChannelsFromAPI(), CACHE.TTL.CHANNELS);
             }
+            return this.filterChannels(cached.channels);
         }
 
-        const channels = await this.fetchAllChannelsFromAPI();
-        const filteredChannels = this.filterChannels(channels);
-        await this.updateCache(key, metadataKey, filteredChannels);
+        const filteredChannels = this.filterChannels(await this.fetchAllChannelsFromAPI());
+        await this.cache.put('CHANNELS_CACHE', key, { channels: filteredChannels, fetchedAt: new Date().toISOString() }, CACHE.TTL.CHANNELS);
         return filteredChannels;
-    }
-
-    async refreshChannelsInBackground(key: string, metadataKey: string): Promise<void> {
-        const channels = await this.fetchAllChannelsFromAPI();
-        const filteredChannels = this.filterChannels(channels);
-        await this.updateCache(key, metadataKey, filteredChannels);
-    }
-
-    async updateCache(key: string, metadataKey: string, channels: DiscordChannel[]): Promise<void> {
-        await Promise.all([
-            this.env.CHANNELS_CACHE.put(key, JSON.stringify(channels), { expirationTtl: CACHE.TTL.CHANNELS }),
-            this.env.CHANNELS_CACHE.put(metadataKey, JSON.stringify({ fetchedAt: new Date().toISOString() }), { expirationTtl: CACHE.TTL.CHANNELS })
-        ]);
     }
 
     async getChannelDetails(channelId: string): Promise<{
