@@ -1,5 +1,6 @@
 "use client";
 
+import ReportCard from "@/components/current-events/ReportCard";
 import { Button } from "@/components/ui/button";
 import { DiscordChannel, Report } from "@/lib/types/core";
 import Link from "next/link";
@@ -26,20 +27,7 @@ export default function ChannelDetailClient({ reports, channel }: { reports: Rep
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {reports && reports.length > 0 ? (
                     reports.map((report) => (
-                        <div className="border border-gray-200 rounded-lg p-4 overflow-scroll gap-2 flex flex-col max-h-[300px]" key={report.reportId}>
-                            <div className="min-h-[70px] flex items-center">
-                                <h1 className="text-2xl font-bold line-clamp-4 sm:line-clamp-2 break-words">
-                                    {report.headline?.toUpperCase()}
-                                </h1>
-                            </div>
-                            <h2 className="text-lg font-medium text-muted-foreground">{report.city}</h2>
-                            <div className="prose prose-zinc max-w-none overflow-y-auto">
-                                {report.body}
-                            </div>
-                            <Button asChild>
-                                <Link href={`/current-events/${channelId}/${report.reportId}`}>Read More</Link>
-                            </Button>
-                        </div>
+                        <ReportCard key={report.reportId} report={report} channelsPage={true} />
                     ))
                 ) : (
                     <div className="col-span-full text-center py-8">

@@ -1,5 +1,6 @@
 "use client"
 
+import LinkBadge from "@/components/current-events/LinkBadge";
 import MessagesAccordion from "@/components/current-events/MessagesAccordion";
 import { DiscordMessage, Report } from "@/lib/types/core";
 import { formatTime } from "@/lib/utils";
@@ -29,18 +30,27 @@ export default function ReportClient() {
         fetchReportAndMessages();
     }, [channelId, reportId]);
 
+    const paragraphs = report?.body.split('\n\n').filter(Boolean);
+
     return (
         <div className="p-6 max-w-5xl mx-auto gap-4 flex flex-col">
-            <h3>{report?.channelName}</h3>
+
             {isLoading ? (
                 <div className="flex items-center justify-center h-full">
                     <Loader2 className="h-10 w-10 animate-spin text-primary" />
                 </div>
             ) : (
                 <div className="flex flex-col gap-4">
+                    <div className="flex items-center gap-2">
+                        <LinkBadge href={`/current-events/${report?.channelId}`} variant="outline" className="p-2 hover:bg-muted">
+                            {report?.channelName}
+                        </LinkBadge>
+                    </div>
                     <h1 className="text-2xl font-bold">{report?.headline}</h1>
                     <p className="text-muted-foreground">{formatTime(report?.generatedAt, true)} - {report?.city}</p>
-                    <p className="prose prose-zinc max-w-none overflow-y-auto text-justify">{report?.body}</p>
+                    <div className="prose prose-zinc max-w-none overflow-y-auto text-justify">{paragraphs?.map((paragraph, index) => (
+                        <p key={index} className="mb-2 last:mb-0">{paragraph}</p>
+                    ))}</div>
                     <MessagesAccordion
                         channelData={{
                             count: messages.length,

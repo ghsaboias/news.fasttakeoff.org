@@ -6,19 +6,22 @@ import { Button } from "../ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "../ui/card";
 import LinkBadge from "./LinkBadge";
 
-export default function ReportCard({ report }: { report: Report }) {
+export default function ReportCard({ report, channelsPage = false }: { report: Report, channelsPage?: boolean }) {
+    const paragraphs = report.body.split('\n\n').filter(Boolean);
     return (
         <Card className="h-[380px] flex flex-col gap-2 py-4">
             <CardHeader>
                 <div className="flex justify-between gap-2 mb-1 items-center">
-                    {report.channelName && (
-                        <LinkBadge href={`/current-events/${report.channelId}`} variant="outline" className="px-1 py-0 h-5 hover:bg-muted">
-                            {report.channelName}
-                        </LinkBadge>
+                    {!channelsPage && report.channelName && (
+                        <>
+                            <LinkBadge href={`/current-events/${report.channelId}`} variant="outline" className="px-1 py-0 h-5 hover:bg-muted">
+                                {report.channelName}
+                            </LinkBadge>
+                            <Badge variant="secondary">
+                                {report?.timeframe}
+                            </Badge>
+                        </>
                     )}
-                    <Badge variant="secondary">
-                        {report?.timeframe}
-                    </Badge>
                 </div>
                 <CardTitle className="text-lg font-semibold line-clamp-2 leading-tight">
                     {report.headline}
@@ -26,9 +29,13 @@ export default function ReportCard({ report }: { report: Report }) {
                 <p className="text-sm text-muted-foreground line-clamp-1">{report.city}</p>
             </CardHeader>
             <CardContent className="flex-grow flex flex-col pt-0">
-                <p className="text-sm text-muted-foreground flex-grow overflow-scroll h-16">
-                    {report.body}
-                </p>
+                <div className="text-sm text-muted-foreground flex-grow overflow-scroll h-16">
+                    {paragraphs.map((paragraph, index) => (
+                        <p key={index} className="mb-2 last:mb-0">
+                            {paragraph}
+                        </p>
+                    ))}
+                </div>
             </CardContent>
             <CardFooter className="flex flex-col gap-2 justify-between items-start my-2">
                 <Button asChild variant="outline" size="sm" className="w-full">
@@ -36,17 +43,22 @@ export default function ReportCard({ report }: { report: Report }) {
                         Read More
                     </Link>
                 </Button>
-                <div>
-                    <span className="text-xs text-muted-foreground">
-                        Generated: {report.generatedAt ? formatTime(report.generatedAt) : 'Recent'}
-                    </span>
-                    <div className="text-xs text-muted-foreground">
-                        {report.messageCount && (
-                            <div>
-                                <span className="font-medium">{report.messageCount}</span> update{report.messageCount === 1 ? '' : 's'} in the last {report.timeframe}
-                            </div>
-                        )}
+                <div className="flex justify-between items-center w-full">
+                    <div className="flex flex-col gap-1">
+                        <span className="text-xs text-muted-foreground">
+                            Generated: {report.generatedAt ? formatTime(report.generatedAt) : 'Recent'}
+                        </span>
+                        <div className="text-xs text-muted-foreground">
+                            {report.messageCount && (
+                                <div>
+                                    <span className="font-medium">{report.messageCount}</span> update{report.messageCount === 1 ? '' : 's'} in the last {report.timeframe}
+                                </div>
+                            )}
+                        </div>
                     </div>
+                    <Badge variant="secondary">
+                        {report?.timeframe}
+                    </Badge>
                 </div>
             </CardFooter>
         </Card>
