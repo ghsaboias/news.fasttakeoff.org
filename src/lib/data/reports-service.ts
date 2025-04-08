@@ -2,9 +2,9 @@ import { AI, API, CACHE, TIME, TimeframeKey } from '@/lib/config';
 import { DiscordMessage, Report } from '@/lib/types/core';
 import { CloudflareEnv } from '@cloudflare/types';
 import { v4 as uuidv4 } from 'uuid';
+import { CacheManager } from '../cache-utils';
 import { getChannelName } from './channels-service';
 import { MessagesService } from './messages-service';
-
 // Helpers for report generation
 function formatSingleMessage(message: DiscordMessage): string {
     const timestamp = new Date(message.timestamp).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
@@ -161,6 +161,7 @@ async function tryCatch<T>(fn: () => Promise<T>, context: string): Promise<T | n
 
 export class ReportsService {
     private messagesService: MessagesService;
+    private cacheManager: CacheManager;
     private env: CloudflareEnv;
 
     constructor(env: CloudflareEnv) {
@@ -169,6 +170,7 @@ export class ReportsService {
         }
         this.env = env;
         this.messagesService = new MessagesService(env);
+        this.cacheManager = new CacheManager(env);
     }
 
     private getTTL(timeframe: TimeframeKey): number {
@@ -176,13 +178,9 @@ export class ReportsService {
     }
 
     private async cacheReport(channelId: string, timeframe: TimeframeKey, reports: Report[]): Promise<void> {
-        const cacheKey = `reports:${channelId}:${timeframe}`;
-        await this.env.REPORTS_CACHE.put(
-            cacheKey,
-            JSON.stringify(reports),
-            { expirationTtl: this.getTTL(timeframe) }
-        );
-        console.log(`Cached ${reports.length} reports for ${cacheKey} with ${this.getTTL(timeframe) / 3600}h TTL`);
+        const key = `reports:${channelId}:${timeframe}`;
+        await this.cacheManager.put('REPORTS_CACHE', key, reports, this.getTTL(timeframe));
+        console.log(`Cached ${reports.length} reports for ${key} with ${this.getTTL(timeframe) / 3600}h TTL`);
     }
 
     async getMessagesForTimeframe(channelId: string, timeframe: TimeframeKey): Promise<DiscordMessage[]> {
@@ -201,20 +199,13 @@ export class ReportsService {
 
         try {
             const cacheKey = `messages:${channelId}`;
-            const cachedData = await this.env.MESSAGES_CACHE.get(cacheKey);
-            if (!cachedData) {
-                console.log(`[REPORTS] Unexpected: No cached messages for channel ${channelId} for ${timeframe}`);
-                return [];
-            }
-            const parsedData = JSON.parse(cachedData);
-            if (!parsedData.messages || !Array.isArray(parsedData.messages)) {
-                console.log(`[REPORTS] Invalid cached message format for channel ${channelId}`);
-                return [];
-            }
-            const filteredMessages = parsedData.messages.filter(
+            const cachedData = await this.cacheManager.get<{ messages: DiscordMessage[] }>('MESSAGES_CACHE', cacheKey);
+            if (!cachedData || !Array.isArray(cachedData.messages)) return [];
+
+            const filteredMessages = cachedData.messages.filter(
                 (msg: DiscordMessage) => new Date(msg.timestamp).getTime() >= since.getTime()
             );
-            console.log(`[REPORTS] Using ${filteredMessages.length} cached messages for ${timeframe} report of channel ${channelId}`);
+            console.log(`Using ${filteredMessages.length} cached messages for ${timeframe} report of channel ${channelId}`);
             return filteredMessages;
         } catch (error) {
             console.error(`[REPORTS] Error processing cached messages for ${timeframe} report of channel ${channelId}:`, error);
@@ -223,12 +214,10 @@ export class ReportsService {
     }
 
     private async getPreviousTimeframeReport(channelId: string, timeframe: TimeframeKey): Promise<Report | null> {
-        // Get all reports for this channel and timeframe
         const reports = await this.getReportsFromCache(channelId, timeframe) || [];
 
-        if (reports.length === 0) return null; // No reports exist
+        if (reports.length === 0) return null;
 
-        // Return the most recent report
         return reports[0] || null;
     }
 
@@ -309,9 +298,8 @@ export class ReportsService {
     }
 
     private async getReportsFromCache(channelId: string, timeframe: TimeframeKey): Promise<Report[] | null> {
-        const cacheKey = `reports:${channelId}:${timeframe}`;
-        const cached = await this.env.REPORTS_CACHE.get(cacheKey);
-        return cached ? JSON.parse(cached) as Report[] : null;
+        const key = `reports:${channelId}:${timeframe}`;
+        return this.cacheManager.get<Report[]>('REPORTS_CACHE', key);
     }
 
     async getAllReportsFromCache(): Promise<Report[]> {
@@ -323,8 +311,8 @@ export class ReportsService {
 
         const reports = await Promise.all(
             keys.map(async key => {
-                const cachedReports = await this.env.REPORTS_CACHE.get(key.name);
-                return cachedReports ? JSON.parse(cachedReports) as Report[] : [];
+                const cachedReports = await this.cacheManager.get<Report[]>('REPORTS_CACHE', key.name);
+                return cachedReports || [];
             })
         );
 
@@ -332,7 +320,6 @@ export class ReportsService {
             .flat()
             .sort((a, b) => new Date(b.generatedAt || '').getTime() - new Date(a.generatedAt || '').getTime());
 
-        console.log(`[REPORTS] Fetched ${validReports.length} reports from REPORTS_CACHE`);
         return validReports;
     }
 
@@ -344,13 +331,12 @@ export class ReportsService {
         const { keys } = await this.env.REPORTS_CACHE.list({ prefix: `reports:${channelId}:` });
         const reports = await Promise.all(
             keys.map(async key => {
-                const cachedReports = await this.env.REPORTS_CACHE.get(key.name);
-                return cachedReports ? JSON.parse(cachedReports) as Report[] : [];
+                const cachedReports = await this.cacheManager.get<Report[]>('REPORTS_CACHE', key.name);
+                return cachedReports || [];
             })
         );
         return reports.flat();
     }
-
     async createFreshReports(): Promise<void> {
         const { keys: messageKeys } = await this.messagesService.env.MESSAGES_CACHE.list();
         const timeframes = TIME.TIMEFRAMES;
