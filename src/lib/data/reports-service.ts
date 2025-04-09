@@ -174,7 +174,7 @@ export class ReportsService {
     }
 
     private getTTL(timeframe: TimeframeKey): number {
-        return CACHE.TTL.REPORTS[timeframe] || CACHE.TTL.REPORTS.DEFAULT;
+        return CACHE.TTL.REPORTS;
     }
 
     private async cacheReport(channelId: string, timeframe: TimeframeKey, reports: Report[]): Promise<void> {
@@ -184,10 +184,10 @@ export class ReportsService {
     }
 
     async getMessagesForTimeframe(channelId: string, timeframe: TimeframeKey): Promise<DiscordMessage[]> {
-        const hours = { '1h': 1, '6h': 6, '12h': 12 }[timeframe] || 1;
+        const hours = { '2h': 2, '6h': 6 }[timeframe] || 1;
         const since = new Date(Date.now() - hours * 60 * 60 * 1000);
 
-        if (timeframe === '1h') {
+        if (timeframe === '2h') {
             const cached = await this.messagesService.getCachedMessagesSince(channelId, since);
             if (cached && cached.messages.length >= 0) { // Always returns an array, even empty
                 console.log(`[REPORTS] Using cached messages for channel ${channelId} for ${timeframe} (${cached.messages.length} messages)`);
@@ -255,7 +255,7 @@ export class ReportsService {
         return { report, messages };
     }
 
-    async getLastReportAndMessages(channelId: string, timeframe: TimeframeKey = '1h'): Promise<{ report: Report | null; messages: DiscordMessage[] }> {
+    async getLastReportAndMessages(channelId: string, timeframe: TimeframeKey = '2h'): Promise<{ report: Report | null; messages: DiscordMessage[] }> {
         const cachedReports = await this.getReportsFromCache(channelId, timeframe);
         const messages = await this.getMessagesForTimeframe(channelId, timeframe);
 
@@ -273,7 +273,7 @@ export class ReportsService {
     }
 
     async getReportAndMessages(channelId: string, reportId: string, timeframe?: TimeframeKey): Promise<{ report: Report | null; messages: DiscordMessage[] }> {
-        const effectiveTimeframe = timeframe || (await this.getReportTimeframe(reportId)) || '1h';
+        const effectiveTimeframe = timeframe || (await this.getReportTimeframe(reportId)) || '2h';
         const cachedReports = await this.getReportsFromCache(channelId, effectiveTimeframe);
         if (cachedReports) {
             const report = cachedReports.find(r => r.reportId === reportId);
@@ -344,9 +344,8 @@ export class ReportsService {
         const hour = now.getUTCHours();
 
         const activeTimeframes = timeframes.filter(tf => {
-            if (tf === '1h') return true;
-            if (tf === '6h' && hour % TIME.CRON.REPORTING_INTERVALS['6h'] === 0) return true;
-            if (tf === '12h' && hour % TIME.CRON.REPORTING_INTERVALS['12h'] === 0) return true;
+            if (tf === '2h' && hour % TIME.CRON['2h'] === 0 && hour % TIME.CRON['6h'] !== 0) return true;
+            if (tf === '6h' && hour % TIME.CRON['6h'] === 0) return true;
             return false;
         });
 
