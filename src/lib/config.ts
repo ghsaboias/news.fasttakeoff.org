@@ -47,12 +47,7 @@ export const DISCORD = {
 export const CACHE = {
     TTL: {
         // Report cache TTL values by timeframe (in seconds)
-        REPORTS: {
-            '1h': 24 * 60 * 60,  // 24 hours
-            '6h': 48 * 60 * 60,  // 48 hours
-            '12h': 72 * 60 * 60, // 72 hours
-            DEFAULT: 72 * 60 * 60, // Default if timeframe unknown
-        },
+        REPORTS: 72 * 60 * 60, // 72 hours
         // Channel cache TTL
         CHANNELS: 60 * 60 * 24, // 24 hours
         // Messages cache TTL
@@ -68,14 +63,13 @@ export const CACHE = {
 // Time-based configuration values (in milliseconds)
 export const TIME = {
     ONE_HOUR_MS: 3600000,
+    TWO_HOURS_MS: 7200000,
+    SIX_HOURS_MS: 21600000,
     // Timeframes for reports
-    TIMEFRAMES: ['1h', '6h', '12h'] as const,
-    // Cron job scheduling configuration
+    TIMEFRAMES: ['2h', '6h'] as const,
     CRON: {
-        REPORTING_INTERVALS: {
-            '6h': 6, // Run every 6 hours
-            '12h': 12, // Run every 12 hours
-        },
+        '2h': 2,
+        '6h': 6,
     },
 };
 

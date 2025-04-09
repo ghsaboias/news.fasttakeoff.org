@@ -108,10 +108,10 @@ export default function Home() {
             <div className="flex items-center gap-2">
               <Button
                 size="icon"
-                variant={isTimeframeActive('1h') ? 'default' : 'outline'}
-                onClick={() => toggleTimeframeFilter('1h')}
+                variant={isTimeframeActive('2h') ? 'default' : 'outline'}
+                onClick={() => toggleTimeframeFilter('2h')}
               >
-                1h
+                2h
               </Button>
               <Button
                 size="icon"
@@ -119,13 +119,6 @@ export default function Home() {
                 onClick={() => toggleTimeframeFilter('6h')}
               >
                 6h
-              </Button>
-              <Button
-                size="icon"
-                variant={isTimeframeActive('12h') ? 'default' : 'outline'}
-                onClick={() => toggleTimeframeFilter('12h')}
-              >
-                12h
               </Button>
             </div>
           </div>

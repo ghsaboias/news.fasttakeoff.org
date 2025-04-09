@@ -184,13 +184,13 @@ export class MessagesService {
         const channels = await channelsService.getChannels();
         console.log(`[MESSAGES] Updating ${channels.length} channels`);
         const since24h = new Date(Date.now() - 24 * 60 * 60 * 1000);
-        const since1h = new Date(Date.now() - TIME.ONE_HOUR_MS);
+        const since2h = new Date(Date.now() - TIME.TWO_HOURS_MS);
         let fetchedAny = false;
 
         for (const channel of channels) {
             console.log(`[MESSAGES] Fetching channel ${channel.id}`);
             const cached = await this.getAllCachedMessages(channel.id);
-            const since = cached?.lastMessageTimestamp ? new Date(cached.lastMessageTimestamp) : since1h;
+            const since = cached?.lastMessageTimestamp ? new Date(cached.lastMessageTimestamp) : since2h;
             const discordEpoch = 1420070400000; // 2015-01-01T00:00:00.000Z
             const snowflake = BigInt(Math.floor(since.getTime() - discordEpoch)) << BigInt(22); // Shift 22 bits for worker/thread IDs
             const urlBase = `${API.DISCORD.BASE_URL}/channels/${channel.id}/messages?limit=${DISCORD.MESSAGES.BATCH_SIZE}`;
@@ -220,7 +220,7 @@ export class MessagesService {
                 console.log(`[MESSAGES] Channel ${channel.id}: ${botMessages.length} bot messages, total ${allMessages.length}`);
 
                 const oldestTimestamp = new Date(messages[messages.length - 1].timestamp);
-                if (oldestTimestamp < since1h) break;
+                if (oldestTimestamp < since2h) break;
 
                 after = messages[0].id; // Use message ID for next batch
             }
