@@ -173,14 +173,10 @@ export class ReportsService {
         this.cacheManager = new CacheManager(env);
     }
 
-    private getTTL(timeframe: TimeframeKey): number {
-        return CACHE.TTL.REPORTS;
-    }
-
     private async cacheReport(channelId: string, timeframe: TimeframeKey, reports: Report[]): Promise<void> {
         const key = `reports:${channelId}:${timeframe}`;
-        await this.cacheManager.put('REPORTS_CACHE', key, reports, this.getTTL(timeframe));
-        console.log(`Cached ${reports.length} reports for ${key} with ${this.getTTL(timeframe) / 3600}h TTL`);
+        await this.cacheManager.put('REPORTS_CACHE', key, reports, CACHE.TTL.REPORTS);
+        console.log(`Cached ${reports.length} reports for ${key} with ${CACHE.TTL.REPORTS / 3600}h TTL`);
     }
 
     async getMessagesForTimeframe(channelId: string, timeframe: TimeframeKey): Promise<DiscordMessage[]> {
@@ -263,7 +259,7 @@ export class ReportsService {
             const latestReport = cachedReports[0];
             const age = (Date.now() - new Date(latestReport.generatedAt || '').getTime()) / 1000;
 
-            if (age < this.getTTL(timeframe)) { // Within TTL
+            if (age < CACHE.TTL.REPORTS) {
                 return { report: { ...latestReport, cacheStatus: 'hit' }, messages };
             }
         }
