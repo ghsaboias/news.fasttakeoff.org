@@ -99,11 +99,10 @@ export const AI = {
     </new_sources>
 
     Create a concise news report. If there's a previous report:
-    1. Update any ongoing stories with the latest information
-    2. Add new significant developments not covered previously
-    3. Maintain stories from previous report if still relevant
-    4. Remove stories that are outdated or no longer relevant
-    5. Prioritize newer information if there are conflicts
+    1. Do not repeat unimportant information from the previous report
+    2. Only update the most important developments
+    3. Remove stories that are outdated and/or no longer relevant
+    4. Prioritize newer information
 
     Requirements:
     - Paragraphs must summarize the most important verified developments, including key names, numbers, locations, dates, etc., in a cohesive narrative
