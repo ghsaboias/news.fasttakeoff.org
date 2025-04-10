@@ -9,7 +9,7 @@ export default function Header() {
             <div className="mx-auto flex h-16 items-center justify-between px-8">
                 <div className="flex items-center gap-2">
                     <Link href="/" className="text-xl font-bold">
-                        AI World News
+                        Fast Takeoff News
                     </Link>
                 </div>
                 <nav className="hidden md:flex items-center gap-6">

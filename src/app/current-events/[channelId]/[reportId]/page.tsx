@@ -1,7 +1,7 @@
 import ReportClient from './ReportClient';
 
 export const metadata = {
-    title: 'Report Details - News AI World',
+    title: 'Report Details - Fast Takeoff News',
     description: 'View report details',
 };
 

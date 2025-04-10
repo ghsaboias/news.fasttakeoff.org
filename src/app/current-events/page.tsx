@@ -4,7 +4,7 @@ export const dynamic = 'force-dynamic'
 
 export async function generateMetadata() {
     return {
-        title: 'Current Events - News AI World',
+        title: 'Current Events - Fast Takeoff News',
         description: 'Latest updates from Discord channels.',
     };
 }
