@@ -31,9 +31,9 @@ id = "b3ca706f58e44201a1f3d362c358cd1c"
 preview_id = "b3ca706f58e44201a1f3d362c358cd1c"
 
 [[routes]]
-pattern = "news.aiworld.com.br"
+pattern = "news.fasttakeoff.org"
 custom_domain = true
-zone_name = "aiworld.com.br"
+zone_name = "fasttakeoff.org"
 
 [observability.logs]
 enabled = true
