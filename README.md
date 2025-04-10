@@ -4,7 +4,7 @@ A Next.js application aggregating executive orders from the Federal Register API
 
 ## Overview
 
-- **Purpose**: Fetch and display executive orders, monitor Discord channels for bot activity (e.g., FaytuksBot), and generate structured reports using the Groq API.
+- **Purpose**: Fetch and display executive orders, monitor Discord channels for bot activity and generate structured reports using an Llama 4 Scout.
 - **Deployment**: Hosted at news.aiworld.com.br via Cloudflare Workers.
 - **Key Integrations**: Federal Register API, Discord API, Groq API for report generation.
 - **Caching**: Partial implementation with Cloudflare KV and unstable_cache from Next.js.
