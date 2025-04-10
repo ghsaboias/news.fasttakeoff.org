@@ -1,13 +1,12 @@
 # News AI World
 
-A Next.js application aggregating executive orders from the Federal Register API and generating real-time reports from Discord channel messages. Written in TypeScript, it uses Tailwind CSS for styling, Radix UI for components, and deploys via Cloudflare Workers with KV caching.
+A Next.js application aggregating executive orders from the Federal Register API and generating real-time reports from Discord channel messages. Written in TypeScript, it uses Tailwind CSS for styling, Radix UI for components, and deploys via Cloudflare Workers with KV caching. I patched the Cloudflare Worker to expose a _scheduled_ route in order to trigger report generation with cron jobs.
 
 ## Overview
 
 - **Purpose**: Fetch and display executive orders, monitor Discord channels for bot activity and generate structured reports using an Llama 4 Scout.
 - **Deployment**: Hosted at news.aiworld.com.br via Cloudflare Workers.
 - **Key Integrations**: Federal Register API, Discord API, Groq API for report generation.
-- **Caching**: Partial implementation with Cloudflare KV and unstable_cache from Next.js.
 
 ## Technical Details
 
@@ -23,22 +22,23 @@ A Next.js application aggregating executive orders from the Federal Register API
 - **Dependencies**: groq-sdk, lucide-react, class-variance-authority, full list in package.json
 - **Configuration**: ESLint (eslint.config.mjs), PostCSS (postcss.config.mjs), TypeScript (tsconfig.json)
 
-## Project Structure
+## Basic Project Structure
 
 ```
 src/
 ├── app/                  # Next.js pages and API routes
-│   ├── api/             # API endpoints (e.g., /channels/active, /reports)
-│   ├── current-events/  # Discord channel monitoring UI
-│   ├── executive-orders/# Executive order display UI
-│   └── globals.css      # Tailwind CSS configuration
-├── components/          # Reusable React components
-│   ├── current-events/  # Channel-specific UI (e.g., ChannelCard.tsx)
-│   └── ui/             # shadcn/ui components (e.g., button.tsx)
-├── lib/                # Utilities and data logic
-│   ├── data/          # API clients (e.g., discord-channels.ts)
-│   ├── transformers/  # Data transformation (e.g., executive-orders.ts)
-│   └── types/        # TypeScript interfaces (e.g., core.ts)
+│   ├── api/              # API endpoints (e.g., /channels/active, /reports)
+│   ├── current-events/   # Discord channel monitoring UI
+│   ├── executive-orders/ # Executive order display UI
+│   └── globals.css       # Tailwind CSS configuration
+├── components/           # Reusable React components
+│   ├── current-events/   # Channel-specific UI (e.g., ChannelCard.tsx)
+│   ├── executive-orders/ # Executive Orders UI
+│   └── ui/               # shadcn/ui components (e.g., button.tsx)
+├── lib/                  # Utilities and data logic
+│   ├── data/             # API clients (e.g., discord-channels.ts)
+│   ├── transformers/     # Data transformation (e.g., executive-orders.ts)
+│   └── types/            # TypeScript interfaces (e.g., core.ts)
 .gitignore              # Excludes node_modules, .next/, etc.
 cloudflare-env.d.ts     # Cloudflare Workers env typings
 package.json            # Dependencies and scripts
@@ -109,9 +109,8 @@ Generates .open-next/ artifacts and deploys via wrangler.
 
 ### API Routes:
 
-- **/api/channels/active**: Fetches Discord channels with recent bot activity, batched to avoid rate limits.
 - **/api/reports**: Generates reports from Discord messages via Groq API; GET fetches cached summaries.
-- **/api/channels/[channelId]/messages**: Retrieves last-hour messages for a channel.
+- **/api/channels**: Retrieves guild channels.
 
 ### Frontend:
 
@@ -121,19 +120,7 @@ Generates .open-next/ artifacts and deploys via wrangler.
 
 ### Caching:
 
-KV partially implemented (e.g., fetchExecutiveOrderById); TODOs remain for full integration.
-
-## Known Issues & TODOs
-
-- Caching incomplete in /api/channels/active (see TODO: Implement caching with Cloudflare KV).
-- Static generation skips some fetches (e.g., fetchExecutiveOrders during build).
-- Rate limiting mitigation in DiscordClient relies on basic delays; consider a queue.
-
-## Development Notes
-
-- **Scripts**: See package.json for dev:worker, build:worker, etc.
-- **Linting**: npm run lint with ESLint and Next.js config.
-- **Type Safety**: Enforced via TypeScript; extend src/lib/types/ as needed.
+- Cloudflare KV caching for executive orders, channels, messages and reports.
 
 ## License
 
