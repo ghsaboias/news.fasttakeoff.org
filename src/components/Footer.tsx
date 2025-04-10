@@ -36,18 +36,8 @@ export default function Footer() {
                         <h4 className="text-sm font-semibold">Contact</h4>
                         <ul className="space-y-2 text-sm">
                             <li>
-                                <a href="mailto:contact@aiworld.com.br" className="hover:underline">
-                                    contact@aiworld.com.br
-                                </a>
-                            </li>
-                            <li>
-                                <a href="https://twitter.com/aiworld" className="hover:underline">
+                                <a href="https://twitter.com/org_intel" className="hover:underline">
                                     Twitter
-                                </a>
-                            </li>
-                            <li>
-                                <a href="https://linkedin.com/company/aiworld" className="hover:underline">
-                                    LinkedIn
                                 </a>
                             </li>
                         </ul>
