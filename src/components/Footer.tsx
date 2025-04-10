@@ -7,7 +7,7 @@ export default function Footer() {
             <div className="container mx-auto px-8 min-w-[90%]">
                 <div className="grid grid-cols-1 gap-8 md:grid-cols-4">
                     <div className="space-y-4">
-                        <h3 className="text-lg font-bold">AI World News</h3>
+                        <h3 className="text-lg font-bold">Fast Takeoff News</h3>
                         <p className="text-sm text-muted-foreground">
                             AI-powered news for everyone.
                         </p>
@@ -46,7 +46,7 @@ export default function Footer() {
                 <Separator className="my-6" />
                 <div className="flex flex-col items-center gap-4">
                     <p className="text-center text-sm text-muted-foreground">
-                        &copy; {new Date().getFullYear()} AI World News. All rights reserved.
+                        &copy; {new Date().getFullYear()} Fast Takeoff News. All rights reserved.
                     </p>
                 </div>
             </div>

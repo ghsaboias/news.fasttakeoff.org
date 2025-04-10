@@ -1,4 +1,4 @@
-# News AI World
+# Fast Takeoff News
 
 A Next.js application aggregating executive orders from the Federal Register API and generating real-time reports from Discord channel messages. Written in TypeScript, it uses Tailwind CSS for styling, Radix UI for components, and deploys via Cloudflare Workers with KV caching. I patched the Cloudflare Worker to expose a _scheduled_ route in order to trigger report generation with cron jobs.
 

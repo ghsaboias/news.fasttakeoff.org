@@ -6,7 +6,7 @@ import ChannelDetailClient from './ChannelDetailClient';
 
 export async function generateMetadata() {
     return {
-        title: `Channel Details - News AI World`,
+        title: `Channel Details - Fast Takeoff News`,
         description: 'View reports for this channel',
     };
 }
