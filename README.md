@@ -5,7 +5,7 @@ A Next.js application aggregating executive orders from the Federal Register API
 ## Overview
 
 - **Purpose**: Fetch and display executive orders, monitor Discord channels for bot activity and generate structured reports using an Llama 4 Scout.
-- **Deployment**: Hosted at news.aiworld.com.br via Cloudflare Workers.
+- **Deployment**: Hosted at news.fasttakeoff.org via Cloudflare Workers.
 - **Key Integrations**: Federal Register API, Discord API, Groq API for report generation.
 
 ## Technical Details
@@ -60,8 +60,8 @@ wrangler.toml           # Cloudflare Workers configuration
 ### Installation
 
 ```bash
-git clone https://github.com/ghsaboias/news.aiworld.com.br.git
-cd news.aiworld.com.br
+git clone https://github.com/ghsaboias/news.fasttakeoff.org.git
+cd news.fasttakeoff.org
 npm install
 ```
 

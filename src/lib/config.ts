@@ -7,7 +7,7 @@
 export const API = {
     DISCORD: {
         BASE_URL: 'https://discord.com/api/v10',
-        USER_AGENT: 'NewsApp/0.1.0 (https://news.aiworld.com.br)',
+        USER_AGENT: 'NewsApp/0.1.0 (https://news.fasttakeoff.org)',
     },
     GROQ: {
         ENDPOINT: 'https://api.groq.com/openai/v1/chat/completions',
