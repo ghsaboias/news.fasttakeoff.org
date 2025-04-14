@@ -56,9 +56,11 @@ export default function ReportCard({ report, channelsPage = false }: { report: R
                             )}
                         </div>
                     </div>
-                    <Badge variant="secondary">
-                        {report?.timeframe}
-                    </Badge>
+                    {channelsPage && (
+                        <Badge variant="secondary">
+                            {report?.timeframe}
+                        </Badge>
+                    )}
                 </div>
             </CardFooter>
         </Card>
