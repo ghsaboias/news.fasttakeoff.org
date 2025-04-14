@@ -1,0 +1,107 @@
+import { NextResponse } from 'next/server';
+
+interface TranslationRequest {
+    headline?: string;
+    city?: string;
+    body: string;
+    targetLang: string;
+}
+
+interface TranslationResponse {
+    headline?: string;
+    city?: string;
+    body: string;
+}
+
+export async function POST(req: Request) {
+    try {
+        const { headline, city, body, targetLang } = await req.json() as TranslationRequest;
+
+        if (!body || !targetLang) {
+            return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+        }
+
+        const translatedContent = await translateContent({ headline, city, body }, targetLang);
+
+        return NextResponse.json({ translatedContent });
+    } catch (error) {
+        console.error('Translation API error:', error);
+        return NextResponse.json({ error: 'Failed to translate content' }, { status: 500 });
+    }
+}
+
+async function translateContent(content: Omit<TranslationRequest, 'targetLang'>, targetLang: string): Promise<TranslationResponse> {
+    if (!process.env.GROQ_API_KEY) {
+        throw new Error('Groq API key is not set in environment variables. For local development, set it in .env.local or export it in your terminal.');
+    }
+
+    console.log('Groq API key is set, attempting API call...');
+
+    const langMap: Record<string, string> = {
+        'en': 'English',
+        'es': 'Spanish',
+        'fr': 'French',
+        'de': 'German',
+        'pt': 'Portuguese'
+    };
+    const targetLanguageName = langMap[targetLang] || targetLang;
+
+    const startTime = performance.now();
+
+    try {
+        const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${process.env.GROQ_API_KEY}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                model: 'llama-3.3-70b-versatile',
+                messages: [
+                    {
+                        role: 'system',
+                        content: 'You are a professional translator that responds in JSON. Translate the provided JSON object maintaining its structure. Each field should be accurately translated to the target language while preserving formatting. For the "body" field, maintain paragraph breaks using double newlines (\\n\\n). Respond only with the translated JSON object.'
+                    },
+                    {
+                        role: 'user',
+                        content: `Translate the following JSON object to ${targetLanguageName}:\n${JSON.stringify(content, null, 2)}`
+                    }
+                ],
+                temperature: 0.3,
+                max_tokens: 1024,
+                response_format: { type: "json_object" }
+            }),
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`Groq API error: ${response.status} - ${response.statusText} - ${errorText}`);
+        }
+
+        const data = await response.json();
+        if (!data.choices?.[0]?.message?.content) {
+            throw new Error('Invalid response format from Groq API');
+        }
+
+        const translatedContent = JSON.parse(data.choices[0].message.content) as TranslationResponse;
+
+        if (!translatedContent.body) {
+            throw new Error('Translation response missing required field: body');
+        }
+
+        const endTime = performance.now();
+        console.log(`Translation completed in ${(endTime - startTime).toFixed(2)}ms`);
+
+        return translatedContent;
+    } catch (error) {
+        console.error('Translation error:', error);
+        if (process.env.NODE_ENV === 'development') {
+            return {
+                headline: content.headline ? `[${targetLang}] ${content.headline}` : undefined,
+                city: content.city ? `[${targetLang}] ${content.city}` : undefined,
+                body: `[${targetLang}] ${content.body}`
+            };
+        }
+        throw error;
+    }
+} 
