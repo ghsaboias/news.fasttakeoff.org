@@ -7,6 +7,7 @@ import { Separator } from "@/components/ui/separator";
 import { fetchExecutiveOrders } from "@/lib/data/executive-orders";
 import { ExecutiveOrder } from "@/lib/types/core";
 import { getStartDate } from "@/lib/utils";
+import { Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 
 export default function ClientExecutiveOrders({ initialOrders }: { initialOrders: ExecutiveOrder[] }) {
@@ -41,7 +42,14 @@ export default function ClientExecutiveOrders({ initialOrders }: { initialOrders
     const currentOrders = filteredOrders.slice(indexOfFirstOrder, indexOfLastOrder);
     const totalPages = Math.ceil(filteredOrders.length / ordersPerPage);
 
-    if (loading) return <div>Loading...</div>;
+    if (loading) return (
+        <div className="container mx-auto px-4 py-8">
+            <div className="col-span-full text-center py-16 flex flex-col items-center justify-center gap-4">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                <p className="text-lg text-muted-foreground">Loading executive orders...</p>
+            </div>
+        </div>
+    );
 
     return (
         <div className="container mx-auto px-4 py-8">
@@ -49,7 +57,7 @@ export default function ClientExecutiveOrders({ initialOrders }: { initialOrders
                 <div>
                     <h1 className="text-3xl font-bold tracking-tight md:text-4xl">Executive Orders</h1>
                     <p className="mt-2 text-lg text-muted-foreground">
-                        Browse and search executive orders related to technology, AI, and innovation.
+                        Browse and search executive orders.
                     </p>
                 </div>
                 <div className="flex flex-col gap-4 md:flex-row">
