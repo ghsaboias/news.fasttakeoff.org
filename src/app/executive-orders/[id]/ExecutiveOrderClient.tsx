@@ -212,7 +212,7 @@ export default function ExecutiveOrderClient({
                         <div className="prose max-w-none dark:prose-invert">
                             <ReactMarkdown
                                 components={{
-                                    p: ({ node, ...props }) => {
+                                    p: ({ ...props }) => {
                                         // Check if this paragraph contains only a strong element with a heading
                                         const children = props.children as React.ReactNode[];
 
@@ -239,7 +239,7 @@ export default function ExecutiveOrderClient({
 
                                         return <p className="my-2" {...props} />;
                                     },
-                                    strong: ({ node, ...props }) => {
+                                    strong: ({ ...props }) => {
                                         // Check if this is a standalone strong element that's likely a heading
                                         const content = props.children?.toString() || '';
                                         const isHeading = content && ['Background', 'Objective', 'Key Provisions', 'General Provisions'].includes(content);
@@ -249,8 +249,8 @@ export default function ExecutiveOrderClient({
                                             <strong {...props} />;
                                     },
                                     // Improve list rendering
-                                    ul: ({ node, ...props }) => <ul className="list-disc pl-6 my-3" {...props} />,
-                                    li: ({ node, ...props }) => <li className="mb-1" {...props} />
+                                    ul: ({ ...props }) => <ul className="list-disc pl-6 my-3" {...props} />,
+                                    li: ({ ...props }) => <li className="mb-1" {...props} />
                                 }}
                             >
                                 {aiSummary}
