@@ -46,7 +46,7 @@ export default function ReportCard({ report, channelsPage = false }: { report: R
                 <div className="flex justify-between items-center w-full">
                     <div className="flex flex-col gap-1">
                         <span className="text-xs text-muted-foreground">
-                            Generated: {report.generatedAt ? formatTime(report.generatedAt) : 'Recent'}
+                            Generated: {report.generatedAt ? formatTime(report.generatedAt, true) : 'Recent'}
                         </span>
                         <div className="text-xs text-muted-foreground">
                             {report.messageCount && (
