@@ -1,13 +1,12 @@
 'use client';
 
+import OrderCard from "@/components/executive-orders/OrderCard";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { fetchExecutiveOrders } from "@/lib/data/executive-orders";
 import { ExecutiveOrder } from "@/lib/types/core";
 import { getStartDate } from "@/lib/utils";
-import Link from "next/link";
 import { useEffect, useState } from "react";
 
 export default function ClientExecutiveOrders({ initialOrders }: { initialOrders: ExecutiveOrder[] }) {
@@ -73,23 +72,7 @@ export default function ClientExecutiveOrders({ initialOrders }: { initialOrders
                 {filteredOrders.length > 0 ? (
                     <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
                         {currentOrders.map((order) => (
-                            <Card key={order.id}>
-                                <CardHeader>
-                                    <div className="inline-block rounded-full bg-muted px-3 py-1 text-xs font-medium mb-2">
-                                        {order.category}
-                                    </div>
-                                    <CardTitle className="line-clamp-2">{order.title}</CardTitle>
-                                    <CardDescription>{order.date}</CardDescription>
-                                </CardHeader>
-                                <CardContent>
-                                    <p className="line-clamp-3 text-sm text-muted-foreground">{order.summary}</p>
-                                </CardContent>
-                                <CardFooter>
-                                    <Button asChild variant="outline" size="sm">
-                                        <Link href={`/executive-orders/${order.id}`}>Read more</Link>
-                                    </Button>
-                                </CardFooter>
-                            </Card>
+                            <OrderCard key={order.id} order={order} />
                         ))}
                     </div>
                 ) : (

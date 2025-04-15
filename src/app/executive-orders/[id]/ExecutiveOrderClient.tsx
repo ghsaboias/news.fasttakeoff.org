@@ -8,6 +8,7 @@ import { ArrowLeft, ExternalLink, FileText, Info, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import ReactMarkdown from 'react-markdown';
 
 interface EnhancedRelatedEOInfo extends RelatedEOInfo {
     isLoading: boolean;
@@ -21,6 +22,8 @@ export default function ExecutiveOrderClient({
 }) {
     const router = useRouter();
     const [relatedEOsFromNotes, setRelatedEOsFromNotes] = useState<EnhancedRelatedEOInfo[]>([]);
+    const [aiSummary, setAiSummary] = useState<string | null>(null);
+    const [summaryLoading, setSummaryLoading] = useState(true);
 
     useEffect(() => {
         async function loadRelatedEOs() {
@@ -37,6 +40,52 @@ export default function ExecutiveOrderClient({
         }
 
         loadRelatedEOs();
+    }, [initialOrder]);
+
+    useEffect(() => {
+        async function fetchSummary() {
+            if (!initialOrder) return;
+
+            const cacheKey = `eo-summary-${initialOrder.id}`;
+            const cachedSummary = localStorage.getItem(cacheKey);
+
+            // If we have a cached summary, use it and set loading to false immediately
+            if (cachedSummary) {
+                setAiSummary(cachedSummary);
+                setSummaryLoading(false);
+                return;
+            }
+
+            // Only set summaryLoading to true if we don't have a cached summary
+            setSummaryLoading(true);
+            try {
+                const response = await fetch('/api/summarize', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ order: initialOrder }),
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Failed to fetch summary: ${response.status}`);
+                }
+
+                const data = await response.json();
+                setAiSummary(data.summary);
+
+                // Cache the summary in localStorage
+                if (data.summary) {
+                    localStorage.setItem(cacheKey, data.summary);
+                }
+            } catch (error) {
+                console.error('Error fetching summary:', error);
+            } finally {
+                setSummaryLoading(false);
+            }
+        }
+
+        fetchSummary();
     }, [initialOrder]);
 
     const prefetchRelatedEOIds = async (relatedEOs: EnhancedRelatedEOInfo[]) => {
@@ -150,6 +199,68 @@ export default function ExecutiveOrderClient({
                         </Button>
                     )}
                 </div>
+
+                {/* AI-Generated Summary Section */}
+                <div className="bg-muted p-6 rounded-lg">
+                    <h2 className="text-xl font-semibold mb-4">Executive Order Summary</h2>
+                    {summaryLoading ? (
+                        <div className="flex items-center justify-center p-6">
+                            <Loader2 className="h-6 w-6 animate-spin mr-2" />
+                            <span>Generating summary...</span>
+                        </div>
+                    ) : aiSummary ? (
+                        <div className="prose max-w-none dark:prose-invert">
+                            <ReactMarkdown
+                                components={{
+                                    p: ({ node, ...props }) => {
+                                        // Check if this paragraph contains only a strong element with a heading
+                                        const children = props.children as React.ReactNode[];
+
+                                        if (Array.isArray(children) && children.length > 0) {
+                                            const firstChild = children[0];
+
+                                            if (firstChild &&
+                                                typeof firstChild === 'object' &&
+                                                'type' in firstChild &&
+                                                firstChild.type === 'strong' &&
+                                                'props' in firstChild &&
+                                                firstChild.props &&
+                                                typeof firstChild.props === 'object') {
+
+                                                const strongProps = firstChild.props as { children?: React.ReactNode };
+                                                if (strongProps.children) {
+                                                    const content = String(strongProps.children);
+                                                    if (['Key Provisions', 'General Provisions'].includes(content)) {
+                                                        return null;
+                                                    }
+                                                }
+                                            }
+                                        }
+
+                                        return <p className="my-2" {...props} />;
+                                    },
+                                    strong: ({ node, ...props }) => {
+                                        // Check if this is a standalone strong element that's likely a heading
+                                        const content = props.children?.toString() || '';
+                                        const isHeading = content && ['Background', 'Objective', 'Key Provisions', 'General Provisions'].includes(content);
+
+                                        return isHeading ?
+                                            <strong className="block mb-1 mt-3" {...props} /> :
+                                            <strong {...props} />;
+                                    },
+                                    // Improve list rendering
+                                    ul: ({ node, ...props }) => <ul className="list-disc pl-6 my-3" {...props} />,
+                                    li: ({ node, ...props }) => <li className="mb-1" {...props} />
+                                }}
+                            >
+                                {aiSummary}
+                            </ReactMarkdown>
+                        </div>
+                    ) : (
+                        <p className="text-muted-foreground">Unable to generate summary at this time.</p>
+                    )}
+                </div>
+
                 {relatedEOsFromNotes.length > 0 && (
                     <div className="bg-muted-light p-6 rounded-lg">
                         <div className="mt-4 pt-4 border-t border-border">
