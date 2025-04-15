@@ -42,7 +42,6 @@ async function generateSummary(order: ExecutiveOrder): Promise<string> {
                 console.log('Fetching content from bodyHtmlUrl:', order.links.bodyHtmlUrl);
                 try {
                     const response = await fetch(order.links.bodyHtmlUrl);
-                    console.log("response", response);
                     if (response.ok) {
                         orderContent = await response.text();
                         // Strip HTML tags from the content to get clean text
@@ -113,7 +112,6 @@ async function generateSummary(order: ExecutiveOrder): Promise<string> {
         }
 
         const summary = data.choices[0].message.content;
-        console.log("summary", summary);
 
         const endTime = performance.now();
         console.log(`Summary generated in ${(endTime - startTime).toFixed(2)}ms`);
