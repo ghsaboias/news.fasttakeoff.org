@@ -188,7 +188,6 @@ export class MessagesService {
         let fetchedAny = false;
 
         for (const channel of channels) {
-            console.log(`[MESSAGES] Fetching channel ${channel.id}`);
             const cached = await this.getAllCachedMessages(channel.id);
             const since = cached?.lastMessageTimestamp ? new Date(cached.lastMessageTimestamp) : since2h;
             const discordEpoch = 1420070400000; // 2015-01-01T00:00:00.000Z
