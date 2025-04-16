@@ -38,11 +38,13 @@ export default function ReportCard({ report, channelsPage = false }: { report: R
                 </div>
             </CardContent>
             <CardFooter className="flex flex-col gap-2 justify-between items-start my-2">
-                <Button asChild variant="outline" size="sm" className="w-full">
-                    <Link href={`/current-events/${report.channelId}/${report.reportId}`}>
-                        Read More
-                    </Link>
-                </Button>
+                {!channelsPage && (
+                    <Button asChild variant="outline" size="sm" className="w-full">
+                        <Link href={`/current-events/${report.channelId}/${report.reportId}`}>
+                            Read More
+                        </Link>
+                    </Button>
+                )}
                 <div className="flex justify-between items-center w-full">
                     <div className="flex flex-col gap-1">
                         <span className="text-xs text-muted-foreground">
