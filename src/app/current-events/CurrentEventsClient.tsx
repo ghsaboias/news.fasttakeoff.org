@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/select";
 import { Report } from "@/lib/types/core";
 import { FilterX, Loader2, Search } from "lucide-react";
+import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
 export interface Props {
@@ -96,6 +97,27 @@ export default function CurrentEventsClient({ reports, isLoading = false }: Prop
         return sorted;
     }, [filteredReports, sortBy]);
 
+    const groupedReports = useMemo(() => {
+        const groups: Record<string, Report[]> = {};
+        sortedReports.forEach(report => {
+            const channel = report.channelName || 'Uncategorized';
+            if (!groups[channel]) groups[channel] = [];
+            groups[channel].push(report);
+        });
+        return groups;
+    }, [sortedReports]);
+
+    const channelsWithLatest = useMemo(() => {
+        return Object.entries(groupedReports)
+            .map(([channel, reportsInChannel]) => {
+                if (reportsInChannel.length === 0) return null;
+                const latest = reportsInChannel.sort((a: Report, b: Report) => new Date(b.generatedAt).getTime() - new Date(a.generatedAt).getTime())[0];
+                return { channel, latestReport: latest, reportCount: reportsInChannel.length };
+            })
+            .filter(item => item !== null)
+            .sort((a: { channel: string; latestReport: Report; reportCount: number }, b: { channel: string; latestReport: Report; reportCount: number }) => new Date(b.latestReport.generatedAt).getTime() - new Date(a.latestReport.generatedAt).getTime());
+    }, [groupedReports]);
+
     const lastUpdated = reportData.length > 0 ? reportData[0]?.generatedAt : null;
 
     return (
@@ -154,15 +176,23 @@ export default function CurrentEventsClient({ reports, isLoading = false }: Prop
                     </div>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                     {loading ? (
                         <div className="col-span-full text-center py-16 flex flex-col items-center justify-center gap-4">
                             <Loader2 className="h-8 w-8 animate-spin text-primary" />
                             <p className="text-lg text-muted-foreground">Loading reports...</p>
                         </div>
-                    ) : sortedReports.length > 0 ? (
-                        sortedReports.map((report) => (
-                            <ReportCard key={report.reportId} report={report} />
+                    ) : channelsWithLatest.length > 0 ? (
+                        channelsWithLatest.map(({ channel, latestReport, reportCount }) => (
+                            <Link key={channel} href={`/current-events/${latestReport?.channelId}`} className="border p-4 rounded-lg hover:shadow-lg transition-shadow">
+                                <div className="flex items-center justify-between gap-2 mb-2">
+                                    <h3 className="text-lg font-semibold">{channel}</h3>
+                                    <Badge variant="secondary">{reportCount} report{reportCount === 1 ? '' : 's'}</Badge>
+                                </div>
+                                {latestReport && (
+                                    <ReportCard report={latestReport} channelsPage={true} />
+                                )}
+                            </Link>
                         ))
                     ) : (
                         <div className="col-span-full text-center py-8">
