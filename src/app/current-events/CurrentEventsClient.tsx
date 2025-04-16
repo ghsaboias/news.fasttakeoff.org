@@ -130,7 +130,7 @@ export default function CurrentEventsClient({ reports, isLoading = false }: Prop
                     <div className="flex flex-col items-end gap-1">
                         <div className="flex gap-2">
                             <Badge variant="secondary">
-                                Active Topics: {loading ? "Loading..." : reportData.length}
+                                Active Topics: {loading ? "Loading..." : channelsWithLatest.length}
                             </Badge>
                         </div>
                         {lastUpdated && !loading && (
