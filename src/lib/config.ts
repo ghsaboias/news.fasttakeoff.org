@@ -53,6 +53,10 @@ export const CACHE = {
         // Messages cache TTL
         MESSAGES: 259200, // 3 days
     },
+    RETENTION: {
+        // How long to keep reports in the KV store before manual cleanup (in seconds)
+        REPORTS: 30 * 24 * 60 * 60, // 30 days
+    },
     REFRESH: {
         // Thresholds for background refresh (in seconds)
         MESSAGES: 5 * 60, // 5 minutes

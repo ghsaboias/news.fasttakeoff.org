@@ -117,18 +117,35 @@ async function createReportWithAI(
             const content = data.choices?.[0]?.message?.content;
             if (!content) throw new Error('No content returned from AI API');
 
-            const lines = content.split('\n').filter(Boolean);
-            if (lines.length < 3) {
-                console.log(`[REPORTS] Invalid AI response for channel ${channelInfo.id}: "${content}"`);
-                throw new Error('Invalid report format: missing content');
+            let reportData: { headline?: string; city?: string; body?: string };
+            try {
+                reportData = JSON.parse(content);
+            } catch (parseError) {
+                console.error(`[REPORTS] Failed to parse AI JSON response for channel ${channelInfo.id}:`, parseError);
+                console.error(`[REPORTS] Raw AI response: "${content}"`);
+                throw new Error('Invalid JSON format received from AI');
+            }
+
+            // Validate required fields
+            const { headline, city, body } = reportData;
+            const isValidString = (str: unknown): str is string => typeof str === 'string' && str.trim() !== '';
+
+            if (!isValidString(headline) || !isValidString(city) || !isValidString(body)) {
+                const errors: string[] = [];
+                if (!isValidString(headline)) errors.push('headline');
+                if (!isValidString(city)) errors.push('city');
+                if (!isValidString(body)) errors.push('body');
+                console.log(`[REPORTS] Invalid/Missing fields in AI response for channel ${channelInfo.id}: ${errors.join(', ')}`);
+                console.log(`[REPORTS] Raw AI data: ${JSON.stringify(reportData)}`);
+                throw new Error(`Invalid report format: missing or invalid fields (${errors.join(', ')})`);
             }
 
             const lastMessageTimestamp = messages[0]?.timestamp || new Date().toISOString();
 
             return {
-                headline: JSON.parse(content).headline?.toUpperCase(),
-                city: JSON.parse(content).city,
-                body: JSON.parse(content).body,
+                headline: (reportData.headline as string).toUpperCase(),
+                city: reportData.city as string,
+                body: reportData.body as string,
                 reportId: uuidv4(),
                 channelId: channelInfo.id,
                 channelName: channelInfo.name,
@@ -173,10 +190,37 @@ export class ReportsService {
         this.cacheManager = new CacheManager(env);
     }
 
+    /**
+     * Filters out reports older than the retention period
+     * Used to manually clean up old reports since KV TTL applies to the entire key
+     */
+    private cleanupOldReports(reports: Report[]): Report[] {
+        if (!reports || reports.length === 0) return [];
+
+        const retentionThreshold = Date.now() - CACHE.RETENTION.REPORTS * 1000;
+        const originalCount = reports.length;
+
+        const filteredReports = reports.filter(report => {
+            const generatedTime = new Date(report.generatedAt || '').getTime();
+            return generatedTime > retentionThreshold;
+        });
+
+        const removedCount = originalCount - filteredReports.length;
+        if (removedCount > 0) {
+            console.log(`[REPORTS] Cleaned up ${removedCount} reports older than ${CACHE.RETENTION.REPORTS / (24 * 60 * 60)} days`);
+        }
+
+        return filteredReports;
+    }
+
     private async cacheReport(channelId: string, timeframe: TimeframeKey, reports: Report[]): Promise<void> {
         const key = `reports:${channelId}:${timeframe}`;
-        await this.cacheManager.put('REPORTS_CACHE', key, reports, CACHE.TTL.REPORTS);
-        console.log(`Cached ${reports.length} reports for ${key} with ${CACHE.TTL.REPORTS / 3600}h TTL`);
+
+        // Apply cleanup before caching to remove old reports
+        const cleanedReports = this.cleanupOldReports(reports);
+
+        await this.cacheManager.put('REPORTS_CACHE', key, cleanedReports, CACHE.TTL.REPORTS);
+        console.log(`Cached ${cleanedReports.length} reports for ${key} with ${CACHE.TTL.REPORTS / 3600}h TTL`);
     }
 
     async getMessagesForTimeframe(channelId: string, timeframe: TimeframeKey): Promise<DiscordMessage[]> {
