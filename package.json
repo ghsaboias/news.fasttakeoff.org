@@ -15,7 +15,8 @@
     "cf-typegen": "wrangler types --env-interface CloudflareEnv cloudflare-env.d.ts",
     "build:worker": "opennextjs-cloudflare build",
     "dev:worker": "wrangler dev --port 8771",
-    "watch:build": "npx watch 'npm run build:worker' -- src"
+    "watch:build": "npx watch 'npm run build:worker' -- src",
+    "build:cron:test": "./run_cron_test.sh"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.39.0",
