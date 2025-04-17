@@ -103,7 +103,7 @@ export default function Home() {
       {/* Current Events Carousel */}
       <section className="mx-auto px-4 w-[95%]">
         <div className="flex flex-col gap-6">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between px-4">
             <h2 className="text-2xl font-bold tracking-tight md:text-3xl">Current Events</h2>
             <div className="flex items-center gap-2">
               <Button

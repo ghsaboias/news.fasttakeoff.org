@@ -37,7 +37,7 @@ export default function ReportsCarousel({ reports, loading }: { reports: Report[
         >
             <CarouselContent className={`${loading || (!loading && reports.length === 0) ? 'flex items-center justify-center' : 'md:-ml-4'}`}>
                 {loading ? (
-                    <CarouselItem className="basis-full sm:basis-1/2 md:basis-1/3 lg:basis-1/3 min-w-[200px] sm:min-w-[330px]">
+                    <CarouselItem className="basis-full sm:basis-1/2 md:basis-1/3 lg:basis-1/3 sm:min-w-[360px] min-w-[100%]">
                         <Card className="h-[380px] flex flex-col">
                             <CardHeader>
                                 <CardTitle className="text-lg">Loading...</CardTitle>
@@ -51,13 +51,13 @@ export default function ReportsCarousel({ reports, loading }: { reports: Report[
                     reports.map((report, index) => (
                         <CarouselItem
                             key={index}
-                            className="basis-full sm:basis-1/2 md:basis-1/3 lg:basis-1/3 min-w-[200px] sm:min-w-[330px]"
+                            className="basis-full sm:basis-1/2 md:basis-1/3 lg:basis-1/3 sm:min-w-[360px] min-w-[100%]"
                         >
                             <ReportCard report={report} />
                         </CarouselItem>
                     ))?.slice(0, 10)
                 ) : (
-                    <CarouselItem className="basis-full sm:basis-1/2 md:basis-1/3 lg:basis-1/3 min-w-[200px] sm:min-w-[330px]">
+                    <CarouselItem className="basis-full sm:basis-1/2 md:basis-1/3 lg:basis-1/3 sm:min-w-[360px] min-w-[100%]">
                         <Card className="h-[380px] flex flex-col">
                             <CardHeader>
                                 <CardTitle className="text-lg">No Active Reports</CardTitle>

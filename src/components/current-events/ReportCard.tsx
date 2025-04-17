@@ -26,10 +26,10 @@ export default function ReportCard({ report, channelsPage = false }: { report: R
                 <CardTitle className="text-lg font-semibold line-clamp-2 leading-tight">
                     {report.headline}
                 </CardTitle>
-                <p className="text-sm text-muted-foreground line-clamp-1">{report.city}</p>
+                <p className="text-sm font-medium line-clamp-1">{report.city}</p>
             </CardHeader>
             <CardContent className="flex-grow flex flex-col pt-0">
-                <div className="text-sm text-muted-foreground flex-grow overflow-scroll h-16">
+                <div className="text-sm flex-grow overflow-scroll h-16">
                     {paragraphs.map((paragraph, index) => (
                         <p key={index} className="mb-2 last:mb-0">
                             {paragraph}
