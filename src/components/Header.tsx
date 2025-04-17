@@ -1,16 +1,12 @@
 "use client"
 
 import { Button } from "@/components/ui/button";
-import { UserButton } from "@clerk/nextjs";
+import { UserButton, useUser } from "@clerk/nextjs";
 import Link from "next/link";
-interface UserObject {
-    id: string;
-    email: string;
-    firstName: string | null;
-    lastName: string | null;
-}
 
-export default function Header({ user }: { user: UserObject | null }) {
+export default function Header() {
+    const { user } = useUser()
+
     return (
         <header className="border-b">
             <div className="mx-auto flex h-16 items-center justify-between px-8">
