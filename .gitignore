@@ -66,3 +66,5 @@ related_files.txt
 translation_service_progress.md
 
 run_cron_test.sh
+# clerk configuration (can include secrets)
+/.clerk/

@@ -1,9 +1,16 @@
 "use client"
 
-import { Button } from "@/components/ui/button"
-import Link from "next/link"
+import { Button } from "@/components/ui/button";
+import { UserButton } from "@clerk/nextjs";
+import Link from "next/link";
+interface UserObject {
+    id: string;
+    email: string;
+    firstName: string | null;
+    lastName: string | null;
+}
 
-export default function Header() {
+export default function Header({ user }: { user: UserObject | null }) {
     return (
         <header className="border-b">
             <div className="mx-auto flex h-16 items-center justify-between px-8">
@@ -23,12 +30,26 @@ export default function Header() {
                         Current Events
                     </Link>
                 </nav>
-                <div className="flex items-center gap-4">
-                    <Button variant="outline" size="sm">
-                        Sign In
-                    </Button>
-                    <Button size="sm">Subscribe</Button>
-                </div>
+                {
+                    user ? (
+                        <div className="flex items-center gap-4">
+                            <UserButton />
+                        </div>
+                    ) : (
+                        <div className="flex items-center gap-4">
+                            <Link href="/sign-in">
+                                <Button variant="outline" size="sm">
+                                    Sign In
+                                </Button>
+                            </Link>
+                            <Link href="/sign-up">
+                                <Button size="sm">
+                                    Subscribe
+                                </Button>
+                            </Link>
+                        </div>
+                    )
+                }
             </div>
         </header>
     )
