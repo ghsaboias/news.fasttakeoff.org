@@ -87,7 +87,7 @@ export default function Home() {
     activeTimeframes.has(timeframe)
 
   return (
-    <div className="flex flex-col py-16 gap-16">
+    <div className="flex flex-col py-16 gap-16 w-[95%]">
       {/* Hero Section */}
       <section className="mx-auto px-4">
         <div className="flex flex-col items-center gap-6 text-center">

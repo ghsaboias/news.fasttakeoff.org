@@ -28,67 +28,64 @@ export default function ReportsCarousel({ reports, loading }: { reports: Report[
     }, [api, reports])
 
     return (
-        <div className="w-full sm:px-4">
-            <Carousel
-                opts={{
-                    align: "start",
-                    loop: false,
-                }}
-                setApi={setApi}
-                className="w-full max-w-full"
-            >
-                <CarouselContent className={`${loading || (!loading && reports.length === 0) ? 'flex items-center justify-center' : 'md:-ml-4'}`}>
-                    {loading ? (
-                        <CarouselItem className="basis-full sm:basis-1/2 md:basis-1/3 lg:basis-1/3 min-w-[200px] sm:min-w-[330px]">
-                            <Card className="h-[380px] flex flex-col">
-                                <CardHeader>
-                                    <CardTitle className="text-lg">Loading...</CardTitle>
-                                </CardHeader>
-                                <CardContent className="flex-grow">
-                                    <p className="text-sm text-muted-foreground">Fetching latest reports...</p>
-                                </CardContent>
-                            </Card>
+        <Carousel
+            opts={{
+                align: "start",
+                loop: false,
+            }}
+            setApi={setApi}
+        >
+            <CarouselContent className={`${loading || (!loading && reports.length === 0) ? 'flex items-center justify-center' : 'md:-ml-4'}`}>
+                {loading ? (
+                    <CarouselItem className="basis-full sm:basis-1/2 md:basis-1/3 lg:basis-1/3 min-w-[200px] sm:min-w-[330px]">
+                        <Card className="h-[380px] flex flex-col">
+                            <CardHeader>
+                                <CardTitle className="text-lg">Loading...</CardTitle>
+                            </CardHeader>
+                            <CardContent className="flex-grow">
+                                <p className="text-sm text-muted-foreground">Fetching latest reports...</p>
+                            </CardContent>
+                        </Card>
+                    </CarouselItem>
+                ) : reports.length > 0 ? (
+                    reports.map((report, index) => (
+                        <CarouselItem
+                            key={index}
+                            className="basis-full sm:basis-1/2 md:basis-1/3 lg:basis-1/3 min-w-[200px] sm:min-w-[330px]"
+                        >
+                            <ReportCard report={report} />
                         </CarouselItem>
-                    ) : reports.length > 0 ? (
-                        reports.map((report, index) => (
-                            <CarouselItem
-                                key={index}
-                                className="basis-full sm:basis-1/2 md:basis-1/3 lg:basis-1/3 min-w-[200px] sm:min-w-[330px]"
-                            >
-                                <ReportCard report={report} />
-                            </CarouselItem>
-                        ))?.slice(0, 10)
-                    ) : (
-                        <CarouselItem className="basis-full sm:basis-1/2 md:basis-1/3 lg:basis-1/3 min-w-[200px] sm:min-w-[330px]">
-                            <Card className="h-[380px] flex flex-col">
-                                <CardHeader>
-                                    <CardTitle className="text-lg">No Active Reports</CardTitle>
-                                </CardHeader>
-                                <CardContent className="flex-grow">
-                                    <p className="text-sm text-muted-foreground">Check back later for updates.</p>
-                                </CardContent>
-                            </Card>
-                        </CarouselItem>
-                    )}
-                </CarouselContent>
-                <div className="hidden md:flex">
-                    <CarouselPrevious />
-                    <CarouselNext />
-                </div>
-                {/* Navigation Dots (visible on all screens) */}
-                {reports.length > 1 && !loading && (
-                    <div className="flex justify-center mt-4 space-x-2">
-                        {Array.from({ length: count }).map((_, index) => (
-                            <button
-                                key={index}
-                                className={`h-2 w-2 rounded-full transition-colors ${current === index ? 'bg-primary' : 'bg-muted'}`}
-                                onClick={() => api?.scrollTo(index)}
-                                aria-label={`Go to slide ${index + 1}`}
-                            />
-                        ))}
-                    </div>
+                    ))?.slice(0, 10)
+                ) : (
+                    <CarouselItem className="basis-full sm:basis-1/2 md:basis-1/3 lg:basis-1/3 min-w-[200px] sm:min-w-[330px]">
+                        <Card className="h-[380px] flex flex-col">
+                            <CardHeader>
+                                <CardTitle className="text-lg">No Active Reports</CardTitle>
+                            </CardHeader>
+                            <CardContent className="flex-grow">
+                                <p className="text-sm text-muted-foreground">Check back later for updates.</p>
+                            </CardContent>
+                        </Card>
+                    </CarouselItem>
                 )}
-            </Carousel>
-        </div>
+            </CarouselContent>
+            <div className="hidden md:flex">
+                <CarouselPrevious />
+                <CarouselNext />
+            </div>
+            {/* Navigation Dots (visible on all screens) */}
+            {reports.length > 1 && !loading && (
+                <div className="flex justify-center mt-4 space-x-2">
+                    {Array.from({ length: count }).map((_, index) => (
+                        <button
+                            key={index}
+                            className={`h-2 w-2 rounded-full transition-colors ${current === index ? 'bg-primary' : 'bg-muted'}`}
+                            onClick={() => api?.scrollTo(index)}
+                            aria-label={`Go to slide ${index + 1}`}
+                        />
+                    ))}
+                </div>
+            )}
+        </Carousel>
     );
 }
