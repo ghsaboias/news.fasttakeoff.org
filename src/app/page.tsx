@@ -87,7 +87,7 @@ export default function Home() {
     activeTimeframes.has(timeframe)
 
   return (
-    <div className="flex flex-col py-16 gap-16 w-[95%]">
+    <div className="flex flex-col py-16 gap-16 w-[95vw] justify-center">
       {/* Hero Section */}
       <section className="mx-auto px-4">
         <div className="flex flex-col items-center gap-6 text-center">
@@ -101,7 +101,7 @@ export default function Home() {
       </section>
 
       {/* Current Events Carousel */}
-      <section className="mx-auto px-4 w-[95%]">
+      <section className="mx-auto sm:px-4 w-[95%]">
         <div className="flex flex-col gap-6">
           <div className="flex items-center justify-between px-4">
             <h2 className="text-2xl font-bold tracking-tight md:text-3xl">Current Events</h2>
@@ -127,7 +127,7 @@ export default function Home() {
       </section>
 
       {/* Latest Executive Orders Section */}
-      <section className="mx-auto px-4 w-[95%]">
+      <section className="mx-auto sm:px-4 w-[95%]">
         <div className="flex flex-col gap-6">
           <div className="flex items-center justify-between">
             <h2 className="text-2xl font-bold tracking-tight md:text-3xl">Latest Executive Orders</h2>
