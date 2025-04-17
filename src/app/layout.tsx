@@ -36,6 +36,7 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   const user = await currentUser()
+  console.log(user)
   const userObject = user ? {
     id: user.id,
     email: user.emailAddresses[0].emailAddress,
