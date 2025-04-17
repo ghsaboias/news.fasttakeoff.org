@@ -42,7 +42,7 @@ export default function ChannelDetailClient({ reports, channel }: { reports: Rep
     }
 
     return (
-        <div className="p-6 max-w-5xl mx-auto flex flex-col gap-6">
+        <div className="p-6 mx-auto flex flex-col gap-6 w-[95vw]">
             <h3 className="text-xl font-bold tracking-tight">{channel.name ?? 'Unknown Channel'}</h3>
             <div className="space-y-6">
                 {latestReport && (

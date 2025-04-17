@@ -121,93 +121,91 @@ export default function CurrentEventsClient({ reports, isLoading = false }: Prop
     const lastUpdated = reportData.length > 0 ? reportData[0]?.generatedAt : null;
 
     return (
-        <div className="py-8 px-4">
-            <div className="flex flex-col gap-6">
-                <div className="flex flex-col gap-4 md:flex-row md:items-center justify-between">
-                    <div className="flex items-center gap-2">
-                        <h1 className="text-2xl font-bold">Current Events</h1>
-                    </div>
-                    <div className="flex flex-col items-end gap-1">
-                        <div className="flex gap-2">
-                            <Badge variant="secondary">
-                                Active Topics: {loading ? "Loading..." : channelsWithLatest.length}
-                            </Badge>
-                        </div>
-                        {lastUpdated && !loading && (
-                            <span className="text-xs text-muted-foreground">
-                                Last updated: {new Date(lastUpdated).toISOString().substring(11, 19)}
-                            </span>
-                        )}
-                    </div>
+        <div className="flex flex-col gap-6 py-8 px-4 w-[95vw]">
+            <div className="flex flex-col gap-4 flex-row items-center justify-between">
+                <div className="flex items-center gap-2">
+                    <h1 className="text-2xl font-bold">Current Events</h1>
                 </div>
-                <div className="flex flex-col gap-4 sm:flex-row sm:items-center justify-between">
-                    <div className="relative max-w-sm">
-                        <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                        <Input
-                            placeholder="Search topics..."
-                            value={searchQuery}
-                            onChange={handleSearchChange}
-                            className="pl-8 pr-8 max-w-sm"
-                            disabled={loading}
-                        />
-                        {searchQuery && (
-                            <Button
-                                variant="ghost"
-                                size="sm"
-                                className="absolute right-0 top-0 h-9 px-2"
-                                onClick={clearSearch}
-                                disabled={loading}
-                            >
-                                <FilterX className="h-4 w-4" />
-                            </Button>
-                        )}
+                <div className="flex flex-col items-end gap-1">
+                    <div className="flex gap-2">
+                        <Badge variant="secondary">
+                            Active Topics: {loading ? "Loading..." : channelsWithLatest.length}
+                        </Badge>
                     </div>
-                    <div className="flex gap-2 items-center">
-                        <Select value={sortBy} onValueChange={handleSortChange} disabled={loading}>
-                            <SelectTrigger className="w-[150px]">
-                                <SelectValue placeholder="Sort by..." />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="activity">Most Active</SelectItem>
-                                <SelectItem value="recent">Most Recent</SelectItem>
-                                <SelectItem value="name">Name</SelectItem>
-                            </SelectContent>
-                        </Select>
-                    </div>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                    {loading ? (
-                        <div className="col-span-full text-center py-16 flex flex-col items-center justify-center gap-4">
-                            <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                            <p className="text-lg text-muted-foreground">Loading reports...</p>
-                        </div>
-                    ) : channelsWithLatest.length > 0 ? (
-                        channelsWithLatest.map(({ channel, latestReport, reportCount }) => (
-                            <Link key={channel} href={`/current-events/${latestReport?.channelId}`} className="border p-4 rounded-lg hover:shadow-lg transition-shadow">
-                                <div className="flex items-center justify-between gap-2 mb-2">
-                                    <h3 className="text-lg font-semibold">{channel}</h3>
-                                    <Badge variant="secondary">{reportCount} report{reportCount === 1 ? '' : 's'}</Badge>
-                                </div>
-                                {latestReport && (
-                                    <ReportCard report={latestReport} channelsPage={true} />
-                                )}
-                            </Link>
-                        ))
-                    ) : (
-                        <div className="col-span-full text-center py-8">
-                            <p className="text-lg text-muted-foreground">No reports found</p>
-                            {searchQuery && (
-                                <p className="text-sm text-muted-foreground mt-2">
-                                    Try adjusting your search criteria or
-                                    <Button variant="link" onClick={clearSearch} className="px-1 py-0">
-                                        clear your search
-                                    </Button>
-                                </p>
-                            )}
-                        </div>
+                    {lastUpdated && !loading && (
+                        <span className="text-xs text-muted-foreground">
+                            Last updated: {new Date(lastUpdated).toISOString().substring(11, 19)}
+                        </span>
                     )}
                 </div>
+            </div>
+            <div className="w-full flex flex-col gap-4 sm:flex-row sm:items-center justify-between">
+                <div className="relative max-w-sm">
+                    <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                    <Input
+                        placeholder="Search topics..."
+                        value={searchQuery}
+                        onChange={handleSearchChange}
+                        className="pl-8 pr-8 max-w-sm"
+                        disabled={loading}
+                    />
+                    {searchQuery && (
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            className="absolute right-0 top-0 h-9 px-2"
+                            onClick={clearSearch}
+                            disabled={loading}
+                        >
+                            <FilterX className="h-4 w-4" />
+                        </Button>
+                    )}
+                </div>
+                <div className="flex gap-2 items-center">
+                    <Select value={sortBy} onValueChange={handleSortChange} disabled={loading}>
+                        <SelectTrigger className="w-[150px]">
+                            <SelectValue placeholder="Sort by..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="activity">Most Active</SelectItem>
+                            <SelectItem value="recent">Most Recent</SelectItem>
+                            <SelectItem value="name">Name</SelectItem>
+                        </SelectContent>
+                    </Select>
+                </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                {loading ? (
+                    <div className="col-span-full text-center py-16 flex flex-col items-center justify-center gap-4">
+                        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                        <p className="text-lg text-muted-foreground">Loading reports...</p>
+                    </div>
+                ) : channelsWithLatest.length > 0 ? (
+                    channelsWithLatest.map(({ channel, latestReport, reportCount }) => (
+                        <Link key={channel} href={`/current-events/${latestReport?.channelId}`} className="border p-4 rounded-lg hover:shadow-lg transition-shadow">
+                            <div className="flex items-center justify-between gap-2 mb-2">
+                                <h3 className="text-lg font-semibold">{channel}</h3>
+                                <Badge variant="secondary">{reportCount} report{reportCount === 1 ? '' : 's'}</Badge>
+                            </div>
+                            {latestReport && (
+                                <ReportCard report={latestReport} channelsPage={true} />
+                            )}
+                        </Link>
+                    ))
+                ) : (
+                    <div className="col-span-full text-center py-8">
+                        <p className="text-lg text-muted-foreground">No reports found</p>
+                        {searchQuery && (
+                            <p className="text-sm text-muted-foreground mt-2">
+                                Try adjusting your search criteria or
+                                <Button variant="link" onClick={clearSearch} className="px-1 py-0">
+                                    clear your search
+                                </Button>
+                            </p>
+                        )}
+                    </div>
+                )}
             </div>
         </div>
     );

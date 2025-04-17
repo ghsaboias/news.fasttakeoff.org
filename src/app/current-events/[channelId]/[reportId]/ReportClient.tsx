@@ -105,7 +105,7 @@ export default function ReportClient() {
 
     return (
         <>
-            <div className="p-6 max-w-5xl mx-auto gap-4 flex flex-col">
+            <div className="p-6 mx-auto gap-4 flex flex-col w-[95vw]">
                 {isLoading ? (
                     <div className="flex items-center justify-center h-full">
                         <Loader2 className="h-10 w-10 animate-spin text-primary" />
