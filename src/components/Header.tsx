@@ -33,12 +33,12 @@ export default function Header() {
                         </div>
                     ) : (
                         <div className="flex items-center gap-4">
-                            <Link href="/sign-in">
+                            <Link href="/sign-in" prefetch>
                                 <Button variant="outline" size="sm">
                                     Sign In
                                 </Button>
                             </Link>
-                            <Link href="/sign-up">
+                            <Link href="/sign-up" prefetch>
                                 <Button size="sm">
                                     Subscribe
                                 </Button>
