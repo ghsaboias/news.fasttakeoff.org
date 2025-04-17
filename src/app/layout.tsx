@@ -1,7 +1,6 @@
 import Footer from "@/components/Footer";
 import Header from "@/components/Header";
 import { ClerkProvider } from '@clerk/nextjs';
-import { currentUser } from "@clerk/nextjs/server";
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
@@ -35,21 +34,13 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const user = await currentUser()
-  console.log(user)
-  const userObject = user ? {
-    id: user.id,
-    email: user.emailAddresses[0].emailAddress,
-    firstName: user.firstName,
-    lastName: user.lastName,
-  } : null
   return (
     <ClerkProvider>
       <html lang="en">
         <body
           className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen flex flex-col`}
         >
-          <Header user={userObject} />
+          <Header />
           <main className="flex flex-1 justify-center items-start">{children}</main>
           <Footer />
         </body>
