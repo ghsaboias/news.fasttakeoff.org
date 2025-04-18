@@ -1,6 +1,5 @@
 import { AI, API, CACHE, TIME, TimeframeKey } from '@/lib/config';
 import { DiscordMessage, Report } from '@/lib/types/core';
-import { CloudflareEnv } from '@cloudflare/types';
 import { v4 as uuidv4 } from 'uuid';
 import { CacheManager } from '../cache-utils';
 import { getChannelName } from './channels-service';
@@ -350,7 +349,7 @@ export class ReportsService {
         }
 
         const reports = await Promise.all(
-            keys.map(async key => {
+            keys.map(async (key: { name: string }) => {
                 const cachedReports = await this.cacheManager.get<Report[]>('REPORTS_CACHE', key.name);
                 return cachedReports || [];
             })
@@ -358,7 +357,7 @@ export class ReportsService {
 
         const validReports = reports
             .flat()
-            .sort((a, b) => new Date(b.generatedAt || '').getTime() - new Date(a.generatedAt || '').getTime());
+            .sort((a: Report, b: Report) => new Date(b.generatedAt || '').getTime() - new Date(a.generatedAt || '').getTime());
 
         return validReports;
     }
@@ -370,7 +369,7 @@ export class ReportsService {
         }
         const { keys } = await this.env.REPORTS_CACHE.list({ prefix: `reports:${channelId}:` });
         const reports = await Promise.all(
-            keys.map(async key => {
+            keys.map(async (key: { name: string }) => {
                 const cachedReports = await this.cacheManager.get<Report[]>('REPORTS_CACHE', key.name);
                 return cachedReports || [];
             })

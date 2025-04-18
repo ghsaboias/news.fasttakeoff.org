@@ -39,7 +39,7 @@ export default function CurrentEventsClient({ reports, isLoading = false }: Prop
                 setLoading(true);
                 const response = await fetch('/api/reports');
                 if (!response.ok) throw new Error('Failed to fetch reports');
-                const data = await response.json();
+                const data = await response.json() as Report[];
                 setReportData(data);
             } catch (error) {
                 console.error('Error fetching reports on client:', error);

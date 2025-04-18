@@ -1,5 +1,5 @@
+import { Report } from '@/lib/types/core';
 import CurrentEventsClient from './CurrentEventsClient';
-
 export const dynamic = 'force-dynamic'
 
 export async function generateMetadata() {
@@ -10,14 +10,14 @@ export async function generateMetadata() {
 }
 
 export default async function CurrentEventsPage() {
-    let reports = [];
+    let reports: Report[] = [];
 
     try {
         const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'}/api/reports`, {
             cache: 'no-store'
         });
         if (response.ok) {
-            reports = await response.json();
+            reports = await response.json() as Report[];
         }
     } catch (error) {
         console.error('Error fetching reports on server:', error);

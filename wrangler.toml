@@ -30,6 +30,11 @@ binding = "MESSAGES_CACHE"
 id = "b3ca706f58e44201a1f3d362c358cd1c"
 preview_id = "b3ca706f58e44201a1f3d362c358cd1c"
 
+[[kv_namespaces]]
+binding = "SUBSCRIPTIONS_CACHE"
+id = "f16280a6d9a14d228556662cf469926c"
+preview_id = "f16280a6d9a14d228556662cf469926c"
+
 [[routes]]
 pattern = "news.fasttakeoff.org"
 custom_domain = true
