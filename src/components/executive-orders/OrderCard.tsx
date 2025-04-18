@@ -8,7 +8,7 @@ export default function OrderCard({ order }: { order: ExecutiveOrder }) {
     return (
         <Card key={order.id} className="gap-4">
             <CardHeader>
-                <CardTitle className="line-clamp-3 min-h-[55px]">{order.title}</CardTitle>
+                <CardTitle className="line-clamp-4 min-h-[55px]">{order.title}</CardTitle>
                 <CardDescription className="text-xs">
                     {order.category} - {formatDate(order.publication.publicationDate || order.date)}
                 </CardDescription>
