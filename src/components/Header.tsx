@@ -28,6 +28,7 @@ export default function Header() {
             {
                 user ? (
                     <div className="flex items-center gap-4">
+                        <Link href="/profile" className="text-sm font-medium hover:underline">Profile</Link>
                         <UserButton />
                     </div>
                 ) : (
