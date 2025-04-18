@@ -46,6 +46,7 @@ NEXT_PUBLIC_CLERK_SIGN_UP_URL = "/sign-up"
 NEXT_PUBLIC_CLERK_SIGN_IN_FORCE_REDIRECT_URL = "/"
 NEXT_PUBLIC_CLERK_SIGN_UP_FORCE_REDIRECT_URL = "/"
 NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY = "pk_live_Y2xlcmsuZmFzdHRha2VvZmYub3JnJA"
+NEXT_PUBLIC_API_URL = "https://news.fasttakeoff.org"
 
 [observability.logs]
 enabled = true

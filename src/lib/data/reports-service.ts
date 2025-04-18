@@ -1,5 +1,6 @@
 import { AI, API, CACHE, TIME, TimeframeKey } from '@/lib/config';
 import { DiscordMessage, Report } from '@/lib/types/core';
+import { CloudflareEnv } from '@cloudflare/types';
 import { v4 as uuidv4 } from 'uuid';
 import { CacheManager } from '../cache-utils';
 import { getChannelName } from './channels-service';
