@@ -2,21 +2,39 @@ import { clerkClient } from '@clerk/nextjs/server';
 import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
 
+// Detect build time
+const isBuildTime = process.env.NODE_ENV === 'production' && process.env.NEXT_PHASE === 'phase-production-build';
+
+// Validate environment variables
+const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
+if (!stripeSecretKey) {
+    throw new Error('STRIPE_SECRET_KEY environment variable is not set');
+}
+const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+if (!webhookSecret) {
+    throw new Error('STRIPE_WEBHOOK_SECRET environment variable is not set');
+}
+const clerkSecretKey = process.env.CLERK_SECRET_KEY;
+if (!clerkSecretKey && !isBuildTime) {
+    throw new Error('CLERK_SECRET_KEY environment variable is not set');
+}
+
 // Initialize Stripe with fetch-based client
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
-    apiVersion: '2025-03-31.basil', // Match your payload's API version
+const stripe = new Stripe(stripeSecretKey, {
+    apiVersion: '2025-03-31.basil',
     httpClient: Stripe.createFetchHttpClient(),
 });
-
-const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
 // Helper to read raw body from ReadableStream
 async function getRawBody(req: Request) {
     const reader = req.body?.getReader();
-    const chunks = [];
+    if (!reader) {
+        throw new Error('Request body is not readable');
+    }
+    const chunks: Uint8Array[] = [];
     let done, value;
     while (!done) {
-        ({ value, done } = await reader?.read() || { value: null, done: true });
+        ({ value, done } = await reader.read());
         if (value) chunks.push(value);
     }
     return Buffer.concat(chunks);
@@ -33,21 +51,15 @@ export async function POST(req: Request) {
     }
 
     const sig = req.headers.get('stripe-signature');
-
     if (!sig) {
         console.error('Missing stripe-signature header');
         return NextResponse.json({ error: 'Missing webhook signature' }, { status: 400 });
     }
 
-    if (!webhookSecret) {
-        console.error('Missing STRIPE_WEBHOOK_SECRET environment variable');
-        return NextResponse.json({ error: 'Webhook secret not configured' }, { status: 500 });
-    }
-
     // Verify webhook signature using Stripe SDK
-    let event;
+    let event: Stripe.Event;
     try {
-        event = stripe.webhooks.constructEvent(rawBody, sig, webhookSecret);
+        event = stripe.webhooks.constructEvent(rawBody || '', sig, webhookSecret || '');
     } catch (err) {
         console.error('Webhook signature verification failed:', err);
         return NextResponse.json({ error: 'Invalid webhook signature' }, { status: 400 });
@@ -57,21 +69,25 @@ export async function POST(req: Request) {
     try {
         switch (event.type) {
             case 'checkout.session.completed': {
-                const session = event.data.object;
+                const session = event.data.object as Stripe.Checkout.Session;
                 const userId = session.metadata?.userId;
                 if (!userId) {
                     console.warn('Missing userId in session metadata');
                     return NextResponse.json({ error: 'Missing userId' }, { status: 400 });
                 }
-                const clerkClientInstance = await clerkClient();
-                await clerkClientInstance.users.updateUserMetadata(userId, {
-                    publicMetadata: { subscribed: true },
-                });
-                console.log(`Updated subscription status for user ${userId}`);
+                if (!isBuildTime) {
+                    const clerk = await clerkClient();
+                    await clerk.users.updateUserMetadata(userId, {
+                        publicMetadata: { subscribed: true },
+                    });
+                    console.log(`Updated subscription status for user ${userId}`);
+                } else {
+                    console.log('Skipping Clerk update during build time');
+                }
                 break;
             }
             case 'payment_intent.created': {
-                const paymentIntent = event.data.object;
+                const paymentIntent = event.data.object as Stripe.PaymentIntent;
                 console.log(`PaymentIntent created: ${paymentIntent.id}`);
                 break;
             }
@@ -81,7 +97,10 @@ export async function POST(req: Request) {
         return NextResponse.json({ received: true });
     } catch (error) {
         console.error('Webhook handling error:', error);
-        return NextResponse.json({ error: 'Failed to process webhook' }, { status: 500 });
+        return NextResponse.json(
+            { error: `Failed to process webhook: ${error instanceof Error ? error.message : 'Unknown error'}` },
+            { status: 500 }
+        );
     }
 }
 
