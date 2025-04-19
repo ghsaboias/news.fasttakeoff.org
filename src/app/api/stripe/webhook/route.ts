@@ -1,74 +1,37 @@
 import { clerkClient } from '@clerk/nextjs/server';
 import { NextResponse } from 'next/server';
-// Remove Stripe SDK import
-// import Stripe from 'stripe';
+import Stripe from 'stripe';
 
-// const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-//     apiVersion: '2024-04-10',
-// });
+// Initialize Stripe with fetch-based client
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
+    apiVersion: '2025-03-31.basil', // Match your payload's API version
+    httpClient: Stripe.createFetchHttpClient(),
+});
 
-const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET!;
+const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
-// Helper function to verify the signature
-async function verifySignature(body: string, signatureHeader: string, secret: string): Promise<boolean> {
-    const parts = signatureHeader.split(',');
-    let timestamp = '';
-    let signature = '';
-
-    for (const part of parts) {
-        const [key, value] = part.split('=');
-        if (key === 't') {
-            timestamp = value;
-        }
-        if (key === 'v1') {
-            signature = value;
-        }
+// Helper to read raw body from ReadableStream
+async function getRawBody(req: Request) {
+    const reader = req.body?.getReader();
+    const chunks = [];
+    let done, value;
+    while (!done) {
+        ({ value, done } = await reader?.read() || { value: null, done: true });
+        if (value) chunks.push(value);
     }
-
-    if (!timestamp || !signature) {
-        console.error('Invalid signature header format');
-        return false;
-    }
-
-    const signedPayload = `${timestamp}.${body}`;
-    const encoder = new TextEncoder();
-
-    try {
-        const key = await crypto.subtle.importKey(
-            'raw',
-            encoder.encode(secret),
-            { name: 'HMAC', hash: 'SHA-256' },
-            false,
-            ['verify']
-        );
-
-        // Decode the hex signature from the header into an ArrayBuffer
-        const signatureBytes = Uint8Array.from(signature.match(/.{1,2}/g)!.map((byte) => parseInt(byte, 16)));
-
-        const verified = await crypto.subtle.verify(
-            'HMAC',
-            key,
-            signatureBytes,
-            encoder.encode(signedPayload)
-        );
-
-        // Optional: Check timestamp tolerance (e.g., 5 minutes)
-        const FIVE_MINUTES = 5 * 60 * 1000;
-        const receivedTimestamp = parseInt(timestamp, 10) * 1000; // Convert seconds to ms
-        if (Date.now() - receivedTimestamp > FIVE_MINUTES) {
-            console.warn('Webhook timestamp outside tolerance');
-            // Depending on policy, you might want to reject here: return false;
-        }
-
-        return verified;
-    } catch (error) {
-        console.error('Error during signature verification:', error);
-        return false;
-    }
+    return Buffer.concat(chunks);
 }
 
 export async function POST(req: Request) {
-    const body = await req.text();
+    // Get raw body
+    let rawBody;
+    try {
+        rawBody = await getRawBody(req);
+    } catch (err) {
+        console.error('Failed to read request body:', err);
+        return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
+    }
+
     const sig = req.headers.get('stripe-signature');
 
     if (!sig) {
@@ -81,32 +44,39 @@ export async function POST(req: Request) {
         return NextResponse.json({ error: 'Webhook secret not configured' }, { status: 500 });
     }
 
-    const isVerified = await verifySignature(body, sig, webhookSecret);
-
-    if (!isVerified) {
-        console.error('Webhook signature verification failed.');
+    // Verify webhook signature using Stripe SDK
+    let event;
+    try {
+        event = stripe.webhooks.constructEvent(rawBody, sig, webhookSecret);
+    } catch (err) {
+        console.error('Webhook signature verification failed:', err);
         return NextResponse.json({ error: 'Invalid webhook signature' }, { status: 400 });
     }
 
-    // Signature is verified, now parse the event
-    let event: { type: string; data: { object: { metadata: { userId: string } } } };
+    // Handle events
     try {
-        event = JSON.parse(body);
-    } catch (err) {
-        console.error('Failed to parse webhook body:', err);
-        return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
-    }
-
-    try {
-        if (event.type === 'checkout.session.completed') {
-            const session = event.data.object; // Assuming structure is { data: { object: {...} } }
-            const userId = session.metadata?.userId;
-            if (userId) {
-                await (await clerkClient()).users.updateUserMetadata(userId, {
+        switch (event.type) {
+            case 'checkout.session.completed': {
+                const session = event.data.object;
+                const userId = session.metadata?.userId;
+                if (!userId) {
+                    console.warn('Missing userId in session metadata');
+                    return NextResponse.json({ error: 'Missing userId' }, { status: 400 });
+                }
+                const clerkClientInstance = await clerkClient();
+                await clerkClientInstance.users.updateUserMetadata(userId, {
                     publicMetadata: { subscribed: true },
                 });
                 console.log(`Updated subscription status for user ${userId}`);
+                break;
             }
+            case 'payment_intent.created': {
+                const paymentIntent = event.data.object;
+                console.log(`PaymentIntent created: ${paymentIntent.id}`);
+                break;
+            }
+            default:
+                console.log(`Unhandled event type: ${event.type}`);
         }
         return NextResponse.json({ received: true });
     } catch (error) {
@@ -114,3 +84,10 @@ export async function POST(req: Request) {
         return NextResponse.json({ error: 'Failed to process webhook' }, { status: 500 });
     }
 }
+
+// Disable Next.js body parsing
+export const config = {
+    api: {
+        bodyParser: false,
+    },
+};
