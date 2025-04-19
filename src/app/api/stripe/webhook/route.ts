@@ -79,10 +79,14 @@ export async function POST(req: Request) {
                     console.warn('Missing userId in session metadata');
                     return NextResponse.json({ error: 'Missing userId' }, { status: 400 });
                 }
-                // Dynamically import Clerk logic
-                const { updateUserSubscription } = await import('../../../../lib/clerkUtils');
-                await updateUserSubscription(userId);
-                console.log(`Updated subscription status for user ${userId}`);
+                // Dynamically import Clerk logic only if not in build time
+                if (!isBuildTime) {
+                    const { updateUserSubscription } = await import('../../../../lib/clerkUtils');
+                    await updateUserSubscription(userId);
+                    console.log(`Updated subscription status for user ${userId}`);
+                } else {
+                    console.log('Skipping Clerk subscription update during build time');
+                }
                 break;
             }
             case 'payment_intent.created': {
