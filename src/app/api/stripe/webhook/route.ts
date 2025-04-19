@@ -11,7 +11,7 @@ if (!stripeSecretKey && !isBuildTime) {
     throw new Error('STRIPE_SECRET_KEY environment variable is not set');
 }
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET || '';
-if (!webhookSecret) {
+if (!webhookSecret && !isBuildTime) {
     throw new Error('STRIPE_WEBHOOK_SECRET environment variable is not set');
 }
 const clerkSecretKey = process.env.CLERK_SECRET_KEY;
