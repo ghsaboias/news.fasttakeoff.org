@@ -49,6 +49,7 @@ export async function POST(req: Request) {
     let rawBody;
     try {
         rawBody = await getRawBody(req);
+        console.log('Raw body length:', rawBody.length);
     } catch (err) {
         console.error('Failed to read request body:', err);
         return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
@@ -59,6 +60,7 @@ export async function POST(req: Request) {
         console.error('Missing stripe-signature header');
         return NextResponse.json({ error: 'Missing webhook signature' }, { status: 400 });
     }
+    console.log('Stripe signature received:', sig);
 
     // Verify webhook signature using Stripe SDK
     let event: Stripe.Event;
