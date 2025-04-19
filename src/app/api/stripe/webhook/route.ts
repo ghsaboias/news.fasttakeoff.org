@@ -10,7 +10,7 @@ const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
 if (!stripeSecretKey) {
     throw new Error('STRIPE_SECRET_KEY environment variable is not set');
 }
-const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET || '';
 if (!webhookSecret) {
     throw new Error('STRIPE_WEBHOOK_SECRET environment variable is not set');
 }
@@ -59,7 +59,7 @@ export async function POST(req: Request) {
     // Verify webhook signature using Stripe SDK
     let event: Stripe.Event;
     try {
-        event = stripe.webhooks.constructEvent(rawBody || '', sig, webhookSecret || '');
+        event = stripe.webhooks.constructEvent(rawBody, sig, webhookSecret);
     } catch (err) {
         console.error('Webhook signature verification failed:', err);
         return NextResponse.json({ error: 'Invalid webhook signature' }, { status: 400 });
@@ -76,6 +76,7 @@ export async function POST(req: Request) {
                     return NextResponse.json({ error: 'Missing userId' }, { status: 400 });
                 }
                 if (!isBuildTime) {
+                    console.log('CLERK_SECRET_KEY present:', !!process.env.CLERK_SECRET_KEY);
                     const clerk = await clerkClient();
                     await clerk.users.updateUserMetadata(userId, {
                         publicMetadata: { subscribed: true },
@@ -95,7 +96,7 @@ export async function POST(req: Request) {
                 console.log(`Unhandled event type: ${event.type}`);
         }
         return NextResponse.json({ received: true });
-    } catch (error) {
+    } catch (error: unknown) {
         console.error('Webhook handling error:', error);
         return NextResponse.json(
             { error: `Failed to process webhook: ${error instanceof Error ? error.message : 'Unknown error'}` },
