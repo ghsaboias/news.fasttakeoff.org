@@ -92,15 +92,7 @@ export const AI = {
         MAX_ATTEMPTS: 2,
         // Prompt template for report generation
         PROMPT_TEMPLATE: `
-    You are generating a news report based on sources.
-
-    <previous_report>
-    {previousReport}
-    </previous_report>
-
-    <new_sources>
-    {sources}
-    </new_sources>
+    You are generating a news report based on sources and (optionally) a previous report.
 
     Create a concise news report. If there's a previous report:
     1. Update ongoing stories with new information
@@ -118,6 +110,14 @@ export const AI = {
     - DO NOT make any analysis, commentary, or speculation
     - DO NOT use terms like "likely", "appears to", or "is seen as"
     - Double-check name spelling, all names must be spelled correctly
+
+    <previous_report>
+    {previousReport}
+    </previous_report>
+
+    <new_sources>
+    {sources}
+    </new_sources>
     `,
     },
 };
