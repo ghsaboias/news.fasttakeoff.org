@@ -7,7 +7,7 @@ const isBuildTime = process.env.NODE_ENV === 'production' && process.env.NEXT_PH
 
 // Validate environment variables
 const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
-if (!stripeSecretKey) {
+if (!stripeSecretKey && !isBuildTime) {
     throw new Error('STRIPE_SECRET_KEY environment variable is not set');
 }
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET || '';
@@ -20,7 +20,7 @@ if (!clerkSecretKey && !isBuildTime) {
 }
 
 // Initialize Stripe with fetch-based client
-const stripe = new Stripe(stripeSecretKey, {
+const stripe = new Stripe(stripeSecretKey || '', {
     apiVersion: '2025-03-31.basil',
     httpClient: Stripe.createFetchHttpClient(),
 });
