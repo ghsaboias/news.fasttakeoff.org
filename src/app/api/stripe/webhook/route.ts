@@ -120,3 +120,5 @@ export const config = {
         bodyParser: false,
     },
 };
+
+export const dynamic = 'force-dynamic';
