@@ -79,11 +79,18 @@ export async function POST(req: Request) {
                     console.warn('Missing userId in session metadata');
                     return NextResponse.json({ error: 'Missing userId' }, { status: 400 });
                 }
-                // Dynamically import Clerk logic only if not in build time
+                // Only attempt Clerk operations if not in build time
                 if (!isBuildTime) {
-                    const { updateUserSubscription } = await import('../../../../lib/clerkUtils');
-                    await updateUserSubscription(userId);
-                    console.log(`Updated subscription status for user ${userId}`);
+                    try {
+                        // Dynamically import Clerk logic only if not in build time
+                        const { updateUserSubscription } = await import('../../../../lib/clerkUtils');
+                        await updateUserSubscription(userId);
+                        console.log(`Updated subscription status for user ${userId}`);
+                    } catch (error) {
+                        console.error('Error updating subscription:', error);
+                        // Don't fail the webhook just because of Clerk error
+                        // Stripe will retry if needed, but we acknowledge receipt
+                    }
                 } else {
                     console.log('Skipping Clerk subscription update during build time');
                 }
