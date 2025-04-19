@@ -9,7 +9,7 @@ import LinkBadge from "./LinkBadge";
 export default function ReportCard({ report, channelsPage = false }: { report: Report, channelsPage?: boolean }) {
     const paragraphs = report.body.split('\n\n').filter(Boolean);
     return (
-        <Card className="h-[380px] flex flex-col gap-2 py-4">
+        <Card className="h-[500px] sm:h-[400px] flex flex-col gap-2 py-4">
             <CardHeader>
                 <div className="flex justify-between gap-2 mb-1 items-center">
                     {!channelsPage && report.channelName && (
