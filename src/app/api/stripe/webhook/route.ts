@@ -1,4 +1,3 @@
-import { clerkClient } from '@clerk/nextjs/server';
 import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
 
@@ -10,7 +9,7 @@ const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
 if (!stripeSecretKey && !isBuildTime) {
     throw new Error('STRIPE_SECRET_KEY environment variable is not set');
 }
-const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET || '';
+const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
 if (!webhookSecret && !isBuildTime) {
     throw new Error('STRIPE_WEBHOOK_SECRET environment variable is not set');
 }
@@ -59,7 +58,7 @@ export async function POST(req: Request) {
     // Verify webhook signature using Stripe SDK
     let event: Stripe.Event;
     try {
-        event = stripe.webhooks.constructEvent(rawBody, sig, webhookSecret);
+        event = stripe.webhooks.constructEvent(rawBody, sig, webhookSecret || '');
     } catch (err) {
         console.error('Webhook signature verification failed:', err);
         return NextResponse.json({ error: 'Invalid webhook signature' }, { status: 400 });
@@ -77,6 +76,8 @@ export async function POST(req: Request) {
                 }
                 if (!isBuildTime) {
                     console.log('CLERK_SECRET_KEY present:', !!process.env.CLERK_SECRET_KEY);
+                    // Dynamically import clerkClient to avoid build-time execution
+                    const { clerkClient } = await import('@clerk/nextjs/server');
                     const clerk = await clerkClient();
                     await clerk.users.updateUserMetadata(userId, {
                         publicMetadata: { subscribed: true },
