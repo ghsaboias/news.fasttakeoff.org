@@ -40,6 +40,11 @@ async function getRawBody(req: Request) {
 }
 
 export async function POST(req: Request) {
+    if (isBuildTime) {
+        console.log('Skipping webhook handler during build time');
+        return NextResponse.json({ received: true });
+    }
+
     // Get raw body
     let rawBody;
     try {
@@ -74,18 +79,10 @@ export async function POST(req: Request) {
                     console.warn('Missing userId in session metadata');
                     return NextResponse.json({ error: 'Missing userId' }, { status: 400 });
                 }
-                if (!isBuildTime) {
-                    console.log('CLERK_SECRET_KEY present:', !!process.env.CLERK_SECRET_KEY);
-                    // Dynamically import clerkClient to avoid build-time execution
-                    const { clerkClient } = await import('@clerk/nextjs/server');
-                    const clerk = await clerkClient();
-                    await clerk.users.updateUserMetadata(userId, {
-                        publicMetadata: { subscribed: true },
-                    });
-                    console.log(`Updated subscription status for user ${userId}`);
-                } else {
-                    console.log('Skipping Clerk update during build time');
-                }
+                // Dynamically import Clerk logic
+                const { updateUserSubscription } = await import('../../../../lib/clerkUtils');
+                await updateUserSubscription(userId);
+                console.log(`Updated subscription status for user ${userId}`);
                 break;
             }
             case 'payment_intent.created': {
