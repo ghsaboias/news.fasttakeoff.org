@@ -8,8 +8,9 @@ import { TimeframeKey } from "@/lib/config"
 import { fetchExecutiveOrders } from "@/lib/data/executive-orders"
 import { ExecutiveOrder, Report } from "@/lib/types/core"
 import { getStartDate } from "@/lib/utils"
+import { animate, createScope, Scope } from 'animejs'
 import Link from "next/link"
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 
 export const dynamic = 'force-dynamic';
 
@@ -20,6 +21,38 @@ export default function Home() {
   const [filteredReports, setFilteredReports] = useState<Report[]>([])
   const [loadingReports, setLoadingReports] = useState(true)
   const [activeTimeframes, setActiveTimeframes] = useState<Set<TimeframeKey>>(new Set([]))
+
+  const root = useRef(null);
+  const scope = useRef<Scope | null>(null);
+
+  useEffect(() => {
+
+    scope.current = createScope({ root }).add(scope => {
+
+      // Every anime.js instances declared here are now scopped to <div ref={root}>
+
+      animate('span', {
+        y: [
+          { to: '-2.75rem', ease: 'outExpo', duration: 600 },
+          { to: 0, ease: 'outBounce', duration: 800, delay: 100 }
+        ],
+        // Property specific parameters
+        rotate: {
+          from: '-1turn',
+          delay: 0
+        },
+        delay: (_, i) => i * 50, // Function based value
+        ease: 'inOutCirc',
+        loopDelay: 1000,
+        loop: 0
+      });
+
+    });
+
+    // Properly cleanup all anime.js instances declared inside the scope
+    return () => scope.current?.revert()
+
+  }, []);
 
   async function loadExecutiveOrders() {
     try {
@@ -90,9 +123,25 @@ export default function Home() {
     <div className="flex flex-col py-16 gap-16 w-[95vw] justify-center">
       {/* Hero Section */}
       <section className="mx-auto px-4">
-        <div className="flex flex-col items-center gap-6 text-center">
-          <h1 className="text-3xl font-bold tracking-tighter sm:text-5xl md:text-6xl">
-            Fast Takeoff News
+        <div className="flex flex-col items-center gap-6 text-center" ref={root}>
+          <h1 className="text-3xl font-bold tracking-tighter sm:text-5xl md:text-6xl main-text">
+            <span style={{ display: 'inline-block', transformOrigin: 'center' }}>F</span>
+            <span style={{ display: 'inline-block', transformOrigin: 'center' }}>a</span>
+            <span style={{ display: 'inline-block', transformOrigin: 'center' }}>s</span>
+            <span style={{ display: 'inline-block', transformOrigin: 'center' }}>t</span>
+            <span style={{ display: 'inline-block', transformOrigin: 'center' }}>&nbsp;</span>
+            <span style={{ display: 'inline-block', transformOrigin: 'center' }}>T</span>
+            <span style={{ display: 'inline-block', transformOrigin: 'center' }}>a</span>
+            <span style={{ display: 'inline-block', transformOrigin: 'center' }}>k</span>
+            <span style={{ display: 'inline-block', transformOrigin: 'center' }}>e</span>
+            <span style={{ display: 'inline-block', transformOrigin: 'center' }}>o</span>
+            <span style={{ display: 'inline-block', transformOrigin: 'center' }}>f</span>
+            <span style={{ display: 'inline-block', transformOrigin: 'center' }}>f</span>
+            <span style={{ display: 'inline-block', transformOrigin: 'center' }}>&nbsp;</span>
+            <span style={{ display: 'inline-block', transformOrigin: 'center' }}>N</span>
+            <span style={{ display: 'inline-block', transformOrigin: 'center' }}>e</span>
+            <span style={{ display: 'inline-block', transformOrigin: 'center' }}>w</span>
+            <span style={{ display: 'inline-block', transformOrigin: 'center' }}>s</span>
           </h1>
           <p className="max-w-[700px] text-lg text-muted-foreground md:text-xl">
             AI-powered news for everyone.
