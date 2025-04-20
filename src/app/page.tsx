@@ -27,7 +27,7 @@ export default function Home() {
 
   useEffect(() => {
 
-    scope.current = createScope({ root }).add(scope => {
+    scope.current = createScope({ root }).add(_scope => {
 
       // Every anime.js instances declared here are now scopped to <div ref={root}>
 
