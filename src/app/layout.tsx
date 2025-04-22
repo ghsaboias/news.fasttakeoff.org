@@ -46,7 +46,7 @@ export default async function RootLayout({
           />
         </head>
         <body
-          className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen flex flex-col justify-center w-[97vw] sm:w-[95vw] mx-auto`}
+          className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen flex flex-col justify-center mx-auto`}
         >
           <Header />
           <main className='flex flex-1 justify-center items-start'>{children}</main>

@@ -2,7 +2,6 @@
 
 import LinkBadge from "@/components/current-events/LinkBadge";
 import MessagesAccordion from "@/components/current-events/MessagesAccordion";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
     DropdownMenu,
@@ -10,7 +9,6 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { API } from "@/lib/config";
 import { DiscordMessage, Report } from "@/lib/types/core";
 import { formatTime } from "@/lib/utils";
 import { Check, Globe, Loader2 } from "lucide-react";
@@ -146,9 +144,6 @@ export default function ReportClient() {
                                     </DropdownMenu>
                                 </div>
                             </div>
-                            <Badge variant="secondary">
-                                {API.GROQ.MODEL}
-                            </Badge>
                         </div>
                         <div className={`flex flex-col gap-4 transition-opacity duration-200 ${isTranslating ? 'opacity-50' : 'opacity-100'}`}>
                             <h1 className="text-2xl font-bold">
