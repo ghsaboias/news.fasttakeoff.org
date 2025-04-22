@@ -12,7 +12,8 @@ export const API = {
     GROQ: {
         ENDPOINT: 'https://api.groq.com/openai/v1/chat/completions',
         // MODEL: 'llama-3.3-70b-versatile',
-        MODEL: 'meta-llama/llama-4-scout-17b-16e-instruct',
+        // MODEL: 'meta-llama/llama-4-scout-17b-16e-instruct',
+        MODEL: 'meta-llama/llama-4-maverick-17b-128e-instruct',
     },
     OPENROUTER: {
         ENDPOINT: 'https://openrouter.ai/api/v1/chat/completions',

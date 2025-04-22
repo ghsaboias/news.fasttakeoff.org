@@ -2,6 +2,7 @@
 
 import LinkBadge from "@/components/current-events/LinkBadge";
 import MessagesAccordion from "@/components/current-events/MessagesAccordion";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
     DropdownMenu,
@@ -9,6 +10,7 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { API } from "@/lib/config";
 import { DiscordMessage, Report } from "@/lib/types/core";
 import { formatTime } from "@/lib/utils";
 import { Check, Globe, Loader2 } from "lucide-react";
@@ -112,36 +114,41 @@ export default function ReportClient() {
                     </div>
                 ) : (
                     <div className="flex flex-col gap-4">
-                        <div className="flex items-center gap-2">
-                            <LinkBadge href={`/current-events/${report?.channelId}`} variant="outline" className="p-2 hover:bg-muted">
-                                {report?.channelName}
-                            </LinkBadge>
-                            <div className="relative">
-                                <DropdownMenu>
-                                    <DropdownMenuTrigger asChild>
-                                        <Button variant="outline" size="icon" className="p-2 hover:bg-muted min-w-fit">
-                                            <div className="flex items-center gap-1">
-                                                <Globe className="h-5 w-5" />
-                                                <span className="text-xs font-medium">{selectedLanguage.toUpperCase()}</span>
-                                            </div>
-                                        </Button>
-                                    </DropdownMenuTrigger>
-                                    <DropdownMenuContent align="end">
-                                        {(Object.entries(LANGUAGES) as [LanguageCode, string][]).map(([code, name]) => (
-                                            <DropdownMenuItem
-                                                key={code}
-                                                onClick={() => setSelectedLanguage(code)}
-                                                className="flex items-center justify-between"
-                                            >
-                                                <span>{name}</span>
-                                                {selectedLanguage === code && (
-                                                    <Check className="h-4 w-4 text-primary" />
-                                                )}
-                                            </DropdownMenuItem>
-                                        ))}
-                                    </DropdownMenuContent>
-                                </DropdownMenu>
+                        <div className="flex items-center gap-2 justify-between">
+                            <div className="flex items-center gap-2">
+                                <LinkBadge href={`/current-events/${report?.channelId}`} variant="outline" className="p-2 hover:bg-muted">
+                                    {report?.channelName}
+                                </LinkBadge>
+                                <div className="relative">
+                                    <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                            <Button variant="outline" size="icon" className="p-2 hover:bg-muted min-w-fit">
+                                                <div className="flex items-center gap-1">
+                                                    <Globe className="h-5 w-5" />
+                                                    <span className="text-xs font-medium">{selectedLanguage.toUpperCase()}</span>
+                                                </div>
+                                            </Button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent align="end">
+                                            {(Object.entries(LANGUAGES) as [LanguageCode, string][]).map(([code, name]) => (
+                                                <DropdownMenuItem
+                                                    key={code}
+                                                    onClick={() => setSelectedLanguage(code)}
+                                                    className="flex items-center justify-between"
+                                                >
+                                                    <span>{name}</span>
+                                                    {selectedLanguage === code && (
+                                                        <Check className="h-4 w-4 text-primary" />
+                                                    )}
+                                                </DropdownMenuItem>
+                                            ))}
+                                        </DropdownMenuContent>
+                                    </DropdownMenu>
+                                </div>
                             </div>
+                            <Badge variant="secondary">
+                                {API.GROQ.MODEL}
+                            </Badge>
                         </div>
                         <div className={`flex flex-col gap-4 transition-opacity duration-200 ${isTranslating ? 'opacity-50' : 'opacity-100'}`}>
                             <h1 className="text-2xl font-bold">

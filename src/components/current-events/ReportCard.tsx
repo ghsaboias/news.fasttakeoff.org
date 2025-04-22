@@ -1,3 +1,4 @@
+import { API } from "@/lib/config";
 import { Report } from "@/lib/types/core";
 import { formatTime } from "@/lib/utils";
 import Link from "next/link";
@@ -5,7 +6,6 @@ import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "../ui/card";
 import LinkBadge from "./LinkBadge";
-
 export default function ReportCard({ report, channelsPage = false }: { report: Report, channelsPage?: boolean }) {
     const paragraphs = report.body.split('\n\n').filter(Boolean);
     return (
@@ -47,9 +47,9 @@ export default function ReportCard({ report, channelsPage = false }: { report: R
                 )}
                 <div className="flex justify-between items-center w-full">
                     <div className="flex flex-col gap-1">
-                        <span className="text-xs text-muted-foreground">
-                            Generated: {report.generatedAt ? formatTime(report.generatedAt, true) : 'Recent'}
-                        </span>
+                        <div className="text-xs text-muted-foreground">
+                            {report.generatedAt ? formatTime(report.generatedAt, true) : 'Recent'}
+                        </div>
                         <div className="text-xs text-muted-foreground">
                             {report.messageCount && (
                                 <div>
@@ -57,12 +57,10 @@ export default function ReportCard({ report, channelsPage = false }: { report: R
                                 </div>
                             )}
                         </div>
-                    </div>
-                    {channelsPage && (
                         <Badge variant="secondary">
-                            {report?.timeframe}
+                            {API.GROQ.MODEL}
                         </Badge>
-                    )}
+                    </div>
                 </div>
             </CardFooter>
         </Card>
