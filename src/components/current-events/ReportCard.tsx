@@ -1,4 +1,3 @@
-import { API } from "@/lib/config";
 import { Report } from "@/lib/types/core";
 import { formatTime } from "@/lib/utils";
 import Link from "next/link";
@@ -6,6 +5,7 @@ import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "../ui/card";
 import LinkBadge from "./LinkBadge";
+
 export default function ReportCard({ report, channelsPage = false }: { report: Report, channelsPage?: boolean }) {
     const paragraphs = report.body.split('\n\n').filter(Boolean);
     return (
@@ -57,9 +57,6 @@ export default function ReportCard({ report, channelsPage = false }: { report: R
                                 </div>
                             )}
                         </div>
-                        <Badge variant="secondary">
-                            {API.GROQ.MODEL}
-                        </Badge>
                     </div>
                 </div>
             </CardFooter>
