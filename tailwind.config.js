@@ -15,6 +15,10 @@ module.exports = {
           foreground: "var(--secondary-foreground)",
           hover: "var(--secondary-hover)",
         },
+        "soft-border": {
+          DEFAULT: "var(--soft-border)",
+          foreground: "var(--soft-border-foreground)",
+        },
         destructive: {
           DEFAULT: "var(--destructive)",
           foreground: "var(--destructive-foreground)",
