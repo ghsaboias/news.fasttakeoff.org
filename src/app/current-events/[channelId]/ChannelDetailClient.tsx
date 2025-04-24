@@ -42,28 +42,33 @@ export default function ChannelDetailClient({ reports, channel }: { reports: Rep
     }
 
     return (
-        <div className="p-6 mx-auto flex flex-col gap-6 w-[95vw]">
+        <div className="mx-auto flex flex-col gap-6 w-[90%] py-6">
             <h3 className="text-xl font-bold tracking-tight">{channel.name ?? 'Unknown Channel'}</h3>
             <div className="space-y-6">
                 {latestReport && (
-                    <div className="hover:shadow-lg transition-shadow border rounded-lg p-4">
-                        <Link href={`/current-events/${channelId}/${latestReport.reportId}`}>
-                            <h4 className="text-lg font-semibold mb-2">Latest Report</h4>
-                            <ReportCard report={latestReport} channelsPage={true} />
+                    <>
+                        <h4 className="text-lg font-semibold mb-2">Latest Report</h4>
+                        <Link href={`/current-events/${channelId}/${latestReport.reportId}`} className="hover:bg-muted transition-shadow rounded-lg">
+                            <ReportCard report={latestReport} showChannelName={false} showReadMore={false} />
                         </Link>
-                    </div>
+                    </>
                 )}
                 {timelineGroups.length > 0 && (
                     timelineGroups.map(([date, reportsOnDate]) => (
                         <div key={date} className="space-y-4">
-                            <div className="flex items-center gap-2 border-b pb-1 mb-2">
+                            <div className="flex items-center gap-2 border-b border-muted-foreground pb-2">
                                 <div className="w-2 h-2 bg-primary rounded-full" />
                                 <span className="text-sm font-medium text-muted-foreground">{date}</span>
                             </div>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 {reportsOnDate.map((report) => (
-                                    <Link key={report.reportId} href={`/current-events/${channelId}/${report.reportId}`}>
-                                        <ReportCard report={report} channelsPage={true} />
+                                    <Link href={`/current-events/${channelId}/${report.reportId}`} key={report.reportId} className="hover:bg-muted transition-shadow rounded-lg">
+                                        <ReportCard
+                                            report={report}
+                                            showChannelName={false}
+                                            showReadMore={false}
+                                            clickableChannel={false}
+                                        />
                                     </Link>
                                 ))}
                             </div>

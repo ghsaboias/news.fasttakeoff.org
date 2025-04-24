@@ -121,12 +121,12 @@ export default function CurrentEventsClient({ reports, isLoading = false }: Prop
     const lastUpdated = reportData.length > 0 ? reportData[0]?.generatedAt : null;
 
     return (
-        <div className="flex flex-col gap-6 py-8 px-4 w-[95vw]">
+        <div className="flex flex-col gap-6 py-8">
             <div className="flex flex-col gap-4 flex-row items-center justify-between">
                 <div className="flex items-center gap-2">
                     <h1 className="text-2xl font-bold">Current Events</h1>
                 </div>
-                <div className="flex flex-col items-end gap-1">
+                <div className="flex flex-col items-center gap-1">
                     <div className="flex gap-2">
                         <Badge variant="secondary">
                             Active Topics: {loading ? "Loading..." : channelsWithLatest.length}
@@ -175,7 +175,7 @@ export default function CurrentEventsClient({ reports, isLoading = false }: Prop
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {loading ? (
                     <div className="col-span-full text-center py-16 flex flex-col items-center justify-center gap-4">
                         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -183,13 +183,14 @@ export default function CurrentEventsClient({ reports, isLoading = false }: Prop
                     </div>
                 ) : channelsWithLatest.length > 0 ? (
                     channelsWithLatest.map(({ channel, latestReport, reportCount }) => (
-                        <Link key={channel} href={`/current-events/${latestReport?.channelId}`} className="border p-4 rounded-lg hover:shadow-lg transition-shadow">
-                            <div className="flex items-center justify-between gap-2 mb-2">
-                                <h3 className="text-lg font-semibold">{channel}</h3>
-                                <Badge variant="secondary">{reportCount} report{reportCount === 1 ? '' : 's'}</Badge>
-                            </div>
+                        <Link key={channel} href={`/current-events/${latestReport?.channelId}`} className="rounded-lg hover:shadow-lg transition-shadow">
                             {latestReport && (
-                                <ReportCard report={latestReport} channelsPage={true} />
+                                <ReportCard
+                                    report={latestReport}
+                                    reportCount={reportCount}
+                                    clickableChannel={false}
+                                    showReadMore={false}
+                                />
                             )}
                         </Link>
                     ))
@@ -207,6 +208,6 @@ export default function CurrentEventsClient({ reports, isLoading = false }: Prop
                     </div>
                 )}
             </div>
-        </div>
+        </div >
     );
 }
