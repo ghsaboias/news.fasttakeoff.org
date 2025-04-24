@@ -1,58 +1,92 @@
 'use client'
 
-import ReportsCarousel from "@/components/current-events/Carousel"
+import ReportCard from "@/components/current-events/ReportCard"
 import OrderCard from "@/components/executive-orders/OrderCard"
-import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
-import { TimeframeKey } from "@/lib/config"
 import { fetchExecutiveOrders } from "@/lib/data/executive-orders"
 import { ExecutiveOrder, Report } from "@/lib/types/core"
 import { getStartDate } from "@/lib/utils"
-import { animate, createScope, Scope } from 'animejs'
+import { animate, createScope, Scope } from "animejs"
+import Image from "next/image"
 import Link from "next/link"
 import { useEffect, useRef, useState } from "react"
-
 export const dynamic = 'force-dynamic';
 
 export default function Home() {
   const [latestExecutiveOrders, setLatestExecutiveOrders] = useState<ExecutiveOrder[]>([])
   const [loadingEO, setLoadingEO] = useState(true)
   const [reports, setReports] = useState<Report[]>([])
-  const [filteredReports, setFilteredReports] = useState<Report[]>([])
   const [loadingReports, setLoadingReports] = useState(true)
-  const [activeTimeframes, setActiveTimeframes] = useState<Set<TimeframeKey>>(new Set([]))
+  const [isSmallScreen, setIsSmallScreen] = useState(false)
 
   const root = useRef(null);
   const scope = useRef<Scope | null>(null);
 
+  // Handle window resize and initial size
   useEffect(() => {
+    const checkSize = () => {
+      setIsSmallScreen(window.innerWidth < 640);
+    };
 
-    scope.current = createScope({ root }).add(() => {
+    // Check initial size
+    checkSize();
 
-      // Every anime.js instances declared here are now scopped to <div ref={root}>
+    // Add resize listener
+    window.addEventListener('resize', checkSize);
 
-      animate('span', {
-        y: [
-          { to: '-2.75rem', ease: 'outExpo', duration: 600 },
-          { to: 0, ease: 'outBounce', duration: 800, delay: 100 }
-        ],
-        // Property specific parameters
-        rotate: {
-          from: '-1turn',
-          delay: 0
-        },
-        delay: (_, i) => i * 50, // Function based value
-        ease: 'inOutCirc',
-        loopDelay: 1000,
-        loop: 0
-      });
-
-    });
-
-    // Properly cleanup all anime.js instances declared inside the scope
-    return () => scope.current?.revert()
-
+    return () => window.removeEventListener('resize', checkSize);
   }, []);
+
+  // Handle animations
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const setupAnimation = () => {
+      if (scope.current) {
+        scope.current.revert();
+      }
+
+      scope.current = createScope({ root }).add(() => {
+        if (!isSmallScreen) {
+          animate('span', {
+            y: [
+              { to: '-3.75rem', ease: 'outExpo', duration: 600 },
+              { to: 0, ease: 'outBounce', duration: 800, delay: 100 }
+            ],
+            rotate: {
+              from: '-1turn',
+              delay: 0
+            },
+            delay: (_, i) => i * 50,
+            ease: 'inOutCirc',
+            loopDelay: 1000,
+            loop: 0
+          });
+        } else {
+          // Small screen animation for "Fast" - using similar syntax to large screen
+          animate('.word-fast span', {
+            x: [
+              { to: '200px', ease: 'outExpo', duration: 600 },
+              { to: '-200px', ease: 'linear', duration: 0 },
+              { to: '0', ease: 'outBounce', duration: 800 }
+            ],
+            delay: (_, i) => i * 50,
+            ease: 'inOutCirc',
+            loopDelay: 1000,
+            loop: 0
+          });
+        }
+      });
+    };
+
+    setupAnimation();
+
+    return () => {
+      if (scope.current) {
+        scope.current.revert();
+      }
+    };
+  }, [isSmallScreen]); // Re-run when screen size changes
 
   async function loadExecutiveOrders() {
     try {
@@ -80,7 +114,12 @@ export default function Home() {
       })
       if (!response.ok) throw new Error(`Failed to fetch reports: ${response.status}`)
       const fetchedReports = await response.json() as Report[]
-      setReports(fetchedReports)
+      const sortedReports = [...fetchedReports].sort((a, b) => {
+        const dateA = a.generatedAt
+        const dateB = b.generatedAt
+        return new Date(dateB).getTime() - new Date(dateA).getTime()
+      })
+      setReports(sortedReports)
     } catch (error) {
       console.error('[Carousel] Error fetching reports:', error)
       setReports([])
@@ -90,93 +129,84 @@ export default function Home() {
   }
 
   useEffect(() => {
-    setFilteredReports(
-      activeTimeframes.size === 0
-        ? reports
-        : reports.filter(report =>
-          report.timeframe && activeTimeframes.has(report.timeframe as TimeframeKey)
-        )
-    )
-  }, [reports, activeTimeframes])
-
-  useEffect(() => {
     loadExecutiveOrders()
     loadReports()
   }, [])
 
-  function toggleTimeframeFilter(timeframe: TimeframeKey) {
-    setActiveTimeframes(prev => {
-      const newSet = new Set(prev)
-      if (newSet.has(timeframe)) {
-        newSet.delete(timeframe)
-      } else {
-        newSet.add(timeframe)
-      }
-      return newSet
-    })
-  }
-
-  const isTimeframeActive = (timeframe: TimeframeKey): boolean =>
-    activeTimeframes.has(timeframe)
-
   return (
-    <div className="flex flex-col py-16 gap-16 w-[95vw] justify-center">
+    <div className="flex flex-col pb-16 w-[100vw] justify-center">
       {/* Hero Section */}
-      <section className="mx-auto px-4">
-        <div className="flex flex-col items-center gap-6 text-center" ref={root}>
-          <h1 className="text-3xl font-bold tracking-tighter sm:text-5xl md:text-6xl main-text">
-            <span style={{ display: 'inline-block', transformOrigin: 'center' }}>F</span>
-            <span style={{ display: 'inline-block', transformOrigin: 'center' }}>a</span>
-            <span style={{ display: 'inline-block', transformOrigin: 'center' }}>s</span>
-            <span style={{ display: 'inline-block', transformOrigin: 'center' }}>t</span>
-            <span style={{ display: 'inline-block', transformOrigin: 'center' }}>&nbsp;</span>
-            <span style={{ display: 'inline-block', transformOrigin: 'center' }}>T</span>
-            <span style={{ display: 'inline-block', transformOrigin: 'center' }}>a</span>
-            <span style={{ display: 'inline-block', transformOrigin: 'center' }}>k</span>
-            <span style={{ display: 'inline-block', transformOrigin: 'center' }}>e</span>
-            <span style={{ display: 'inline-block', transformOrigin: 'center' }}>o</span>
-            <span style={{ display: 'inline-block', transformOrigin: 'center' }}>f</span>
-            <span style={{ display: 'inline-block', transformOrigin: 'center' }}>f</span>
-            <span style={{ display: 'inline-block', transformOrigin: 'center' }}>&nbsp;</span>
-            <span style={{ display: 'inline-block', transformOrigin: 'center' }}>N</span>
-            <span style={{ display: 'inline-block', transformOrigin: 'center' }}>e</span>
-            <span style={{ display: 'inline-block', transformOrigin: 'center' }}>w</span>
-            <span style={{ display: 'inline-block', transformOrigin: 'center' }}>s</span>
-          </h1>
-          <p className="max-w-[700px] text-lg text-muted-foreground md:text-xl">
-            AI-powered news for everyone.
-          </p>
+      <section className="flex flex-col items-center justify-center gap-4 min-h-[400px] h-[56vh] text-center max-[540px]:w-[90%] max-[540px]:mx-auto max-[540px]:mb-10 max-[540px]:mt-4">
+        <div className="flex flex-col items-center gap-8">
+          <div className="flex flex-col items-center gap-4" ref={root}>
+            <h1 className="text-6xl md:text-7xl font-bold text-[#167F6E] leading-none flex flex-col sm:block">
+              <div className="mb-2 sm:mb-0 sm:inline word-fast">
+                <span style={{ display: 'inline-block', transformOrigin: 'center' }}>F</span>
+                <span style={{ display: 'inline-block', transformOrigin: 'center' }}>a</span>
+                <span style={{ display: 'inline-block', transformOrigin: 'center' }}>s</span>
+                <span style={{ display: 'inline-block', transformOrigin: 'center' }}>t</span>
+              </div>
+              <div className="mb-2 sm:mb-0 sm:inline">
+                <span style={{ display: 'inline-block', transformOrigin: 'center' }}>&nbsp;</span>
+                <span style={{ display: 'inline-block', transformOrigin: 'center' }}>T</span>
+                <span style={{ display: 'inline-block', transformOrigin: 'center' }}>a</span>
+                <span style={{ display: 'inline-block', transformOrigin: 'center' }}>k</span>
+                <span style={{ display: 'inline-block', transformOrigin: 'center' }}>e</span>
+                <span style={{ display: 'inline-block', transformOrigin: 'center' }}>o</span>
+                <span style={{ display: 'inline-block', transformOrigin: 'center' }}>f</span>
+                <span style={{ display: 'inline-block', transformOrigin: 'center' }}>f</span>
+              </div>
+              <div className="sm:inline">
+                <span style={{ display: 'inline-block', transformOrigin: 'center' }}>&nbsp;</span>
+                <span style={{ display: 'inline-block', transformOrigin: 'center' }}>N</span>
+                <span style={{ display: 'inline-block', transformOrigin: 'center' }}>e</span>
+                <span style={{ display: 'inline-block', transformOrigin: 'center' }}>w</span>
+                <span style={{ display: 'inline-block', transformOrigin: 'center' }}>s</span>
+              </div>
+            </h1>
+            <p className="text-3xl">AI-powered news for everyone.</p>
+          </div>
+          <div className="w-48 h-48">
+            <Image src="/images/brain_transparent.png" alt="Fast Takeoff News" className="w-full h-full object-contain" width={192} height={192} />
+          </div>
         </div>
       </section>
 
-      {/* Current Events Carousel */}
-      <section className="mx-auto sm:px-4 w-[95%]">
-        <div className="flex flex-col gap-6">
-          <div className="flex items-center justify-between px-4">
-            <h2 className="text-2xl font-bold tracking-tight md:text-3xl">Current Events</h2>
-            <div className="flex items-center gap-2">
-              <Button
-                size="icon"
-                variant={isTimeframeActive('2h') ? 'default' : 'outline'}
-                onClick={() => toggleTimeframeFilter('2h')}
-              >
-                2h
-              </Button>
-              <Button
-                size="icon"
-                variant={isTimeframeActive('6h') ? 'default' : 'outline'}
-                onClick={() => toggleTimeframeFilter('6h')}
-              >
-                6h
-              </Button>
+      <section className="mx-auto sm:px-4 w-[90%]">
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+          {loadingReports ? (
+            Array(4)
+              .fill(0)
+              .map((_, index) => (
+                <Card key={index} className="animate-pulse">
+                  <CardHeader>
+                    <div className="h-6 bg-muted rounded w-3/4 mb-2"></div>
+                    <div className="h-4 bg-muted rounded w-1/4"></div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="h-4 bg-muted rounded w-full mb-2"></div>
+                    <div className="h-4 bg-muted rounded w-full mb-2"></div>
+                    <div className="h-4 bg-muted rounded w-3/4"></div>
+                  </CardContent>
+                  <CardFooter>
+                    <div className="h-8 bg-muted rounded w-1/3"></div>
+                  </CardFooter>
+                </Card>
+              ))
+          ) : reports.length > 0 ? (
+            reports.map(report => (
+              <ReportCard key={report.reportId} report={report} showReadMore={false} clickableChannel={true} clickableReport={true} />
+            )).slice(0, 4)
+          ) : (
+            <div className="col-span-2 text-center py-8">
+              <p className="text-muted-foreground">No reports found.</p>
             </div>
-          </div>
-          <ReportsCarousel reports={filteredReports} loading={loadingReports} />
+          )}
         </div>
       </section>
 
       {/* Latest Executive Orders Section */}
-      <section className="mx-auto sm:px-4 w-[95%]">
+      <section className="mx-auto sm:px-4 w-[90%] mt-16">
         <div className="flex flex-col gap-6">
           <div className="flex items-center justify-between">
             <h2 className="text-2xl font-bold tracking-tight md:text-3xl">Latest Executive Orders</h2>
