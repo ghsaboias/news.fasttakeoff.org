@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { API } from "@/lib/config";
 import { UserButton, useUser } from "@clerk/nextjs";
 import { Menu } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
 import { Badge } from "./ui/badge";
@@ -14,13 +15,12 @@ export default function Header() {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
 
     return (
-        <header className="border-b mx-auto flex h-16 items-center justify-between sm:px-8 sm:w-[95vw] w-[90vw]">
-            <div className="flex items-center gap-2">
-                <Link href="/" className="text-xl font-bold">
-                    Fast Takeoff News
-                </Link>
-            </div>
-            <div className="items-center gap-6 hidden md:flex">
+        <header className="mx-auto flex h-16 items-center justify-between sm:px-8 sm:w-[95vw] w-[90vw]">
+            <Link href="/" className="flex items-center gap-2 text-xl text-[#167F6E] font-semibold">
+                <Image src="/images/brain_transparent.png" alt="Fast Takeoff News" width={32} height={32} />
+                <p className="hidden min-[840px]:block">Fast Takeoff News</p>
+            </Link>
+            <div className="items-center gap-6 hidden min-[540px]:flex">
                 <Link href="/executive-orders" className="text-sm font-medium hover:underline">
                     Executive Orders
                 </Link>
@@ -28,27 +28,6 @@ export default function Header() {
                     Current Events
                 </Link>
             </div>
-            <Sheet open={isMenuOpen} onOpenChange={setIsMenuOpen}>
-                <SheetTrigger asChild>
-                    <Menu className="md:hidden" />
-                </SheetTrigger>
-                <SheetContent side="right" className="w-[300px]">
-                    <SheetHeader>
-                        <SheetTitle>Menu</SheetTitle>
-                    </SheetHeader>
-                    <div className="flex flex-col gap-4 mt-8 justify-center items-center">
-                        <Link href="/executive-orders" className="text-sm font-medium hover:underline">
-                            Executive Orders
-                        </Link>
-                        <Link href="/current-events" className="text-sm font-medium hover:underline">
-                            Current Events
-                        </Link>
-                        <Badge variant="secondary">
-                            {API.GROQ.MODEL_NAME}
-                        </Badge>
-                    </div>
-                </SheetContent>
-            </Sheet>
             {
                 user ? (
                     <div className="flex items-center gap-4">
@@ -57,6 +36,27 @@ export default function Header() {
                         </Badge>
                         <Link href="/profile" className="text-sm font-medium hover:underline">Profile</Link>
                         <UserButton />
+                        <Sheet open={isMenuOpen} onOpenChange={setIsMenuOpen}>
+                            <SheetTrigger asChild>
+                                <Menu className="min-[540px]:hidden" />
+                            </SheetTrigger>
+                            <SheetContent side="right" className="w-[300px]">
+                                <SheetHeader>
+                                    <SheetTitle>Menu</SheetTitle>
+                                </SheetHeader>
+                                <div className="flex flex-col gap-4 mt-8 justify-center items-center">
+                                    <Link href="/executive-orders" className="text-sm font-medium hover:underline">
+                                        Executive Orders
+                                    </Link>
+                                    <Link href="/current-events" className="text-sm font-medium hover:underline">
+                                        Current Events
+                                    </Link>
+                                    <Badge variant="secondary">
+                                        {API.GROQ.MODEL_NAME}
+                                    </Badge>
+                                </div>
+                            </SheetContent>
+                        </Sheet>
                     </div>
                 ) : (
                     <div className="flex items-center gap-4">
@@ -73,6 +73,27 @@ export default function Header() {
                                 Subscribe
                             </Button>
                         </Link>
+                        <Sheet open={isMenuOpen} onOpenChange={setIsMenuOpen}>
+                            <SheetTrigger asChild>
+                                <Menu className="min-[540px]:hidden" />
+                            </SheetTrigger>
+                            <SheetContent side="right" className="w-[300px]">
+                                <SheetHeader>
+                                    <SheetTitle>Menu</SheetTitle>
+                                </SheetHeader>
+                                <div className="flex flex-col gap-4 mt-8 justify-center items-center">
+                                    <Link href="/executive-orders" className="text-sm font-medium hover:underline">
+                                        Executive Orders
+                                    </Link>
+                                    <Link href="/current-events" className="text-sm font-medium hover:underline">
+                                        Current Events
+                                    </Link>
+                                    <Badge variant="secondary">
+                                        {API.GROQ.MODEL_NAME}
+                                    </Badge>
+                                </div>
+                            </SheetContent>
+                        </Sheet>
                     </div>
                 )
             }
