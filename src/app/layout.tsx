@@ -26,7 +26,7 @@ export const metadata: Metadata = {
     siteName: 'Fast Takeoff News',
     images: [
       {
-        url: '/images/og-screenshot.png',
+        url: 'https://news.fasttakeoff.org/images/og-screenshot.png',
         width: 1200,
         height: 630,
         alt: 'Fast Takeoff News - AI-powered news for everyone',
