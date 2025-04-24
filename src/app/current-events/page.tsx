@@ -24,7 +24,7 @@ export default async function CurrentEventsPage() {
     }
 
     return (
-        <div className="flex flex-col gap-8">
+        <div className="flex flex-col gap-8 w-[90vw] mx-auto">
             <CurrentEventsClient reports={reports} />
         </div>
     );
