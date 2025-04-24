@@ -136,7 +136,7 @@ export default function Home() {
   return (
     <div className="flex flex-col pb-16 w-[100vw] justify-center">
       {/* Hero Section */}
-      <section className="flex flex-col items-center justify-center gap-4 min-h-[400px] h-[56vh] text-center max-[540px]:w-[90%] max-[540px]:mx-auto max-[540px]:mb-10 max-[540px]:mt-4">
+      <section className="flex flex-col items-center justify-center min-[540px]:h-[56vh] gap-4 text-center max-[540px]:w-[90%] max-[540px]:mx-auto max-[540px]:mb-10 max-[540px]:mt-4">
         <div className="flex flex-col items-center gap-8">
           <div className="flex flex-col items-center gap-4" ref={root}>
             <h1 className="text-6xl md:text-7xl font-bold text-[#167F6E] leading-none flex flex-col sm:block">
