@@ -35,6 +35,14 @@ export const metadata: Metadata = {
     locale: 'en_US',
     type: 'website',
   },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Fast Takeoff News',
+    description: 'AI-powered news for everyone.',
+    images: ['https://news.fasttakeoff.org/images/og-screenshot.png'],
+    creator: '@fasttakeoff',
+    site: '@fasttakeoff',
+  },
 };
 
 export default async function RootLayout({
