@@ -10,9 +10,9 @@ interface BadgeLinkProps {
 
 export default function BadgeLink({ href, children, variant = "default", className }: BadgeLinkProps) {
     return (
-        <Link href={href}>
-            <Badge variant={variant} className={className}>{children}</Badge>
-        </Link>
+        <Badge asChild variant={variant} className={className}>
+            <Link href={href}>{children}</Link>
+        </Badge>
     )
 }
 
