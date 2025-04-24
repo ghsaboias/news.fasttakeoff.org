@@ -19,6 +19,22 @@ export const metadata: Metadata = {
       },
     ],
   },
+  openGraph: {
+    title: 'Fast Takeoff News',
+    description: 'AI-powered news for everyone.',
+    url: 'https://news.fasttakeoff.org',
+    siteName: 'Fast Takeoff News',
+    images: [
+      {
+        url: '/images/og-screenshot.png',
+        width: 1200,
+        height: 630,
+        alt: 'Fast Takeoff News - AI-powered news for everyone',
+      },
+    ],
+    locale: 'en_US',
+    type: 'website',
+  },
 };
 
 export default async function RootLayout({
@@ -30,14 +46,14 @@ export default async function RootLayout({
     <ClerkProvider>
       <html lang='en'>
         <head>
-          {/* Preload Clerk’s core script */}
+          {/* Preload Clerk's core script */}
           <link
             rel='preload'
             href='https://clerk.fasttakeoff.org/npm/@clerk/clerk-js@latest/dist/clerk.browser.js'
             as='script'
             crossOrigin='anonymous'
           />
-          {/* Preload Clerk’s OAuth script */}
+          {/* Preload Clerk's OAuth script */}
           <link
             rel='preload'
             href='https://clerk.fasttakeoff.org/npm/@clerk/clerk-js@latest/dist/clerk.oauth.js'
