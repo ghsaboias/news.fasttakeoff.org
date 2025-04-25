@@ -55,26 +55,33 @@ export default function Home() {
             ],
             rotate: {
               from: '-1turn',
-              delay: 0
+              delay: 2000
             },
-            delay: (_, i) => i * 50,
+            delay: (_, i) => 2000 + (i * 50),
             ease: 'inOutCirc',
             loopDelay: 1000,
             loop: 0
           });
         } else {
-          // Small screen animation for "Fast" - using similar syntax to large screen
-          animate('.word-fast span', {
-            x: [
-              { to: '200px', ease: 'outExpo', duration: 600 },
-              { to: '-200px', ease: 'linear', duration: 0 },
-              { to: '0', ease: 'outBounce', duration: 800 }
-            ],
-            delay: (_, i) => i * 50,
-            ease: 'inOutCirc',
-            loopDelay: 1000,
-            loop: 0
-          });
+          // Small screen animation for each word in sequence
+          const animateWord = (selector: string, startDelay: number) => {
+            animate(`${selector} span`, {
+              x: [
+                { to: '200px', ease: 'outExpo', duration: 600 },
+                { to: '-200px', ease: 'linear', duration: 0 },
+                { to: '0', ease: 'outBounce', duration: 800 }
+              ],
+              delay: (_, i) => startDelay + (i * 50),
+              ease: 'inOutCirc',
+              loopDelay: 1000,
+              loop: 0
+            });
+          };
+
+          // Animate each word with a delay between them
+          animateWord('.word-fast', 2000); // First word starts at 2s
+          animateWord('.word-takeoff', 3000); // Second word starts at 3s
+          animateWord('.word-news', 4000); // Third word starts at 4s
         }
       });
     };
@@ -146,7 +153,7 @@ export default function Home() {
                 <span style={{ display: 'inline-block', transformOrigin: 'center' }}>s</span>
                 <span style={{ display: 'inline-block', transformOrigin: 'center' }}>t</span>
               </div>
-              <div className="mb-2 sm:mb-0 sm:inline">
+              <div className="mb-2 sm:mb-0 sm:inline word-takeoff">
                 <span style={{ display: 'inline-block', transformOrigin: 'center' }}>&nbsp;</span>
                 <span style={{ display: 'inline-block', transformOrigin: 'center' }}>T</span>
                 <span style={{ display: 'inline-block', transformOrigin: 'center' }}>a</span>
@@ -156,7 +163,7 @@ export default function Home() {
                 <span style={{ display: 'inline-block', transformOrigin: 'center' }}>f</span>
                 <span style={{ display: 'inline-block', transformOrigin: 'center' }}>f</span>
               </div>
-              <div className="sm:inline">
+              <div className="sm:inline word-news">
                 <span style={{ display: 'inline-block', transformOrigin: 'center' }}>&nbsp;</span>
                 <span style={{ display: 'inline-block', transformOrigin: 'center' }}>N</span>
                 <span style={{ display: 'inline-block', transformOrigin: 'center' }}>e</span>
