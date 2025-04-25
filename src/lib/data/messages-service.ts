@@ -211,16 +211,13 @@ export class MessagesService {
                 }
 
                 const messages = await response.json();
-                if (!messages.length) break;
+                if (!messages.length) break; // No more messages to fetch
 
                 const botMessages = this.filterMessages(messages);
                 allMessages.push(...botMessages);
                 console.log(`[MESSAGES] Channel ${channel.id}: ${botMessages.length} bot messages, total ${allMessages.length}`);
 
-                const oldestTimestamp = new Date(messages[messages.length - 1].timestamp);
-                if (oldestTimestamp <= since) break; // Stop if messages are older than or equal to the last cached message
-
-                after = messages[0].id; // Use message ID for next batch
+                after = messages[0].id; // Use the newest message ID for the next batch
             }
 
             if (allMessages.length > 0) {
