@@ -36,7 +36,7 @@ export default function Footer() {
                         <h4 className="text-sm font-semibold">Contact</h4>
                         <ul className="space-y-2 text-sm">
                             <li>
-                                <a href="https://twitter.com/org_intel" className="hover:underline">
+                                <a href="https://twitter.com/fasttakeoff" className="hover:underline">
                                     Twitter
                                 </a>
                             </li>
