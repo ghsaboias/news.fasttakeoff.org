@@ -58,6 +58,7 @@ export default async function RootLayout({
     <ClerkProvider>
       <html lang='en'>
         <head>
+          <link rel='manifest' href='/manifest.json' />
           {/* Preload Clerk's core script */}
           <link
             rel='preload'
