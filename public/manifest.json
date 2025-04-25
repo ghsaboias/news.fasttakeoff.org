@@ -1,0 +1,15 @@
+{
+    "name": "Fast Takeoff News",
+    "short_name": "Fast Takeoff",
+    "icons": [
+      {
+        "src": "/images/brain.png",
+        "type": "image/png",
+        "sizes": "1024x1024",
+        "purpose": "maskable"
+      }
+    ],
+    "theme_color": "#167F6E",
+    "background_color": "#0b1215",
+    "display": "standalone"
+  }

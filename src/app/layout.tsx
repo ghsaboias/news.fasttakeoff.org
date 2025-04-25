@@ -10,18 +10,16 @@ const geistMono = Geist_Mono({ variable: '--font-geist-mono', subsets: ['latin']
 
 export const metadata: Metadata = {
   title: 'Fast Takeoff News',
-  description: 'AI-powered news for everyone.',
+  description: 'AI-powered news for everyone. Get the latest news from on-the-ground sources.',
   icons: {
     icon: [
-      {
-        url: 'data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📓</text></svg>',
-        type: 'image/svg+xml',
-      },
+      { url: '/images/brain.png', type: 'image/png', sizes: '1024x1024' },
     ],
+    apple: '/images/brain-180.png',
   },
   openGraph: {
     title: 'Fast Takeoff News',
-    description: 'AI-powered news for everyone.',
+    description: 'AI-powered news for everyone. Get the latest news from on-the-ground sources.',
     url: 'https://news.fasttakeoff.org',
     siteName: 'Fast Takeoff News',
     images: [
@@ -38,7 +36,7 @@ export const metadata: Metadata = {
   twitter: {
     card: 'summary_large_image',
     title: 'Fast Takeoff News',
-    description: 'AI-powered news for everyone.',
+    description: 'AI-powered news for everyone. Get the latest news from on-the-ground sources.',
     images: [{
       url: 'https://news.fasttakeoff.org/images/og-screenshot.png',
       width: 1200,
