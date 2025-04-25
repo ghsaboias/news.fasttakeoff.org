@@ -13,7 +13,7 @@ export const metadata: Metadata = {
   description: 'AI-powered news for everyone. Get the latest news from on-the-ground sources.',
   icons: {
     icon: [
-      { url: '/images/brain.png', type: 'image/png', sizes: '1024x1024' },
+      { url: '/favicon.ico', type: 'image/x-icon', sizes: '32x32' },
     ],
     apple: '/images/brain-180.png',
   },
