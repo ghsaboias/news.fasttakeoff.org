@@ -183,7 +183,6 @@ export class MessagesService {
 
     async updateMessages(): Promise<void> {
         const channels = await this.channelsService.getChannels();
-        const since24h = new Date(Date.now() - 24 * 60 * 60 * 1000);
         const lastHour = new Date(Date.now() - TIME.ONE_HOUR_MS);
         let fetchedAny = false;
 
