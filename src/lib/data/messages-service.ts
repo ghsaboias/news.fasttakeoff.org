@@ -183,12 +183,12 @@ export class MessagesService {
 
     async updateMessages(): Promise<void> {
         const channels = await this.channelsService.getChannels();
-        const lastHour = new Date(Date.now() - TIME.ONE_HOUR_MS);
+        const lastThreeDays = new Date(Date.now() - (CACHE.TTL.MESSAGES * 1000)); // 3 days ago in milliseconds
         let fetchedAny = false;
 
         for (const channel of channels) {
             const cached = await this.getAllCachedMessagesForChannel(channel.id);
-            const since = cached?.lastMessageTimestamp ? new Date(cached.lastMessageTimestamp) : lastHour;
+            const since = cached?.lastMessageTimestamp ? new Date(cached.lastMessageTimestamp) : lastThreeDays;
             const discordEpoch = 1420070400000; // 2015-01-01T00:00:00.000Z
             const snowflake = BigInt(Math.floor(since.getTime() - discordEpoch)) << BigInt(22); // Shift 22 bits for worker/thread IDs
             const urlBase = `${API.DISCORD.BASE_URL}/channels/${channel.id}/messages?limit=${DISCORD.MESSAGES.BATCH_SIZE}`;
@@ -218,7 +218,7 @@ export class MessagesService {
                 console.log(`[MESSAGES] Channel ${channel.id}: ${botMessages.length} bot messages, total ${allMessages.length}`);
 
                 const oldestTimestamp = new Date(messages[messages.length - 1].timestamp);
-                if (oldestTimestamp < lastHour) break;
+                if (oldestTimestamp <= since) break; // Stop if messages are older than or equal to the last cached message
 
                 after = messages[0].id; // Use message ID for next batch
             }
@@ -227,7 +227,6 @@ export class MessagesService {
                 fetchedAny = true;
                 const cachedMessages = cached?.messages || [];
                 const updated = [...new Map([...cachedMessages, ...allMessages].map(m => [m.id, m])).values()]
-                    .filter(msg => new Date(msg.timestamp).getTime() >= (CACHE.TTL.MESSAGES * 1000))
                     .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
                 await this.cacheMessages(channel.id, updated, channel.name);
             }
