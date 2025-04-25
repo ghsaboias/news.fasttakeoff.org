@@ -1,12 +1,9 @@
 import { clerkClient } from '@clerk/nextjs/server';
 import { NextResponse } from 'next/server';
 
-console.log('API Route loaded. Using Clerk Secret Key (ends with):', process.env.CLERK_SECRET_KEY?.slice(-5));
-
 export async function POST(req: Request) {
     try {
         const { userId } = await req.json() as { userId: string };
-        console.log('Server received userId for checkout:', userId);
         if (!userId) {
             return NextResponse.json({ error: 'User ID required' }, { status: 400 });
         }
