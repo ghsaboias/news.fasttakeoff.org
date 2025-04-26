@@ -1,4 +1,4 @@
-import { API, CACHE, DISCORD, TIME } from '@/lib/config';
+import { API, CACHE, DISCORD, TIME, TimeframeKey } from '@/lib/config';
 import { CachedMessages, DiscordMessage } from '@/lib/types/core';
 import type { CloudflareEnv } from '@cloudflare/types';
 import { CacheManager } from '../cache-utils';
@@ -15,14 +15,22 @@ export class MessagesService {
         this.channelsService = new ChannelsService(env);
     }
 
-    filterMessages(messages: DiscordMessage[]): DiscordMessage[] {
-        const botMessages = messages.filter(
-            msg => msg.author?.username === DISCORD.BOT.USERNAME &&
+    private messageFilter = {
+        byBot: (messages: DiscordMessage[]): DiscordMessage[] =>
+            messages.filter(msg =>
+                msg.author?.username === DISCORD.BOT.USERNAME &&
                 msg.author?.discriminator === DISCORD.BOT.DISCRIMINATOR &&
                 (msg.content?.includes('http') || (msg.embeds && msg.embeds.length > 0))
-        );
-        return botMessages;
-    }
+            ),
+
+        byTime: (messages: DiscordMessage[], since: Date): DiscordMessage[] =>
+            messages.filter(msg => new Date(msg.timestamp).getTime() >= since.getTime()),
+
+        byIds: (messages: DiscordMessage[], ids: string[]): DiscordMessage[] => {
+            const messagesMap = new Map(messages.map(msg => [msg.id, msg]));
+            return ids.map(id => messagesMap.get(id)).filter((msg): msg is DiscordMessage => msg !== undefined);
+        }
+    };
 
     async fetchBotMessagesFromAPI(channelId: string): Promise<DiscordMessage[]> {
         const since = new Date(Date.now() - TIME.ONE_HOUR_MS);
@@ -59,7 +67,7 @@ export class MessagesService {
             if (!messages.length) break;
 
             // Filter bot messages and filter new messages
-            const newBotMessages = this.filterMessages(messages).filter(msg => new Date(msg.timestamp).getTime() >= sinceTime);
+            const newBotMessages = this.messageFilter.byBot(messages).filter(msg => new Date(msg.timestamp).getTime() >= sinceTime);
             const oldestMessageTime = new Date(messages[messages.length - 1].timestamp).getTime();
             allMessages.push(...newBotMessages);
 
@@ -92,6 +100,82 @@ export class MessagesService {
         return messages.slice(0, limit);
     }
 
+    private async getFromCache(channelId: string, options: {
+        since?: Date;
+        messageIds?: string[];
+    } = {}): Promise<CachedMessages | null> {
+        const cacheKey = `messages:${channelId}`;
+        const cached = await this.cacheManager.get<CachedMessages>('MESSAGES_CACHE', cacheKey);
+
+        if (!cached?.messages || !Array.isArray(cached.messages)) {
+            return null;
+        }
+
+        if (options.messageIds?.length) {
+            const messages = this.messageFilter.byIds(cached.messages, options.messageIds);
+            return {
+                ...cached,
+                messages,
+                messageCount: messages.length,
+                lastMessageTimestamp: messages[messages.length - 1]?.timestamp || cached.lastMessageTimestamp
+            };
+        }
+
+        if (options.since) {
+            const messages = this.messageFilter.byTime(cached.messages, options.since);
+            return {
+                ...cached,
+                messages,
+                messageCount: messages.length,
+                lastMessageTimestamp: messages[messages.length - 1]?.timestamp || cached.lastMessageTimestamp
+            };
+        }
+
+        return cached;
+    }
+
+    async getMessagesForTimeframe(channelId: string, timeframe: TimeframeKey): Promise<DiscordMessage[]> {
+        const hours: Record<TimeframeKey, number> = { '2h': 2, '6h': 6 };
+        const since = new Date(Date.now() - hours[timeframe] * 60 * 60 * 1000);
+
+        const cached = await this.getFromCache(channelId, { since });
+        if (cached) {
+            const age = (Date.now() - new Date(cached.cachedAt).getTime()) / 1000;
+            if (age < CACHE.TTL.MESSAGES) {
+                console.log(`[MESSAGES] Using ${cached.messages.length} cached messages for ${timeframe} timeframe of channel ${channelId}`);
+                return cached.messages;
+            }
+        }
+
+        // Cache miss or expired, fetch fresh data
+        const messages = await this.getMessages(channelId, { since });
+        console.log(`[MESSAGES] Fetched ${messages.length} fresh messages for ${timeframe} timeframe of channel ${channelId}`);
+        return messages;
+    }
+
+    async getMessagesForReport(channelId: string, messageIds: string[]): Promise<DiscordMessage[]> {
+        if (!messageIds.length) return [];
+
+        const cached = await this.getFromCache(channelId, { messageIds });
+        if (cached) {
+            console.log(`[MESSAGES] Retrieved ${cached.messages.length}/${messageIds.length} messages by ID for channel ${channelId}`);
+            return cached.messages;
+        }
+
+        return [];
+    }
+
+    private async getAllCachedMessagesForChannel(channelId: string): Promise<CachedMessages | null> {
+        return this.getFromCache(channelId);
+    }
+
+    async getCachedMessagesSince(
+        channelId: string,
+        since: Date = new Date(Date.now() - TIME.ONE_HOUR_MS)
+    ): Promise<CachedMessages | null> {
+        return this.getFromCache(channelId, { since });
+    }
+
     async cacheMessages(channelId: string, messages: DiscordMessage[], channelName?: string): Promise<void> {
         if (!this.env.MESSAGES_CACHE) {
             console.warn('[MESSAGES_CACHE] KV namespace not available');
@@ -107,78 +191,6 @@ export class MessagesService {
         };
         const cacheKey = `messages:${channelId}`;
         await this.cacheManager.put('MESSAGES_CACHE', cacheKey, data, CACHE.TTL.MESSAGES);
-    }
-
-    async getCachedMessagesSince(
-        channelId: string,
-        since: Date = new Date(Date.now() - TIME.ONE_HOUR_MS)
-    ): Promise<CachedMessages | null> {
-        const cached = await this.getAllCachedMessagesForChannel(channelId);
-        if (!cached || !cached.messages || !Array.isArray(cached.messages)) {
-            console.log(`[MESSAGES] No valid cached messages for channel ${channelId}`);
-            return null;
-        }
-
-        const recentMessages = cached.messages.filter(
-            (msg: DiscordMessage) => new Date(msg.timestamp).getTime() >= since.getTime()
-        );
-
-        return {
-            messages: recentMessages,
-            cachedAt: cached.cachedAt,
-            messageCount: recentMessages.length,
-            lastMessageTimestamp: recentMessages[recentMessages.length - 1]?.timestamp || new Date().toISOString(),
-            channelName: cached.channelName,
-        };
-    }
-
-    /**
-     * Retrieves specific messages by their IDs from the cache
-     * Used primarily to fetch messages associated with a particular report
-     * @param channelId The Discord channel ID
-     * @param messageIds Array of message IDs to retrieve
-     * @returns Array of messages that were found in the cache
-     */
-    async getMessagesForReport(channelId: string, messageIds: string[]): Promise<DiscordMessage[]> {
-        if (!messageIds.length) return [];
-
-        const cacheKey = `messages:${channelId}`;
-        const data = await this.cacheManager.get<CachedMessages>('MESSAGES_CACHE', cacheKey);
-        if (!data) return [];
-
-        try {
-            const messages = data.messages || [];
-            if (!messages || !Array.isArray(messages)) {
-                console.log(`[MESSAGES] Invalid cached message format for channel ${channelId}`);
-                return [];
-            }
-
-            const messagesMap = new Map<string, DiscordMessage>();
-            messages.forEach((msg: DiscordMessage) => {
-                if (msg.id) messagesMap.set(msg.id, msg);
-            });
-
-            const result = messageIds
-                .map(id => messagesMap.get(id))
-                .filter((msg): msg is DiscordMessage => msg !== undefined);
-
-            console.log(`[MESSAGES] Retrieved ${result.length}/${messageIds.length} messages by ID for channel ${channelId}`);
-            return result;
-        } catch (error) {
-            console.error(`[MESSAGES] Error retrieving messages by ID for channel ${channelId}:`, error);
-            return [];
-        }
-    }
-
-    async getAllCachedMessagesForChannel(channelId: string): Promise<CachedMessages | null> {
-        const cacheKey = `messages:${channelId}`;
-        try {
-            const data = await this.cacheManager.get<CachedMessages>('MESSAGES_CACHE', cacheKey);
-            return data || null;
-        } catch (error) {
-            console.error(`[MESSAGES_CACHE] Failed to fetch cache for ${channelId}:`, error);
-            return null;
-        }
     }
 
     async updateMessages(): Promise<void> {
@@ -213,7 +225,7 @@ export class MessagesService {
                 const messages = await response.json();
                 if (!messages.length) break; // No more messages to fetch
 
-                const botMessages = this.filterMessages(messages);
+                const botMessages = this.messageFilter.byBot(messages);
                 allMessages.push(...botMessages);
                 console.log(`[MESSAGES] Channel ${channel.id}: ${botMessages.length} bot messages, total ${allMessages.length}`);
 
