@@ -223,36 +223,6 @@ export class ReportsService {
         console.log(`Cached ${cleanedReports.length} reports for ${key} with ${CACHE.TTL.REPORTS / 3600}h TTL`);
     }
 
-    async getMessagesForTimeframe(channelId: string, timeframe: TimeframeKey): Promise<DiscordMessage[]> {
-        const hours = { '2h': 2, '6h': 6 }[timeframe] || 1;
-        const since = new Date(Date.now() - hours * 60 * 60 * 1000);
-
-        if (timeframe === '2h') {
-            const cached = await this.messagesService.getCachedMessagesSince(channelId, since);
-            if (cached && cached.messages.length >= 0) { // Always returns an array, even empty
-                console.log(`[REPORTS] Using cached messages for channel ${channelId} for ${timeframe} (${cached.messages.length} messages)`);
-                return cached.messages;
-            }
-            console.log(`[REPORTS] Cache miss for channel ${channelId} for ${timeframe}, fetching fresh messages`);
-            return this.messagesService.getMessages(channelId, { since }); // Fallback fetch
-        }
-
-        try {
-            const cacheKey = `messages:${channelId}`;
-            const cachedData = await this.cacheManager.get<{ messages: DiscordMessage[] }>('MESSAGES_CACHE', cacheKey);
-            if (!cachedData || !Array.isArray(cachedData.messages)) return [];
-
-            const filteredMessages = cachedData.messages.filter(
-                (msg: DiscordMessage) => new Date(msg.timestamp).getTime() >= since.getTime()
-            );
-            console.log(`Using ${filteredMessages.length} cached messages for ${timeframe} report of channel ${channelId}`);
-            return filteredMessages;
-        } catch (error) {
-            console.error(`[REPORTS] Error processing cached messages for ${timeframe} report of channel ${channelId}:`, error);
-            return [];
-        }
-    }
-
     private async getPreviousTimeframeReport(channelId: string, timeframe: TimeframeKey): Promise<Report | null> {
         const reports = await this.getReportsFromCache(channelId, timeframe) || [];
 
@@ -266,7 +236,7 @@ export class ReportsService {
         const previousReport = await this.getPreviousTimeframeReport(channelId, timeframe);
 
         const [messages, channelName] = await Promise.all([
-            this.getMessagesForTimeframe(channelId, timeframe),
+            this.messagesService.getMessagesForTimeframe(channelId, timeframe),
             getChannelName(this.env, channelId),
         ]);
 
@@ -297,7 +267,7 @@ export class ReportsService {
 
     async getLastReportAndMessages(channelId: string, timeframe: TimeframeKey = '2h'): Promise<{ report: Report | null; messages: DiscordMessage[] }> {
         const cachedReports = await this.getReportsFromCache(channelId, timeframe);
-        const messages = await this.getMessagesForTimeframe(channelId, timeframe);
+        const messages = await this.messagesService.getMessagesForTimeframe(channelId, timeframe);
 
         if (cachedReports?.length) {
             const latestReport = cachedReports[0];
@@ -320,7 +290,7 @@ export class ReportsService {
             if (report) {
                 const messages = report.messageIds?.length
                     ? await this.messagesService.getMessagesForReport(channelId, report.messageIds)
-                    : await this.getMessagesForTimeframe(channelId, effectiveTimeframe);
+                    : await this.messagesService.getMessagesForTimeframe(channelId, effectiveTimeframe);
                 return { report, messages };
             }
         }
@@ -398,7 +368,7 @@ export class ReportsService {
 
             for (const timeframe of activeTimeframes) {
                 const previousReport = await this.getPreviousTimeframeReport(channelId, timeframe);
-                const messages = await this.getMessagesForTimeframe(channelId, timeframe);
+                const messages = await this.messagesService.getMessagesForTimeframe(channelId, timeframe);
 
                 if (messages.length === 0) {
                     console.log(`[REPORTS] Skipping channel ${channelId}: No messages in last ${timeframe}`);
