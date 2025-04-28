@@ -14,7 +14,7 @@ export default function PrivacyPolicy() {
             <section className="mb-6">
                 <h2 className="text-xl font-semibold mb-2">Introduction</h2>
                 <p>
-                    Fast Takeoff News-IG ("we", "us", or "our") is an application that generates and posts news content to Instagram on behalf of users. This Privacy Policy explains how we collect, use, and protect your data when you use our app through Meta's Instagram Graph API.
+                    Fast Takeoff News-IG (&quot;we&quot;, &quot;us&quot;, or &quot;our&quot;) is an application that generates and posts news content to Instagram on behalf of users. This Privacy Policy explains how we collect, use, and protect your data when you use our app through Meta&apos;s Instagram Graph API.
                 </p>
             </section>
 
@@ -52,7 +52,7 @@ export default function PrivacyPolicy() {
             <section className="mb-6">
                 <h2 className="text-xl font-semibold mb-2">Your Rights</h2>
                 <p>
-                    You can revoke our app's access to your Instagram account at any time through your Instagram settings. If you have questions about your data or wish to request its deletion, please contact us at gsaboia@yahoo.com.
+                    You can revoke our app&apos;s access to your Instagram account at any time through your Instagram settings. If you have questions about your data or wish to request its deletion, please contact us at gsaboia@yahoo.com.
                 </p>
             </section>
 
