@@ -12,6 +12,7 @@ const nextConfig: NextConfig = {
         hostname: "**",
       },
     ],
+    domains: ['news.fasttakeoff.org'],
   },
 };
 

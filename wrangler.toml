@@ -40,6 +40,10 @@ pattern = "news.fasttakeoff.org"
 custom_domain = true
 zone_name = "fasttakeoff.org"
 
+[[services]]
+binding = "INSTAGRAM_WORKER"
+service = "instagram-webhook-worker"
+
 [vars]
 NEXT_PUBLIC_CLERK_SIGN_IN_URL = "/sign-in"
 NEXT_PUBLIC_CLERK_SIGN_UP_URL = "/sign-up"
