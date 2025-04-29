@@ -7,7 +7,7 @@ interface InstagramPostPayload {
 }
 
 const BRAIN_IMAGE_URL = URLs.BRAIN_IMAGE;
-const INSTAGRAM_WORKER_URL = URLs.INSTAGRAM_WORKER;
+const INSTAGRAM_ENDPOINT = "https://news.fasttakeoff.org/api/instagram/post";
 
 export class InstagramService {
     async postNews(report: Report): Promise<void> {
@@ -25,8 +25,8 @@ export class InstagramService {
         console.log(`[INSTAGRAM] Attempting to post report ID: ${report.reportId}`);
 
         try {
-            console.log(`[INSTAGRAM] Using fetch to post to: ${INSTAGRAM_WORKER_URL}`);
-            const response = await fetch(INSTAGRAM_WORKER_URL, {
+            console.log(`[INSTAGRAM] Using fetch to post to: ${INSTAGRAM_ENDPOINT}`);
+            const response = await fetch(INSTAGRAM_ENDPOINT, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload),
@@ -36,7 +36,7 @@ export class InstagramService {
 
             if (!response.ok) {
                 console.error(`[INSTAGRAM] Error posting report ${report.reportId}. Status: ${response.status}`, responseData);
-                throw new Error(`Instagram Worker request failed: ${response.status}`);
+                throw new Error(`Instagram request failed: ${response.status}`);
             }
 
             console.log(`[INSTAGRAM] Successfully posted report ${report.reportId}. Media ID: ${responseData.mediaId || 'N/A'}`);
