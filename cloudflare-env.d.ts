@@ -25,6 +25,7 @@ export declare namespace Cloudflare {
         STRIPE_WEBHOOK_SECRET: string;
         INSTAGRAM_WORKER: Fetcher;
         ASSETS: Fetcher;
+        INSTAGRAM_ACCESS_TOKEN: string;
     }
 }
 interface CloudflareEnv extends Cloudflare.Env { }
