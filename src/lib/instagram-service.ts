@@ -56,7 +56,7 @@ export class InstagramService {
                 createMediaResult = await createMediaResponse.json();
             } catch (error) {
                 const responseText = await createMediaResponse.text();
-                throw new Error(`Failed to parse create media response: ${responseText}`);
+                throw new Error(`Failed to parse create media response: ${responseText}. Error: ${error}`);
             }
 
             if (!createMediaResult.id) {
@@ -87,7 +87,7 @@ export class InstagramService {
                 publishResult = await publishResponse.json();
             } catch (error) {
                 const responseText = await publishResponse.text();
-                throw new Error(`Failed to parse publish response: ${responseText}`);
+                throw new Error(`Failed to parse publish response: ${responseText}. Error: ${error}`);
             }
 
             if (publishResult.id) {
