@@ -190,7 +190,7 @@ export class ReportsService {
         this.env = env;
         this.messagesService = new MessagesService(env);
         this.cacheManager = new CacheManager(env);
-        this.instagramService = new InstagramService();
+        this.instagramService = new InstagramService(env);
     }
 
     /**

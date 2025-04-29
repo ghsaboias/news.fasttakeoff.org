@@ -1,6 +1,6 @@
+import { CloudflareEnv } from '../../cloudflare-env';
 import { URLs } from './config';
 import { Report } from './types/core';
-
 const BRAIN_IMAGE_URL = URLs.BRAIN_IMAGE;
 
 // Instagram API constants
@@ -11,8 +11,8 @@ const INSTAGRAM_PUBLISH_MEDIA_URL = `https://graph.instagram.com/v20.0/${INSTAGR
 export class InstagramService {
     private readonly accessToken: string;
 
-    constructor() {
-        this.accessToken = process.env.INSTAGRAM_ACCESS_TOKEN || '';
+    constructor(env: CloudflareEnv) {
+        this.accessToken = env.INSTAGRAM_ACCESS_TOKEN || '';
         if (!this.accessToken) {
             console.warn('[INSTAGRAM] No access token found in environment');
         }
@@ -26,7 +26,7 @@ export class InstagramService {
 
         if (!this.accessToken) {
             console.error('[INSTAGRAM] Cannot post to Instagram: Missing access token');
-            return;
+            return; // Consider throwing an error instead to fail fast
         }
 
         console.log(`[INSTAGRAM] Posting to Instagram API for report ID: ${report.reportId}`);
@@ -95,9 +95,9 @@ export class InstagramService {
             } else {
                 throw new Error(publishResult.error?.message || 'Failed to publish media');
             }
-
         } catch (error) {
             console.error(`[INSTAGRAM] Failed to post report ${report.reportId}:`, error);
+            throw error; // Rethrow to allow caller to handle
         }
     }
 }
