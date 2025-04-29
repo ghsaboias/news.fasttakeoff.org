@@ -14,7 +14,7 @@ export async function scheduled(event: ScheduledEvent, env: CloudflareEnv): Prom
         const messagesService = new MessagesService(env);
         const reportsService = new ReportsService(env);
 
-        if (event.cron === '0 * * * *') {
+        if (event.cron === '0 * * * *' || event.cron === '0/4 * * * *') {
             console.log('[CRON] Running message update');
             await messagesService.updateMessages();
             console.log('[CRON] Message update completed');
