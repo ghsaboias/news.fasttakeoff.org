@@ -18,7 +18,7 @@ export async function scheduled(event: ScheduledEvent, env: CloudflareEnv): Prom
             console.log('[CRON] Running message update');
             await messagesService.updateMessages();
             console.log('[CRON] Message update completed');
-        } else if (event.cron === '2/5 * * * *') {
+        } else if (event.cron === '2 * * * *') {
             console.log('[CRON] Running report generation');
             await reportsService.createFreshReports();
             console.log('[CRON] Report generation completed');
