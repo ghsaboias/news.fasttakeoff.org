@@ -35,7 +35,7 @@ export class InstagramService {
             // Step 1: Create media container
             const createMediaPayload = {
                 image_url: BRAIN_IMAGE_URL,
-                caption: `${report.headline}\n\n${report.body}`,
+                caption: `${report.headline}\n\n${report.body}`.slice(0, 2200),
                 access_token: this.accessToken,
             };
 
