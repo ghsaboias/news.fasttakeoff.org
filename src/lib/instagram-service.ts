@@ -1,45 +1,101 @@
 import { URLs } from './config';
 import { Report } from './types/core';
-interface InstagramPostPayload {
-    newsTitle: string;
-    newsContent: string;
-    imageUrl?: string;
-}
 
 const BRAIN_IMAGE_URL = URLs.BRAIN_IMAGE;
-const INSTAGRAM_ENDPOINT = "https://news.fasttakeoff.org/api/instagram/post";
+
+// Instagram API constants
+const INSTAGRAM_ACCOUNT_ID = '9985118404840500';
+const INSTAGRAM_CREATE_MEDIA_URL = `https://graph.instagram.com/v20.0/${INSTAGRAM_ACCOUNT_ID}/media`;
+const INSTAGRAM_PUBLISH_MEDIA_URL = `https://graph.instagram.com/v20.0/${INSTAGRAM_ACCOUNT_ID}/media_publish`;
 
 export class InstagramService {
+    private readonly accessToken: string;
+
+    constructor() {
+        this.accessToken = process.env.INSTAGRAM_ACCESS_TOKEN || '';
+        if (!this.accessToken) {
+            console.warn('[INSTAGRAM] No access token found in environment');
+        }
+    }
+
     async postNews(report: Report): Promise<void> {
         if (!report || !report.headline || !report.body) {
             console.warn('[INSTAGRAM] Invalid report data received, skipping post.');
             return;
         }
 
-        const payload: InstagramPostPayload = {
-            newsTitle: report.headline,
-            newsContent: report.body,
-            imageUrl: BRAIN_IMAGE_URL,
-        };
+        if (!this.accessToken) {
+            console.error('[INSTAGRAM] Cannot post to Instagram: Missing access token');
+            return;
+        }
 
-        console.log(`[INSTAGRAM] Attempting to post report ID: ${report.reportId}`);
+        console.log(`[INSTAGRAM] Posting to Instagram API for report ID: ${report.reportId}`);
 
         try {
-            console.log(`[INSTAGRAM] Using fetch to post to: ${INSTAGRAM_ENDPOINT}`);
-            const response = await fetch(INSTAGRAM_ENDPOINT, {
+            // Step 1: Create media container
+            const createMediaPayload = {
+                image_url: BRAIN_IMAGE_URL,
+                caption: `${report.headline}\n\n${report.body}`,
+                access_token: this.accessToken,
+            };
+
+            console.log(`[INSTAGRAM] Creating media container for report: ${report.reportId}`);
+            const createMediaResponse = await fetch(INSTAGRAM_CREATE_MEDIA_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload),
+                body: JSON.stringify(createMediaPayload),
             });
 
-            const responseData = await response.json() as { mediaId?: string };
-
-            if (!response.ok) {
-                console.error(`[INSTAGRAM] Error posting report ${report.reportId}. Status: ${response.status}`, responseData);
-                throw new Error(`Instagram request failed: ${response.status}`);
+            if (!createMediaResponse.ok) {
+                const errorText = await createMediaResponse.text();
+                throw new Error(`Failed to create media: ${createMediaResponse.status}. ${errorText}`);
             }
 
-            console.log(`[INSTAGRAM] Successfully posted report ${report.reportId}. Media ID: ${responseData.mediaId || 'N/A'}`);
+            let createMediaResult;
+            try {
+                createMediaResult = await createMediaResponse.json();
+            } catch (error) {
+                const responseText = await createMediaResponse.text();
+                throw new Error(`Failed to parse create media response: ${responseText}`);
+            }
+
+            if (!createMediaResult.id) {
+                throw new Error(createMediaResult.error?.message || 'Failed to create media container');
+            }
+
+            console.log(`[INSTAGRAM] Media container created: ${createMediaResult.id}`);
+
+            // Step 2: Publish media
+            const publishPayload = {
+                creation_id: createMediaResult.id,
+                access_token: this.accessToken,
+            };
+
+            const publishResponse = await fetch(INSTAGRAM_PUBLISH_MEDIA_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(publishPayload),
+            });
+
+            if (!publishResponse.ok) {
+                const errorText = await publishResponse.text();
+                throw new Error(`Failed to publish media: ${publishResponse.status}. ${errorText}`);
+            }
+
+            let publishResult;
+            try {
+                publishResult = await publishResponse.json();
+            } catch (error) {
+                const responseText = await publishResponse.text();
+                throw new Error(`Failed to parse publish response: ${responseText}`);
+            }
+
+            if (publishResult.id) {
+                console.log(`[INSTAGRAM] Successfully posted report ${report.reportId}. Media ID: ${publishResult.id}`);
+            } else {
+                throw new Error(publishResult.error?.message || 'Failed to publish media');
+            }
+
         } catch (error) {
             console.error(`[INSTAGRAM] Failed to post report ${report.reportId}:`, error);
         }
