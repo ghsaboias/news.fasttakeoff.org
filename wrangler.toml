@@ -35,10 +35,10 @@ binding = "SUBSCRIPTIONS_CACHE"
 id = "f16280a6d9a14d228556662cf469926c"
 preview_id = "f16280a6d9a14d228556662cf469926c"
 
-[[routes]]
-pattern = "news.fasttakeoff.org"
-custom_domain = true
-zone_name = "fasttakeoff.org"
+
+routes = [
+    { pattern = "news.fasttakeoff.org", custom_domain = true, zone_name = "fasttakeoff.org"}
+]
 
 services = [
   { binding = "INSTAGRAM_WORKER", service = "instagram-webhook-worker" }
