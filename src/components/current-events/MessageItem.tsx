@@ -20,42 +20,23 @@ interface MessageItemProps {
 export default function MessageItem({ message, index, noAccordion = false }: MessageItemProps) {
     const MessageContent = () => (
         <div className="space-y-4 bg-secondary-light rounded-lg">
-            {/* Metadata Section */}
-            <div className="flex items-center justify-between text-xs text-muted-foreground">
-                <div className="flex items-center gap-2">
-                    {message.author && (
-                        <div className="flex items-center gap-2">
-                            {message.author.avatar && (
-                                <Image
-                                    src={`https://cdn.discordapp.com/avatars/${message.author.id}/${message.author.avatar}.png`}
-                                    alt={message.author.username}
-                                    className="w-5 h-5 rounded-full"
-                                    width={20}
-                                    height={20}
-                                    unoptimized
-                                />
-                            )}
-                            <span>{message.author.global_name || message.author.username}</span>
-                        </div>
-                    )}
-                </div>
-                <time dateTime={message.timestamp}>
-                    {formatDate(message.timestamp)}
-                </time>
-            </div>
-
             {/* Content Section */}
             {message.content && (
-                <div>
-                    <h4 className="font-semibold text-sm">Source:</h4>
-                    <a
-                        href={message.content}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-sm text-blue-500 hover:underline break-all"
-                    >
-                        {message.content}
-                    </a>
+                <div className="flex items-center justify-between">
+                    <div>
+                        <h4 className="font-semibold text-sm">Source:</h4>
+                        <a
+                            href={message.content}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-sm text-blue-500 hover:underline break-all"
+                        >
+                            {message.content}
+                        </a>
+                    </div>
+                    <time dateTime={message.timestamp}>
+                        {formatDate(message.timestamp)}
+                    </time>
                 </div>
             )}
 
