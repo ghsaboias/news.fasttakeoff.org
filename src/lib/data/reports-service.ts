@@ -1,4 +1,5 @@
-import { AI, API, CACHE, TIME, TimeframeKey } from '@/lib/config';
+import { getAIAPIKey, getAIProviderConfig } from '@/lib/ai-config';
+import { AI, CACHE, TIME, TimeframeKey } from '@/lib/config';
 import { InstagramService } from '@/lib/instagram-service';
 import { DiscordMessage, Report } from '@/lib/types/core';
 import { CloudflareEnv } from '@cloudflare/types';
@@ -87,7 +88,9 @@ async function createReportWithAI(
     env: CloudflareEnv,
     timeframe: string,
 ): Promise<Report> {
-    const apiUrl = API.GROQ.ENDPOINT;
+    const aiConfig = getAIProviderConfig(); // Gets config for the active provider
+    const apiKey = getAIAPIKey(env as unknown as { [key: string]: string | undefined });
+    const apiUrl = aiConfig.endpoint;
     let attempts = 0;
     const maxAttempts = AI.REPORT_GENERATION.MAX_ATTEMPTS;
 
@@ -96,7 +99,7 @@ async function createReportWithAI(
             const response = await fetch(apiUrl, {
                 method: 'POST',
                 headers: {
-                    'Authorization': `Bearer ${env.GROQ_API_KEY}`,
+                    'Authorization': `Bearer ${apiKey}`,
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
@@ -107,8 +110,33 @@ async function createReportWithAI(
                         },
                         { role: "user", content: prompt }
                     ],
-                    model: API.GROQ.MODEL,
-                    response_format: { type: "json_object" },
+                    model: aiConfig.model, // Use model from the active config
+                    response_format: {
+                        type: "json_schema",
+                        json_schema: {
+                            name: "report",
+                            strict: true,
+                            schema: {
+                                type: "object",
+                                properties: {
+                                    headline: {
+                                        type: "string",
+                                        description: "Clear, specific, non-sensational headline in all caps"
+                                    },
+                                    city: {
+                                        type: "string",
+                                        description: "Single city name, related to the news, properly capitalized (first letter of each word only)"
+                                    },
+                                    body: {
+                                        type: "string",
+                                        description: "Cohesive narrative of the most important verified developments, including key names, numbers, locations, dates, etc. Separate paragraphs with double newlines (\\n\\n)."
+                                    },
+                                },
+                                required: ["headline", "city", "body"],
+                                additionalProperties: false
+                            },
+                        },
+                    },
                 }),
             });
 

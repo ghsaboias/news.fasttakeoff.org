@@ -1,3 +1,44 @@
+import { config } from 'dotenv';
+
+// Load environment variables from .env.local, if present
+// Useful for local development without setting them globally
+config({ path: '.env.local' });
+
+/**
+ * Defines the structure for an AI provider's configuration.
+ */
+export interface AIProviderConfig {
+    endpoint: string;
+    model: string;
+    apiKeyEnvVar: string; // The exact name of the environment variable
+    displayName: string; // User-friendly name for display
+}
+
+/**
+ * Centralized registry for all supported AI providers.
+ */
+export const AI_PROVIDERS: Record<string, AIProviderConfig> = {
+    groq: {
+        endpoint: 'https://api.groq.com/openai/v1/chat/completions',
+        model: 'llama-4-maverick-17b-128e-instruct',
+        apiKeyEnvVar: 'GROQ_API_KEY',
+        displayName: 'Llama 4 Maverick (Groq)',
+    },
+    openrouter: {
+        endpoint: 'https://openrouter.ai/api/v1/chat/completions',
+        model: 'meta-llama/llama-4-maverick-17b-128e-instruct',
+        apiKeyEnvVar: 'OPENROUTER_API_KEY',
+        displayName: 'Llama 4 Maverick (OpenRouter)',
+    },
+    // Add other providers here in the future
+};
+
+/**
+ * Specifies the key (name) of the AI provider to be used by default throughout the application.
+ * To change the provider, modify this value and redeploy.
+ */
+export const ACTIVE_AI_PROVIDER_NAME: string = 'openrouter'; // Or 'groq', etc.
+
 /**
  * Application configuration
  * Centralizes all configurable values in the application
@@ -9,17 +50,7 @@ export const API = {
         BASE_URL: 'https://discord.com/api/v10',
         USER_AGENT: 'NewsApp/0.1.0 (https://news.fasttakeoff.org)',
     },
-    GROQ: {
-        ENDPOINT: 'https://api.groq.com/openai/v1/chat/completions',
-        // MODEL: 'llama-3.3-70b-versatile',
-        // MODEL: 'meta-llama/llama-4-scout-17b-16e-instruct',
-        MODEL: 'meta-llama/llama-4-maverick-17b-128e-instruct',
-        MODEL_NAME: 'Llama 4 Maverick 17B',
-    },
-    OPENROUTER: {
-        ENDPOINT: 'https://openrouter.ai/api/v1/chat/completions',
-        MODEL: 'meta-llama/llama-3.3-70b-instruct',
-    },
+    // GROQ and OPENROUTER sections removed, managed by AI_PROVIDERS now
 };
 
 export const URLs = {
@@ -97,7 +128,7 @@ export const AI = {
         MAX_CONTEXT_TOKENS: 128000,
         // Maximum retries for AI API calls
         MAX_ATTEMPTS: 2,
-        // Prompt template for report generation
+        // Prompt template for report generation - NOTE: This might need adjustment if switching models significantly
         PROMPT_TEMPLATE: `
     You are generating a news report based on sources and (optionally) a previous report.
 
