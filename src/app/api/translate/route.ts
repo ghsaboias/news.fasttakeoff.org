@@ -1,3 +1,4 @@
+import { getAIAPIKey, getAIProviderConfig } from '@/lib/ai-config';
 import { NextResponse } from 'next/server';
 
 interface TranslationRequest {
@@ -31,11 +32,10 @@ export async function POST(req: Request) {
 }
 
 async function translateContent(content: Omit<TranslationRequest, 'targetLang'>, targetLang: string): Promise<TranslationResponse> {
-    if (!process.env.GROQ_API_KEY) {
-        throw new Error('Groq API key is not set in environment variables. For local development, set it in .env.local or export it in your terminal.');
-    }
+    const aiConfig = getAIProviderConfig();
+    const apiKey = getAIAPIKey();
 
-    console.log('Groq API key is set, attempting API call...');
+    console.log(`Translating content using ${aiConfig.displayName}...`);
 
     const langMap: Record<string, string> = {
         'en': 'English',
@@ -49,14 +49,14 @@ async function translateContent(content: Omit<TranslationRequest, 'targetLang'>,
     const startTime = performance.now();
 
     try {
-        const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        const response = await fetch(aiConfig.endpoint, {
             method: 'POST',
             headers: {
-                'Authorization': `Bearer ${process.env.GROQ_API_KEY}`,
+                'Authorization': `Bearer ${apiKey}`,
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-                model: 'llama-3.3-70b-versatile',
+                model: aiConfig.model,
                 messages: [
                     {
                         role: 'system',
@@ -75,12 +75,12 @@ async function translateContent(content: Omit<TranslationRequest, 'targetLang'>,
 
         if (!response.ok) {
             const errorText = await response.text();
-            throw new Error(`Groq API error: ${response.status} - ${response.statusText} - ${errorText}`);
+            throw new Error(`AI API error: ${response.status} - ${response.statusText} - ${errorText}`);
         }
 
         const data = await response.json();
         if (!data.choices?.[0]?.message?.content) {
-            throw new Error('Invalid response format from Groq API');
+            throw new Error('Invalid response format from AI API');
         }
 
         const translatedContent = JSON.parse(data.choices[0].message.content) as TranslationResponse;
@@ -90,7 +90,7 @@ async function translateContent(content: Omit<TranslationRequest, 'targetLang'>,
         }
 
         const endTime = performance.now();
-        console.log(`Translation completed in ${(endTime - startTime).toFixed(2)}ms`);
+        console.log(`Translation by ${aiConfig.displayName} completed in ${(endTime - startTime).toFixed(2)}ms`);
 
         return translatedContent;
     } catch (error) {

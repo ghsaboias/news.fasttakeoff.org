@@ -1,7 +1,7 @@
 "use client"
 
 import { Button } from "@/components/ui/button";
-import { API } from "@/lib/config";
+import { getAIProviderConfig } from "@/lib/ai-config";
 import { UserButton, useUser } from "@clerk/nextjs";
 import { Menu } from "lucide-react";
 import Image from "next/image";
@@ -13,6 +13,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "./ui
 export default function Header() {
     const { user } = useUser()
     const [isMenuOpen, setIsMenuOpen] = useState(false);
+    const aiConfig = getAIProviderConfig();
 
     return (
         <header className="mx-auto flex h-16 items-center justify-between sm:px-8 sm:w-[95vw] w-[90vw]">
@@ -32,7 +33,7 @@ export default function Header() {
                 user ? (
                     <div className="flex items-center gap-4">
                         <Badge variant="secondary" className="hidden md:block">
-                            {API.GROQ.MODEL_NAME}
+                            {aiConfig.displayName}
                         </Badge>
                         <Link href="/profile" className="text-sm font-medium hover:underline">Profile</Link>
                         <UserButton />
@@ -52,7 +53,7 @@ export default function Header() {
                                         Current Events
                                     </Link>
                                     <Badge variant="secondary">
-                                        {API.GROQ.MODEL_NAME}
+                                        {aiConfig.displayName}
                                     </Badge>
                                 </div>
                             </SheetContent>
@@ -61,7 +62,7 @@ export default function Header() {
                 ) : (
                     <div className="flex items-center gap-4">
                         <Badge variant="secondary" className="hidden md:block">
-                            {API.GROQ.MODEL_NAME}
+                            {aiConfig.displayName}
                         </Badge>
                         <Link href="/sign-in" prefetch>
                             <Button variant="outline" size="sm">
@@ -89,7 +90,7 @@ export default function Header() {
                                         Current Events
                                     </Link>
                                     <Badge variant="secondary">
-                                        {API.GROQ.MODEL_NAME}
+                                        {aiConfig.displayName}
                                     </Badge>
                                 </div>
                             </SheetContent>
