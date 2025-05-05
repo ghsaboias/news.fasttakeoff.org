@@ -5,6 +5,7 @@ import { DiscordMessage, Report } from '@/lib/types/core';
 import { CloudflareEnv } from '@cloudflare/types';
 import { v4 as uuidv4 } from 'uuid';
 import { CacheManager } from '../cache-utils';
+import { TwitterService } from '../twitter-service';
 import { getChannelName } from './channels-service';
 import { MessagesService } from './messages-service';
 // Helpers for report generation
@@ -210,6 +211,7 @@ export class ReportsService {
     private cacheManager: CacheManager;
     private env: CloudflareEnv;
     private instagramService: InstagramService;
+    private twitterService: TwitterService;
 
     constructor(env: CloudflareEnv) {
         if (!env.REPORTS_CACHE || !env.MESSAGES_CACHE) {
@@ -219,6 +221,7 @@ export class ReportsService {
         this.messagesService = new MessagesService(env);
         this.cacheManager = new CacheManager(env);
         this.instagramService = new InstagramService(env);
+        this.twitterService = new TwitterService(env);
     }
 
     /**
@@ -431,17 +434,30 @@ export class ReportsService {
 
         console.log(`[REPORTS] Generated ${generatedCount} reports for timeframes: ${activeTimeframes.join(', ')}`);
 
-        // Post the report with the highest messageCount to Instagram
+        // Post the report with the highest messageCount to Instagram and Twitter
         if (generatedReports.length > 0) {
             const topReport = generatedReports.sort((a, b) => (b.messageCount || 0) - (a.messageCount || 0))[0];
+
+            // Post to Instagram
             try {
                 await this.instagramService.postNews(topReport);
                 console.log(`[REPORTS] Posted report ${topReport.reportId} with ${topReport.messageCount} sources to Instagram`);
             } catch (err: unknown) {
                 console.error(`[REPORTS] Failed to post report ${topReport.reportId} to Instagram:`, err);
+                // Decide if failure to post to Instagram should prevent Twitter post? For now, continue.
             }
+
+            // Post to Twitter
+            try {
+                await this.twitterService.postTweet(topReport);
+                console.log(`[REPORTS] Posted report ${topReport.reportId} with ${topReport.messageCount} sources to Twitter`);
+            } catch (err: unknown) {
+                // Log Twitter-specific error
+                console.error(`[REPORTS] Failed to post report ${topReport.reportId} to Twitter:`, err);
+            }
+
         } else {
-            console.warn(`[REPORTS] No reports generated, skipping Instagram post`);
+            console.warn(`[REPORTS] No reports generated, skipping social media posts`);
         }
     }
 }

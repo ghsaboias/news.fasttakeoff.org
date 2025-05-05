@@ -46,7 +46,8 @@
     "sonner": "^2.0.3",
     "stripe": "^18.0.0",
     "tailwind-merge": "^3.0.2",
-    "tailwindcss-animate": "^1.0.7"
+    "tailwindcss-animate": "^1.0.7",
+    "twitter-api-v2": "^1.22.0"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
