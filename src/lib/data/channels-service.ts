@@ -1,16 +1,16 @@
 import { API, CACHE, DISCORD } from '@/lib/config';
 import { DiscordChannel, DiscordMessage } from '@/lib/types/core';
-import type { CloudflareEnv } from '@cloudflare/types';
+import { Cloudflare } from '../../../worker-configuration';
 import { CacheManager } from '../cache-utils';
 import { MessagesService } from './messages-service';
 
 export class ChannelsService {
-    private env: CloudflareEnv;
+    private env: Cloudflare.Env;
     private cache: CacheManager;
     apiCallCount = 0;
     callStartTime = Date.now();
 
-    constructor(env: CloudflareEnv) {
+    constructor(env: Cloudflare.Env) {
         this.env = env;
         this.cache = new CacheManager(env);
     }
@@ -104,13 +104,13 @@ export class ChannelsService {
     }
 }
 
-export async function getChannels(env: CloudflareEnv): Promise<DiscordChannel[]> {
+export async function getChannels(env: Cloudflare.Env): Promise<DiscordChannel[]> {
     const client = new ChannelsService(env);
     return client.getChannels();
 }
 
 export async function getChannelDetails(
-    env: CloudflareEnv,
+    env: Cloudflare.Env,
     channelId: string
 ): Promise<{
     channel: DiscordChannel | null;
@@ -120,7 +120,7 @@ export async function getChannelDetails(
     return client.getChannelDetails(channelId);
 }
 
-export async function getChannelName(env: CloudflareEnv, channelId: string): Promise<string> {
+export async function getChannelName(env: Cloudflare.Env, channelId: string): Promise<string> {
     const client = new ChannelsService(env);
     return client.getChannelName(channelId);
 }

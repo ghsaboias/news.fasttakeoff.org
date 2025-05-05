@@ -1,6 +1,6 @@
 import { ApiResponse, FederalRegisterOrder, FederalRegisterResponse } from '@/lib/types/api';
 import { ExecutiveOrder } from '@/lib/types/core';
-import type { CloudflareEnv } from '@cloudflare/types';
+import { Cloudflare } from '../../../worker-configuration';
 import { transformFederalRegisterOrder, transformFederalRegisterOrders } from '../transformers/executive-orders';
 
 const FEDERAL_REGISTER_API = 'https://www.federalregister.gov/api/v1';
@@ -69,7 +69,7 @@ export async function fetchExecutiveOrders(
     }
 }
 
-export async function fetchExecutiveOrderById(id: string, env?: CloudflareEnv): Promise<ExecutiveOrder | null> {
+export async function fetchExecutiveOrderById(id: string, env?: Cloudflare.Env): Promise<ExecutiveOrder | null> {
     if (!env) return null;
     const kv = env.EXECUTIVE_ORDERS_CACHE;
     const cacheKey = `order:${id}`;
@@ -101,7 +101,7 @@ export async function fetchExecutiveOrderById(id: string, env?: CloudflareEnv): 
     return orderData;
 }
 
-async function refreshOrderInBackground(id: string, env: CloudflareEnv, cacheKey: string): Promise<void> {
+async function refreshOrderInBackground(id: string, env: Cloudflare.Env, cacheKey: string): Promise<void> {
     const apiUrl = `${FEDERAL_REGISTER_API}/documents/${id}.json`;
     const response = await fetch(apiUrl, { cache: 'no-store' });
     if (response.ok) {
@@ -116,7 +116,7 @@ async function refreshOrderInBackground(id: string, env: CloudflareEnv, cacheKey
 export async function findExecutiveOrderByNumber(
     eoNumber: string,
     date?: string,
-    env?: CloudflareEnv
+    env?: Cloudflare.Env
 ): Promise<string | null> {
     const isStaticGeneration = process.env.NEXT_PHASE === 'phase-production-build';
     if (isStaticGeneration) {

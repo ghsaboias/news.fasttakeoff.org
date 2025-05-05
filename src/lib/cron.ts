@@ -1,4 +1,4 @@
-import { CloudflareEnv } from '@cloudflare/types';
+import { Cloudflare } from '../../worker-configuration';
 import { MessagesService } from './data/messages-service';
 import { ReportsService } from './data/reports-service';
 
@@ -8,7 +8,7 @@ interface ScheduledEvent {
     waitUntil: (promise: Promise<unknown>) => void;
 }
 
-export async function scheduled(event: ScheduledEvent, env: CloudflareEnv): Promise<void> {
+export async function scheduled(event: ScheduledEvent, env: Cloudflare.Env): Promise<void> {
     console.log(`[CRON] Triggered at ${new Date(event.scheduledTime).toISOString()} with pattern ${event.cron}`);
     try {
         const messagesService = new MessagesService(env);

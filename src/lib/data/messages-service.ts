@@ -1,15 +1,15 @@
 import { API, CACHE, DISCORD, TIME, TimeframeKey } from '@/lib/config';
 import { CachedMessages, DiscordMessage } from '@/lib/types/core';
-import type { CloudflareEnv } from '@cloudflare/types';
+import { Cloudflare } from '../../../worker-configuration';
 import { CacheManager } from '../cache-utils';
 import { ChannelsService, getChannelName } from './channels-service';
 
 export class MessagesService {
-    public env: CloudflareEnv;
+    public env: Cloudflare.Env;
     private cacheManager: CacheManager;
     private channelsService: ChannelsService;
 
-    constructor(env: CloudflareEnv) {
+    constructor(env: Cloudflare.Env) {
         this.env = env;
         this.cacheManager = new CacheManager(env);
         this.channelsService = new ChannelsService(env);
@@ -142,7 +142,7 @@ export class MessagesService {
         if (cached) {
             const age = (Date.now() - new Date(cached.cachedAt).getTime()) / 1000;
             if (age < CACHE.TTL.MESSAGES) {
-                console.log(`[MESSAGES] Using ${cached.messages.length} cached messages for ${timeframe} timeframe of channel ${channelId}`);
+                console.log(`[MESSAGES] Using ${cached.messages.length} cached messages for ${timeframe} timeframe of channel ${cached.channelName}`);
                 return cached.messages;
             }
         }
@@ -227,7 +227,7 @@ export class MessagesService {
 
                 const botMessages = this.messageFilter.byBot(messages);
                 allMessages.push(...botMessages);
-                console.log(`[MESSAGES] Channel ${channel.id}: ${botMessages.length} bot messages, total ${allMessages.length}`);
+                console.log(`[MESSAGES] Channel ${channel.name}: ${botMessages.length} bot messages, total ${allMessages.length}`);
 
                 after = messages[0].id; // Use the newest message ID for the next batch
             }

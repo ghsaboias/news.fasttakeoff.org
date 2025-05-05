@@ -1,14 +1,14 @@
-import type { CloudflareEnv, KVNamespace } from '@cloudflare/types';
+import { Cloudflare, KVNamespace } from '../../worker-configuration';
 
 export class CacheManager {
-    constructor(private env: CloudflareEnv) { }
+    constructor(private env: Cloudflare.Env) { }
 
-    async get<T>(namespace: keyof CloudflareEnv, key: string): Promise<T | null> {
+    async get<T>(namespace: keyof Cloudflare.Env, key: string): Promise<T | null> {
         const cache = this.env[namespace] as KVNamespace;
         return cache?.get<T>(key, { type: 'json' }) ?? null;
     }
 
-    async put<T>(namespace: keyof CloudflareEnv, key: string, value: T, ttl: number): Promise<void> {
+    async put<T>(namespace: keyof Cloudflare.Env, key: string, value: T, ttl: number): Promise<void> {
         const cache = this.env[namespace] as KVNamespace;
         if (cache) {
             await cache.put(key, JSON.stringify(value), { expirationTtl: ttl });
@@ -17,7 +17,7 @@ export class CacheManager {
 
     async refreshInBackground<T>(
         key: string,
-        namespace: keyof CloudflareEnv,
+        namespace: keyof Cloudflare.Env,
         fetchFn: () => Promise<T>,
         ttl: number
     ): Promise<void> {
