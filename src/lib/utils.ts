@@ -1,8 +1,7 @@
-import type { CloudflareEnv } from "@cloudflare/types"
-import { getCloudflareContext } from "@opennextjs/cloudflare"
-import { clsx, type ClassValue } from "clsx"
-import { twMerge } from "tailwind-merge"
-
+import { getCloudflareContext } from "@opennextjs/cloudflare";
+import { clsx, type ClassValue } from "clsx";
+import { twMerge } from "tailwind-merge";
+import { Cloudflare } from '../../worker-configuration';
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
@@ -122,7 +121,7 @@ export function formatTime(timestamp: string | undefined, showDate: boolean = fa
  * Returns the Cloudflare environment object from the cache context
  * @returns Cloudflare environment object
  */
-export const getCacheContext = (): { env: CloudflareEnv } => getCloudflareContext() as unknown as { env: CloudflareEnv };
+export const getCacheContext = (): { env: Cloudflare.Env } => getCloudflareContext() as unknown as { env: Cloudflare.Env };
 
 export function convertTimestampToUnixTimestamp(timestamp: string): number {
   const date = new Date(timestamp);

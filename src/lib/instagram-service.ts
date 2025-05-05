@@ -1,4 +1,4 @@
-import { CloudflareEnv } from '../../cloudflare-env';
+import { Cloudflare } from '../../worker-configuration';
 import { URLs } from './config';
 import { Report } from './types/core';
 const BRAIN_IMAGE_URL = URLs.BRAIN_IMAGE;
@@ -11,7 +11,7 @@ const INSTAGRAM_PUBLISH_MEDIA_URL = `https://graph.instagram.com/v20.0/${INSTAGR
 export class InstagramService {
     private readonly accessToken: string;
 
-    constructor(env: CloudflareEnv) {
+    constructor(env: Cloudflare.Env) {
         this.accessToken = env.INSTAGRAM_ACCESS_TOKEN || '';
         if (!this.accessToken) {
             console.warn('[INSTAGRAM] No access token found in environment');

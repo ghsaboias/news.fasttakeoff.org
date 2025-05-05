@@ -35,6 +35,11 @@ binding = "SUBSCRIPTIONS_CACHE"
 id = "f16280a6d9a14d228556662cf469926c"
 preview_id = "f16280a6d9a14d228556662cf469926c"
 
+[[kv_namespaces]]
+binding = "AUTH_TOKENS"
+id = "9ce83d624a074ec9bec17d43d8b3af08"
+preview_id = "9ce83d624a074ec9bec17d43d8b3af08"
+
 [[routes]]
 pattern = "news.fasttakeoff.org"
 custom_domain = true

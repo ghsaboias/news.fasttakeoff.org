@@ -2,8 +2,8 @@ import { getAIAPIKey, getAIProviderConfig } from '@/lib/ai-config';
 import { AI, CACHE, TIME, TimeframeKey } from '@/lib/config';
 import { InstagramService } from '@/lib/instagram-service';
 import { DiscordMessage, Report } from '@/lib/types/core';
-import { CloudflareEnv } from '@cloudflare/types';
 import { v4 as uuidv4 } from 'uuid';
+import { Cloudflare } from '../../../worker-configuration';
 import { CacheManager } from '../cache-utils';
 import { TwitterService } from '../twitter-service';
 import { getChannelName } from './channels-service';
@@ -86,7 +86,7 @@ async function createReportWithAI(
     prompt: string,
     messages: DiscordMessage[],
     channelInfo: { id: string; name: string; count: number },
-    env: CloudflareEnv,
+    env: Cloudflare.Env,
     timeframe: string,
 ): Promise<Report> {
     const aiConfig = getAIProviderConfig(); // Gets config for the active provider
@@ -209,11 +209,11 @@ async function tryCatch<T>(fn: () => Promise<T>, context: string): Promise<T | n
 export class ReportsService {
     private messagesService: MessagesService;
     private cacheManager: CacheManager;
-    private env: CloudflareEnv;
+    private env: Cloudflare.Env;
     private instagramService: InstagramService;
     private twitterService: TwitterService;
 
-    constructor(env: CloudflareEnv) {
+    constructor(env: Cloudflare.Env) {
         if (!env.REPORTS_CACHE || !env.MESSAGES_CACHE) {
             throw new Error('Missing required KV namespaces: REPORTS_CACHE or MESSAGES_CACHE');
         }
