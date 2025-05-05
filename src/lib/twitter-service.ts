@@ -11,6 +11,20 @@ interface TwitterTokens {
     expires_at: number; // Store as Unix timestamp (seconds)
 }
 
+// Interfaces for Twitter API token responses
+interface TwitterTokenSuccessResponse {
+    access_token: string;
+    token_type: string; // e.g., "bearer"
+    expires_in: number; // Seconds until expiry
+    refresh_token?: string; // May not be returned on refresh
+    scope?: string; // Scopes granted
+}
+
+interface TwitterTokenErrorResponse {
+    error: string;
+    error_description?: string;
+}
+
 export class TwitterService {
     private kv: KVNamespace;
     private kvKey = 'twitter_tokens'; // Key for storing tokens in KV
@@ -60,12 +74,15 @@ export class TwitterService {
                 })
             });
 
-            const data = await response.json() as any; // Use any temporarily, define specific type if needed
+            // Use a union type for the expected response structure
+            const data = await response.json() as TwitterTokenSuccessResponse | TwitterTokenErrorResponse;
 
             if (!response.ok) {
-                console.error(`[TWITTER] Token refresh API error: ${response.status} - ${JSON.stringify(data)}`);
-                // Optional: Check if the error indicates the refresh token is invalid/revoked
-                if (data.error === 'invalid_grant' || data.error === 'invalid_request') {
+                // Type guard: If response is not ok, data must be an error response
+                const errorData = data as TwitterTokenErrorResponse;
+                console.error(`[TWITTER] Token refresh API error: ${response.status} - ${JSON.stringify(errorData)}`);
+                // Check the specific error from the response
+                if (errorData.error === 'invalid_grant' || errorData.error === 'invalid_request') {
                     console.error('[TWITTER] Refresh token may be invalid or revoked. Manual re-authorization required.');
                     // Consider deleting the invalid token from KV to prevent loops
                     // await this.kv.delete(this.kvKey);
@@ -73,10 +90,14 @@ export class TwitterService {
                 return null;
             }
 
+            // Type guard: If response is ok, data must be a success response
+            const successData = data as TwitterTokenSuccessResponse;
+
             // Successfully refreshed
-            const newAccessToken = data.access_token;
-            const newRefreshToken = data.refresh_token || storedTokens.refresh_token; // Use new refresh token if provided, else keep old one
-            const expiresIn = data.expires_in; // Typically 7200 seconds (2 hours)
+            const newAccessToken = successData.access_token;
+            // Use new refresh token if provided, otherwise keep the one we already have from KV
+            const newRefreshToken = successData.refresh_token || storedTokens.refresh_token;
+            const expiresIn = successData.expires_in; // Typically 7200 seconds (2 hours)
             const expiresAt = Math.floor(Date.now() / 1000) + expiresIn - 60; // Calculate expiry timestamp (Unix seconds), minus 60s buffer
 
             const newTokens: TwitterTokens = {
