@@ -49,5 +49,8 @@ NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY = "pk_live_Y2xlcmsuZmFzdHRha2VvZmYub3JnJA"
 NEXT_PUBLIC_API_URL = "https://news.fasttakeoff.org"
 SERVER_API_URL = "https://news.fasttakeoff.org"
 
+[placement]
+mode = "smart"
+
 [observability.logs]
 enabled = true
