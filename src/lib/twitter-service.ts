@@ -1,5 +1,6 @@
 import { Report } from '@/lib/types/core';
 import { Cloudflare, KVNamespace } from '../../worker-configuration';
+import { formatTime } from './utils';
 
 const TWITTER_API_URL = 'https://api.twitter.com/2/tweets';
 const TOKEN_URL = 'https://api.twitter.com/2/oauth2/token'; // Twitter token endpoint
@@ -155,7 +156,8 @@ export class TwitterService {
 
         // Construct tweet content (customize as needed)
         // Consider character limits (280)
-        const tweetText = `${report.headline}\n\n${report.city}\n\n${report.body.substring(0, 280 - report.headline.length - report.city.length - 6)}`; // Simple truncation
+        const tweetText = `${report.headline}\n\n${formatTime(report?.generatedAt, true)} - ${report?.city}`;
+
 
         try {
             const response = await fetch(TWITTER_API_URL, {
