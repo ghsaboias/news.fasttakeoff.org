@@ -357,7 +357,7 @@ const Globe = (): React.ReactNode => {
     if (isLoadingNews) {
         return (
             <Html center>
-                <div style={{ color: 'white', fontSize: '1.5em' }}>Loading news data...</div>
+                <div style={{ color: 'white', fontSize: '1.5em', width: '300px', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>Loading news data...</div>
             </Html>
         );
     }
@@ -401,7 +401,7 @@ const Globe = (): React.ReactNode => {
 
 const NewsGlobe: React.FC = () => {
     return (
-        <div style={{ width: '100%', height: '100vh', background: '#000010' /* Darker background */ }}>
+        <div style={{ width: '90%', height: '90vh', background: '#000010' /* Darker background */ }}>
             <Canvas camera={{ position: [0, 0, 5], fov: 50 }}>
                 <Globe />
             </Canvas>
