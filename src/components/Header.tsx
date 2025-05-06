@@ -28,6 +28,9 @@ export default function Header() {
                 <Link href="/current-events" className="text-sm font-medium hover:underline">
                     Current Events
                 </Link>
+                <Link href="/news-globe" className="text-sm font-medium hover:underline">
+                    News Globe
+                </Link>
             </div>
             {
                 user ? (
@@ -51,6 +54,9 @@ export default function Header() {
                                     </Link>
                                     <Link href="/current-events" className="text-sm font-medium hover:underline">
                                         Current Events
+                                    </Link>
+                                    <Link href="/news-globe" className="text-sm font-medium hover:underline">
+                                        News Globe
                                     </Link>
                                     <Badge variant="secondary">
                                         {aiConfig.displayName}
@@ -88,6 +94,9 @@ export default function Header() {
                                     </Link>
                                     <Link href="/current-events" className="text-sm font-medium hover:underline">
                                         Current Events
+                                    </Link>
+                                    <Link href="/news-globe" className="text-sm font-medium hover:underline">
+                                        News Globe
                                     </Link>
                                     <Badge variant="secondary">
                                         {aiConfig.displayName}
