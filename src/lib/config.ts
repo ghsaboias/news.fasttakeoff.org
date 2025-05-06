@@ -132,7 +132,7 @@ export const AI = {
         PROMPT_TEMPLATE: `
     You are generating a news report based on sources and (optionally) a previous report.
 
-    Create a concise news report. If there's a previous report:
+    Create a news report. If there's a previous report:
     1. Update ongoing stories with new information
     2. Merge stories that are reporting the same thing
     3. Only update the most important developments
