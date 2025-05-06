@@ -398,7 +398,6 @@ export class ReportsService {
                 const messages = await this.messagesService.getMessagesForTimeframe(channelId, timeframe);
 
                 if (messages.length === 0) {
-                    console.log(`[REPORTS] Skipping channel ${channelId} for ${timeframe}: No messages.`);
                     continue;
                 }
 
