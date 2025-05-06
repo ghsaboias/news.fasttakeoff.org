@@ -26,9 +26,9 @@ export const AI_PROVIDERS: Record<string, AIProviderConfig> = {
     },
     openrouter: {
         endpoint: 'https://openrouter.ai/api/v1/chat/completions',
-        model: 'meta-llama/llama-4-scout',
+        model: 'google/gemini-2.5-flash-preview',
         apiKeyEnvVar: 'OPENROUTER_API_KEY',
-        displayName: 'Llama 4 Maverick (OpenRouter)',
+        displayName: 'Gemini 2.5 Flash (OpenRouter)',
     },
     // Add other providers here in the future
 };
