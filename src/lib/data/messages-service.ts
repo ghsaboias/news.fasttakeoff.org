@@ -32,8 +32,8 @@ export class MessagesService {
         }
     };
 
-    async fetchBotMessagesFromAPI(channelId: string): Promise<DiscordMessage[]> {
-        const since = new Date(Date.now() - TIME.ONE_HOUR_MS);
+    async fetchBotMessagesFromAPI(channelId: string, sinceOverride?: Date): Promise<DiscordMessage[]> {
+        const since = sinceOverride || new Date(Date.now() - TIME.ONE_HOUR_MS);
         const urlBase = `${API.DISCORD.BASE_URL}/channels/${channelId}/messages?limit=${DISCORD.MESSAGES.BATCH_SIZE}`;
         const token = this.env.DISCORD_TOKEN;
         if (!token) throw new Error('DISCORD_TOKEN is not set');
@@ -94,7 +94,7 @@ export class MessagesService {
             }
         }
 
-        const messages = await this.fetchBotMessagesFromAPI(channelId);
+        const messages = await this.fetchBotMessagesFromAPI(channelId, since);
         const channelName = await getChannelName(this.env, channelId);
         await this.cacheMessages(channelId, messages, channelName);
         return messages.slice(0, limit);
