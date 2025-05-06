@@ -26,7 +26,7 @@ export const AI_PROVIDERS: Record<string, AIProviderConfig> = {
     },
     openrouter: {
         endpoint: 'https://openrouter.ai/api/v1/chat/completions',
-        model: 'meta-llama/llama-4-maverick-17b-128e-instruct',
+        model: 'meta-llama/llama-4-scout',
         apiKeyEnvVar: 'OPENROUTER_API_KEY',
         displayName: 'Llama 4 Maverick (OpenRouter)',
     },
@@ -127,7 +127,7 @@ export const AI = {
         // Maximum context window size
         MAX_CONTEXT_TOKENS: 128000,
         // Maximum retries for AI API calls
-        MAX_ATTEMPTS: 2,
+        MAX_ATTEMPTS: 5,
         // Prompt template for report generation - NOTE: This might need adjustment if switching models significantly
         PROMPT_TEMPLATE: `
     You are generating a news report based on sources and (optionally) a previous report.
