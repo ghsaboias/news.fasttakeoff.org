@@ -7,6 +7,7 @@ export declare namespace Cloudflare {
         CHANNELS_CACHE: KVNamespace;
         MESSAGES_CACHE: KVNamespace;
         SUBSCRIPTIONS_CACHE: KVNamespace;
+        GEOCODE_CACHE: KVNamespace;
         AUTH_TOKENS: KVNamespace;
         DISCORD_TOKEN: string;
         DISCORD_GUILD_ID: string;
@@ -27,6 +28,7 @@ export declare namespace Cloudflare {
         INSTAGRAM_ACCESS_TOKEN: string;
         TWITTER_CLIENT_ID: string;
         TWITTER_CLIENT_SECRET: string;
+        GOOGLE_GEOCODING_API_KEY: string;
         ASSETS: Fetcher;
     }
 }
