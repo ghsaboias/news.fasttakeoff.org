@@ -25,8 +25,6 @@ export declare namespace Cloudflare {
         STRIPE_SECRET_KEY: string;
         STRIPE_WEBHOOK_SECRET: string;
         INSTAGRAM_ACCESS_TOKEN: string;
-        TWITTER_ACCESS_TOKEN: string;
-        TWITTER_REFRESH_TOKEN: string;
         TWITTER_CLIENT_ID: string;
         TWITTER_CLIENT_SECRET: string;
         ASSETS: Fetcher;

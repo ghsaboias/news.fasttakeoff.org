@@ -381,32 +381,24 @@ export class ReportsService {
         );
         return reports.flat();
     }
-    async createFreshReports(): Promise<void> {
+
+    private async _generateAndCacheReportsForTimeframes(timeframesToProcess: TimeframeKey[]): Promise<Report[]> {
         const { keys: messageKeys } = await this.messagesService.env.MESSAGES_CACHE.list();
-        const timeframes = TIME.TIMEFRAMES;
-        const now = new Date();
-        const hour = now.getUTCHours();
-
-        const activeTimeframes = timeframes.filter(tf => {
-            if (tf === '2h' && hour % TIME.CRON['2h'] === 0 && hour % TIME.CRON['6h'] !== 0) return true;
-            if (tf === '6h' && hour % TIME.CRON['6h'] === 0) return true;
-            return false;
-        });
-
-        console.log(`[REPORTS] Active timeframes for this run: ${activeTimeframes.join(', ')}`);
-        let generatedCount = 0;
         const generatedReports: Report[] = [];
+        let generatedCountOverall = 0;
+
+        console.log(`[_generateAndCacheReportsForTimeframes] Processing for timeframes: ${timeframesToProcess.join(', ')}`);
 
         for (const key of messageKeys) {
             const channelId = key.name.replace('messages:', '');
             const channelName = await getChannelName(this.env, channelId);
 
-            for (const timeframe of activeTimeframes) {
+            for (const timeframe of timeframesToProcess) {
                 const previousReport = await this.getPreviousTimeframeReport(channelId, timeframe);
                 const messages = await this.messagesService.getMessagesForTimeframe(channelId, timeframe);
 
                 if (messages.length === 0) {
-                    console.log(`[REPORTS] Skipping channel ${channelId}: No messages in last ${timeframe}`);
+                    console.log(`[REPORTS] Skipping channel ${channelId} for ${timeframe}: No messages.`);
                     continue;
                 }
 
@@ -425,39 +417,91 @@ export class ReportsService {
                     const cachedReports = await this.getReportsFromCache(channelId, timeframe) || [];
                     const updatedReports = [report, ...cachedReports.filter(r => r.reportId !== report.reportId)];
                     await this.cacheReport(channelId, timeframe, updatedReports);
-                    generatedCount++;
+                    generatedCountOverall++;
                     console.log(`[REPORTS] Generated ${timeframe} report for channel ${channelId} with ${messages.length} messages`);
                     generatedReports.push(report);
                 }
             }
         }
+        console.log(`[_generateAndCacheReportsForTimeframes] Generated ${generatedCountOverall} reports in total.`);
+        return generatedReports;
+    }
 
-        console.log(`[REPORTS] Generated ${generatedCount} reports for timeframes: ${activeTimeframes.join(', ')}`);
-
-        // Post the report with the highest messageCount to Instagram and Twitter
+    private async _postTopReportToSocialMedia(generatedReports: Report[]): Promise<void> {
         if (generatedReports.length > 0) {
             const topReport = generatedReports.sort((a, b) => (b.messageCount || 0) - (a.messageCount || 0))[0];
+            console.log(`[_postTopReportToSocialMedia] Top report for posting: ${topReport.reportId} from channel ${topReport.channelName} with ${topReport.messageCount} sources.`);
 
-            // Post to Instagram
             try {
                 await this.instagramService.postNews(topReport);
-                console.log(`[REPORTS] Posted report ${topReport.reportId} with ${topReport.messageCount} sources to Instagram`);
+                console.log(`[REPORTS] Successfully posted report ${topReport.reportId} to Instagram.`);
             } catch (err: unknown) {
                 console.error(`[REPORTS] Failed to post report ${topReport.reportId} to Instagram:`, err);
-                // Decide if failure to post to Instagram should prevent Twitter post? For now, continue.
             }
 
-            // Post to Twitter
             try {
                 await this.twitterService.postTweet(topReport);
-                console.log(`[REPORTS] Posted report ${topReport.reportId} with ${topReport.messageCount} sources to Twitter`);
+                console.log(`[REPORTS] Successfully posted report ${topReport.reportId} to Twitter.`);
             } catch (err: unknown) {
-                // Log Twitter-specific error
                 console.error(`[REPORTS] Failed to post report ${topReport.reportId} to Twitter:`, err);
             }
-
         } else {
-            console.warn(`[REPORTS] No reports generated, skipping social media posts`);
+            console.log('[_postTopReportToSocialMedia] No reports generated, skipping social media posts.');
         }
+    }
+
+    /**
+     * Production method: Generates reports for timeframes active based on the current UTC hour.
+     */
+    async createFreshReports(): Promise<void> {
+        console.log('[REPORTS - createFreshReports] Production run starting.');
+        const allConfiguredTimeframes: TimeframeKey[] = [...TIME.TIMEFRAMES];
+        const now = new Date();
+        const hour = now.getUTCHours();
+
+        const activeTimeframes = allConfiguredTimeframes.filter(tf => {
+            const cronConfig = TIME.CRON as Record<TimeframeKey, number>;
+            const cron2h = cronConfig['2h'];
+            const cron6h = cronConfig['6h'];
+            if (tf === '2h' && hour % cron2h === 0 && hour % cron6h !== 0) return true;
+            if (tf === '6h' && hour % cron6h === 0) return true;
+            return false;
+        });
+
+        console.log(`[REPORTS - createFreshReports] Determined active timeframes for this run: ${activeTimeframes.join(', ') || 'NONE'}`);
+
+        if (activeTimeframes.length === 0) {
+            console.log('[REPORTS - createFreshReports] No timeframes are active based on the current hour. Exiting.');
+            return;
+        }
+
+        const generatedReports = await this._generateAndCacheReportsForTimeframes(activeTimeframes);
+        await this._postTopReportToSocialMedia(generatedReports);
+        console.log('[REPORTS - createFreshReports] Production run finished.');
+    }
+
+    /**
+     * Manual trigger method: Generates reports for specified timeframes or all configured timeframes.
+     */
+    async generateReportsForManualTrigger(manualTimeframes: TimeframeKey[] | 'ALL'): Promise<void> {
+        console.log(`[REPORTS - generateReportsForManualTrigger] Manual run. Target: ${Array.isArray(manualTimeframes) ? manualTimeframes.join(', ') : manualTimeframes}`);
+        let timeframesToProcess: TimeframeKey[];
+
+        if (manualTimeframes === 'ALL') {
+            timeframesToProcess = [...TIME.TIMEFRAMES];
+        } else {
+            timeframesToProcess = Array.isArray(manualTimeframes) ? manualTimeframes : [];
+        }
+
+        if (timeframesToProcess.length === 0) {
+            console.warn('[REPORTS - generateReportsForManualTrigger] No timeframes specified or resolved for manual run. Exiting.');
+            return;
+        }
+
+        console.log(`[REPORTS - generateReportsForManualTrigger] Processing manually specified timeframes: ${timeframesToProcess.join(', ')}`);
+
+        const generatedReports = await this._generateAndCacheReportsForTimeframes(timeframesToProcess);
+        await this._postTopReportToSocialMedia(generatedReports);
+        console.log('[REPORTS - generateReportsForManualTrigger] Manual run finished.');
     }
 }
