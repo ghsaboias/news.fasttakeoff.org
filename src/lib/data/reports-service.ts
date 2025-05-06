@@ -189,7 +189,7 @@ async function createReportWithAI(
         } catch (error) {
             attempts++;
             if (attempts === maxAttempts) throw error;
-            console.log(`[REPORTS] Retrying AI request for channel ${channelInfo.id} (${attempts}/${maxAttempts})`);
+            console.log(`[REPORTS] Retrying AI request for channel ${channelInfo.name} (${attempts}/${maxAttempts})`);
             await new Promise(resolve => setTimeout(resolve, 1000));
         }
     }
@@ -287,10 +287,10 @@ export class ReportsService {
                 this.env,
                 timeframe,
             ),
-            `Error generating ${timeframe} report for channel ${channelId}`
+            `Error generating ${timeframe} report for channel ${channelName}`
         );
 
-        if (!report) throw new Error(`Failed to generate ${timeframe} report for channel ${channelId}`);
+        if (!report) throw new Error(`Failed to generate ${timeframe} report for channel ${channelName}`);
 
         const cachedReports = await this.getReportsFromCache(channelId, timeframe) || [];
         const updatedReports = [report, ...cachedReports.filter(r => r.reportId !== report.reportId)];
@@ -410,7 +410,7 @@ export class ReportsService {
                         this.env,
                         timeframe,
                     ),
-                    `Error generating ${timeframe} report for channel ${channelId}`
+                    `Error generating ${timeframe} report for channel ${channelName}`
                 );
 
                 if (report) {
@@ -418,7 +418,7 @@ export class ReportsService {
                     const updatedReports = [report, ...cachedReports.filter(r => r.reportId !== report.reportId)];
                     await this.cacheReport(channelId, timeframe, updatedReports);
                     generatedCountOverall++;
-                    console.log(`[REPORTS] Generated ${timeframe} report for channel ${channelId} with ${messages.length} messages`);
+                    console.log(`[REPORTS] Generated ${timeframe} report for channel ${channelName} with ${messages.length} messages`);
                     generatedReports.push(report);
                 }
             }
