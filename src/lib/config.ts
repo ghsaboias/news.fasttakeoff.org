@@ -56,6 +56,7 @@ export const API = {
 export const URLs = {
     INSTAGRAM_WORKER: 'https://instagram-webhook-worker.gsaboia.workers.dev/post',
     BRAIN_IMAGE: 'https://news.fasttakeoff.org/images/brain.png',
+    WEBSITE_URL: 'https://news.fasttakeoff.org',
 };
 
 // Discord service configuration

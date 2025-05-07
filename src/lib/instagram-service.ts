@@ -2,11 +2,13 @@ import { Cloudflare } from '../../worker-configuration';
 import { URLs } from './config';
 import { Report } from './types/core';
 const BRAIN_IMAGE_URL = URLs.BRAIN_IMAGE;
+const WEBSITE_URL = URLs.WEBSITE_URL;
 
 // Instagram API constants
 const INSTAGRAM_ACCOUNT_ID = '9985118404840500';
 const INSTAGRAM_CREATE_MEDIA_URL = `https://graph.instagram.com/v20.0/${INSTAGRAM_ACCOUNT_ID}/media`;
 const INSTAGRAM_PUBLISH_MEDIA_URL = `https://graph.instagram.com/v20.0/${INSTAGRAM_ACCOUNT_ID}/media_publish`;
+const INSTAGRAM_CAPTION_MAX_LENGTH = 2200;
 
 export class InstagramService {
     private readonly accessToken: string;
@@ -33,9 +35,41 @@ export class InstagramService {
 
         try {
             // Step 1: Create media container
+            const reportLink = `\n\nRead more: ${WEBSITE_URL}/current-events/${report.channelId}/${report.reportId}`;
+            const headlineLength = report.headline.length;
+            const reportLinkLength = reportLink.length;
+            const overheadLength = headlineLength + reportLinkLength + 4;
+
+            let processedBody = report.body;
+            if (overheadLength + processedBody.length > INSTAGRAM_CAPTION_MAX_LENGTH) {
+                const availableBodyLength = INSTAGRAM_CAPTION_MAX_LENGTH - overheadLength;
+                if (availableBodyLength < 0) {
+                    processedBody = '';
+                } else {
+                    const paragraphs = processedBody.split('\n\n');
+                    let currentBody = '';
+                    for (let i = 0; i < paragraphs.length; i++) {
+                        const paragraph = paragraphs[i];
+                        const separator = currentBody ? '\n\n' : '';
+                        if (currentBody.length + separator.length + paragraph.length <= availableBodyLength) {
+                            currentBody += separator + paragraph;
+                        } else {
+                            break;
+                        }
+                    }
+                    processedBody = currentBody;
+                }
+            }
+
+            const caption = `${report.headline}\n\n${processedBody}${reportLink}`;
+
+            const finalCaption = caption.length > INSTAGRAM_CAPTION_MAX_LENGTH
+                ? caption.slice(0, INSTAGRAM_CAPTION_MAX_LENGTH)
+                : caption;
+
             const createMediaPayload = {
                 image_url: BRAIN_IMAGE_URL,
-                caption: `${report.headline}\n\n${report.body}`.slice(0, 2200),
+                caption: finalCaption,
                 access_token: this.accessToken,
             };
 
