@@ -149,7 +149,6 @@ export class MessagesService {
 
         // Cache miss or expired, fetch fresh data
         const messages = await this.getMessages(channelId, { since });
-        console.log(`[MESSAGES] Fetched ${messages.length} fresh messages for ${timeframe} timeframe of channel ${channelId}`);
         return messages;
     }
 
