@@ -10,6 +10,24 @@ const INSTAGRAM_CREATE_MEDIA_URL = `https://graph.instagram.com/v20.0/${INSTAGRA
 const INSTAGRAM_PUBLISH_MEDIA_URL = `https://graph.instagram.com/v20.0/${INSTAGRAM_ACCOUNT_ID}/media_publish`;
 const INSTAGRAM_CAPTION_MAX_LENGTH = 2200;
 
+// Helper function to generate hashtags from channel name
+function generateHashtagsFromChannelName(channelName: string): string[] {
+    if (!channelName) return [];
+
+    // Remove leading emojis (simple regex, might need refinement for all emojis)
+    let cleanName = channelName.replace(/^[^\w\s]+/, '');
+    // Remove other special characters, split by hyphen or space, and filter
+    cleanName = cleanName.replace(/[^\w\s-]/g, ''); // Keep hyphens for now to split by them
+
+    const words = cleanName
+        .split(/[\s-]+/) // Split by space or hyphen
+        .map(word => word.toLowerCase().trim())
+        .filter(word => word.length > 2); // Filter out very short words
+
+    // Create unique hashtags
+    return [...new Set(words.map(word => `#${word}`))];
+}
+
 export class InstagramService {
     private readonly accessToken: string;
 
@@ -21,8 +39,8 @@ export class InstagramService {
     }
 
     async postNews(report: Report): Promise<void> {
-        if (!report || !report.headline || !report.body) {
-            console.warn('[INSTAGRAM] Invalid report data received, skipping post.');
+        if (!report || !report.headline || !report.body || !report.channelName) {
+            console.warn('[INSTAGRAM] Invalid report data received (missing headline, body, or channelName), skipping post.');
             return;
         }
 
@@ -35,10 +53,16 @@ export class InstagramService {
 
         try {
             // Step 1: Create media container
-            const reportLink = `\n\nRead more: ${WEBSITE_URL}/current-events/${report.channelId}/${report.reportId}`;
+            const reportLink = `\\n\\nRead more: ${WEBSITE_URL}/current-events/${report.channelId}/${report.reportId}`;
+            const reportLinkCallToAction = "\\n\\n(Link in bio!)"; // Added call to action
+
+            const hashtags = generateHashtagsFromChannelName(report.channelName);
+            const hashtagsString = hashtags.join(' ');
+            const hashtagLength = hashtagsString.length > 0 ? hashtagsString.length + 2 : 0; // +2 for \\n\\n before hashtags
+
             const headlineLength = report.headline.length;
-            const reportLinkLength = reportLink.length;
-            const overheadLength = headlineLength + reportLinkLength + 4;
+            // Include call to action length
+            const overheadLength = headlineLength + reportLink.length + reportLinkCallToAction.length + hashtagLength + 6; // 2 for \\n\\n after headline, 2 for \\n\\n before link, 2 for \\n\\n before call to action
 
             let processedBody = report.body;
             if (overheadLength + processedBody.length > INSTAGRAM_CAPTION_MAX_LENGTH) {
@@ -46,11 +70,11 @@ export class InstagramService {
                 if (availableBodyLength < 0) {
                     processedBody = '';
                 } else {
-                    const paragraphs = processedBody.split('\n\n');
+                    const paragraphs = processedBody.split('\\n\\n');
                     let currentBody = '';
                     for (let i = 0; i < paragraphs.length; i++) {
                         const paragraph = paragraphs[i];
-                        const separator = currentBody ? '\n\n' : '';
+                        const separator = currentBody ? '\\n\\n' : '';
                         if (currentBody.length + separator.length + paragraph.length <= availableBodyLength) {
                             currentBody += separator + paragraph;
                         } else {
@@ -61,15 +85,36 @@ export class InstagramService {
                 }
             }
 
-            const caption = `${report.headline}\n\n${processedBody}${reportLink}`;
+            let caption = `${report.headline}\\n\\n${processedBody}${reportLink}${reportLinkCallToAction}`;
+            if (hashtags.length > 0) {
+                caption += `\\n\\n${hashtagsString}`;
+            }
 
-            const finalCaption = caption.length > INSTAGRAM_CAPTION_MAX_LENGTH
-                ? caption.slice(0, INSTAGRAM_CAPTION_MAX_LENGTH)
-                : caption;
+            // Final check for length
+            if (caption.length > INSTAGRAM_CAPTION_MAX_LENGTH) {
+                // If still too long, we might need to truncate more aggressively or remove hashtags
+                // For now, let's try removing hashtags first if the body is already minimal
+                if (processedBody.length < report.body.length || processedBody.length === 0) {
+                    caption = `${report.headline}\\n\\n${processedBody}${reportLink}${reportLinkCallToAction}`; // Caption without hashtags
+                    // If still too long without hashtags, truncate the whole caption
+                    if (caption.length > INSTAGRAM_CAPTION_MAX_LENGTH) {
+                        caption = caption.slice(0, INSTAGRAM_CAPTION_MAX_LENGTH);
+                    }
+                } else {
+                    // If body wasn't truncated, try removing hashtags and re-check
+                    let captionWithoutHashtags = `${report.headline}\\n\\n${processedBody}${reportLink}${reportLinkCallToAction}`;
+                    if (captionWithoutHashtags.length <= INSTAGRAM_CAPTION_MAX_LENGTH) {
+                        caption = captionWithoutHashtags;
+                    } else {
+                        // If still too long, truncate the version with hashtags (it implies body is very long)
+                        caption = caption.slice(0, INSTAGRAM_CAPTION_MAX_LENGTH);
+                    }
+                }
+            }
 
             const createMediaPayload = {
                 image_url: BRAIN_IMAGE_URL,
-                caption: finalCaption,
+                caption: caption,
                 access_token: this.accessToken,
             };
 
