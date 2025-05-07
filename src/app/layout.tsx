@@ -16,7 +16,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   const pathname = usePathname();
-  const showHeader = pathname !== '/news-globe';
+  const showHeaderAndFooter = pathname !== '/news-globe';
 
   return (
     <ClerkProvider>
@@ -51,9 +51,9 @@ export default function RootLayout({
         <body
           className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen flex flex-col justify-center mx-auto`}
         >
-          {showHeader && <Header />}
+          {showHeaderAndFooter && <Header />}
           <main className='flex flex-1 justify-center items-start'>{children}</main>
-          <Footer />
+          {showHeaderAndFooter && <Footer />}
         </body>
       </html>
     </ClerkProvider>
