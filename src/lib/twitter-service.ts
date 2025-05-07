@@ -55,6 +55,7 @@ export class TwitterService {
         console.log('[TWITTER] Attempting to refresh token...');
         try {
             const storedTokens = await this.kv.get<TwitterTokens>(this.kvKey, 'json');
+            console.log('[TWITTER] Stored tokens from KV:', storedTokens);
             if (!storedTokens?.refresh_token) {
                 console.error('[TWITTER] Refresh failed: No refresh token found in KV.');
                 return null;
@@ -77,6 +78,8 @@ export class TwitterService {
 
             // Use a union type for the expected response structure
             const data = await response.json() as TwitterTokenSuccessResponse | TwitterTokenErrorResponse;
+
+            console.log('[TWITTER] Response from Twitter:', data);
 
             if (!response.ok) {
                 // Type guard: If response is not ok, data must be an error response
