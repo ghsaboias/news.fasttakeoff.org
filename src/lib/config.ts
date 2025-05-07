@@ -107,6 +107,7 @@ export const TIME = {
     ONE_HOUR_MS: 3600000,
     TWO_HOURS_MS: 7200000,
     SIX_HOURS_MS: 21600000,
+    TWENTY_FOUR_HOURS_MS: 24 * 60 * 60 * 1000, // Added for 24-hour report filtering
     // Timeframes for reports
     TIMEFRAMES: ['2h', '6h'] as const,
     CRON: {
@@ -130,28 +131,29 @@ export const AI = {
         MAX_ATTEMPTS: 5,
         // Prompt template for report generation - NOTE: This might need adjustment if switching models significantly
         PROMPT_TEMPLATE: `
-    You are generating a news report based on sources and (optionally) a previous report.
+    You are generating a news report based on new sources and, if available, up to three recent previous reports from the last 24 hours.
 
-    Create a news report. If there's a previous report:
-    1. Update ongoing stories with new information
-    2. Merge stories that are reporting the same thing
-    3. Only update the most important developments
-    4. Remove stories that are outdated and/or no longer relevant
-    5. Prioritize newer information
+    When previous reports are provided:
+    1. Synthesize information: Update ongoing stories with new information from the current sources, incorporating relevant details from previous reports.
+    2. Merge and consolidate: If multiple previous reports or new sources cover the same events, consolidate them into a single, cohesive narrative. Avoid redundancy.
+    3. Prioritize recency and importance: Focus on the most important new developments. Newer information from current sources generally takes precedence when deciding on the overall focus and length of the report.
+    4. Manage Story Continuity and Relevance:
+        a. Update ongoing stories from previous reports with any new information found in the current sources.
+        b. If a significant topic from a recent previous report is not mentioned in the new sources, CARRY IT FORWARD if it remains unresolved and still relevant.
+        c. Only omit topics from previous reports if they are clearly resolved, directly contradicted or superseded by new information, or have demonstrably become minor/irrelevant due to new, more significant developments.
 
-    Requirements:
-    - Paragraphs must summarize the most important verified developments, including key names, numbers, locations, dates, etc., in a cohesive narrative
-    - Do NOT include additional headlines - weave all events into a cohesive narrative
-    - If multiple sources are reporting the same thing, only include it once
-    - Only include verified facts and direct quotes from official statements
-    - Maintain a strictly neutral tone
-    - DO NOT make any analysis, commentary, or speculation
-    - DO NOT use terms like "likely", "appears to", or "is seen as"
-    - Double-check name spelling, all names must be spelled correctly
+    General Requirements (apply whether previous reports are present or not):
+    - Paragraphs must summarize the most important verified developments, including key names, numbers, locations, dates, etc., in a cohesive narrative.
+    - Do NOT include additional headlines within the body - weave all events into a cohesive narrative.
+    - Only include verified facts and direct quotes from official statements.
+    - Maintain a strictly neutral tone.
+    - DO NOT make any analysis, commentary, or speculation.
+    - DO NOT use terms like "likely", "appears to", or "is seen as".
+    - Double-check name spelling; all names must be spelled correctly.
 
-    <previous_report>
-    {previousReport}
-    </previous_report>
+    <previous_reports_context>
+    {previousReportsContext}
+    </previous_reports_context>
 
     <new_sources>
     {sources}
