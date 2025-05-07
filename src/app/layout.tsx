@@ -1,23 +1,23 @@
-'use client';
-import Footer from '@/components/Footer';
-import Header from '@/components/Header';
+import RootLayoutClient from '@/components/RootLayoutClient';
 import { ClerkProvider } from '@clerk/nextjs';
+import type { Metadata } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
-import { usePathname } from 'next/navigation';
 import Script from 'next/script';
 import './globals.css';
 
 const geistSans = Geist({ variable: '--font-geist-sans', subsets: ['latin'] });
 const geistMono = Geist_Mono({ variable: '--font-geist-mono', subsets: ['latin'] });
 
+export const metadata: Metadata = {
+  title: 'Fast Takeoff News',
+  description: 'AI-powered news for everyone.',
+};
+
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const pathname = usePathname();
-  const showHeaderAndFooter = pathname !== '/news-globe';
-
   return (
     <ClerkProvider>
       <html lang='en'>
@@ -51,9 +51,7 @@ export default function RootLayout({
         <body
           className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen flex flex-col justify-center mx-auto`}
         >
-          {showHeaderAndFooter && <Header />}
-          <main className='flex flex-1 justify-center items-start'>{children}</main>
-          {showHeaderAndFooter && <Footer />}
+          <RootLayoutClient>{children}</RootLayoutClient>
         </body>
       </html>
     </ClerkProvider>
