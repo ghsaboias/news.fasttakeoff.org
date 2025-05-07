@@ -9,10 +9,9 @@ const nextConfig: NextConfig = {
     remotePatterns: [
       {
         protocol: 'https',
-        hostname: "**",
+        hostname: 'news.fasttakeoff.org',
       },
     ],
-    domains: ['news.fasttakeoff.org'],
   },
 };
 
