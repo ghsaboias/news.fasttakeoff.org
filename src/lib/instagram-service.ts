@@ -102,7 +102,7 @@ export class InstagramService {
                     }
                 } else {
                     // If body wasn't truncated, try removing hashtags and re-check
-                    let captionWithoutHashtags = `${report.headline}\\n\\n${processedBody}${reportLink}${reportLinkCallToAction}`;
+                    const captionWithoutHashtags = `${report.headline}\\n\\n${processedBody}${reportLink}${reportLinkCallToAction}`;
                     if (captionWithoutHashtags.length <= INSTAGRAM_CAPTION_MAX_LENGTH) {
                         caption = captionWithoutHashtags;
                     } else {

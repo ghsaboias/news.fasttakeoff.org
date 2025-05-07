@@ -246,7 +246,7 @@ const Globe = (): React.ReactNode => {
         const fetchGeoData = async () => {
             try {
                 // Fetch borders data
-                const bordersResponse = await fetch('https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_110m_admin_0_countries.geojson');
+                const bordersResponse = await fetch('/geojson/ne_110m_admin_0_countries.geojson');
                 if (!bordersResponse.ok) {
                     // Still throw for borders, as they are more critical, or handle as preferred
                     console.warn(`Failed to fetch borders: ${bordersResponse.status}`);
@@ -257,7 +257,7 @@ const Globe = (): React.ReactNode => {
                 }
 
                 // Fetch coastlines data
-                const coastlinesResponse = await fetch('https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_110m_coastline.geojson');
+                const coastlinesResponse = await fetch('/geojson/ne_110m_coastline.geojson');
                 if (coastlinesResponse.ok) {
                     const coastlinesJson = await coastlinesResponse.json();
                     setCoastlinesData(coastlinesJson);
