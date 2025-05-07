@@ -1,60 +1,23 @@
+'use client';
 import Footer from '@/components/Footer';
 import Header from '@/components/Header';
 import { ClerkProvider } from '@clerk/nextjs';
-import type { Metadata } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
+import { usePathname } from 'next/navigation';
 import Script from 'next/script';
 import './globals.css';
 
 const geistSans = Geist({ variable: '--font-geist-sans', subsets: ['latin'] });
 const geistMono = Geist_Mono({ variable: '--font-geist-mono', subsets: ['latin'] });
 
-export const metadata: Metadata = {
-  title: 'Fast Takeoff News',
-  description: 'AI-powered news for everyone. Get the latest news from on-the-ground sources.',
-  icons: {
-    icon: [
-      { url: '/favicon.ico', type: 'image/x-icon', sizes: '32x32' },
-    ],
-    apple: '/images/brain-180.png',
-  },
-  openGraph: {
-    title: 'Fast Takeoff News',
-    description: 'AI-powered news for everyone. Get the latest news from on-the-ground sources.',
-    url: 'https://news.fasttakeoff.org',
-    siteName: 'Fast Takeoff News',
-    images: [
-      {
-        url: 'https://news.fasttakeoff.org/images/og-screenshot.png',
-        width: 1200,
-        height: 630,
-        alt: 'Fast Takeoff News - AI-powered news for everyone',
-      },
-    ],
-    locale: 'en_US',
-    type: 'website',
-  },
-  twitter: {
-    card: 'summary_large_image',
-    title: 'Fast Takeoff News',
-    description: 'AI-powered news for everyone. Get the latest news from on-the-ground sources.',
-    images: [{
-      url: 'https://news.fasttakeoff.org/images/og-screenshot.png',
-      width: 1200,
-      height: 630,
-      alt: 'Fast Takeoff News - AI-powered news for everyone',
-      type: 'image/png',
-    }],
-    creator: '@fasttakeoff',
-    site: '@fasttakeoff',
-  },
-};
-
-export default async function RootLayout({
+export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const pathname = usePathname();
+  const showHeader = pathname !== '/news-globe';
+
   return (
     <ClerkProvider>
       <html lang='en'>
@@ -88,7 +51,7 @@ export default async function RootLayout({
         <body
           className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen flex flex-col justify-center mx-auto`}
         >
-          <Header />
+          {showHeader && <Header />}
           <main className='flex flex-1 justify-center items-start'>{children}</main>
           <Footer />
         </body>

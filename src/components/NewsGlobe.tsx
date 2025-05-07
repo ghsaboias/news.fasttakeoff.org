@@ -3,6 +3,8 @@
 import { formatTime } from '@/lib/utils';
 import { Html, Line, OrbitControls, Sphere } from '@react-three/drei';
 import { Canvas, ThreeEvent, useFrame } from '@react-three/fiber';
+import { Loader2 } from 'lucide-react';
+import Image from 'next/image';
 import Link from 'next/link';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
@@ -357,7 +359,7 @@ const Globe = (): React.ReactNode => {
     if (isLoadingNews) {
         return (
             <Html center>
-                <div style={{ color: 'white', fontSize: '1.5em', width: '300px', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>Loading news data...</div>
+                <Loader2 className="h-10 w-10 animate-spin text-primary" />
             </Html>
         );
     }
@@ -401,7 +403,10 @@ const Globe = (): React.ReactNode => {
 
 const NewsGlobe: React.FC = () => {
     return (
-        <div style={{ width: '90%', height: '90vh', background: '#000010' /* Darker background */ }}>
+        <div style={{ position: 'relative', width: '90%', height: '90vh', background: '#000010' /* Darker background */ }}>
+            <Link href="/" style={{ position: 'absolute', top: '20px', left: '20px', zIndex: 10 }}>
+                <Image src="/images/brain_transparent.png" alt="Home" width={32} height={32} />
+            </Link>
             <Canvas camera={{ position: [0, 0, 5], fov: 50 }}>
                 <Globe />
             </Canvas>
