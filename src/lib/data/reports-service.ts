@@ -256,7 +256,6 @@ export class ReportsService {
         const cleanedReports = this.cleanupOldReports(reports);
 
         await this.cacheManager.put('REPORTS_CACHE', key, cleanedReports, CACHE.TTL.REPORTS);
-        console.log(`Cached ${cleanedReports.length} reports for ${key} with ${CACHE.TTL.REPORTS / 3600}h TTL`);
     }
 
     private async getRecentPreviousReports(channelId: string, timeframe: TimeframeKey): Promise<Report[]> {
@@ -496,7 +495,6 @@ export class ReportsService {
      * Manual trigger method: Generates reports for specified timeframes or all configured timeframes.
      */
     async generateReportsForManualTrigger(manualTimeframes: TimeframeKey[] | 'ALL'): Promise<void> {
-        console.log(`[REPORTS - generateReportsForManualTrigger] Manual run. Target: ${Array.isArray(manualTimeframes) ? manualTimeframes.join(', ') : manualTimeframes}`);
         let timeframesToProcess: TimeframeKey[];
 
         if (manualTimeframes === 'ALL') {
@@ -509,8 +507,6 @@ export class ReportsService {
             console.warn('[REPORTS - generateReportsForManualTrigger] No timeframes specified or resolved for manual run. Exiting.');
             return;
         }
-
-        console.log(`[REPORTS - generateReportsForManualTrigger] Processing manually specified timeframes: ${timeframesToProcess.join(', ')}`);
 
         const generatedReports = await this._generateAndCacheReportsForTimeframes(timeframesToProcess);
         await this._postTopReportToSocialMedia(generatedReports);

@@ -157,8 +157,6 @@ export class TwitterService {
             return; // Stop if no valid token
         }
 
-        // Construct tweet content (customize as needed)
-        // Consider character limits (280)
         const tweetText = `${report.headline}\n\n${formatTime(report?.generatedAt, true)} - ${report?.city}`;
 
 
