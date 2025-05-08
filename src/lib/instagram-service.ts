@@ -53,64 +53,51 @@ export class InstagramService {
 
         try {
             // Step 1: Create media container
-            const reportLink = `\\n\\nRead more: ${WEBSITE_URL}/current-events/${report.channelId}/${report.reportId}`;
-            const reportLinkCallToAction = "\\n\\n(Link in bio!)"; // Added call to action
+            const reportLink = `\n\nRead more: ${WEBSITE_URL}/current-events/${report.channelId}/${report.reportId}`;
+            const reportLinkCallToAction = "\n\n(Link in bio!)"; // Added call to action
 
             const hashtags = generateHashtagsFromChannelName(report.channelName);
             const hashtagsString = hashtags.join(' ');
-            const hashtagLength = hashtagsString.length > 0 ? hashtagsString.length + 2 : 0; // +2 for \\n\\n before hashtags
 
-            const headlineLength = report.headline.length;
-            // Include call to action length
-            const overheadLength = headlineLength + reportLink.length + reportLinkCallToAction.length + hashtagLength + 6; // 2 for \\n\\n after headline, 2 for \\n\\n before link, 2 for \\n\\n before call to action
+            // Format the date
+            const date = new Date(report.generatedAt);
+            const formattedDate = date.toLocaleDateString('en-US', {
+                month: 'short',
+                day: 'numeric',
+                year: 'numeric'
+            });
+            const formattedTime = date.toLocaleTimeString('en-US', {
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: true
+            });
 
-            let processedBody = report.body;
-            if (overheadLength + processedBody.length > INSTAGRAM_CAPTION_MAX_LENGTH) {
-                const availableBodyLength = INSTAGRAM_CAPTION_MAX_LENGTH - overheadLength;
-                if (availableBodyLength < 0) {
-                    processedBody = '';
+            // Calculate space needed for fixed elements
+            const headerLine = `${report.headline}`;
+            const dateCityLine = `${formattedDate} ${formattedTime} - ${report.city}`;
+            const footerLines = `${reportLink}${reportLinkCallToAction}${hashtagsString ? `\n\n${hashtagsString}` : ''}`;
+
+            // Calculate available space for body
+            const fixedContentLength = headerLine.length + dateCityLine.length + footerLines.length + 8; // +8 for 4 sets of \n\n
+            const availableBodyLength = INSTAGRAM_CAPTION_MAX_LENGTH - fixedContentLength;
+
+            // Process body paragraphs
+            const paragraphs = report.body.split('\n\n');
+            let processedBody = '';
+
+            for (let i = 0; i < paragraphs.length; i++) {
+                const paragraph = paragraphs[i];
+                const separator = processedBody ? '\n\n' : '';
+
+                if ((processedBody + separator + paragraph).length <= availableBodyLength) {
+                    processedBody += separator + paragraph;
                 } else {
-                    const paragraphs = processedBody.split('\\n\\n');
-                    let currentBody = '';
-                    for (let i = 0; i < paragraphs.length; i++) {
-                        const paragraph = paragraphs[i];
-                        const separator = currentBody ? '\\n\\n' : '';
-                        if (currentBody.length + separator.length + paragraph.length <= availableBodyLength) {
-                            currentBody += separator + paragraph;
-                        } else {
-                            break;
-                        }
-                    }
-                    processedBody = currentBody;
+                    break;
                 }
             }
 
-            let caption = `${report.headline}\\n\\n${processedBody}${reportLink}${reportLinkCallToAction}`;
-            if (hashtags.length > 0) {
-                caption += `\\n\\n${hashtagsString}`;
-            }
-
-            // Final check for length
-            if (caption.length > INSTAGRAM_CAPTION_MAX_LENGTH) {
-                // If still too long, we might need to truncate more aggressively or remove hashtags
-                // For now, let's try removing hashtags first if the body is already minimal
-                if (processedBody.length < report.body.length || processedBody.length === 0) {
-                    caption = `${report.headline}\\n\\n${processedBody}${reportLink}${reportLinkCallToAction}`; // Caption without hashtags
-                    // If still too long without hashtags, truncate the whole caption
-                    if (caption.length > INSTAGRAM_CAPTION_MAX_LENGTH) {
-                        caption = caption.slice(0, INSTAGRAM_CAPTION_MAX_LENGTH);
-                    }
-                } else {
-                    // If body wasn't truncated, try removing hashtags and re-check
-                    const captionWithoutHashtags = `${report.headline}\\n\\n${processedBody}${reportLink}${reportLinkCallToAction}`;
-                    if (captionWithoutHashtags.length <= INSTAGRAM_CAPTION_MAX_LENGTH) {
-                        caption = captionWithoutHashtags;
-                    } else {
-                        // If still too long, truncate the version with hashtags (it implies body is very long)
-                        caption = caption.slice(0, INSTAGRAM_CAPTION_MAX_LENGTH);
-                    }
-                }
-            }
+            // Construct final caption
+            const caption = `${headerLine}\n\n${dateCityLine}\n\n${processedBody}\n\n${footerLines}`;
 
             const createMediaPayload = {
                 image_url: BRAIN_IMAGE_URL,
