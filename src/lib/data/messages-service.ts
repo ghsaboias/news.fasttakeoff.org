@@ -142,7 +142,7 @@ export class MessagesService {
         if (cached) {
             const age = (Date.now() - new Date(cached.cachedAt).getTime()) / 1000;
             if (age < CACHE.TTL.MESSAGES && cached.messages.length > 0) {
-                console.log(`[MESSAGES] Using ${cached.messages.length} cached messages for ${timeframe} timeframe of channel ${cached.channelName}`);
+                console.log(`[MESSAGES] Using ${cached.messages.length} messages for ${timeframe} of channel ${cached.channelName}`);
                 return cached.messages;
             }
         }
