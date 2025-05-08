@@ -59,7 +59,7 @@ export async function scheduled(event: ScheduledEvent, env: Cloudflare.Env): Pro
                 console.log('[CRON] Report generation for ALL timeframes completed (manual trigger via REPORTS shortcut)');
                 taskProcessed = true;
                 break;
-            case '0/5 * * * *':
+            case '*/5 * * * *':
                 await reportsService.generateReportsForManualTrigger(['2h']);
                 taskProcessed = true;
                 break;
