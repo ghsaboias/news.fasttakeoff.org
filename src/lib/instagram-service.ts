@@ -54,12 +54,11 @@ export class InstagramService {
         try {
             // Step 1: Create media container
             const reportLink = `\n\nRead more: ${WEBSITE_URL}/current-events/${report.channelId}/${report.reportId}`;
-            const reportLinkCallToAction = "\n\n(Link in bio!)"; // Added call to action
+            const reportLinkCallToAction = "\n\n(Link in bio!)";
 
             const hashtags = generateHashtagsFromChannelName(report.channelName);
             const hashtagsString = hashtags.join(' ');
 
-            // Format the date
             const date = new Date(report.generatedAt);
             const formattedDate = date.toLocaleDateString('en-US', {
                 month: 'short',

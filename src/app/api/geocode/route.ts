@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
-import type { Cloudflare } from '../../../../worker-configuration'; // Adjust path as necessary
-import { CacheManager } from '../../../lib/cache-utils'; // Adjust path as necessary
+import type { Cloudflare } from '../../../../worker-configuration';
+import { CacheManager } from '../../../lib/cache-utils';
 
 const GOOGLE_GEOCODING_API_KEY = process.env.GOOGLE_GEOCODING_API_KEY
 

@@ -30,7 +30,6 @@ export const AI_PROVIDERS: Record<string, AIProviderConfig> = {
         apiKeyEnvVar: 'OPENROUTER_API_KEY',
         displayName: 'Gemini 2.5 Flash (OpenRouter)',
     },
-    // Add other providers here in the future
 };
 
 /**
@@ -160,6 +159,7 @@ export const AI = {
     {sources}
     </new_sources>
     `,
+        SYSTEM_PROMPT: 'You are an experienced news wire journalist that responds in JSON. The schema must include {"headline": "clear, specific, non-sensational, descriptive headline in all caps", "city": "single city name, related to the news, properly capitalized (first letter of each word only)", "body": "cohesive narrative of the most important verified developments, including key names, numbers, locations, dates, etc. In this section, separate paragraphs with double newlines (\n\n) to indicate distinct developments."}'
     },
 };
 
