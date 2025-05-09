@@ -88,7 +88,7 @@ export const CACHE = {
         // Report cache TTL values by timeframe (in seconds)
         REPORTS: 72 * 60 * 60, // 72 hours
         // Channel cache TTL
-        CHANNELS: 60, // 24 hours
+        CHANNELS: 12 * 60 * 60, // 12 hours
         // Messages cache TTL
         MESSAGES: 259200, // 3 days
     },
