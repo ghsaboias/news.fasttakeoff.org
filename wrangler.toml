@@ -40,6 +40,11 @@ binding = "AUTH_TOKENS"
 id = "9ce83d624a074ec9bec17d43d8b3af08"
 preview_id = "9ce83d624a074ec9bec17d43d8b3af08"
 
+[[kv_namespaces]]
+binding = "GEOCODE_CACHE"
+id = "626d83761ccf42f099a1d0211f61abc8"
+preview_id = "626d83761ccf42f099a1d0211f61abc8"
+
 [[routes]]
 pattern = "news.fasttakeoff.org"
 custom_domain = true
