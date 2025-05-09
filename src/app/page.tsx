@@ -22,22 +22,17 @@ export default function Home() {
   const root = useRef(null);
   const scope = useRef<Scope | null>(null);
 
-  // Handle window resize and initial size
   useEffect(() => {
     const checkSize = () => {
       setIsSmallScreen(window.innerWidth < 640);
     };
 
-    // Check initial size
     checkSize();
-
-    // Add resize listener
     window.addEventListener('resize', checkSize);
 
     return () => window.removeEventListener('resize', checkSize);
   }, []);
 
-  // Handle animations
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
@@ -93,7 +88,7 @@ export default function Home() {
         scope.current.revert();
       }
     };
-  }, [isSmallScreen]); // Re-run when screen size changes
+  }, [isSmallScreen]);
 
   async function loadExecutiveOrders() {
     try {
