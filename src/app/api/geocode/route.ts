@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import type { Cloudflare } from '../../../../worker-configuration';
 import { CacheManager } from '../../../lib/cache-utils';
+import { getCacheContext } from '../../../lib/utils';
 
 const GOOGLE_GEOCODING_API_KEY = process.env.GOOGLE_GEOCODING_API_KEY
 
@@ -12,7 +13,7 @@ interface GoogleGeocodeLocation {
 }
 
 export async function GET(request: Request) {
-    const env = process.env as unknown as Cloudflare.Env;
+    const { env } = getCacheContext();
     const cacheManager = new CacheManager(env);
 
     const { searchParams } = new URL(request.url);
