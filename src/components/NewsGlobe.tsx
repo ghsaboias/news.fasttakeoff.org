@@ -403,7 +403,7 @@ const Globe = (): React.ReactNode => {
 
 const NewsGlobe: React.FC = () => {
     return (
-        <div style={{ position: 'relative', height: '100vh', background: '#000010' /* Darker background */ }}>
+        <div style={{ position: 'relative', height: '100vh', width: '100%', background: '#000010' /* Darker background */ }}>
             <Link href="/" style={{ position: 'absolute', top: '20px', left: '20px', zIndex: 10 }}>
                 <Image src="/images/brain_transparent.png" alt="Home" width={32} height={32} />
             </Link>
