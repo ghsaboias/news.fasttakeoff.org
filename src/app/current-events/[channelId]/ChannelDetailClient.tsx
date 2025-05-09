@@ -31,6 +31,8 @@ export default function ChannelDetailClient({ reports, channel }: { reports: Rep
     }, [olderReports]);
 
     if (!channelId || !channel) {
+        console.log('[ChannelDetailClient] channelId', channelId);
+        console.log('[ChannelDetailClient] channel', channel);
         return (
             <div className="p-6 max-w-5xl mx-auto flex flex-col items-center justify-center py-12">
                 <p className="text-lg text-red-500">Channel not found</p>
