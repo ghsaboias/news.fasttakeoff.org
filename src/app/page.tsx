@@ -18,6 +18,7 @@ export default function Home() {
   const [reports, setReports] = useState<Report[]>([])
   const [loadingReports, setLoadingReports] = useState(true)
   const [isSmallScreen, setIsSmallScreen] = useState(false)
+  const [isUSBased, setIsUSBased] = useState<boolean | null>(null); // null: unknown, true: US, false: non-US/error
 
   const root = useRef(null);
   const scope = useRef<Scope | null>(null);
@@ -90,7 +91,33 @@ export default function Home() {
     };
   }, [isSmallScreen]);
 
+  useEffect(() => {
+    async function checkGeo() {
+      try {
+        const response = await fetch('/api/geo');
+        if (!response.ok) {
+          throw new Error(`Geo API error: ${response.status}`);
+        }
+        const data = await response.json();
+        // Treat 'XX' (unknown/local) as potentially US for local dev convenience,
+        // or you could treat it as non-US by changing the condition.
+        setIsUSBased(data.country === 'US');
+      } catch (error) {
+        console.error('Error checking geolocation:', error);
+        setIsUSBased(false); // Assume non-US on error
+      }
+    }
+    checkGeo();
+  }, []);
+
   async function loadExecutiveOrders() {
+    if (!isUSBased) {
+      console.log('Skipping Executive Order fetch: Non-US location detected.');
+      setLoadingEO(false);
+      setLatestExecutiveOrders([]);
+      return;
+    }
+    console.log('US location detected, fetching Executive Orders...');
     try {
       setLoadingEO(true)
       const startDate = getStartDate(1)
@@ -103,6 +130,7 @@ export default function Home() {
       setLatestExecutiveOrders(sortedOrders.slice(0, 3))
     } catch (error) {
       console.error('Error loading executive orders:', error)
+      setLatestExecutiveOrders([]);
     } finally {
       setLoadingEO(false)
     }
@@ -131,9 +159,11 @@ export default function Home() {
   }
 
   useEffect(() => {
-    loadExecutiveOrders()
-    loadReports()
-  }, [])
+    loadReports();
+    if (isUSBased !== null) {
+      loadExecutiveOrders();
+    }
+  }, [isUSBased]);
 
   return (
     <div className="flex flex-col pb-16 w-[100vw] justify-center">
@@ -207,47 +237,49 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Latest Executive Orders Section */}
-      <section className="mx-auto sm:px-4 w-[90%] mt-16">
-        <div className="flex flex-col gap-6">
-          <div className="flex items-center justify-between">
-            <h2 className="text-2xl font-bold tracking-tight md:text-3xl">Latest Executive Orders</h2>
-            <Link href="/executive-orders" className="text-sm font-medium hover:underline">
-              View all
-            </Link>
-          </div>
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-            {loadingEO ? (
-              Array(3)
-                .fill(0)
-                .map((_, index) => (
-                  <Card key={index} className="animate-pulse">
-                    <CardHeader>
-                      <div className="h-6 bg-muted rounded w-3/4 mb-2"></div>
-                      <div className="h-4 bg-muted rounded w-1/4"></div>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="h-4 bg-muted rounded w-full mb-2"></div>
-                      <div className="h-4 bg-muted rounded w-full mb-2"></div>
-                      <div className="h-4 bg-muted rounded w-3/4"></div>
-                    </CardContent>
-                    <CardFooter>
-                      <div className="h-8 bg-muted rounded w-1/3"></div>
-                    </CardFooter>
-                  </Card>
+      {/* Latest Executive Orders Section - RENDER CONDITIONALLY */}
+      {isUSBased === true && (
+        <section className="mx-auto sm:px-4 w-[90%] mt-16">
+          <div className="flex flex-col gap-6">
+            <div className="flex items-center justify-between">
+              <h2 className="text-2xl font-bold tracking-tight md:text-3xl">Latest Executive Orders</h2>
+              <Link href="/executive-orders" className="text-sm font-medium hover:underline">
+                View all
+              </Link>
+            </div>
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+              {loadingEO ? (
+                Array(3)
+                  .fill(0)
+                  .map((_, index) => (
+                    <Card key={index} className="animate-pulse">
+                      <CardHeader>
+                        <div className="h-6 bg-muted rounded w-3/4 mb-2"></div>
+                        <div className="h-4 bg-muted rounded w-1/4"></div>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="h-4 bg-muted rounded w-full mb-2"></div>
+                        <div className="h-4 bg-muted rounded w-full mb-2"></div>
+                        <div className="h-4 bg-muted rounded w-3/4"></div>
+                      </CardContent>
+                      <CardFooter>
+                        <div className="h-8 bg-muted rounded w-1/3"></div>
+                      </CardFooter>
+                    </Card>
+                  ))
+              ) : latestExecutiveOrders.length > 0 ? (
+                latestExecutiveOrders.map(order => (
+                  <OrderCard key={order.id} order={order} />
                 ))
-            ) : latestExecutiveOrders.length > 0 ? (
-              latestExecutiveOrders.map(order => (
-                <OrderCard key={order.id} order={order} />
-              ))
-            ) : (
-              <div className="col-span-3 text-center py-8">
-                <p className="text-muted-foreground">No executive orders found.</p>
-              </div>
-            )}
+              ) : (
+                <div className="col-span-3 text-center py-8">
+                  <p className="text-muted-foreground">No executive orders found.</p>
+                </div>
+              )}
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
     </div>
   )
 }

@@ -6,7 +6,7 @@ import { UserButton, useUser } from "@clerk/nextjs";
 import { Menu } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Badge } from "./ui/badge";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "./ui/sheet";
 
@@ -14,6 +14,20 @@ export default function Header() {
     const { user } = useUser()
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const aiConfig = getAIProviderConfig();
+    const [isUSBased, setIsUSBased] = useState(false);
+
+    useEffect(() => {
+        const fetchGeoData = async () => {
+            try {
+                const response = await fetch('/api/geo');
+                const data = await response.json();
+                setIsUSBased(data.country === 'US');
+            } catch (error) {
+                console.error('Error fetching geo data:', error);
+            }
+        };
+        fetchGeoData();
+    }, []);
 
     return (
         <header className="mx-auto flex h-16 items-center justify-between sm:px-8 sm:w-[95vw] w-[90vw]">
@@ -22,9 +36,15 @@ export default function Header() {
                 <p className="hidden min-[840px]:block">Fast Takeoff News</p>
             </Link>
             <div className="items-center gap-6 hidden min-[540px]:flex">
-                <Link href="/executive-orders" className="text-sm font-medium hover:underline">
-                    Executive Orders
-                </Link>
+                {
+                    isUSBased && (
+                        <>
+                            <Link href="/executive-orders" className="text-sm font-medium hover:underline">
+                                Executive Orders
+                            </Link>
+                        </>
+                    )
+                }
                 <Link href="/current-events" className="text-sm font-medium hover:underline">
                     Current Events
                 </Link>
@@ -49,9 +69,15 @@ export default function Header() {
                                     <SheetTitle>Menu</SheetTitle>
                                 </SheetHeader>
                                 <div className="flex flex-col gap-4 mt-8 justify-center items-center">
-                                    <Link href="/executive-orders" className="text-sm font-medium hover:underline">
-                                        Executive Orders
-                                    </Link>
+                                    {
+                                        isUSBased && (
+                                            <>
+                                                <Link href="/executive-orders" className="text-sm font-medium hover:underline">
+                                                    Executive Orders
+                                                </Link>
+                                            </>
+                                        )
+                                    }
                                     <Link href="/current-events" className="text-sm font-medium hover:underline">
                                         Current Events
                                     </Link>
@@ -89,9 +115,15 @@ export default function Header() {
                                     <SheetTitle>Menu</SheetTitle>
                                 </SheetHeader>
                                 <div className="flex flex-col gap-4 mt-8 justify-center items-center">
-                                    <Link href="/executive-orders" className="text-sm font-medium hover:underline">
-                                        Executive Orders
-                                    </Link>
+                                    {
+                                        isUSBased && (
+                                            <>
+                                                <Link href="/executive-orders" className="text-sm font-medium hover:underline">
+                                                    Executive Orders
+                                                </Link>
+                                            </>
+                                        )
+                                    }
                                     <Link href="/current-events" className="text-sm font-medium hover:underline">
                                         Current Events
                                     </Link>

@@ -1,7 +1,25 @@
-import { Separator } from "@/components/ui/separator"
-import Link from "next/link"
+'use client'
+
+import { Separator } from "@/components/ui/separator";
+import Link from "next/link";
+import { useEffect, useState } from "react";
 
 export default function Footer() {
+    const [isUSBased, setIsUSBased] = useState(false);
+
+    useEffect(() => {
+        const fetchGeoData = async () => {
+            try {
+                const response = await fetch('/api/geo');
+                const data = await response.json();
+                setIsUSBased(data.country === 'US');
+            } catch (error) {
+                console.error('Error fetching geo data:', error);
+            }
+        };
+        fetchGeoData();
+    }, []);
+
     return (
         <footer className="bg-muted-light py-6">
             <div className="container mx-auto px-8 min-w-[90%]">
@@ -20,11 +38,17 @@ export default function Footer() {
                                     Home
                                 </Link>
                             </li>
-                            <li>
-                                <Link href="/executive-orders" className="hover:underline">
-                                    Executive Orders
-                                </Link>
-                            </li>
+                            {
+                                isUSBased && (
+                                    <>
+                                        <li>
+                                            <Link href="/executive-orders" className="hover:underline">
+                                                Executive Orders
+                                            </Link>
+                                        </li>
+                                    </>
+                                )
+                            }
                             <li>
                                 <Link href="/current-events" className="hover:underline">
                                     Current Events
