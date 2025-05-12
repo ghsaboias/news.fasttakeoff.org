@@ -263,7 +263,7 @@ export default function ExecutiveOrderClient({
 
                 {relatedEOsFromNotes.length > 0 && (
                     <div className="bg-muted-light p-6 rounded-lg">
-                        <div className="mt-4 pt-4 border-t border-border">
+                        <div className="border-t border-border">
                             <h3 className="text-lg font-medium mb-2">Related Executive Orders</h3>
                             <ul className="space-y-2 flex-col">
                                 {relatedEOsFromNotes.map((relatedEO, index) => (
