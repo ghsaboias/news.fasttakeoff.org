@@ -28,14 +28,6 @@ const cyberTheme = {
         coastlinesOpacity: 0.4,
     },
 };
-// --- End Theme Configuration ---
-
-// WARNING: Storing API keys directly in client-side code is a security risk.
-// This key will be visible in the browser's network requests and bundled JavaScript.
-// For production applications, it's strongly recommended to:
-// 1. Create a backend API endpoint that handles geocoding requests.
-// 2. Store the API key securely as an environment variable on your server.
-// 3. Have the client call your backend endpoint, which then calls the Geocoding API.
 
 interface ReportFromAPI {
     reportId: string;
@@ -240,105 +232,106 @@ const Globe = (): React.ReactNode => {
     const [countryBordersData, setCountryBordersData] = useState<GeoJsonFeatureCollection | null>(null);
     const [coastlinesData, setCoastlinesData] = useState<GeoJsonFeatureCollection | null>(null);
     const [newsItems, setNewsItems] = useState<NewsMarkerData[]>([]);
-    const [isLoadingNews, setIsLoadingNews] = useState<boolean>(true);
+    const [isFetchingGeoData, setIsFetchingGeoData] = useState<boolean>(true); // Track GeoJSON loading
 
     useEffect(() => {
         const fetchGeoData = async () => {
+            setIsFetchingGeoData(true); // Start loading GeoJSON
             try {
-                // Fetch borders data
+                // Fetch borders data (essential)
                 const bordersResponse = await fetch('/geojson/ne_110m_admin_0_countries.geojson');
                 if (!bordersResponse.ok) {
-                    // Still throw for borders, as they are more critical, or handle as preferred
-                    console.warn(`Failed to fetch borders: ${bordersResponse.status}`);
-                    // Optionally, throw new Error(`Failed to fetch borders: ${bordersResponse.status}`);
-                } else {
-                    const bordersJson = await bordersResponse.json();
-                    setCountryBordersData(bordersJson);
+                    console.error(`Failed to fetch essential borders: ${bordersResponse.status}`);
+                    throw new Error(`Failed to fetch borders: ${bordersResponse.status}`);
+                }
+                const bordersJson = await bordersResponse.json();
+                setCountryBordersData(bordersJson);
+
+                // Fetch coastlines data (optional)
+                try {
+                    const coastlinesResponse = await fetch('/geojson/ne_110m_coastline.geojson');
+                    if (coastlinesResponse.ok) {
+                        const coastlinesJson = await coastlinesResponse.json();
+                        setCoastlinesData(coastlinesJson);
+                    } else {
+                        if (coastlinesResponse.status === 429) {
+                            console.warn('Coastline data temporarily unavailable due to rate limiting (429). Globe will display without coastlines.');
+                        } else {
+                            console.warn(`Failed to fetch coastlines: ${coastlinesResponse.status}. Globe will display without coastlines.`);
+                        }
+                    }
+                } catch (coastlineError) {
+                    console.warn("Error fetching optional coastline data:", coastlineError);
                 }
 
-                // Fetch coastlines data
-                const coastlinesResponse = await fetch('/geojson/ne_110m_coastline.geojson');
-                if (coastlinesResponse.ok) {
-                    const coastlinesJson = await coastlinesResponse.json();
-                    setCoastlinesData(coastlinesJson);
-                } else {
-                    if (coastlinesResponse.status === 429) {
-                        console.warn('Coastline data temporarily unavailable due to rate limiting (429). Globe will display without coastlines.');
-                    } else {
-                        console.warn(`Failed to fetch coastlines: ${coastlinesResponse.status}. Globe will display without coastlines.`);
-                    }
-                    // Not throwing an error here, so coastlinesData remains null and are not rendered
-                }
             } catch (error) {
-                // This catch block will now primarily handle errors from fetching borders (if thrown)
-                // or other unexpected errors in the try block (e.g., network issues before response.ok check)
-                console.error("Error fetching GeoJSON data:", error);
+                // Handle critical errors (like failed borders fetch)
+                console.error("Error fetching critical GeoJSON data:", error);
+                // Potentially set an error state here to inform the user
+            } finally {
+                setIsFetchingGeoData(false); // Finish loading GeoJSON
             }
         };
-        fetchGeoData();
 
         const fetchAndProcessNews = async () => {
-            setIsLoadingNews(true);
+            setNewsItems([]);
             try {
                 const response = await fetch('/api/reports');
                 if (!response.ok) {
                     console.error(`Failed to fetch reports: ${response.status}`);
-                    throw new Error(`Failed to fetch reports: ${response.status}`);
+                    return;
                 }
                 const reports: ReportFromAPI[] = await response.json();
 
                 const limitedReports = reports.slice(0, 20);
-                console.log(`Processing ${limitedReports.length} out of ${reports.length} total reports`);
+                console.log(`Processing up to ${limitedReports.length} out of ${reports.length} total reports`);
 
-                const geocodedNewsItems: NewsMarkerData[] = [];
-
+                // Process reports one by one
                 for (const report of limitedReports) {
                     if (!report.city || !report.headline || !report.body || !report.reportId) {
                         console.warn('Report missing critical fields (city, headline, body, or reportId), skipping:', report);
                         continue;
                     }
                     try {
-                        // Call the new backend API route for geocoding
                         const geoResponse = await fetch(
                             `/api/geocode?city=${encodeURIComponent(report.city)}`
                         );
 
                         if (!geoResponse.ok) {
                             const errorData = await geoResponse.json().catch(() => ({ error: "Failed to parse error response from geocode API" }));
-                            console.error(
+                            console.warn( // Use warn as it's non-blocking for other markers
                                 `Error fetching geocoded data for ${report.city} (Report ID: ${report.reportId}): ${geoResponse.status}`,
                                 errorData?.error || geoResponse.statusText
                             );
-                            continue; // Skip this report if geocoding fails
+                            continue;
                         }
 
                         const location: { lat: number; lng: number } = await geoResponse.json();
 
-                        // Check if valid coordinates were returned (lng is often used instead of lon by Google)
-                        if (typeof location.lat === 'number' && typeof location.lng === 'number') {
-                            geocodedNewsItems.push({
+                        if (typeof location.lat === 'number' && typeof location.lng === 'number' && !(location.lat === 0 && location.lng === 0)) {
+                            // Add successfully geocoded item to state immediately
+                            const newItem: NewsMarkerData = {
                                 ...report,
                                 lat: location.lat,
                                 lon: location.lng,
-                            });
+                            };
+                            setNewsItems(prevItems => [...prevItems, newItem]);
                         } else {
-                            // This case might be hit if the API returns a 200 OK but not valid coordinates (e.g., our cached ZERO_RESULTS)
-                            console.warn(`No valid geocoding results for ${report.city} (Report ID: ${report.reportId}). API might have returned no location.`);
+                            console.warn(`No valid geocoding results for ${report.city} (Report ID: ${report.reportId}). API might have returned no location or placeholder.`);
                         }
                     } catch (geoError) {
-                        console.error(`Error processing geocoding for ${report.city} (Report ID: ${report.reportId}):`, geoError);
+                        console.warn(`Error during geocoding process for ${report.city} (Report ID: ${report.reportId}):`, geoError);
                     }
                 }
-                setNewsItems(geocodedNewsItems);
+                console.log(`Finished processing reports. Displaying ${newsItems.length} markers.`);
             } catch (error) {
                 console.error("Error fetching or processing news data:", error);
-            } finally {
-                setIsLoadingNews(false);
             }
         };
 
-        fetchAndProcessNews();
-    }, []);
+        fetchGeoData(); // Fetch borders/coastlines
+        fetchAndProcessNews(); // Start fetching news in parallel
+    }, []); // Run once on mount
 
     useFrame(() => {
         if (globeRef.current) {
@@ -349,17 +342,17 @@ const Globe = (): React.ReactNode => {
     const globeRadius = 2; // Radius of the globe
 
     const markers = useMemo(() => {
-        if (isLoadingNews) return [];
-        return newsItems.map((news: NewsMarkerData) => { // Explicitly type news
+        return newsItems.map((news: NewsMarkerData) => {
             const position = latLonToVector3(news.lat, news.lon, globeRadius + 0.01);
             return <Marker key={news.reportId} position={position} data={news} />;
         });
-    }, [newsItems, isLoadingNews]); // globeRadius removed as it's const in this scope
+    }, [newsItems]);
 
-    if (isLoadingNews) {
+    // Optional: Render a subtle loading indicator for GeoJSON if needed
+    if (isFetchingGeoData) {
         return (
             <Html center>
-                <Loader2 className="h-10 w-10 animate-spin text-primary" />
+                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
             </Html>
         );
     }
@@ -408,6 +401,7 @@ const NewsGlobe: React.FC = () => {
                 <Image src="/images/brain_transparent.png" alt="Home" width={32} height={32} />
             </Link>
             <Canvas camera={{ position: [0, 0, 5], fov: 50 }}>
+                {/* No loader here, Globe component handles its own loading state if needed */}
                 <Globe />
             </Canvas>
         </div>
