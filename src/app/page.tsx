@@ -160,7 +160,7 @@ export default function Home() {
 
   useEffect(() => {
     loadReports();
-    if (isUSBased !== null) {
+    if (isUSBased === true) {
       loadExecutiveOrders();
     }
   }, [isUSBased]);
