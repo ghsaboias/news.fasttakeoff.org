@@ -108,15 +108,28 @@ export default function CurrentEventsClient({ reports, isLoading = false }: Prop
     }, [sortedReports]);
 
     const channelsWithLatest = useMemo(() => {
-        return Object.entries(groupedReports)
+        const entries = Object.entries(groupedReports)
             .map(([channel, reportsInChannel]) => {
                 if (reportsInChannel.length === 0) return null;
-                const latest = reportsInChannel.sort((a: Report, b: Report) => new Date(b.generatedAt).getTime() - new Date(a.generatedAt).getTime())[0];
+                const latest = [...reportsInChannel].sort(
+                    (a: Report, b: Report) => new Date(b.generatedAt).getTime() - new Date(a.generatedAt).getTime()
+                )[0];
                 return { channel, latestReport: latest, reportCount: reportsInChannel.length };
             })
-            .filter(item => item !== null)
-            .sort((a: { channel: string; latestReport: Report; reportCount: number }, b: { channel: string; latestReport: Report; reportCount: number }) => new Date(b.latestReport.generatedAt).getTime() - new Date(a.latestReport.generatedAt).getTime());
-    }, [groupedReports]);
+            .filter((item): item is { channel: string; latestReport: Report; reportCount: number } => item !== null);
+
+        switch (sortBy) {
+            case "activity":
+                return entries.sort((a, b) => b.reportCount - a.reportCount);
+            case "name":
+                return entries.sort((a, b) => a.channel.localeCompare(b.channel));
+            case "recent":
+            default:
+                return entries.sort(
+                    (a, b) => new Date(b.latestReport.generatedAt).getTime() - new Date(a.latestReport.generatedAt).getTime()
+                );
+        }
+    }, [groupedReports, sortBy]);
 
     const lastUpdated = reportData.length > 0 ? reportData[0]?.generatedAt : null;
 
