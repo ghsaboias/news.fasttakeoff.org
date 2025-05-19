@@ -87,15 +87,65 @@ export function parseDispositionNotes(dispositionNotes?: string): RelatedEOInfo[
 }
 
 /**
+ * Helper function to parse a custom date string format.
+ * Example: "Seg, 19 Mai 2025 18:58:57 -0300"
+ * @param dateString The date string to parse.
+ * @returns A Date object or null if parsing fails.
+ */
+function parseCustomDateString(dateString: string): Date | null {
+  const monthsPtToEn: Record<string, string> = {
+    'Jan': 'Jan', 'Fev': 'Feb', 'Mar': 'Mar', 'Abr': 'Apr', 'Mai': 'May', 'Jun': 'Jun',
+    'Jul': 'Jul', 'Ago': 'Aug', 'Set': 'Sep', 'Out': 'Oct', 'Nov': 'Nov', 'Dez': 'Dec'
+  };
+
+  const parts = dateString.split(' ');
+  if (parts.length < 5) return null; // Basic validation
+
+  // Example: "Seg," "19" "Mai" "2025" "18:58:57" "-0300"
+  // We need to convert "Mai" to "May" for Date.parse() to work reliably
+  const day = parts[1];
+  const monthAbbr = parts[2];
+  const year = parts[3];
+  const time = parts[4];
+  const offset = parts.length > 5 ? parts[5] : ''; // Offset might not always be present
+
+  const englishMonth = monthsPtToEn[monthAbbr];
+  if (!englishMonth) return null; // Unknown month
+
+  // Reconstruct a string that Date.parse() is more likely to understand
+  // e.g., "19 May 2025 18:58:57 -0300"
+  const parsableDateString = `${day} ${englishMonth} ${year} ${time} ${offset}`;
+
+  const date = new Date(parsableDateString);
+  // Check if the date is valid
+  if (isNaN(date.getTime())) {
+    return null;
+  }
+  return date;
+}
+
+/**
  * Formats a timestamp to show only the time in HH:MM format
- * @param timestamp ISO timestamp string
+ * @param timestamp ISO timestamp string or custom format like "Seg, 19 Mai 2025 18:58:57 -0300"
  * @returns Time in HH:MM format
  */
 export function formatTime(timestamp: string | undefined, showDate: boolean = false): string {
   if (!timestamp) return 'Time unavailable';
 
+  let date: Date | null = new Date(timestamp);
+
+  // If the initial parsing results in an invalid date, try parsing the custom format
+  if (isNaN(date.getTime())) {
+    date = parseCustomDateString(timestamp);
+  }
+
+  // If date is still null or invalid after trying custom parsing, return 'Invalid time'
+  if (!date || isNaN(date.getTime())) {
+    console.error('Error formatting time: Invalid date input', timestamp);
+    return 'Invalid time';
+  }
+
   try {
-    const date = new Date(timestamp);
     if (showDate) {
       return date.toLocaleTimeString('en-GB', {
         hour: '2-digit',
