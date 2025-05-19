@@ -203,3 +203,12 @@ export interface ReportResponse {
     report: Report;
     messages: DiscordMessage[];
 }
+
+// RSS feed item type
+export interface FeedItem {
+    title: string;
+    link: string;
+    pubDate: string;
+    contentSnippet?: string;
+    enclosureUrl?: string;
+}

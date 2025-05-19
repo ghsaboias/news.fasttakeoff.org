@@ -47,6 +47,7 @@
     "react-dom": "^19.0.0",
     "react-markdown": "^10.1.0",
     "react-three-fiber": "^6.0.13",
+    "rss-parser": "^3.13.0",
     "sonner": "^2.0.3",
     "stripe": "^18.0.0",
     "swr": "^2.3.3",
