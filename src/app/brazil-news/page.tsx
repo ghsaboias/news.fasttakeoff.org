@@ -6,7 +6,7 @@ export const revalidate = 3600; // Revalidate every hour
 export default async function BRNewsPage() {
     const feeds = getAvailableFeeds();
     return (
-        <div className="px-4 py-8">
+        <div className="px-4 py-8 flex flex-col items-center">
             <h1 className="text-2xl font-bold mb-4">Brazil News</h1>
             <ul className="space-y-2">
                 {feeds.map(id => (
