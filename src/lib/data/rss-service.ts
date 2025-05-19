@@ -25,10 +25,24 @@ export async function getFeedItems(feedId: string): Promise<FeedItem[]> {
     if (!response.ok) {
         throw new Error(`Failed to fetch RSS feed: ${response.statusText}`);
     }
-    const xml = await response.text();
+
+    // Log the Content-Type header
+    const contentType = response.headers.get('Content-Type');
+    let xml = '';
+
+    if (contentType?.includes('ISO-8859-1')) {
+        // Fetch as ArrayBuffer and decode using TextDecoder
+        const buffer = await response.arrayBuffer();
+        const decoder = new TextDecoder('ISO-8859-1'); // Or the charset from contentType
+        xml = decoder.decode(buffer);
+    } else {
+        xml = await response.text();
+    }
 
     // Parse the XML string using rss-parser
-    const parser = new Parser<{ items: Parser.Item[] }>();
+    const parser = new Parser<{ items: Parser.Item[] }>({
+        defaultRSS: 2.0
+    });
     const feed = await parser.parseString(xml);
 
     // Map feed items to FeedItem type
