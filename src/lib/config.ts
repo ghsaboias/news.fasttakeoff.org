@@ -165,3 +165,9 @@ export const AI = {
 
 // Type definitions for config
 export type TimeframeKey = typeof TIME.TIMEFRAMES[number];
+
+// RSS feeds configuration
+export const RSS_FEEDS: Record<string, string> = {
+    'CNN-Brasil': 'https://www.cnnbrasil.com.br/feed/',
+    'BBC-Brasil': 'http://www.bbc.co.uk/portuguese/index.xml'
+};

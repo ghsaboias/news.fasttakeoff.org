@@ -51,6 +51,9 @@ export default function Header() {
                 <Link href="/news-globe" className="text-sm font-medium hover:underline">
                     News Globe
                 </Link>
+                <Link href="/brazil-news" className="text-sm font-medium hover:underline">
+                    Brazil News
+                </Link>
             </div>
             {
                 user ? (
@@ -83,6 +86,9 @@ export default function Header() {
                                     </Link>
                                     <Link href="/news-globe" className="text-sm font-medium hover:underline">
                                         News Globe
+                                    </Link>
+                                    <Link href="/brazil-news" className="text-sm font-medium hover:underline">
+                                        Brazil News
                                     </Link>
                                     <Badge variant="secondary">
                                         {aiConfig.displayName}
@@ -129,6 +135,9 @@ export default function Header() {
                                     </Link>
                                     <Link href="/news-globe" className="text-sm font-medium hover:underline">
                                         News Globe
+                                    </Link>
+                                    <Link href="/brazil-news" className="text-sm font-medium hover:underline">
+                                        Brazil News
                                     </Link>
                                     <Badge variant="secondary">
                                         {aiConfig.displayName}
