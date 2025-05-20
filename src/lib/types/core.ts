@@ -211,4 +211,5 @@ export interface FeedItem {
     pubDate: string;
     contentSnippet?: string;
     enclosureUrl?: string;
+    categories?: string[];
 }
