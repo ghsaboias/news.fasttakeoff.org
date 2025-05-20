@@ -3,11 +3,13 @@
 import ReportCard from "@/components/current-events/ReportCard"
 import OrderCard from "@/components/executive-orders/OrderCard"
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
 import { fetchExecutiveOrders } from "@/lib/data/executive-orders"
 import { ExecutiveOrder, Report } from "@/lib/types/core"
 import { getStartDate, groupAndSortReports } from "@/lib/utils"
+import { Search } from "lucide-react"
 import Link from "next/link"
-import { useEffect, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 export const dynamic = 'force-dynamic';
 
 export default function Home() {
@@ -15,7 +17,8 @@ export default function Home() {
   const [loadingEO, setLoadingEO] = useState(true)
   const [reports, setReports] = useState<Report[]>([])
   const [loadingReports, setLoadingReports] = useState(true)
-  const [isUSBased, setIsUSBased] = useState<boolean | null>(null); // null: unknown, true: US, false: non-US/error
+  const [isUSBased, setIsUSBased] = useState<boolean | null>(null)
+  const [searchQuery, setSearchQuery] = useState("")
 
   useEffect(() => {
     async function checkGeo() {
@@ -86,6 +89,20 @@ export default function Home() {
     }
   }, [isUSBased]);
 
+  const filteredReports = useMemo(() => {
+    if (!searchQuery.trim()) {
+      return reports;
+    }
+
+    const query = searchQuery.toLowerCase();
+    return reports.filter(report =>
+      (report.channelName?.toLowerCase() || '').includes(query) ||
+      (report.headline?.toLowerCase() || '').includes(query) ||
+      (report.city?.toLowerCase() || '').includes(query) ||
+      (report.body?.toLowerCase() || '').includes(query)
+    );
+  }, [reports, searchQuery]);
+
   return (
     <div className="flex flex-col pb-16 w-[100vw] justify-center">
       {/* Hero Section */}
@@ -97,6 +114,19 @@ export default function Home() {
             </h1>
             <p className="text-3xl">AI-powered news for everyone.</p>
           </div>
+        </div>
+      </section>
+
+      {/* Search Section */}
+      <section className="mx-auto sm:px-4 w-[90%] mb-8">
+        <div className="relative max-w-2xl mx-auto">
+          <Search className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
+          <Input
+            placeholder="Search all reports..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-10 h-10 text-lg"
+          />
         </div>
       </section>
 
@@ -121,13 +151,15 @@ export default function Home() {
                   </CardFooter>
                 </Card>
               ))
-          ) : reports.length > 0 ? (
-            reports.map(report => (
+          ) : filteredReports.length > 0 ? (
+            filteredReports.map(report => (
               <ReportCard key={report.reportId} report={report} showReadMore={false} clickableChannel={true} clickableReport={true} />
             )).slice(0, 4)
           ) : (
             <div className="col-span-2 text-center py-8">
-              <p className="text-muted-foreground">No reports found.</p>
+              <p className="text-muted-foreground">
+                {searchQuery ? "No reports found matching your search." : "No reports found."}
+              </p>
             </div>
           )}
         </div>
