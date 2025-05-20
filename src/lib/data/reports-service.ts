@@ -6,7 +6,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { Cloudflare } from '../../../worker-configuration';
 import { CacheManager } from '../cache-utils';
 import { TwitterService } from '../twitter-service';
-import { getChannelName } from './channels-service';
+import { ChannelsService, getChannelName } from './channels-service';
 import { MessagesService } from './messages-service';
 // Helpers for report generation
 function formatSingleMessage(message: DiscordMessage): string {
@@ -214,6 +214,7 @@ export class ReportsService {
     private env: Cloudflare.Env;
     private instagramService: InstagramService;
     private twitterService: TwitterService;
+    private channelsService: ChannelsService;
 
     constructor(env: Cloudflare.Env) {
         if (!env.REPORTS_CACHE || !env.MESSAGES_CACHE) {
@@ -224,6 +225,7 @@ export class ReportsService {
         this.cacheManager = new CacheManager(env);
         this.instagramService = new InstagramService(env);
         this.twitterService = new TwitterService(env);
+        this.channelsService = new ChannelsService(env);
     }
 
     /**
@@ -396,45 +398,71 @@ export class ReportsService {
 
     private async _generateAndCacheReportsForTimeframes(timeframesToProcess: TimeframeKey[]): Promise<Report[]> {
         const { keys: messageKeys } = await this.messagesService.env.MESSAGES_CACHE.list();
+        const allChannelIds = messageKeys.map((key: { name: string }) => key.name.replace('messages:', ''));
         const generatedReports: Report[] = [];
-        let generatedCountOverall = 0;
+        const batchSize = 10; // Process channels in batches of 10
 
         console.log(`[_generateAndCacheReportsForTimeframes] Processing for timeframes: ${timeframesToProcess.join(', ')}`);
 
-        for (const key of messageKeys) {
-            const channelId = key.name.replace('messages:', '');
-            const channelName = await getChannelName(this.env, channelId);
+        // Pre-fetch all channel names to avoid repeated API calls
+        const allDiscordChannels = await this.channelsService.getChannels();
+        const channelNameMap = new Map<string, string>();
+        for (const channel of allDiscordChannels) {
+            channelNameMap.set(channel.id, channel.name);
+        }
 
-            for (const timeframe of timeframesToProcess) {
-                const previousReports = await this.getRecentPreviousReports(channelId, timeframe);
-                const messages = await this.messagesService.getMessagesForTimeframe(channelId, timeframe);
+        for (const timeframe of timeframesToProcess) {
+            console.log(`[_generateAndCacheReportsForTimeframes] Processing timeframe: ${timeframe}`);
 
-                if (messages.length === 0) {
-                    continue;
-                }
+            for (let i = 0; i < allChannelIds.length; i += batchSize) {
+                const channelBatch = allChannelIds.slice(i, i + batchSize);
+                console.log(`[_generateAndCacheReportsForTimeframes] Processing batch of ${channelBatch.length} channels for timeframe ${timeframe}. Start index: ${i}`);
 
-                const report = await tryCatch(
-                    () => createReportWithAI(
-                        createPrompt(messages, previousReports),
-                        messages,
-                        { id: channelId, name: channelName, count: messages.length },
-                        this.env,
-                        timeframe,
-                    ),
-                    `Error generating ${timeframe} report for channel ${channelName}`
-                );
+                const batchPromises = channelBatch.map(async (channelId) => {
+                    try {
+                        const channelName = channelNameMap.get(channelId) || `Channel_${channelId}`;
+                        const previousReports = await this.getRecentPreviousReports(channelId, timeframe);
+                        const messages = await this.messagesService.getMessagesForTimeframe(channelId, timeframe);
 
-                if (report) {
-                    const cachedReports = await this.getReportsFromCache(channelId, timeframe) || [];
-                    const updatedReports = [report, ...cachedReports.filter(r => r.reportId !== report.reportId)];
-                    await this.cacheReport(channelId, timeframe, updatedReports);
-                    generatedCountOverall++;
-                    console.log(`[REPORTS] Generated ${timeframe} report for channel ${channelName} with ${messages.length} messages`);
-                    generatedReports.push(report);
+                        if (messages.length === 0) {
+                            // console.log(`[REPORTS] No messages for channel ${channelName} (${channelId}) in timeframe ${timeframe}, skipping report generation.`);
+                            return null;
+                        }
+
+                        const report = await tryCatch(
+                            () => createReportWithAI(
+                                createPrompt(messages, previousReports),
+                                messages,
+                                { id: channelId, name: channelName, count: messages.length },
+                                this.env,
+                                timeframe,
+                            ),
+                            `Error generating ${timeframe} report for channel ${channelName} (${channelId})`
+                        );
+
+                        if (report) {
+                            const cachedReports = await this.getReportsFromCache(channelId, timeframe) || [];
+                            const updatedReports = [report, ...cachedReports.filter(r => r.reportId !== report.reportId)];
+                            await this.cacheReport(channelId, timeframe, updatedReports);
+                            console.log(`[REPORTS] Generated ${timeframe} report for channel ${channelName} (${channelId}) with ${messages.length} messages. Report ID: ${report.reportId}`);
+                            return report;
+                        }
+                        return null;
+                    } catch (error) {
+                        console.error(`[REPORTS] Critical error processing channel ${channelId} in batch for timeframe ${timeframe}:`, error);
+                        return null; // Ensure promise resolves to prevent Promise.all from rejecting early
+                    }
+                });
+
+                const reportsFromBatch = (await Promise.all(batchPromises)).filter((report): report is Report => report !== null);
+                generatedReports.push(...reportsFromBatch);
+
+                if (reportsFromBatch.length > 0) {
+                    console.log(`[_generateAndCacheReportsForTimeframes] Finished processing batch for timeframe ${timeframe}. Generated ${reportsFromBatch.length} reports in this batch.`);
                 }
             }
         }
-        console.log(`[_generateAndCacheReportsForTimeframes] Generated ${generatedCountOverall} reports in total.`);
+        console.log(`[_generateAndCacheReportsForTimeframes] Finished all timeframes. Generated ${generatedReports.length} reports in total.`);
         return generatedReports;
     }
 
