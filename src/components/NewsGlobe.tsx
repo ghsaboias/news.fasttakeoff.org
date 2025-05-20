@@ -240,117 +240,119 @@ const Globe: React.FC<GlobeProps> = ({ timelineValue, onTimeRangeChange }): Reac
     const [newsItems, setNewsItems] = useState<NewsMarkerData[]>([]);
     const [allNewsItems, setAllNewsItems] = useState<NewsMarkerData[]>([]);
     const [isFetchingGeoData, setIsFetchingGeoData] = useState<boolean>(true);
+    const [isFetchingNews, setIsFetchingNews] = useState<boolean>(false);
     const [timeRange, setTimeRange] = useState<{ min: Date; max: Date }>({ min: new Date(), max: new Date() });
+    const [currentDay, setCurrentDay] = useState<Date>(new Date());
 
     // Fetch geo data and news
     useEffect(() => {
         const fetchGeoData = async () => {
             setIsFetchingGeoData(true);
             try {
-                const bordersResponse = await fetch('/geojson/ne_110m_admin_0_countries.geojson');
-                if (!bordersResponse.ok) {
-                    console.error(`Failed to fetch essential borders: ${bordersResponse.status}`);
-                    throw new Error(`Failed to fetch borders: ${bordersResponse.status}`);
-                }
-                const bordersJson = await bordersResponse.json();
-                setCountryBordersData(bordersJson);
+                const responses = await Promise.all([
+                    fetch('/data/ne_110m_admin_0_countries.geojson'),
+                    fetch('/data/ne_110m_coastline.geojson')
+                ]);
 
-                try {
-                    const coastlinesResponse = await fetch('/geojson/ne_110m_coastline.geojson');
-                    if (coastlinesResponse.ok) {
-                        const coastlinesJson = await coastlinesResponse.json();
-                        setCoastlinesData(coastlinesJson);
-                    } else {
-                        if (coastlinesResponse.status === 429) {
-                            console.warn('Coastline data temporarily unavailable due to rate limiting (429). Globe will display without coastlines.');
-                        } else {
-                            console.warn(`Failed to fetch coastlines: ${coastlinesResponse.status}. Globe will display without coastlines.`);
-                        }
-                    }
-                } catch (coastlineError) {
-                    console.warn("Error fetching optional coastline data:", coastlineError);
+                if (!responses[0].ok || !responses[1].ok) {
+                    throw new Error('Failed to fetch GeoJSON data');
                 }
+
+                const [borders, coastlines] = await Promise.all([
+                    responses[0].json(),
+                    responses[1].json()
+                ]);
+
+                setCountryBordersData(borders);
+                setCoastlinesData(coastlines);
             } catch (error) {
-                console.error("Error fetching critical GeoJSON data:", error);
+                console.error("Error fetching GeoJSON data:", error);
             } finally {
                 setIsFetchingGeoData(false);
             }
         };
 
-        const fetchAndProcessNews = async () => {
-            setNewsItems([]);
-            setAllNewsItems([]);
-            try {
-                const response = await fetch('/api/reports');
-                if (!response.ok) {
-                    console.error(`Failed to fetch reports: ${response.status}`);
-                    return;
+        fetchGeoData();
+    }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+    const fetchAndProcessNews = async (date: Date) => {
+        setIsFetchingNews(true);
+        setNewsItems([]);
+        setAllNewsItems([]);
+        try {
+            // Format date as YYYY-MM-DD
+            const formattedDate = date.toISOString().split('T')[0];
+            const response = await fetch(`/api/reports?date=${formattedDate}`);
+            if (!response.ok) {
+                console.error(`Failed to fetch reports: ${response.status}`);
+                return;
+            }
+            const reports: ReportFromAPI[] = await response.json();
+            const processedItems: NewsMarkerData[] = [];
+
+            // Process reports one by one
+            for (const report of reports) {
+                if (!report.city || !report.headline || !report.body || !report.reportId) {
+                    console.warn('Report missing critical fields (city, headline, body, or reportId), skipping:', report);
+                    continue;
                 }
-                const reports: ReportFromAPI[] = await response.json();
+                try {
+                    const geoResponse = await fetch(
+                        `/api/geocode?city=${encodeURIComponent(report.city)}`
+                    );
 
-                const limitedReports = reports.slice(0, 20);
-                console.log(`Processing up to ${limitedReports.length} out of ${reports.length} total reports`);
-
-                const processedItems: NewsMarkerData[] = [];
-
-                // Process reports one by one
-                for (const report of limitedReports) {
-                    if (!report.city || !report.headline || !report.body || !report.reportId) {
-                        console.warn('Report missing critical fields (city, headline, body, or reportId), skipping:', report);
+                    if (!geoResponse.ok) {
+                        const errorData = await geoResponse.json().catch(() => ({ error: "Failed to parse error response from geocode API" }));
+                        console.warn(
+                            `Error fetching geocoded data for ${report.city} (Report ID: ${report.reportId}): ${geoResponse.status}`,
+                            errorData?.error || geoResponse.statusText
+                        );
                         continue;
                     }
-                    try {
-                        const geoResponse = await fetch(
-                            `/api/geocode?city=${encodeURIComponent(report.city)}`
-                        );
 
-                        if (!geoResponse.ok) {
-                            const errorData = await geoResponse.json().catch(() => ({ error: "Failed to parse error response from geocode API" }));
-                            console.warn(
-                                `Error fetching geocoded data for ${report.city} (Report ID: ${report.reportId}): ${geoResponse.status}`,
-                                errorData?.error || geoResponse.statusText
-                            );
-                            continue;
-                        }
+                    const location: { lat: number; lng: number } = await geoResponse.json();
 
-                        const location: { lat: number; lng: number } = await geoResponse.json();
-
-                        if (typeof location.lat === 'number' && typeof location.lng === 'number' && !(location.lat === 0 && location.lng === 0)) {
-                            // Add successfully geocoded item
-                            const newItem: NewsMarkerData = {
-                                ...report,
-                                lat: location.lat,
-                                lon: location.lng,
-                            };
-                            processedItems.push(newItem);
-                        } else {
-                            console.warn(`No valid geocoding results for ${report.city} (Report ID: ${report.reportId}). API might have returned no location or placeholder.`);
-                        }
-                    } catch (geoError) {
-                        console.warn(`Error during geocoding process for ${report.city} (Report ID: ${report.reportId}):`, geoError);
+                    if (typeof location.lat === 'number' && typeof location.lng === 'number' && !(location.lat === 0 && location.lng === 0)) {
+                        // Add successfully geocoded item
+                        const newItem: NewsMarkerData = {
+                            ...report,
+                            lat: location.lat,
+                            lon: location.lng,
+                        };
+                        processedItems.push(newItem);
+                    } else {
+                        console.warn(`No valid geocoding results for ${report.city} (Report ID: ${report.reportId}). API might have returned no location or placeholder.`);
                     }
+                } catch (geoError) {
+                    console.warn(`Error during geocoding process for ${report.city} (Report ID: ${report.reportId}):`, geoError);
                 }
-
-                // Update time range based on all items
-                if (processedItems.length > 0) {
-                    const dates = processedItems.map(item => new Date(item.generatedAt));
-                    const minDate = new Date(Math.min(...dates.map(d => d.getTime())));
-                    const maxDate = new Date(Math.max(...dates.map(d => d.getTime())));
-                    setTimeRange({ min: minDate, max: maxDate });
-                    onTimeRangeChange({ min: minDate, max: maxDate });
-                }
-
-                setAllNewsItems(processedItems);
-                setNewsItems(processedItems);
-                console.log(`Finished processing reports. Displaying ${processedItems.length} markers.`);
-            } catch (error) {
-                console.error("Error fetching or processing news data:", error);
             }
-        };
 
-        fetchGeoData();
-        fetchAndProcessNews();
-    }, []); // eslint-disable-line react-hooks/exhaustive-deps
+            // Update time range based on all items for the day
+            if (processedItems.length > 0) {
+                const startOfDay = new Date(date);
+                startOfDay.setHours(0, 0, 0, 0);
+                const endOfDay = new Date(date);
+                endOfDay.setHours(23, 59, 59, 999);
+
+                setTimeRange({ min: startOfDay, max: endOfDay });
+                onTimeRangeChange({ min: startOfDay, max: endOfDay });
+            }
+
+            setAllNewsItems(processedItems);
+            setNewsItems(processedItems);
+            console.log(`Finished processing reports for ${formattedDate}. Displaying ${processedItems.length} markers.`);
+        } catch (error) {
+            console.error("Error fetching or processing news data:", error);
+        } finally {
+            setIsFetchingNews(false);
+        }
+    };
+
+    // Initial fetch for today's reports
+    useEffect(() => {
+        fetchAndProcessNews(currentDay);
+    }, [currentDay]); // eslint-disable-line react-hooks/exhaustive-deps
 
     // Filter news items based on timeline value
     useEffect(() => {
@@ -382,8 +384,8 @@ const Globe: React.FC<GlobeProps> = ({ timelineValue, onTimeRangeChange }): Reac
         });
     }, [newsItems]);
 
-    // Optional: Render a subtle loading indicator for GeoJSON if needed
-    if (isFetchingGeoData) {
+    // Add loading indicator for news fetching
+    if (isFetchingGeoData || isFetchingNews) {
         return (
             <Html center>
                 <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -431,6 +433,7 @@ const Globe: React.FC<GlobeProps> = ({ timelineValue, onTimeRangeChange }): Reac
 const NewsGlobe: React.FC = () => {
     const [timelineValue, setTimelineValue] = useState<number>(100);
     const [timeRange, setTimeRange] = useState<{ min: Date; max: Date }>({ min: new Date(), max: new Date() });
+    const [currentDay, setCurrentDay] = useState<Date>(new Date());
 
     // Calculate current date based on timeline value
     const currentDate = useMemo(() => {
@@ -438,6 +441,12 @@ const NewsGlobe: React.FC = () => {
         const selectedTime = timeRange.min.getTime() + (timeRangeInMs * (timelineValue / 100));
         return new Date(selectedTime);
     }, [timelineValue, timeRange]);
+
+    const loadPreviousDay = () => {
+        const prevDay = new Date(currentDay);
+        prevDay.setDate(prevDay.getDate() - 1);
+        setCurrentDay(prevDay);
+    };
 
     return (
         <div style={{ position: 'relative', height: '100vh', width: '100%', background: '#000010' }}>
@@ -460,6 +469,19 @@ const NewsGlobe: React.FC = () => {
                 border: '1px solid rgba(0, 255, 255, 0.2)',
                 zIndex: 10,
             }}>
+                <div className="flex justify-between items-center mb-4">
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={loadPreviousDay}
+                        className="text-cyan-300 border-cyan-300/20 hover:bg-cyan-300/10"
+                    >
+                        Previous Day
+                    </Button>
+                    <span className="text-cyan-300">
+                        {currentDay.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                    </span>
+                </div>
                 <div className="text-center mb-4 text-cyan-300">
                     {formatTime(currentDate.toISOString(), true)}
                 </div>
