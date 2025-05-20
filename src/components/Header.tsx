@@ -33,9 +33,9 @@ export default function Header() {
         <header className="mx-auto flex h-16 items-center justify-between sm:px-8 sm:w-[95vw] w-[90vw]">
             <Link href="/" className="flex items-center gap-2 text-xl text-[#167F6E] font-semibold">
                 <Image src="/images/brain_transparent.png" alt="Fast Takeoff News" width={32} height={32} />
-                <p className="hidden min-[840px]:block">Fast Takeoff News</p>
+                <p className="hidden lg:block">Fast Takeoff News</p>
             </Link>
-            <div className="items-center gap-6 hidden min-[540px]:flex">
+            <div className="items-center gap-6 hidden min-[600px]:flex">
                 {
                     isUSBased && (
                         <>
@@ -65,7 +65,7 @@ export default function Header() {
                         <UserButton />
                         <Sheet open={isMenuOpen} onOpenChange={setIsMenuOpen}>
                             <SheetTrigger asChild>
-                                <Menu className="min-[540px]:hidden" />
+                                <Menu className="min-[600px]:hidden" />
                             </SheetTrigger>
                             <SheetContent side="right" className="w-[300px]">
                                 <SheetHeader>
@@ -99,7 +99,7 @@ export default function Header() {
                     </div>
                 ) : (
                     <div className="flex items-center gap-4">
-                        <Badge variant="secondary" className="hidden md:block">
+                        <Badge variant="secondary" className="hidden lg:block">
                             {aiConfig.displayName}
                         </Badge>
                         <Link href="/sign-in" prefetch>
@@ -114,7 +114,7 @@ export default function Header() {
                         </Link>
                         <Sheet open={isMenuOpen} onOpenChange={setIsMenuOpen}>
                             <SheetTrigger asChild>
-                                <Menu className="min-[540px]:hidden" />
+                                <Menu className="min-[600px]:hidden" />
                             </SheetTrigger>
                             <SheetContent side="right" className="w-[300px]">
                                 <SheetHeader>
