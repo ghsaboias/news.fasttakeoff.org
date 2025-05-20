@@ -46,13 +46,26 @@ export async function getFeedItems(feedId: string): Promise<FeedItem[]> {
     const feed = await parser.parseString(xml);
 
     // Map feed items to FeedItem type
-    const items: FeedItem[] = feed.items.map(item => ({
-        title: item.title ?? '',
-        link: item.link ?? '',
-        pubDate: item.isoDate ?? item.pubDate ?? '',
-        contentSnippet: item.contentSnippet,
-        enclosureUrl: item.enclosure?.url,
-    }));
+    const items: FeedItem[] = feed.items.map(item => {
+        let contentSnippet = item.contentSnippet;
+
+        // Remove the "Este conteúdo..." part if it exists
+        if (contentSnippet) {
+            const esteConteudoIndex = contentSnippet.indexOf('Este conteúdo foi originalmente publicado em');
+            if (esteConteudoIndex !== -1) {
+                contentSnippet = contentSnippet.substring(0, esteConteudoIndex).trim();
+            }
+        }
+
+        return {
+            title: item.title ?? '',
+            link: item.link ?? '',
+            pubDate: item.isoDate ?? item.pubDate ?? '',
+            contentSnippet,
+            enclosureUrl: item.enclosure?.url,
+            categories: item.categories ?? [],
+        };
+    });
 
     return items;
 }
