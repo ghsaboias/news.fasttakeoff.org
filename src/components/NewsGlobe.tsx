@@ -242,7 +242,6 @@ const Globe: React.FC<GlobeProps> = ({ timelineValue, onTimeRangeChange }): Reac
     const [isFetchingGeoData, setIsFetchingGeoData] = useState<boolean>(true);
     const [isFetchingNews, setIsFetchingNews] = useState<boolean>(false);
     const [timeRange, setTimeRange] = useState<{ min: Date; max: Date }>({ min: new Date(), max: new Date() });
-    const [currentDay, setCurrentDay] = useState<Date>(new Date());
 
     // Fetch geo data and news
     useEffect(() => {
@@ -351,8 +350,8 @@ const Globe: React.FC<GlobeProps> = ({ timelineValue, onTimeRangeChange }): Reac
 
     // Initial fetch for today's reports
     useEffect(() => {
-        fetchAndProcessNews(currentDay);
-    }, [currentDay]); // eslint-disable-line react-hooks/exhaustive-deps
+        fetchAndProcessNews(new Date());
+    }, []);
 
     // Filter news items based on timeline value
     useEffect(() => {
