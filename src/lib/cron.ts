@@ -14,61 +14,38 @@ export async function scheduled(event: ScheduledEvent, env: Cloudflare.Env): Pro
     try {
         const messagesService = new MessagesService(env);
         const reportsService = new ReportsService(env);
-        let taskProcessed = false;
+        let taskResult: string | undefined;
 
         switch (event.cron) {
             case '0 * * * *':
-                console.log('[CRON] Running message update (scheduled)');
+            case 'MESSAGES':
                 await messagesService.updateMessages();
-                console.log('[CRON] Message update completed (scheduled)');
-                taskProcessed = true;
+                taskResult = 'Updated messages';
                 break;
             case '2 * * * *':
-                console.log('[CRON] Running report generation (scheduled)');
                 await reportsService.createFreshReports();
-                console.log('[CRON] Report generation completed (scheduled)');
-                taskProcessed = true;
-                break;
-            case 'MESSAGES':
-                console.log('[CRON] Running message update (manual trigger via cron string)');
-                await messagesService.updateMessages();
-                console.log('[CRON] Message update completed (manual trigger)');
-                taskProcessed = true;
+                taskResult = 'Created fresh reports';
                 break;
             case 'REPORTS_2H':
-                console.log('[CRON] Running report generation for 2h (manual trigger)');
                 await reportsService.generateReportsForManualTrigger(['2h'] as TimeframeKey[]);
-                console.log('[CRON] Report generation for 2h completed (manual trigger)');
-                taskProcessed = true;
+                taskResult = 'Generated 2h reports';
                 break;
             case 'REPORTS_6H':
-                console.log('[CRON] Running report generation for 6h (manual trigger)');
                 await reportsService.generateReportsForManualTrigger(['6h'] as TimeframeKey[]);
-                console.log('[CRON] Report generation for 6h completed (manual trigger)');
-                taskProcessed = true;
-                break;
-            case 'REPORTS_ALL':
-                console.log('[CRON] Running report generation for ALL timeframes (manual trigger)');
-                await reportsService.generateReportsForManualTrigger('ALL');
-                console.log('[CRON] Report generation for ALL timeframes completed (manual trigger)');
-                taskProcessed = true;
+                taskResult = 'Generated 6h reports';
                 break;
             case 'REPORTS':
-                console.log('[CRON] Running report generation for ALL timeframes (manual trigger via REPORTS shortcut)');
                 await reportsService.generateReportsForManualTrigger('ALL');
-                console.log('[CRON] Report generation for ALL timeframes completed (manual trigger via REPORTS shortcut)');
-                taskProcessed = true;
+                taskResult = 'Generated all reports';
                 break;
             default:
                 console.warn(`[CRON] Unknown or unhandled cron pattern: "${event.cron}", skipping task.`);
-                break;
         }
 
-        if (taskProcessed) {
-            console.log(`[CRON] Successfully processed cron: "${event.cron}" at ${new Date().toISOString()}`);
-        } else {
-            console.log(`[CRON] No specific task processed for cron: "${event.cron}" at ${new Date().toISOString()}`);
-        }
+        console.log(
+            `[CRON] ${taskResult ? 'Successfully processed' : 'No specific task processed for'} cron: "${event.cron}" at ${new Date().toISOString()}` +
+            (taskResult ? ` (${taskResult})` : '')
+        );
 
     } catch (error) {
         console.error(`[CRON] Error in scheduled function for cron "${event.cron}":`, error);
