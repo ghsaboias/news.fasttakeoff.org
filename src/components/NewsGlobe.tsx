@@ -9,6 +9,7 @@ import Link from 'next/link';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { Button } from './ui/button';
+import { Slider } from './ui/slider';
 
 // --- Theme Configuration (Simplified from example) ---
 const cyberTheme = {
@@ -227,18 +228,25 @@ const GeoJsonLines: React.FC<LineFeatureProps> = ({ geoJson, radius, color, opac
 };
 // --- End GeoJSON Line Components ---
 
-const Globe = (): React.ReactNode => {
+interface GlobeProps {
+    timelineValue: number;
+    onTimeRangeChange: (range: { min: Date; max: Date }) => void;
+}
+
+const Globe: React.FC<GlobeProps> = ({ timelineValue, onTimeRangeChange }): React.ReactNode => {
     const globeRef = useRef<THREE.Mesh>(null!);
     const [countryBordersData, setCountryBordersData] = useState<GeoJsonFeatureCollection | null>(null);
     const [coastlinesData, setCoastlinesData] = useState<GeoJsonFeatureCollection | null>(null);
     const [newsItems, setNewsItems] = useState<NewsMarkerData[]>([]);
-    const [isFetchingGeoData, setIsFetchingGeoData] = useState<boolean>(true); // Track GeoJSON loading
+    const [allNewsItems, setAllNewsItems] = useState<NewsMarkerData[]>([]);
+    const [isFetchingGeoData, setIsFetchingGeoData] = useState<boolean>(true);
+    const [timeRange, setTimeRange] = useState<{ min: Date; max: Date }>({ min: new Date(), max: new Date() });
 
+    // Fetch geo data and news
     useEffect(() => {
         const fetchGeoData = async () => {
-            setIsFetchingGeoData(true); // Start loading GeoJSON
+            setIsFetchingGeoData(true);
             try {
-                // Fetch borders data (essential)
                 const bordersResponse = await fetch('/geojson/ne_110m_admin_0_countries.geojson');
                 if (!bordersResponse.ok) {
                     console.error(`Failed to fetch essential borders: ${bordersResponse.status}`);
@@ -247,7 +255,6 @@ const Globe = (): React.ReactNode => {
                 const bordersJson = await bordersResponse.json();
                 setCountryBordersData(bordersJson);
 
-                // Fetch coastlines data (optional)
                 try {
                     const coastlinesResponse = await fetch('/geojson/ne_110m_coastline.geojson');
                     if (coastlinesResponse.ok) {
@@ -263,18 +270,16 @@ const Globe = (): React.ReactNode => {
                 } catch (coastlineError) {
                     console.warn("Error fetching optional coastline data:", coastlineError);
                 }
-
             } catch (error) {
-                // Handle critical errors (like failed borders fetch)
                 console.error("Error fetching critical GeoJSON data:", error);
-                // Potentially set an error state here to inform the user
             } finally {
-                setIsFetchingGeoData(false); // Finish loading GeoJSON
+                setIsFetchingGeoData(false);
             }
         };
 
         const fetchAndProcessNews = async () => {
             setNewsItems([]);
+            setAllNewsItems([]);
             try {
                 const response = await fetch('/api/reports');
                 if (!response.ok) {
@@ -285,6 +290,8 @@ const Globe = (): React.ReactNode => {
 
                 const limitedReports = reports.slice(0, 20);
                 console.log(`Processing up to ${limitedReports.length} out of ${reports.length} total reports`);
+
+                const processedItems: NewsMarkerData[] = [];
 
                 // Process reports one by one
                 for (const report of limitedReports) {
@@ -299,7 +306,7 @@ const Globe = (): React.ReactNode => {
 
                         if (!geoResponse.ok) {
                             const errorData = await geoResponse.json().catch(() => ({ error: "Failed to parse error response from geocode API" }));
-                            console.warn( // Use warn as it's non-blocking for other markers
+                            console.warn(
                                 `Error fetching geocoded data for ${report.city} (Report ID: ${report.reportId}): ${geoResponse.status}`,
                                 errorData?.error || geoResponse.statusText
                             );
@@ -309,13 +316,13 @@ const Globe = (): React.ReactNode => {
                         const location: { lat: number; lng: number } = await geoResponse.json();
 
                         if (typeof location.lat === 'number' && typeof location.lng === 'number' && !(location.lat === 0 && location.lng === 0)) {
-                            // Add successfully geocoded item to state immediately
+                            // Add successfully geocoded item
                             const newItem: NewsMarkerData = {
                                 ...report,
                                 lat: location.lat,
                                 lon: location.lng,
                             };
-                            setNewsItems(prevItems => [...prevItems, newItem]);
+                            processedItems.push(newItem);
                         } else {
                             console.warn(`No valid geocoding results for ${report.city} (Report ID: ${report.reportId}). API might have returned no location or placeholder.`);
                         }
@@ -323,15 +330,42 @@ const Globe = (): React.ReactNode => {
                         console.warn(`Error during geocoding process for ${report.city} (Report ID: ${report.reportId}):`, geoError);
                     }
                 }
-                console.log(`Finished processing reports. Displaying ${newsItems.length} markers.`);
+
+                // Update time range based on all items
+                if (processedItems.length > 0) {
+                    const dates = processedItems.map(item => new Date(item.generatedAt));
+                    const minDate = new Date(Math.min(...dates.map(d => d.getTime())));
+                    const maxDate = new Date(Math.max(...dates.map(d => d.getTime())));
+                    setTimeRange({ min: minDate, max: maxDate });
+                    onTimeRangeChange({ min: minDate, max: maxDate });
+                }
+
+                setAllNewsItems(processedItems);
+                setNewsItems(processedItems);
+                console.log(`Finished processing reports. Displaying ${processedItems.length} markers.`);
             } catch (error) {
                 console.error("Error fetching or processing news data:", error);
             }
         };
 
-        fetchGeoData(); // Fetch borders/coastlines
-        fetchAndProcessNews(); // Start fetching news in parallel
-    }, []); // Run once on mount
+        fetchGeoData();
+        fetchAndProcessNews();
+    }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+    // Filter news items based on timeline value
+    useEffect(() => {
+        if (allNewsItems.length === 0) return;
+
+        const timeRangeInMs = timeRange.max.getTime() - timeRange.min.getTime();
+        const selectedTime = timeRange.min.getTime() + (timeRangeInMs * (timelineValue / 100));
+
+        const filteredItems = allNewsItems.filter(item => {
+            const itemTime = new Date(item.generatedAt).getTime();
+            return itemTime <= selectedTime;
+        });
+
+        setNewsItems(filteredItems);
+    }, [timelineValue, allNewsItems, timeRange]);
 
     useFrame(() => {
         if (globeRef.current) {
@@ -377,7 +411,7 @@ const Globe = (): React.ReactNode => {
                     radius={globeRadius}
                     color={cyberTheme.colors.cyberCyan}
                     opacity={cyberTheme.opacity.countryBordersOpacity}
-                    lineWidth={0.5} // Thinner lines for borders
+                    lineWidth={0.5}
                 />
             )}
             {coastlinesData && (
@@ -386,7 +420,7 @@ const Globe = (): React.ReactNode => {
                     radius={globeRadius}
                     color={cyberTheme.colors.cyberCyanBright}
                     opacity={cyberTheme.opacity.coastlinesOpacity}
-                    lineWidth={1} // Slightly thicker for coastlines
+                    lineWidth={1}
                 />
             )}
             <OrbitControls enableZoom={true} enablePan={true} minDistance={2.2} maxDistance={15} />
@@ -395,15 +429,53 @@ const Globe = (): React.ReactNode => {
 };
 
 const NewsGlobe: React.FC = () => {
+    const [timelineValue, setTimelineValue] = useState<number>(100);
+    const [timeRange, setTimeRange] = useState<{ min: Date; max: Date }>({ min: new Date(), max: new Date() });
+
+    // Calculate current date based on timeline value
+    const currentDate = useMemo(() => {
+        const timeRangeInMs = timeRange.max.getTime() - timeRange.min.getTime();
+        const selectedTime = timeRange.min.getTime() + (timeRangeInMs * (timelineValue / 100));
+        return new Date(selectedTime);
+    }, [timelineValue, timeRange]);
+
     return (
-        <div style={{ position: 'relative', height: '100vh', width: '100%', background: '#000010' /* Darker background */ }}>
+        <div style={{ position: 'relative', height: '100vh', width: '100%', background: '#000010' }}>
             <Link href="/" style={{ position: 'absolute', top: '20px', left: '20px', zIndex: 10 }}>
                 <Image src="/images/brain_transparent.png" alt="Home" width={32} height={32} />
             </Link>
             <Canvas camera={{ position: [0, 0, 5], fov: 50 }}>
-                {/* No loader here, Globe component handles its own loading state if needed */}
-                <Globe />
+                <Globe timelineValue={timelineValue} onTimeRangeChange={setTimeRange} />
             </Canvas>
+            <div style={{
+                position: 'absolute',
+                bottom: '20px',
+                left: '50%',
+                transform: 'translateX(-50%)',
+                width: '80%',
+                maxWidth: '600px',
+                background: 'rgba(0, 0, 0, 0.7)',
+                padding: '20px',
+                borderRadius: '10px',
+                border: '1px solid rgba(0, 255, 255, 0.2)',
+                zIndex: 10,
+            }}>
+                <div className="text-center mb-4 text-cyan-300">
+                    {formatTime(currentDate.toISOString(), true)}
+                </div>
+                <Slider
+                    defaultValue={[100]}
+                    max={100}
+                    step={1}
+                    value={[timelineValue]}
+                    onValueChange={(value) => setTimelineValue(value[0])}
+                    className="w-full"
+                />
+                <div className="flex justify-between mt-2 text-xs text-cyan-300">
+                    <span>{formatTime(timeRange.min.toISOString(), true)}</span>
+                    <span>{formatTime(timeRange.max.toISOString(), true)}</span>
+                </div>
+            </div>
         </div>
     );
 };
