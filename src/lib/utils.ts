@@ -181,35 +181,44 @@ export function convertTimestampToUnixTimestamp(timestamp: string): number {
 }
 
 export function groupAndSortReports(reports: Report[]): Report[] {
-  // Group reports by 2-hour windows
-  const reportGroups = reports.reduce((groups: { [key: string]: Report[] }, report) => {
-    // Round down to nearest 2-hour window
-    const date = new Date(report.generatedAt)
-    date.setMinutes(0, 0, 0) // Reset minutes and seconds
-    date.setHours(Math.floor(date.getHours() / 2) * 2) // Round down to nearest 2-hour window
-    const timeKey = date.toISOString()
+  if (!reports.length) return []
 
-    if (!groups[timeKey]) {
-      groups[timeKey] = []
+  // Round timestamps to the nearest hour and find the latest hour
+  const getHourTimestamp = (date: Date) => {
+    const rounded = new Date(date)
+    rounded.setMinutes(0, 0, 0)
+    return rounded.getTime()
+  }
+
+  // Find the latest hour timestamp
+  const latestHourTimestamp = reports.reduce((latest, report) => {
+    const hourTimestamp = getHourTimestamp(new Date(report.generatedAt))
+    return hourTimestamp > latest ? hourTimestamp : latest
+  }, 0)
+
+  // Group reports into "latest run" and "older"
+  const latestRunReports: Report[] = []
+  const olderReports: Report[] = []
+
+  reports.forEach(report => {
+    const hourTimestamp = getHourTimestamp(new Date(report.generatedAt))
+    if (hourTimestamp === latestHourTimestamp) {
+      latestRunReports.push(report)
+    } else {
+      olderReports.push(report)
     }
-    groups[timeKey].push(report)
-    return groups
-  }, {})
+  })
 
-  // Get the latest 2-hour window
-  const latestTimeWindow = Object.keys(reportGroups).sort().reverse()[0]
-
-  // Sort reports in the latest window by messageCount
-  const latestReports = reportGroups[latestTimeWindow]?.sort((a, b) => {
+  // Sort latest run reports by messageCount
+  const sortedLatestReports = latestRunReports.sort((a, b) => {
     return (b.messageCount || 0) - (a.messageCount || 0)
-  }) || []
+  })
 
-  // Sort remaining reports by generatedAt
-  const olderReports = Object.keys(reportGroups)
-    .filter(timeKey => timeKey !== latestTimeWindow)
-    .flatMap(timeKey => reportGroups[timeKey])
-    .sort((a, b) => new Date(b.generatedAt).getTime() - new Date(a.generatedAt).getTime())
+  // Sort older reports by generatedAt
+  const sortedOlderReports = olderReports.sort((a, b) => {
+    return new Date(b.generatedAt).getTime() - new Date(a.generatedAt).getTime()
+  })
 
   // Combine latest and older reports
-  return [...latestReports, ...olderReports]
+  return [...sortedLatestReports, ...sortedOlderReports]
 }
