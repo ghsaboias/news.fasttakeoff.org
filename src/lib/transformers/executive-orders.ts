@@ -18,7 +18,7 @@ export function transformImages(images: Record<string, Record<string, string>> |
         transformed[key] = {
             url: value.url || '',
             type: value.type || 'unknown',
-            size: value.size
+            size: value.size || undefined
         };
     }
     return transformed;
