@@ -60,13 +60,16 @@ export function transformFederalRegisterOrder(order: FederalRegisterOrder): Exec
         signingDate: order.signing_date
     };
 
+    // Default to 0 if executive_order_number is not available
+    const orderNumber = typeof order.executive_order_number === 'number' ? order.executive_order_number : 0;
+
     return {
         id: order.document_number,
         title: order.title,
         date: order.signing_date,
-        orderNumber: order.executive_order_number,
+        orderNumber,
         category: order.agencies[0]?.name || 'Uncategorized',
-        summary: order.abstract || `Executive Order ${order.executive_order_number}`,
+        summary: order.abstract || `Executive Order ${orderNumber || 'N/A'}`,
         content,
         publication,
         links,
