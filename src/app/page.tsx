@@ -122,11 +122,7 @@ export default function Home() {
                 </Card>
               ))
           ) : reports.length > 0 ? (
-            reports.sort((a, b) => {
-              const messageCountA = a.messageCount || 0
-              const messageCountB = b.messageCount || 0
-              return messageCountB - messageCountA
-            }).map(report => (
+            reports.map(report => (
               <ReportCard key={report.reportId} report={report} showReadMore={false} clickableChannel={true} clickableReport={true} />
             )).slice(0, 4)
           ) : (
