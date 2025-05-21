@@ -26,7 +26,7 @@ export const AI_PROVIDERS: Record<string, AIProviderConfig> = {
     },
     openrouter: {
         endpoint: 'https://openrouter.ai/api/v1/chat/completions',
-        model: 'google/gemini-2.5-flash-preview',
+        model: 'google/gemini-2.5-flash-preview-05-20',
         apiKeyEnvVar: 'OPENROUTER_API_KEY',
         displayName: 'Gemini 2.5 Flash (OpenRouter)',
     },
@@ -90,6 +90,8 @@ export const CACHE = {
         CHANNELS: 12 * 60 * 60, // 12 hours
         // Messages cache TTL
         MESSAGES: 259200, // 3 days
+        // Feeds summary cache TTL
+        FEEDS: 30 * 24 * 60 * 60, // 30 days
     },
     RETENTION: {
         // How long to keep reports in the KV store before manual cleanup (in seconds)
@@ -99,6 +101,7 @@ export const CACHE = {
         // Thresholds for background refresh (in seconds)
         MESSAGES: 5 * 60, // 5 minutes
         CHANNELS: 60 * 60, // 1 hour
+        FEEDS: 2 * 60 * 60, // 2 hours
     },
 };
 
@@ -160,6 +163,132 @@ export const AI = {
     </new_sources>
     `,
         SYSTEM_PROMPT: 'You are an experienced news wire journalist that responds in JSON. The schema must include {"headline": "clear, specific, non-sensational, descriptive headline in all caps", "city": "single city name, related to the news, properly capitalized (first letter of each word only)", "body": "cohesive narrative of the most important verified developments, including key names, numbers, locations, dates, etc. In this section, separate paragraphs with double newlines (\n\n) to indicate distinct developments."}'
+    },
+    BRAZIL_NEWS: {
+        CURATE_PROMPT: `Você é um curador especializado em notícias brasileiras de alto impacto, focado em fatos e desenvolvimentos concretos sobre o Brasil. Analise os seguintes artigos e selecione apenas notícias factuais sobre:
+
+        1. Prioridades de Cobertura:
+           - Política Federal (votações, decisões executivas, medidas governamentais)
+           - Política do Estado de São Paulo
+           - Decisões do Judiciário (STF, STJ, TSE)
+           - Economia e Mercado (indicadores, política econômica, comércio exterior)
+           - Votações na Câmara e Senado
+           - Discussões e investigações no Congresso Nacional
+           - Decisões regulatórias do governo federal do Brasil
+        
+        2. Critérios de Seleção:
+           - Priorizar fatos verificáveis e decisões concretas
+           - Focar em atos oficiais e votações registradas
+           - Selecionar desenvolvimentos com impacto direto e mensurável
+           - Priorizar dados econômicos de fontes independentes
+           - Distinguir entre fatos e declarações oficiais
+           - Buscar múltiplas fontes quando possível
+        
+        3. Critérios de Exclusão:
+           - Excluir notícias puramente locais
+           - Excluir especulações sobre futuras decisões
+           - Excluir lembretes, comentários, opiniões e análises
+           - Excluir declarações sem evidências concretas
+           - Excluir propaganda governamental disfarçada de notícia
+           - Excluir notícias baseadas apenas em fontes oficiais sem verificação independente
+        
+        Para cada artigo selecionado, forneça:
+        - Uma pontuação de importância (1-10)
+        - Uma explicação objetiva focada em fatos verificáveis
+        
+        Artigos para análise:
+        {articles}
+        
+        Responda no seguinte formato JSON:
+        {
+            "selectedStories": [
+                {
+                    "title": "título exato do artigo",
+                    "importance": número (1-10),
+                    "reasoning": "explicação focada em fatos verificáveis e impactos concretos"
+                }
+            ],
+            "unselectedStories": [
+                {
+                    "title": "título exato do artigo"
+                }
+            ]
+        }
+        
+        Importante:
+        - Priorize APENAS notícias com fatos verificáveis
+        - Mantenha os títulos exatamente como estão no original
+        - Foque nas consequências práticas e mensuráveis
+        - Distinga claramente entre fatos e declarações
+        - Inclua TODAS as notícias restantes em unselectedStories
+        - Responda SEMPRE em português`,
+        SUMMARIZE_PROMPT: `Você é um editor especializado em criar resumos objetivos e informativos das principais notícias do Brasil. Analise as notícias selecionadas e crie um resumo estruturado seguindo estas diretrizes:
+
+        1. Estrutura do Resumo:
+        - Manchete Principal: A notícia mais impactante do dia
+        - Destaques: 3-4 notícias mais importantes após a manchete
+        - Resumo por Categorias:
+            * Política Federal e Congresso
+            * Economia e Mercados
+            * Judiciário
+            * São Paulo
+            * Outros Desenvolvimentos Relevantes
+
+        2. Formato para cada notícia:
+        - Título claro e direto
+        - 1-2 frases com fatos principais
+        - Impactos ou próximos passos quando relevante
+        - SEM opiniões ou especulações
+
+        3. Critérios de Priorização:
+        - Importância para política pública
+        - Impacto econômico direto
+        - Decisões concretas vs. declarações
+        - Fatos verificáveis vs. especulações
+
+        4. Estilo de Escrita:
+        - Objetivo e factual
+        - Direto e conciso
+        - Foco em dados e decisões
+        - Linguagem clara e acessível
+
+        Notícias para análise:
+        {articles}
+
+        Responda no seguinte formato:
+
+        # Resumo do Dia - [DATA]
+
+        ## [Título da notícia mais importante do dia]
+        [2-3 frases de contexto e impacto]
+
+        ## Destaques do Dia
+        • [Notícia 1]
+        • [Notícia 2]
+        • [Notícia 3]
+
+        ## Política Federal e Congresso
+        • [Tópicos relevantes]
+
+        ## Economia e Mercados
+        • [Tópicos relevantes]
+
+        ## Judiciário
+        • [Tópicos relevantes]
+
+        ## São Paulo
+        • [Tópicos relevantes]
+
+        ## Outros Desenvolvimentos Relevantes
+        • [Tópicos relevantes]
+
+        Importante:
+        - Use bullet points para facilitar leitura
+        - Mantenha cada item conciso (máximo 2 frases)
+        - Foque em fatos e decisões concretas
+        - Caso não haja notícias relevantes em alguma categoria, simplesmentenão inclua a categoria
+        - Evite adjetivações e opiniões
+        - Responda SEMPRE em português`,
     },
 };
 
