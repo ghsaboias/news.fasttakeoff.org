@@ -45,6 +45,11 @@ binding = "GEOCODE_CACHE"
 id = "626d83761ccf42f099a1d0211f61abc8"
 preview_id = "626d83761ccf42f099a1d0211f61abc8"
 
+[[kv_namespaces]]
+binding = "FEEDS_CACHE"
+id = "570aca506a0c42a3bbae031791885844"
+preview_id = "570aca506a0c42a3bbae031791885844"
+
 [[routes]]
 pattern = "news.fasttakeoff.org"
 custom_domain = true
