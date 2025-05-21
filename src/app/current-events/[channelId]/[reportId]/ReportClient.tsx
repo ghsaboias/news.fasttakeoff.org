@@ -9,9 +9,10 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Loader } from "@/components/ui/loader";
 import { DiscordMessage, Report } from "@/lib/types/core";
 import { formatTime } from "@/lib/utils";
-import { Check, Globe, Loader2 } from "lucide-react";
+import { Check, Globe } from "lucide-react";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Toaster, toast } from 'sonner';
@@ -108,7 +109,7 @@ export default function ReportClient() {
             <div className="p-6 mx-auto gap-4 flex flex-col w-[95vw]">
                 {isLoading ? (
                     <div className="flex items-center justify-center h-full">
-                        <Loader2 className="h-10 w-10 animate-spin text-primary" />
+                        <Loader size="xl" />
                     </div>
                 ) : (
                     <div className="flex flex-col gap-4">

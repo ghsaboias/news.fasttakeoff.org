@@ -3,11 +3,11 @@
 import OrderCard from "@/components/executive-orders/OrderCard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Loader } from "@/components/ui/loader";
 import { Separator } from "@/components/ui/separator";
 import { fetchExecutiveOrders } from "@/lib/data/executive-orders";
 import { ExecutiveOrder } from "@/lib/types/core";
 import { getStartDate } from "@/lib/utils";
-import { Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 
 export default function ClientExecutiveOrders({ initialOrders }: { initialOrders: ExecutiveOrder[] }) {
@@ -45,7 +45,7 @@ export default function ClientExecutiveOrders({ initialOrders }: { initialOrders
     if (loading) return (
         <div className="container mx-auto px-4 py-8">
             <div className="col-span-full text-center py-16 flex flex-col items-center justify-center gap-4">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                <Loader size="lg" />
                 <p className="text-lg text-muted-foreground">Loading executive orders...</p>
             </div>
         </div>
