@@ -21,7 +21,7 @@ export default function Footer() {
     }, []);
 
     return (
-        <footer className="bg-muted-light py-6">
+        <footer className="bg-input py-6">
             <div className="container mx-auto px-8 min-w-[90%]">
                 <div className="grid grid-cols-1 gap-8 md:grid-cols-4">
                     <div className="space-y-4">
