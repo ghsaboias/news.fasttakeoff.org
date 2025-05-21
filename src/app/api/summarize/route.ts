@@ -1,5 +1,7 @@
 import { getAIAPIKey, getAIProviderConfig } from '@/lib/ai-config';
+import { FeedsService } from '@/lib/data/feeds-service';
 import { ExecutiveOrder } from '@/lib/types/core';
+import { getCacheContext } from '@/lib/utils';
 import { NextResponse } from 'next/server';
 
 interface SummarizeRequest {
@@ -123,4 +125,19 @@ async function generateSummary(order: ExecutiveOrder): Promise<string> {
         }
         throw error;
     }
-} 
+}
+
+export async function GET() {
+    try {
+        const { env } = getCacheContext();
+        const feedsService = new FeedsService(env);
+        const result = await feedsService.getOrCreateSummary();
+        return NextResponse.json(result);
+    } catch (error) {
+        console.error('Summarization error:', error);
+        return NextResponse.json(
+            { error: error instanceof Error ? error.message : 'An error occurred' },
+            { status: 500 }
+        );
+    }
+}
