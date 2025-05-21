@@ -2,8 +2,8 @@
 
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Badge } from "@/components/ui/badge";
+import { Loader } from "@/components/ui/loader";
 import { DiscordMessage } from "@/lib/types/core";
-import { Loader2 } from "lucide-react";
 import MessageItem from "./MessageItem";
 
 interface MessagesAccordionProps {
@@ -54,7 +54,7 @@ export default function MessagesAccordion({ channelData, channelMessages = [], i
     } else if (isLoading) {
         return (
             <div className="mt-4 p-4 bg-muted-light text-muted-foreground rounded-lg flex items-center justify-center">
-                <Loader2 className="animate-spin" />
+                <Loader size="md" />
             </div>
         );
     } else if (count === 0 && !isLoading) {

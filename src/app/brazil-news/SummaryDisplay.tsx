@@ -1,5 +1,6 @@
 'use client';
 
+import { Loader } from '@/components/ui/loader';
 import { SummaryResult } from '@/lib/types/core';
 import { useEffect, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
@@ -47,7 +48,7 @@ export function SummaryDisplay() {
     if (loading) {
         return (
             <div className="flex items-center justify-center py-12">
-                <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
+                <Loader size="lg" />
             </div>
         );
     }

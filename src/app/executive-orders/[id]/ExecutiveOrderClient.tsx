@@ -1,10 +1,11 @@
 'use client';
 
 import { Button } from "@/components/ui/button";
+import { Loader } from "@/components/ui/loader";
 import { findExecutiveOrderByNumber } from "@/lib/data/executive-orders";
 import { ExecutiveOrder, Section } from "@/lib/types/core";
 import { parseDispositionNotes, type RelatedEOInfo } from "@/lib/utils";
-import { ArrowLeft, ExternalLink, FileText, Info, Loader2 } from "lucide-react";
+import { ArrowLeft, ExternalLink, FileText, Info } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -205,7 +206,7 @@ export default function ExecutiveOrderClient({
                     <h2 className="text-xl font-semibold mb-4">Executive Order Summary</h2>
                     {summaryLoading ? (
                         <div className="flex items-center justify-center p-6">
-                            <Loader2 className="h-6 w-6 animate-spin mr-2" />
+                            <Loader size="md" className="mr-2" />
                             <span>Generating summary...</span>
                         </div>
                     ) : aiSummary ? (
@@ -271,7 +272,7 @@ export default function ExecutiveOrderClient({
                                         <span className="font-medium">{relatedEO.relationship}:</span>{" "}
                                         {relatedEO.isLoading ? (
                                             <span className="inline-flex items-center gap-1 text-muted-foreground">
-                                                <Loader2 className="h-2 w-2 animate-spin inline" />
+                                                <Loader size="sm" className="inline" />
                                                 <span>EO {relatedEO.eoNumber}</span>
                                             </span>
                                         ) : (

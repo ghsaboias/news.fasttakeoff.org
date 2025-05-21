@@ -1,9 +1,9 @@
 'use client';
 
+import { Loader } from '@/components/ui/loader';
 import { formatTime } from '@/lib/utils';
 import { Html, Line, OrbitControls, Sphere } from '@react-three/drei';
 import { Canvas, ThreeEvent, useFrame } from '@react-three/fiber';
-import { Loader2 } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
@@ -352,7 +352,7 @@ const Globe = (): React.ReactNode => {
     if (isFetchingGeoData) {
         return (
             <Html center>
-                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                <Loader size="lg" className="text-muted-foreground" />
             </Html>
         );
     }

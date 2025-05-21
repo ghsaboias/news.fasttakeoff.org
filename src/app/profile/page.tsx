@@ -2,8 +2,8 @@
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Loader } from '@/components/ui/loader';
 import { useUser } from '@clerk/nextjs';
-import { Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
@@ -42,8 +42,8 @@ export default function ProfilePage() {
 
     if (!isLoaded) {
         return (
-            <div className="flex items-center justify-center min-h-screen">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <div className="flex items-center justify-center min-h-[400px]">
+                <Loader size="lg" />
             </div>
         );
     }
@@ -90,7 +90,7 @@ export default function ProfilePage() {
                                 className="w-full"
                             >
                                 {isSubscribing ? (
-                                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                                    <Loader size="sm" className="mr-2" />
                                 ) : (
                                     'Subscribe Now'
                                 )}

@@ -4,6 +4,7 @@ import ReportCard from "@/components/current-events/ReportCard";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Loader } from "@/components/ui/loader";
 import {
     Select,
     SelectContent,
@@ -12,7 +13,7 @@ import {
     SelectValue,
 } from "@/components/ui/select";
 import { Report } from "@/lib/types/core";
-import { FilterX, Loader2, Search } from "lucide-react";
+import { FilterX, Search } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
@@ -191,7 +192,7 @@ export default function CurrentEventsClient({ reports, isLoading = false }: Prop
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {loading ? (
                     <div className="col-span-full text-center py-16 flex flex-col items-center justify-center gap-4">
-                        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                        <Loader size="lg" />
                         <p className="text-lg text-muted-foreground">Loading reports...</p>
                     </div>
                 ) : channelsWithLatest.length > 0 ? (
