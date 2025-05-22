@@ -1,5 +1,5 @@
 import { CacheManager } from '@/lib/cache-utils';
-import { CACHE } from '@/lib/config';
+import { CACHE, TIME } from '@/lib/config';
 import { FeedItem, SelectedStory, SummaryInputData, SummaryResult, UnselectedStory } from '@/lib/types/core';
 import { Cloudflare } from '../../../worker-configuration';
 import { getAIAPIKey, getAIProviderConfig } from '../ai-config';
@@ -149,22 +149,24 @@ export async function summarizeFeed(input: SummaryInputData & { env: Cloudflare.
 }
 
 export async function summarizeFeeds(feedIds: string[], env: Cloudflare.Env): Promise<SummaryResult> {
-    // Fetch all articles
-    const allArticles: FeedItem[] = [];
-    for (const feedId of feedIds) {
-        const articles = await getFeedItems(feedId);
-        allArticles.push(...articles);
-    }
+    // Calculate timestamp for 1 hour ago
+    const oneHourAgo = Date.now() - TIME.ONE_HOUR_MS;
 
-    // Sort by date
+    // Fetch all articles from the last hour in parallel
+    const articlePromises = feedIds.map(feedId => getFeedItems(feedId, oneHourAgo));
+    const articlesArrays = await Promise.all(articlePromises);
+    const allArticles = articlesArrays.flat();
+
+    // Sort articles by date, newest first
     const sortedArticles = allArticles.sort((a, b) =>
         new Date(b.pubDate).getTime() - new Date(a.pubDate).getTime()
     );
 
+    // Generate summary
     return summarizeFeed({
         isCombined: true,
         articles: sortedArticles,
-        timeRange: calculateTimeRange(sortedArticles),
+        timeRange: `Last hour`,
         env
     });
 }
@@ -192,6 +194,31 @@ export class FeedsService {
 
     async getCachedSummary(): Promise<SummaryResult | null> {
         const key = this.getCurrentHourKey();
+        const cached = await this.cacheManager.get<{ createdAt: string; data: SummaryResult }>('FEEDS_CACHE', key);
+        return cached?.data || null;
+    }
+
+    async listAvailableSummaries(): Promise<{ key: string; createdAt: string }[]> {
+        const keys = await this.env.FEEDS_CACHE.list({ prefix: 'feeds_summary:' });
+        const summaries: { key: string; createdAt: string }[] = [];
+
+        for (const key of keys.keys) {
+            const cached = await this.cacheManager.get<{ createdAt: string }>('FEEDS_CACHE', key.name);
+            if (cached?.createdAt) {
+                summaries.push({
+                    key: key.name,
+                    createdAt: cached.createdAt
+                });
+            }
+        }
+
+        // Sort by creation date, newest first
+        return summaries.sort((a, b) =>
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        );
+    }
+
+    async getSummaryByKey(key: string): Promise<SummaryResult | null> {
         const cached = await this.cacheManager.get<{ createdAt: string; data: SummaryResult }>('FEEDS_CACHE', key);
         return cached?.data || null;
     }
