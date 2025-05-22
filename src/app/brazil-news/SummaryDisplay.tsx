@@ -1,9 +1,22 @@
 'use client';
 
 import { Loader } from '@/components/ui/loader';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { SummaryResult } from '@/lib/types/core';
 import { useEffect, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
+
+// Helper function to format date
+function formatDate(dateString: string): string {
+    const date = new Date(dateString);
+    return date.toLocaleString('pt-BR', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+    });
+}
 
 // Helper function to convert bullet points in text to proper markdown list items
 function formatTextWithBulletPoints(text: string): string {
@@ -16,10 +29,35 @@ function formatTextWithBulletPoints(text: string): string {
     }).join('\n');
 }
 
+interface SummaryOption {
+    key: string;
+    createdAt: string;
+}
+
 export function SummaryDisplay() {
     const [result, setResult] = useState<SummaryResult | null>(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [summaryOptions, setSummaryOptions] = useState<SummaryOption[]>([]);
+    const [selectedKey, setSelectedKey] = useState<string>('current');
+
+    useEffect(() => {
+        async function fetchSummaryOptions() {
+            try {
+                const response = await fetch('/api/summaries/list');
+                if (!response.ok) {
+                    throw new Error('Failed to fetch summary options');
+                }
+                const data = await response.json();
+                console.log('data', data);
+                setSummaryOptions(data);
+            } catch (err) {
+                console.error('Failed to fetch summary options:', err);
+            }
+        }
+
+        fetchSummaryOptions();
+    }, []);
 
     useEffect(() => {
         async function fetchSummary() {
@@ -27,7 +65,11 @@ export function SummaryDisplay() {
                 setLoading(true);
                 setError(null);
 
-                const response = await fetch('/api/summarize?combine=true');
+                const endpoint = selectedKey === 'current'
+                    ? '/api/summarize?combine=true'
+                    : `/api/summaries/${encodeURIComponent(selectedKey)}`;
+
+                const response = await fetch(endpoint);
                 if (!response.ok) {
                     const errorData = await response.json();
                     throw new Error(errorData.error || 'Failed to fetch summary');
@@ -43,7 +85,7 @@ export function SummaryDisplay() {
         }
 
         fetchSummary();
-    }, []);
+    }, [selectedKey]);
 
     if (loading) {
         return (
@@ -69,6 +111,25 @@ export function SummaryDisplay() {
 
     return (
         <div className="my-4">
+            {/* Summary Selection */}
+            <div className="mb-6">
+                <Select value={selectedKey} onValueChange={setSelectedKey}>
+                    <SelectTrigger>
+                        <SelectValue placeholder="Select a summary">
+                            {selectedKey === 'current' ? 'Current Summary' : formatDate(summaryOptions.find(opt => opt.key === selectedKey)?.createdAt || '')}
+                        </SelectValue>
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="current">Current Summary</SelectItem>
+                        {summaryOptions.map((option) => (
+                            <SelectItem key={option.key} value={option.key}>
+                                {formatDate(option.createdAt)}
+                            </SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
+            </div>
+
             {/* Summary Content */}
             <div className="prose prose-invert max-w-none">
                 <ReactMarkdown
