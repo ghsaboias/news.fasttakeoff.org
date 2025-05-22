@@ -9,9 +9,9 @@ export async function withErrorHandling<T>(
     handler: (env: Cloudflare.Env) => Promise<T>,
     errorMessage: string
 ): Promise<NextResponse> {
-    const { env } = getCacheContext(); // env is already Cloudflare.Env
+    const { env } = getCacheContext();
     try {
-        const result = await handler(env); // No casting needed
+        const result = await handler(env);
         return NextResponse.json(result, { headers: API_CACHE_HEADERS });
     } catch (error) {
         console.error(`[API] ${errorMessage}:`, error);
