@@ -4,9 +4,9 @@ import { ReportsService } from '@/lib/data/reports-service';
 export async function GET(request: Request) {
     return withErrorHandling(async env => {
         const reportsService = new ReportsService(env);
-        const url = new URL(request.url);
-        const channelId = url.searchParams.get('channelId');
-        const reportId = url.searchParams.get('reportId');
+        const { searchParams } = new URL(request.url);
+        const channelId = searchParams.get('channelId');
+        const reportId = searchParams.get('reportId');
 
         if (reportId) {
             if (!channelId) throw new Error('Missing channelId');
