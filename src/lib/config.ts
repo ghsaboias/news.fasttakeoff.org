@@ -298,7 +298,7 @@ export type TimeframeKey = typeof TIME.TIMEFRAMES[number];
 // RSS feeds configuration
 export const RSS_FEEDS: Record<string, string> = {
     'CNN-Brasil': 'https://www.cnnbrasil.com.br/feed/',
-    'BBC-Brasil': 'http://www.bbc.co.uk/portuguese/index.xml',
+    'BBC-Brasil': 'https://feeds.bbci.co.uk/portuguese/rss.xml',
     'G1': 'https://g1.globo.com/rss/g1/',
     'UOL': 'https://rss.uol.com.br/feed/noticias.xml'
 };
