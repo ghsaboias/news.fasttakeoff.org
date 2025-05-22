@@ -3,12 +3,19 @@ import { getCacheContext } from '@/lib/utils';
 import { NextResponse } from 'next/server';
 
 export async function GET(
-    { params }: { params: Promise<{ key: string }> }
+    request: Request,
 ) {
     try {
         const { env } = getCacheContext();
         const feedsService = new FeedsService(env);
-        const { key } = await params;
+        const { searchParams } = new URL(request.url);
+        const key = searchParams.get('key');
+        if (!key) {
+            return NextResponse.json(
+                { error: 'Missing key parameter' },
+                { status: 400 }
+            );
+        }
         const summary = await feedsService.getSummaryByKey(key);
 
         if (!summary) {
