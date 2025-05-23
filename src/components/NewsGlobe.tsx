@@ -323,7 +323,7 @@ const Globe = (): React.ReactNode => {
                         console.warn(`Error during geocoding process for ${report.city} (Report ID: ${report.reportId}):`, geoError);
                     }
                 }
-                console.log(`Finished processing reports. Displaying ${newsItems.length} markers.`);
+                console.log(`Finished processing reports. Total reports processed: ${limitedReports.length}`);
             } catch (error) {
                 console.error("Error fetching or processing news data:", error);
             }
