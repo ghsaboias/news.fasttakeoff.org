@@ -1,11 +1,13 @@
 'use client';
 
-import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Report } from "@/lib/types/core";
 import { formatTime } from "@/lib/utils";
-import ReportCardContent from "./ReportCardContent";
-import ReportCardFooter from "./ReportCardFooter";
-import ReportCardHeader from "./ReportCardHeader";
+import Link from "next/link";
+import { useEffect, useRef, useState } from "react";
+import LinkBadge from "./LinkBadge";
 
 interface ReportCardProps {
     report: Report;
@@ -26,45 +28,147 @@ export default function ReportCard({
     clickableReport = false,
     showReadMore = true
 }: ReportCardProps) {
+    // Content scroll state (from ReportCardContent)
+    const [isAtBottom, setIsAtBottom] = useState(false);
+    const contentRef = useRef<HTMLDivElement>(null);
 
-    // Prepare props for ReportCardHeader
-    const headerProps = {
-        headline: report.headline,
-        city: report.city,
-        timestampDisplay: report.generatedAt ? formatTime(report.generatedAt, true) : 'Recent',
-        displayChannelInfo: showChannelName,
-        channelName: report.channelName,
-        channelHref: showChannelName && clickableChannel && report.channelId ? `/current-events/${report.channelId}` : undefined,
-        reportCount: showChannelName ? reportCount : undefined,
-    };
+    // Scroll detection logic (from ReportCardContent)
+    useEffect(() => {
+        const element = contentRef.current;
+        if (!element) return;
 
-    // Prepare props for ReportCardContent
-    const contentProps = {
-        body: report.body,
-    };
+        const checkAndUpdateScrollState = () => {
+            if (element.scrollHeight <= element.clientHeight) {
+                setIsAtBottom(true);
+            } else {
+                const { scrollTop, scrollHeight, clientHeight } = element;
+                const isBottom = Math.abs(scrollHeight - clientHeight - scrollTop) < 1.5;
+                setIsAtBottom(isBottom);
+            }
+        };
 
-    // Prepare props for ReportCardFooter
-    const footerProps = {
-        readMoreHref: showReadMore && report.channelId && report.reportId ? `/current-events/${report.channelId}/${report.reportId}` : undefined,
-        timeframeText: showTimeframe && report.timeframe ? report.timeframe : undefined,
-        itemCount: report.messageCount,
-        itemUnitSingular: clickableReport ? 'source' : 'update',
-        itemCountIsLink: clickableReport,
-        itemCountLinkHref: clickableReport && report.channelId && report.reportId ? `/current-events/${report.channelId}/${report.reportId}` : undefined,
-    };
+        checkAndUpdateScrollState(); // Initial check on mount and when body changes
+
+        element.addEventListener('scroll', checkAndUpdateScrollState);
+        // Listen for window resize as clientHeight can change
+        window.addEventListener('resize', checkAndUpdateScrollState);
+
+        return () => {
+            element.removeEventListener('scroll', checkAndUpdateScrollState);
+            window.removeEventListener('resize', checkAndUpdateScrollState);
+        };
+    }, [report.body]); // Re-run effect if body content changes
+
+    // Calculate derived values
+    const timestampDisplay = report.generatedAt ? formatTime(report.generatedAt, true) : 'Recent';
+    const channelHref = showChannelName && clickableChannel && report.channelId ? `/current-events/${report.channelId}` : undefined;
+    const readMoreHref = showReadMore && report.channelId && report.reportId ? `/current-events/${report.channelId}/${report.reportId}` : undefined;
+    const timeframeText = showTimeframe && report.timeframe ? report.timeframe : undefined;
+    const itemUnitSingular = clickableReport ? 'source' : 'update';
+    const itemCountLinkHref = clickableReport && report.channelId && report.reportId ? `/current-events/${report.channelId}/${report.reportId}` : undefined;
+    const paragraphs = report.body.split('\n\n').filter(Boolean);
+    const itemUnitText = report.messageCount === 1 ? itemUnitSingular : itemUnitSingular ? `${itemUnitSingular}s` : '';
+
+    // Footer content logic (from ReportCardFooter)
+    const showFooterContentRow = timeframeText || (report.messageCount !== undefined && itemUnitSingular);
+    const hasFooterContent = readMoreHref || showFooterContentRow;
 
     return (
         <Card className="h-[500px] sm:h-[400px] flex flex-col gap-2 py-4">
             <CardHeader>
-                <ReportCardHeader {...headerProps} />
+                {/* Header content (from ReportCardHeader) */}
+                <div className="flex justify-between gap-2 mb-1 items-center">
+                    {showChannelName && report.channelName ? (
+                        <div className="flex flex-row gap-2 items-center">
+                            {channelHref ? (
+                                <LinkBadge
+                                    href={channelHref}
+                                    variant="outline"
+                                    className="px-1 py-0 h-5 hover:bg-muted"
+                                >
+                                    {report.channelName}
+                                </LinkBadge>
+                            ) : (
+                                <Badge variant="secondary" className="px-1 py-0 h-5">
+                                    {report.channelName}
+                                </Badge>
+                            )}
+                            {reportCount !== undefined && (
+                                <Badge variant="secondary" className="px-1 py-0 h-5">
+                                    {reportCount} {reportCount === 1 ? 'report' : 'reports'}
+                                </Badge>
+                            )}
+                        </div>
+                    ) : (
+                        <div /> // Empty div to maintain space for justify-between if channel info is not shown
+                    )}
+                    <div className="text-xs text-muted-foreground">
+                        {timestampDisplay}
+                    </div>
+                </div>
+                <CardTitle className="text-lg font-semibold line-clamp-2 leading-tight">
+                    {report.headline}
+                </CardTitle>
+                <p className="text-sm font-medium line-clamp-1">{report.city}</p>
             </CardHeader>
+
             <CardContent className="flex-grow flex flex-col pt-0">
-                <ReportCardContent {...contentProps} />
+                {/* Content with scroll (from ReportCardContent) */}
+                <div className="text-sm flex-grow h-16 relative">
+                    <div
+                        ref={contentRef}
+                        className="overflow-y-auto h-full scrollbar-none hover:scrollbar-thin hover:scrollbar-track-transparent hover:scrollbar-thumb-gray-300"
+                    >
+                        {paragraphs.map((paragraph, index) => (
+                            <p key={index} className="mb-2 last:mb-0 text-justify">
+                                {paragraph}
+                            </p>
+                        ))}
+                    </div>
+                    {!isAtBottom && (
+                        <div className="absolute inset-x-0 bottom-0 h-8 bg-gradient-to-t from-background to-transparent pointer-events-none z-10"></div>
+                    )}
+                </div>
             </CardContent>
-            {/* Conditionally render CardFooter only if ReportCardFooter has content */}
-            {(footerProps.readMoreHref || footerProps.timeframeText || (footerProps.itemCount !== undefined && footerProps.itemUnitSingular)) && (
+
+            {/* Footer (from ReportCardFooter) - only render if there's content */}
+            {hasFooterContent && (
                 <CardFooter className="flex flex-col gap-2 justify-between items-start my-2">
-                    <ReportCardFooter {...footerProps} />
+                    {readMoreHref && (
+                        <Button asChild variant="outline" size="sm" className="w-full">
+                            <Link href={readMoreHref}>
+                                Read More
+                            </Link>
+                        </Button>
+                    )}
+                    {showFooterContentRow && (
+                        <div className="flex flex-row gap-1 justify-between w-full items-center">
+                            {timeframeText ? (
+                                <Badge variant="secondary" className="px-1 py-0 h-5">
+                                    {timeframeText}
+                                </Badge>
+                            ) : (
+                                // Placeholder to maintain structure for justify-between if item count is shown
+                                (report.messageCount !== undefined && itemUnitSingular) ? <div /> : null
+                            )}
+
+                            {(report.messageCount !== undefined && itemUnitSingular) && (
+                                clickableReport && itemCountLinkHref ? (
+                                    <Button variant="outline" size="sm" asChild>
+                                        <Link href={itemCountLinkHref}>
+                                            <span className="font-medium">{report.messageCount}</span> {itemUnitText}
+                                        </Link>
+                                    </Button>
+                                ) : (
+                                    <div className="text-xs text-muted-foreground">
+                                        <span className="font-medium">{report.messageCount}</span> {itemUnitText}
+                                    </div>
+                                )
+                            )}
+                            {/* Placeholder if timeframe is shown but item count is not, to balance justify-between */}
+                            {timeframeText && !(report.messageCount !== undefined && itemUnitSingular) && <div />}
+                        </div>
+                    )}
                 </CardFooter>
             )}
         </Card>
