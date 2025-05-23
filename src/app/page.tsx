@@ -5,6 +5,7 @@ import OrderCard from "@/components/executive-orders/OrderCard"
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { fetchExecutiveOrders } from "@/lib/data/executive-orders"
+import { useGeolocation } from "@/lib/hooks/useGeolocation"
 import { ExecutiveOrder, Report } from "@/lib/types/core"
 import { getStartDate, groupAndSortReports } from "@/lib/utils"
 import { Search } from "lucide-react"
@@ -17,27 +18,10 @@ export default function Home() {
   const [loadingEO, setLoadingEO] = useState(true)
   const [reports, setReports] = useState<Report[]>([])
   const [loadingReports, setLoadingReports] = useState(true)
-  const [isUSBased, setIsUSBased] = useState<boolean | null>(null)
   const [searchQuery, setSearchQuery] = useState("")
 
-  useEffect(() => {
-    async function checkGeo() {
-      try {
-        const response = await fetch('/api/geo');
-        if (!response.ok) {
-          throw new Error(`Geo API error: ${response.status}`);
-        }
-        const data = await response.json();
-        // Treat 'XX' (unknown/local) as potentially US for local dev convenience,
-        // or you could treat it as non-US by changing the condition.
-        setIsUSBased(data.country === 'US');
-      } catch (error) {
-        console.error('Error checking geolocation:', error);
-        setIsUSBased(false); // Assume non-US on error
-      }
-    }
-    checkGeo();
-  }, []);
+  // Use the consolidated geolocation hook
+  const { isUSBased } = useGeolocation({ assumeNonUSOnError: true });
 
   async function loadExecutiveOrders() {
     if (!isUSBased) {

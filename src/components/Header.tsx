@@ -2,11 +2,12 @@
 
 import { Button } from "@/components/ui/button";
 import { getAIProviderConfig } from "@/lib/ai-config";
+import { useGeolocation } from "@/lib/hooks/useGeolocation";
 import { UserButton, useUser } from "@clerk/nextjs";
 import { Menu } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Badge } from "./ui/badge";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "./ui/sheet";
 
@@ -14,20 +15,9 @@ export default function Header() {
     const { user } = useUser()
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const aiConfig = getAIProviderConfig();
-    const [isUSBased, setIsUSBased] = useState(false);
 
-    useEffect(() => {
-        const fetchGeoData = async () => {
-            try {
-                const response = await fetch('/api/geo');
-                const data = await response.json();
-                setIsUSBased(data.country === 'US');
-            } catch (error) {
-                console.error('Error fetching geo data:', error);
-            }
-        };
-        fetchGeoData();
-    }, []);
+    // Use the consolidated geolocation hook
+    const { isUSBased } = useGeolocation({ initialValue: false });
 
     return (
         <header className="mx-auto flex h-16 items-center justify-between sm:px-8 sm:w-[95vw] w-[90vw]">
