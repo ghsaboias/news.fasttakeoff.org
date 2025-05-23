@@ -1,24 +1,12 @@
 'use client'
 
 import { Separator } from "@/components/ui/separator";
+import { useGeolocation } from "@/lib/hooks/useGeolocation";
 import Link from "next/link";
-import { useEffect, useState } from "react";
 
 export default function Footer() {
-    const [isUSBased, setIsUSBased] = useState(false);
-
-    useEffect(() => {
-        const fetchGeoData = async () => {
-            try {
-                const response = await fetch('/api/geo');
-                const data = await response.json();
-                setIsUSBased(data.country === 'US');
-            } catch (error) {
-                console.error('Error fetching geo data:', error);
-            }
-        };
-        fetchGeoData();
-    }, []);
+    // Use the consolidated geolocation hook
+    const { isUSBased } = useGeolocation({ initialValue: false });
 
     return (
         <footer className="bg-input py-6">
