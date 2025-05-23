@@ -10,7 +10,7 @@ import { ExecutiveOrder, Report } from "@/lib/types/core"
 import { getStartDate, groupAndSortReports } from "@/lib/utils"
 import { Search } from "lucide-react"
 import Link from "next/link"
-import { useEffect, useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useState } from "react"
 export const dynamic = 'force-dynamic';
 
 export default function Home() {
@@ -23,7 +23,7 @@ export default function Home() {
   // Use the consolidated geolocation hook
   const { isUSBased } = useGeolocation({ assumeNonUSOnError: true });
 
-  async function loadExecutiveOrders() {
+  const loadExecutiveOrders = useCallback(async () => {
     if (!isUSBased) {
       console.log('Skipping Executive Order fetch: Non-US location detected.');
       setLoadingEO(false);
@@ -47,7 +47,7 @@ export default function Home() {
     } finally {
       setLoadingEO(false)
     }
-  }
+  }, [isUSBased])
 
   async function loadReports() {
     try {
@@ -71,7 +71,7 @@ export default function Home() {
     if (isUSBased === true) {
       loadExecutiveOrders();
     }
-  }, [isUSBased]);
+  }, [isUSBased, loadExecutiveOrders]);
 
   const filteredReports = useMemo(() => {
     if (!searchQuery.trim()) {
