@@ -96,6 +96,32 @@ export function SummaryDisplay() {
     }
 
     if (error) {
+        const isNoCacheError = error.includes('No cached summary available');
+
+        if (isNoCacheError) {
+            return (
+                <div className="min-h-[60vh] flex items-center justify-center p-4">
+                    <div className="max-w-md w-full text-center">
+                        <div className="mb-6">
+                            <div className="text-6xl mb-4">⏳</div>
+                            <h2 className="text-2xl font-bold mb-2">Summary in Progress</h2>
+                            <p className="text-muted-foreground">
+                                We're generating the latest Brazil news summary for you.
+                            </p>
+                        </div>
+                        <div className="space-y-3 text-sm text-muted-foreground">
+                            <p>
+                                Fresh summaries are automatically created every hour with the latest news from Brazilian sources.
+                            </p>
+                            <p>
+                                Please check back in a few minutes.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
         return (
             <div className="bg-red-900/50 border border-red-500 rounded p-4 mt-4">
                 <p className="text-red-500">{error}</p>
