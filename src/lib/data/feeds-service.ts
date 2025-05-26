@@ -237,7 +237,7 @@ export class FeedsService {
         const startTime = Date.now();
 
         try {
-            const summary = await summarizeFeeds(['CNN-Brasil', 'BBC-Brasil', 'G1', 'UOL'], this.env);
+            const summary = await summarizeFeeds(['CNN-Brasil', 'BBC-Brasil', 'G1 - Política', 'G1 - Economia', 'UOL'], this.env);
             const key = this.getCurrentHourKey();
 
             await this.cacheManager.put(
