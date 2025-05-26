@@ -3,9 +3,9 @@ import { getFeedItems } from '@/lib/data/rss-service';
 
 export async function GET(
     request: Request,
+    { params }: { params: Promise<{ feedId: string }> }
 ) {
-    const { searchParams } = new URL(request.url);
-    const feedId = searchParams.get('feedId');
+    const { feedId } = await params;
     if (!feedId) {
         return new Response('Missing feedId', { status: 400 });
     }
