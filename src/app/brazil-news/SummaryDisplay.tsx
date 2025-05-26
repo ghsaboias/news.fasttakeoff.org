@@ -67,7 +67,7 @@ export function SummaryDisplay() {
 
                 const endpoint = selectedKey === 'current'
                     ? '/api/summarize?combine=true'
-                    : `/api/summaries/key?key=${encodeURIComponent(selectedKey)}`;
+                    : `/api/summaries/${encodeURIComponent(selectedKey)}`;
 
                 const response = await fetch(endpoint);
                 if (!response.ok) {

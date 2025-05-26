@@ -1,9 +1,11 @@
 import { withErrorHandling } from '@/lib/api-utils';
 import { FeedsService } from '@/lib/data/feeds-service';
 
-export async function GET(request: Request) {
-    const { searchParams } = new URL(request.url);
-    const key = searchParams.get('key');
+export async function GET(
+    request: Request,
+    { params }: { params: Promise<{ key: string }> }
+) {
+    const { key } = await params;
 
     if (!key) {
         return new Response('Missing key parameter', { status: 400 });
