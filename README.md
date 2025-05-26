@@ -183,11 +183,24 @@ Generates .open-next/ artifacts and deploys via wrangler.
 - **/current-events**: Displays active channels with message previews and report generation.
 - **/executive-orders**: Lists and details executive orders with pagination and search.
 - **/news-globe**: Shows an interactive 3D globe with geolocated news reports.
+- **/brazil-news**: Displays AI-generated summaries of Brazilian news, with historical archive access.
 - **/profile**: User profile page, shows subscription status and allows users to subscribe.
 - **/sign-in**: User sign-in page (Clerk).
 - **/sign-up**: User sign-up page (Clerk).
 - **/privacy-policy**: Application's privacy policy.
 - **/**: Home page featuring an animated hero section, and previews of the latest news reports and executive orders. This page is client-rendered and fetches its data on the client side.
+
+#### Brazil News Display
+
+The Brazil News section provides AI-generated summaries of Brazilian news, with features for historical tracking and comparison:
+
+- **Main View (`/brazil-news`)**: Shows the latest AI-generated summary of Brazilian news, with a dropdown selector for accessing historical summaries.
+- **Summary Display**: Each summary is presented in a well-formatted markdown view that includes:
+  - Key points and highlights from Brazilian news
+  - Proper formatting for bullet points and sections
+  - Timestamps for each historical summary
+- **Historical Archive**: Users can access and compare summaries from different time periods using a select dropdown, with summaries cached for quick access.
+- **Auto-Refresh**: The page revalidates every hour to ensure fresh content.
 
 #### Executive Order Display
 
