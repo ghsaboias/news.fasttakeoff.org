@@ -226,12 +226,32 @@ export class FeedsService {
     }
 
     async getOrCreateSummary(): Promise<SummaryResult> {
+        // First try to get the current hour's cached summary
         const cached = await this.getCachedSummary();
         if (cached) {
             return cached;
         }
 
-        return this.createFreshSummary();
+        // If no current hour cache, try to get the most recent cached summary
+        const recentSummary = await this.getMostRecentCachedSummary();
+        if (recentSummary) {
+            console.log('[FEEDS] No current hour cache, serving most recent cached summary');
+            return recentSummary;
+        }
+
+        // If no cached summaries exist at all, throw an error
+        throw new Error('No cached summary available. Please wait for the next hourly update.');
+    }
+
+    async getMostRecentCachedSummary(): Promise<SummaryResult | null> {
+        const summaries = await this.listAvailableSummaries();
+        if (summaries.length === 0) {
+            return null;
+        }
+
+        // Get the most recent summary (they're already sorted by date, newest first)
+        const mostRecent = summaries[0];
+        return this.getSummaryByKey(mostRecent.key);
     }
 
     async createFreshSummary(): Promise<SummaryResult> {
