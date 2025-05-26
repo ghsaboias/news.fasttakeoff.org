@@ -203,11 +203,13 @@ export class FeedsService {
         const summaries: { key: string; createdAt: string }[] = [];
 
         for (const key of keys.keys) {
-            const cached = await this.cacheManager.get<{ createdAt: string }>('FEEDS_CACHE', key.name);
-            if (cached?.createdAt) {
+            const match = key.name.match(/feeds_summary:(\d{4})-(\d{2})-(\d{2})-(\d{2})h/);
+            if (match) {
+                const [, year, month, day, hour] = match;
+                const createdAt = new Date(`${year}-${month}-${day}T${hour}:00:00.000Z`).toISOString();
                 summaries.push({
                     key: key.name,
-                    createdAt: cached.createdAt
+                    createdAt
                 });
             }
         }
