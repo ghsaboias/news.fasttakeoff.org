@@ -299,6 +299,8 @@ export type TimeframeKey = typeof TIME.TIMEFRAMES[number];
 export const RSS_FEEDS: Record<string, string> = {
     'CNN-Brasil': 'https://www.cnnbrasil.com.br/feed/',
     'BBC-Brasil': 'https://feeds.bbci.co.uk/portuguese/rss.xml',
-    'G1': 'https://g1.globo.com/rss/g1/',
-    'UOL': 'https://rss.uol.com.br/feed/noticias.xml'
+    // 'G1': 'https://g1.globo.com/rss/g1/',
+    'UOL': 'https://rss.uol.com.br/feed/noticias.xml',
+    'G1 - Política': 'https://g1.globo.com/rss/g1/politica/',
+    'G1 - Economia': 'https://g1.globo.com/rss/g1/economia/',
 };
