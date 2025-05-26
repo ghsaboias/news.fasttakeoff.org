@@ -1,14 +1,13 @@
 'use client';
 
+import { ReportPanel } from '@/components/ReportPanel';
 import { Loader } from '@/components/ui/loader';
-import { formatTime } from '@/lib/utils';
 import { Html, Line, OrbitControls, Sphere } from '@react-three/drei';
 import { Canvas, ThreeEvent, useFrame } from '@react-three/fiber';
 import Image from 'next/image';
 import Link from 'next/link';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
-import { Button } from './ui/button';
 
 // --- Theme Configuration (Simplified from example) ---
 const cyberTheme = {
@@ -71,38 +70,21 @@ interface NewsMarkerData extends ReportFromAPI {
 interface MarkerProps {
     position: [number, number, number];
     data: NewsMarkerData;
+    onSelect: (data: NewsMarkerData) => void;
 }
 
-const Marker: React.FC<MarkerProps> = ({ position, data }: MarkerProps) => {
+const Marker: React.FC<MarkerProps> = ({ position, data, onSelect }: MarkerProps) => {
     const [hovered, setHovered] = React.useState(false);
-    const [active, setActive] = React.useState(false);
-    const popupRef = React.useRef<HTMLDivElement>(null);
 
     const handleSphereClick = (event: ThreeEvent<MouseEvent>) => {
         event.stopPropagation();
-        setActive(prev => !prev);
+        onSelect(data);
     };
-
-    React.useEffect(() => {
-        const handleClickOutside = (event: MouseEvent) => {
-            if (active && popupRef.current && !popupRef.current.contains(event.target as Node)) {
-                setActive(false);
-            }
-        };
-
-        if (active) {
-            document.addEventListener('mousedown', handleClickOutside);
-        }
-
-        return () => {
-            document.removeEventListener('mousedown', handleClickOutside);
-        };
-    }, [active]);
 
     return (
         <group position={position}>
             <Sphere
-                args={[0.03, 16, 16]} // Small sphere for the marker
+                args={[0.03, 16, 16]}
                 onClick={handleSphereClick}
                 onPointerOver={(event: ThreeEvent<MouseEvent>) => { event.stopPropagation(); setHovered(true); }}
                 onPointerOut={(event: ThreeEvent<MouseEvent>) => { event.stopPropagation(); setHovered(false); }}
@@ -111,45 +93,9 @@ const Marker: React.FC<MarkerProps> = ({ position, data }: MarkerProps) => {
                     color={hovered ? cyberTheme.colors.cyberCyanBright : cyberTheme.colors.pointLight}
                     emissive={hovered ? cyberTheme.colors.cyberCyanBright : cyberTheme.colors.pointLight}
                     emissiveIntensity={hovered ? 0.8 : 0.5}
-                    toneMapped={false} // Optional: to make emissive colors pop more, depending on post-processing
+                    toneMapped={false}
                 />
             </Sphere>
-            {active && (
-                <Html distanceFactor={5} center pointerEvents="none">
-                    <div
-                        ref={popupRef}
-                        // Stop propagation for clicks/pointer events originating inside the popup,
-                        // so they don't trigger the handleClickOutside listener.
-                        onClick={(e) => e.stopPropagation()}
-                        onPointerDown={(e) => e.stopPropagation()} // Handles touch and mouse primary actions
-                        style={{
-                            background: 'rgba(0, 0, 0, 0.8)', // Slightly more opaque
-                            color: 'white',
-                            padding: '8px 12px',
-                            borderRadius: '5px',
-                            fontSize: '13px',
-                            minWidth: '220px', // Slightly wider
-                            textAlign: 'left',
-                            border: `1px solid ${cyberTheme.colors.cyberCyan.getHexString()}`, // Themed border
-                            boxShadow: `0 0 10px ${cyberTheme.colors.cyberCyan.getHexString()}`, // Subtle glow
-                            cursor: 'default', // Indicate it's content, not draggable
-                        }}
-                    >
-                        <h4 style={{ color: cyberTheme.colors.cyberCyanBright.getHexString() }}>
-                            {data.headline}
-                        </h4>
-                        <p className="text-muted-foreground text-xs my-1">
-                            {formatTime(data?.generatedAt, true)} - {data?.city}
-                        </p>
-                        <p style={{ margin: 0 }}>{data.body.substring(0, 200) + (data.body.length > 200 ? '...' : '')}</p>
-                        <Link href={`/current-events/${data.channelId}/${data.reportId}`}>
-                            <Button variant="outline" size="sm" className="mt-2 w-full">
-                                View Report
-                            </Button>
-                        </Link>
-                    </div>
-                </Html>
-            )}
         </group>
     );
 };
@@ -227,7 +173,7 @@ const GeoJsonLines: React.FC<LineFeatureProps> = ({ geoJson, radius, color, opac
 };
 // --- End GeoJSON Line Components ---
 
-const Globe = (): React.ReactNode => {
+const Globe = ({ onSelectReport }: { onSelectReport: (report: NewsMarkerData) => void }): React.ReactNode => {
     const globeRef = useRef<THREE.Mesh>(null!);
     const [countryBordersData, setCountryBordersData] = useState<GeoJsonFeatureCollection | null>(null);
     const [coastlinesData, setCoastlinesData] = useState<GeoJsonFeatureCollection | null>(null);
@@ -344,9 +290,9 @@ const Globe = (): React.ReactNode => {
     const markers = useMemo(() => {
         return newsItems.map((news: NewsMarkerData) => {
             const position = latLonToVector3(news.lat, news.lon, globeRadius + 0.01);
-            return <Marker key={news.reportId} position={position} data={news} />;
+            return <Marker key={news.reportId} position={position} data={news} onSelect={onSelectReport} />;
         });
-    }, [newsItems]);
+    }, [newsItems, onSelectReport]);
 
     // Optional: Render a subtle loading indicator for GeoJSON if needed
     if (isFetchingGeoData) {
@@ -395,15 +341,45 @@ const Globe = (): React.ReactNode => {
 };
 
 const NewsGlobe: React.FC = () => {
+    const [selectedReport, setSelectedReport] = useState<NewsMarkerData | null>(null);
+
     return (
-        <div style={{ position: 'relative', height: '100vh', width: '100%', background: '#000010' /* Darker background */ }}>
-            <Link href="/" style={{ position: 'absolute', top: '20px', left: '20px', zIndex: 10 }}>
-                <Image src="/images/brain_transparent.png" alt="Home" width={32} height={32} />
-            </Link>
-            <Canvas camera={{ position: [0, 0, 5], fov: 50 }}>
-                {/* No loader here, Globe component handles its own loading state if needed */}
-                <Globe />
-            </Canvas>
+        <div className="relative h-screen w-full bg-[#000010] overflow-hidden">
+            <div className="flex w-full h-full">
+                <div
+                    className="relative w-full transition-transform duration-500 ease-in-out"
+                    style={{ transform: selectedReport ? 'translateX(-16.67%)' : 'translateX(0)' }}
+                >
+                    <Link href="/" className="absolute top-5 left-5 z-10">
+                        <Image src="/images/brain_transparent.png" alt="Home" width={32} height={32} />
+                    </Link>
+                    <Canvas camera={{ position: [0, 0, 5], fov: 50 }}>
+                        <Globe onSelectReport={setSelectedReport} />
+                    </Canvas>
+                </div>
+
+                {/* Panel - Always render but translate out when not selected */}
+                <div
+                    className={`fixed md:absolute top-0 right-0 h-full w-full md:w-1/3 transition-transform duration-500 ease-in-out ${!selectedReport ? 'pointer-events-none' : ''
+                        }`}
+                    style={{ transform: `translateX(${selectedReport ? '0' : '100%'})` }}
+                >
+                    {selectedReport && (
+                        <>
+                            {/* Mobile overlay */}
+                            <div className="md:hidden fixed inset-0 bg-background/80 backdrop-blur-sm z-10" />
+
+                            {/* Panel container with higher z-index */}
+                            <div className="relative h-full z-20">
+                                <ReportPanel
+                                    report={selectedReport}
+                                    onClose={() => setSelectedReport(null)}
+                                />
+                            </div>
+                        </>
+                    )}
+                </div>
+            </div>
         </div>
     );
 };
