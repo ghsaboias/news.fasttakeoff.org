@@ -1,0 +1,20 @@
+User-agent: *
+Allow: /
+
+# Block sensitive paths
+Disallow: /api/
+Disallow: /_next/
+Disallow: /.well-known/
+Disallow: /admin/
+Disallow: /private/
+
+# Allow important static assets
+Allow: /favicon.ico
+Allow: /images/
+Allow: /geojson/
+
+# Sitemap location
+Sitemap: https://news.fasttakeoff.org/sitemap.xml
+
+# Crawl delay (optional - helps with server load)
+Crawl-delay: 1 

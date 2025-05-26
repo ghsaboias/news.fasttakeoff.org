@@ -1,0 +1,100 @@
+'use client'
+
+import ReportCard from "@/components/current-events/ReportCard"
+import OrderCard from "@/components/executive-orders/OrderCard"
+import { Input } from "@/components/ui/input"
+import { useGeolocation } from "@/lib/hooks/useGeolocation"
+import { ExecutiveOrder, Report } from "@/lib/types/core"
+import { Search } from "lucide-react"
+import Link from "next/link"
+import { useMemo, useState } from "react"
+
+interface HomeContentProps {
+    initialReports: Report[]
+    initialExecutiveOrders: ExecutiveOrder[]
+}
+
+export default function HomeContent({ initialReports, initialExecutiveOrders }: HomeContentProps) {
+    const [searchQuery, setSearchQuery] = useState("")
+
+    // Use the consolidated geolocation hook
+    const { isUSBased } = useGeolocation({ assumeNonUSOnError: true })
+
+    const filteredReports = useMemo(() => {
+        if (!searchQuery.trim()) {
+            return initialReports
+        }
+
+        const query = searchQuery.toLowerCase()
+        return initialReports.filter(report =>
+            (report.channelName?.toLowerCase() || '').includes(query) ||
+            (report.headline?.toLowerCase() || '').includes(query) ||
+            (report.city?.toLowerCase() || '').includes(query) ||
+            (report.body?.toLowerCase() || '').includes(query)
+        )
+    }, [initialReports, searchQuery])
+
+    return (
+        <div className="flex flex-col pb-16 w-[100vw] justify-center">
+            {/* Hero Section */}
+            <section className="flex flex-col items-center justify-center min-[540px]:h-[36vh] gap-4 text-center max-[540px]:w-[90%] max-[540px]:mx-auto max-[540px]:mb-10 max-[540px]:mt-4">
+                <div className="flex flex-col items-center gap-8">
+                    <div className="flex flex-col items-center gap-4">
+                        <h1 className="text-6xl md:text-7xl font-bold text-[#167F6E] leading-none flex flex-col sm:block">
+                            Fast Takeoff News
+                        </h1>
+                        <p className="text-3xl">AI-powered news for everyone.</p>
+                    </div>
+                </div>
+            </section>
+
+            {/* Search Section */}
+            <section className="mx-auto sm:px-4 w-[90%] mb-8">
+                <div className="relative max-w-2xl mx-auto">
+                    <Search className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
+                    <Input
+                        placeholder="Search all reports..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="pl-10 h-10 text-lg"
+                    />
+                </div>
+            </section>
+
+            <section className="mx-auto sm:px-4 w-[90%]">
+                <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                    {filteredReports.length > 0 ? (
+                        filteredReports.map(report => (
+                            <ReportCard key={report.reportId} report={report} showReadMore={false} clickableChannel={true} clickableReport={true} />
+                        )).slice(0, 4)
+                    ) : (
+                        <div className="col-span-2 text-center py-8">
+                            <p className="text-muted-foreground">
+                                {searchQuery ? "No reports found matching your search." : "No reports found."}
+                            </p>
+                        </div>
+                    )}
+                </div>
+            </section>
+
+            {/* Latest Executive Orders Section - RENDER CONDITIONALLY */}
+            {isUSBased === true && initialExecutiveOrders.length > 0 && (
+                <section className="mx-auto sm:px-4 w-[90%] mt-16">
+                    <div className="flex flex-col gap-6">
+                        <div className="flex items-center justify-between">
+                            <h2 className="text-2xl font-bold tracking-tight md:text-3xl">Latest Executive Orders</h2>
+                            <Link href="/executive-orders" className="text-sm font-medium hover:underline">
+                                View all
+                            </Link>
+                        </div>
+                        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                            {initialExecutiveOrders.map(order => (
+                                <OrderCard key={order.id} order={order} />
+                            ))}
+                        </div>
+                    </div>
+                </section>
+            )}
+        </div>
+    )
+} 
