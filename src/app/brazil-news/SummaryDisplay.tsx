@@ -106,7 +106,7 @@ export function SummaryDisplay() {
                             <div className="text-6xl mb-4">⏳</div>
                             <h2 className="text-2xl font-bold mb-2">Summary in Progress</h2>
                             <p className="text-muted-foreground">
-                                We're generating the latest Brazil news summary for you.
+                                We&apos;re generating the latest Brazil news summary for you.
                             </p>
                         </div>
                         <div className="space-y-3 text-sm text-muted-foreground">
