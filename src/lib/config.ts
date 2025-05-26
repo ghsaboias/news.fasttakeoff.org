@@ -239,6 +239,7 @@ export const AI = {
         - 1-2 frases com fatos principais
         - Impactos ou próximos passos quando relevante
         - SEM opiniões ou especulações
+        - NÃO repetir o mesmo tópico em diferentes categorias
 
         3. Critérios de Priorização:
         - Importância para política pública
@@ -284,7 +285,6 @@ export const AI = {
 
         Importante:
         - Use bullet points para facilitar leitura
-        - Mantenha cada item conciso (máximo 2 frases)
         - Foque em fatos e decisões concretas
         - Caso não haja notícias relevantes em alguma categoria, simplesmentenão inclua a categoria
         - Evite adjetivações e opiniões
