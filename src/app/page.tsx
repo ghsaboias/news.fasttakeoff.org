@@ -1,22 +1,17 @@
 import HomeContent from "@/components/HomeContent"
 import { fetchExecutiveOrders } from "@/lib/data/executive-orders"
+import { ReportsService } from "@/lib/data/reports-service"
 import { ExecutiveOrder, Report } from "@/lib/types/core"
-import { getStartDate, groupAndSortReports } from "@/lib/utils"
+import { getCacheContext, getStartDate, groupAndSortReports } from "@/lib/utils"
 import { Suspense } from "react"
 
 export const dynamic = 'force-dynamic'
 
 async function getReports(): Promise<Report[]> {
   try {
-    const response = await fetch(`${process.env.SERVER_API_URL || 'https://news.fasttakeoff.org'}/api/reports`, {
-      method: 'GET',
-      headers: {
-        'User-Agent': 'Homepage SSR'
-      },
-      cache: 'no-store'
-    })
-    if (!response.ok) throw new Error(`Failed to fetch reports: ${response.status}`)
-    const fetchedReports = await response.json() as Report[]
+    const { env } = getCacheContext()
+    const reportsService = new ReportsService(env)
+    const fetchedReports = await reportsService.getAllReportsFromCache()
     return groupAndSortReports(fetchedReports)
   } catch (error) {
     console.error('Error fetching reports for homepage:', error)
