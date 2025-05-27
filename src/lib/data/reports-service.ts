@@ -113,7 +113,8 @@ async function createReportWithAI(
                         },
                         { role: "user", content: prompt }
                     ],
-                    model: aiConfig.model, // Use model from the active config
+                    model: aiConfig.model,
+                    max_tokens: AI.REPORT_GENERATION.OUTPUT_BUFFER,
                     response_format: {
                         type: "json_schema",
                         json_schema: {
