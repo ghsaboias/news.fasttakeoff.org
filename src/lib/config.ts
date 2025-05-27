@@ -133,36 +133,42 @@ export const AI = {
         // Maximum retries for AI API calls
         MAX_ATTEMPTS: 5,
         // Prompt template for report generation - NOTE: This might need adjustment if switching models significantly
+        SYSTEM_PROMPT: 'You are an experienced news wire journalist. Always complete your full response. Respond in valid JSON format with: {"headline": "clear, specific, descriptive headline in ALL CAPS", "city": "single city name properly capitalized", "body": "cohesive narrative with paragraphs separated by double newlines (\\n\\n)"}',
+
         PROMPT_TEMPLATE: `
-    You are generating a news report based on new sources and, if available, up to three recent previous reports from the last 24 hours.
+Generate a comprehensive news report based on the provided sources and any previous reports.
 
-    When previous reports are provided:
-    1. Synthesize information: Update ongoing stories with new information from the current sources, incorporating relevant details from previous reports.
-    2. Merge and consolidate: If multiple previous reports or new sources cover the same events, consolidate them into a single, cohesive narrative. Avoid redundancy.
-    3. Prioritize recency and importance: Focus on the most important new developments. Newer information from current sources generally takes precedence when deciding on the overall focus and length of the report.
-    4. Manage Story Continuity and Relevance:
-        a. Update ongoing stories from previous reports with any new information found in the current sources.
-        b. If a significant topic from a recent previous report is not mentioned in the new sources, CARRY IT FORWARD if it remains unresolved and still relevant.
-        c. Only omit topics from previous reports if they are clearly resolved, directly contradicted or superseded by new information, or have demonstrably become minor/irrelevant due to new, more significant developments.
+CORE REQUIREMENTS:
+- Write a cohesive narrative summarizing the most important verified developments
+- Include key names, numbers, locations, dates in your narrative
+- Use only verified facts and direct quotes from official statements
+- Maintain strictly neutral tone - NO analysis, commentary, or speculation
+- Do NOT use uncertain terms like "likely", "appears to", or "is seen as"
+- Do NOT include additional headlines within the body text
+- Double-check all name spellings for accuracy
 
-    General Requirements (apply whether previous reports are present or not):
-    - Paragraphs must summarize the most important verified developments, including key names, numbers, locations, dates, etc., in a cohesive narrative.
-    - Do NOT include additional headlines within the body - weave all events into a cohesive narrative.
-    - Only include verified facts and direct quotes from official statements.
-    - Maintain a strictly neutral tone.
-    - DO NOT make any analysis, commentary, or speculation.
-    - DO NOT use terms like "likely", "appears to", or "is seen as".
-    - Double-check name spelling; all names must be spelled correctly.
+WHEN PREVIOUS REPORTS ARE PROVIDED:
+- Update ongoing stories with new information from current sources
+- Consolidate multiple reports covering the same events into single narrative
+- Prioritize newer information from current sources
+- Carry forward unresolved significant topics from previous reports
+- Only omit previous topics if they are clearly superseded or resolved
 
-    <previous_reports_context>
-    {previousReportsContext}
-    </previous_reports_context>
+FORMAT:
+- Headline: Clear, specific, non-sensational, in ALL CAPS
+- City: Single city name related to the news
+- Body: Cohesive paragraphs separated by double newlines (\\n\\n)
 
-    <new_sources>
-    {sources}
-    </new_sources>
-    `,
-        SYSTEM_PROMPT: 'You are an experienced news wire journalist that responds in JSON. The schema must include {"headline": "clear, specific, non-sensational, descriptive headline in all caps", "city": "single city name, related to the news, properly capitalized (first letter of each word only)", "body": "cohesive narrative of the most important verified developments, including key names, numbers, locations, dates, etc. In this section, separate paragraphs with double newlines (\n\n) to indicate distinct developments."}'
+<previous_reports_context>
+{previousReportsContext}
+</previous_reports_context>
+
+<new_sources>
+{sources}
+</new_sources>
+
+Generate your complete JSON response now:
+`,
     },
     BRAZIL_NEWS: {
         CURATE_PROMPT: `Você é um curador especializado em notícias brasileiras de alto impacto, focado em fatos e desenvolvimentos concretos sobre o Brasil. Analise os seguintes artigos e selecione apenas notícias factuais sobre:
