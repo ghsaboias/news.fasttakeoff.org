@@ -127,7 +127,7 @@ export const AI = {
         // Tokens reserved for model instructions
         OVERHEAD_TOKENS: 1000,
         // Tokens reserved for output
-        OUTPUT_BUFFER: 4096,
+        OUTPUT_BUFFER: 12288,
         // Maximum context window size
         MAX_CONTEXT_TOKENS: 128000,
         // Maximum retries for AI API calls
