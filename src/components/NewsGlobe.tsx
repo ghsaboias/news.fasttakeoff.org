@@ -348,7 +348,7 @@ const NewsGlobe: React.FC = () => {
             <div className="flex w-full h-full">
                 <div
                     className="relative w-full transition-transform duration-500 ease-in-out"
-                    style={{ transform: selectedReport ? 'translateX(-16.67%)' : 'translateX(0)' }}
+                    style={{ transform: selectedReport ? 'translateX(-25%)' : 'translateX(0)' }}
                 >
                     <Link href="/" className="absolute top-5 left-5 z-10">
                         <Image src="/images/brain_transparent.png" alt="Home" width={32} height={32} />
@@ -360,7 +360,7 @@ const NewsGlobe: React.FC = () => {
 
                 {/* Panel - Always render but translate out when not selected */}
                 <div
-                    className={`fixed md:absolute top-0 right-0 h-full w-full md:w-1/3 transition-transform duration-500 ease-in-out ${!selectedReport ? 'pointer-events-none' : ''
+                    className={`fixed md:absolute top-0 right-0 h-full w-full md:w-2/5 transition-transform duration-500 ease-in-out ${!selectedReport ? 'pointer-events-none' : ''
                         }`}
                     style={{ transform: `translateX(${selectedReport ? '0' : '100%'})` }}
                 >
