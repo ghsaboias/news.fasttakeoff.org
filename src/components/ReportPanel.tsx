@@ -16,6 +16,8 @@ interface ReportPanelProps {
 }
 
 export const ReportPanel: React.FC<ReportPanelProps> = ({ report, onClose }) => {
+    const paragraphs = report.body.split('\n\n').filter(Boolean);
+
     return (
         <div className="bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-l border-border h-full w-full p-6 overflow-y-auto overscroll-contain">
             <div className="flex justify-between items-start mb-6">
@@ -32,9 +34,13 @@ export const ReportPanel: React.FC<ReportPanelProps> = ({ report, onClose }) => 
                     <span>{formatTime(report.generatedAt, true)}</span>
                 </div>
 
-                <p className="text-foreground/90 leading-relaxed">
-                    {report.body}
-                </p>
+                <div className="text-foreground/90 leading-relaxed">
+                    {paragraphs.map((paragraph, index) => (
+                        <p key={index} className="mb-4 last:mb-0 text-justify">
+                            {paragraph}
+                        </p>
+                    ))}
+                </div>
 
                 <div className="pt-4">
                     <Link href={`/current-events/${report.channelId}/${report.reportId}`}>
