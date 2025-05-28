@@ -277,7 +277,8 @@ export class ReportsService {
             })
             .sort((a, b) => new Date(b.generatedAt || '').getTime() - new Date(a.generatedAt || '').getTime());
 
-        return recentReports.slice(0, 3);
+        // Only return the most recent report
+        return recentReports.slice(0, 1);
     }
 
     async createReportAndGetMessages(channelId: string, timeframe: TimeframeKey): Promise<{ report: Report | null; messages: DiscordMessage[] }> {

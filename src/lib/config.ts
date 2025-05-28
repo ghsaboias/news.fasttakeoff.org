@@ -136,7 +136,7 @@ export const AI = {
         SYSTEM_PROMPT: 'You are an experienced news wire journalist. Always complete your full response. Respond in valid JSON format with: {"headline": "clear, specific, descriptive headline in ALL CAPS", "city": "single city name properly capitalized", "body": "cohesive narrative with paragraphs separated by double newlines (\\n\\n)"}',
 
         PROMPT_TEMPLATE: `
-Generate a comprehensive news report based on the provided sources and any previous reports.
+Generate a comprehensive news report based on the provided sources and a previous report (if provided).
 
 CORE REQUIREMENTS:
 - Write a cohesive narrative summarizing the most important verified developments
@@ -147,11 +147,10 @@ CORE REQUIREMENTS:
 - Do NOT include additional headlines within the body text
 - Double-check all name spellings for accuracy
 
-WHEN PREVIOUS REPORTS ARE PROVIDED:
+WHEN A PREVIOUS REPORT IS PROVIDED:
 - Update ongoing stories with new information from current sources
-- Consolidate multiple reports covering the same events into single narrative
 - Prioritize newer information from current sources
-- Carry forward unresolved significant topics from previous reports
+- Carry forward unresolved significant topics from previous report
 - Only omit previous topics if they are clearly superseded or resolved
 
 FORMAT:
@@ -159,9 +158,9 @@ FORMAT:
 - City: Single city name related to the news
 - Body: Cohesive paragraphs separated by double newlines (\\n\\n)
 
-<previous_reports_context>
-{previousReportsContext}
-</previous_reports_context>
+<previous_report_context>
+{previousReportContext}
+</previous_report_context>
 
 <new_sources>
 {sources}
