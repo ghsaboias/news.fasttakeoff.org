@@ -345,14 +345,20 @@ const NewsGlobe: React.FC = () => {
 
     return (
         <div className="relative h-screen w-full bg-[#000010] overflow-hidden">
+            {/* Brain logo - positioned outside the translating container */}
+            <Link
+                href="/"
+                className={`absolute top-5 left-5 z-10 transition-opacity duration-500 ${selectedReport ? 'md:opacity-100 opacity-0' : 'opacity-100'
+                    }`}
+            >
+                <Image src="/images/brain_transparent.png" alt="Home" width={32} height={32} />
+            </Link>
+
             <div className="flex w-full h-full">
                 <div
                     className="relative w-full transition-transform duration-500 ease-in-out"
                     style={{ transform: selectedReport ? 'translateX(-25%)' : 'translateX(0)' }}
                 >
-                    <Link href="/" className="absolute top-5 left-5 z-10">
-                        <Image src="/images/brain_transparent.png" alt="Home" width={32} height={32} />
-                    </Link>
                     <Canvas camera={{ position: [0, 0, 5], fov: 50 }}>
                         <Globe onSelectReport={setSelectedReport} />
                     </Canvas>
