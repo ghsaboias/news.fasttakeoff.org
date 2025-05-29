@@ -5,29 +5,48 @@ import { Button } from "@/components/ui/button";
 import { DiscordChannel, DiscordMessage } from "@/lib/types/core";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 interface MessagesClientProps {
-    channel: DiscordChannel | null;
-    initialMessages: DiscordMessage[];
-    messageCount: number;
+    channelId: string;
 }
 
 const MESSAGES_PER_PAGE = 20;
 
 export default function MessagesClient({
-    channel,
-    initialMessages,
-    messageCount,
+    channelId
 }: MessagesClientProps) {
-    const [displayedMessages, setDisplayedMessages] = useState(initialMessages.slice(0, MESSAGES_PER_PAGE));
+    const [channel, setChannel] = useState<DiscordChannel | null>(null);
+    const [displayedMessages, setDisplayedMessages] = useState<DiscordMessage[]>([]);
+    const [messageCount, setMessageCount] = useState(0);
     const [currentPage, setCurrentPage] = useState(1);
+    const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchMessages = async () => {
+            setIsLoading(true);
+            try {
+                const response = await fetch(`/api/messages?channelId=${channelId}`);
+                if (!response.ok) throw new Error('Failed to fetch messages');
+                const data = await response.json();
+                setChannel(data.channel);
+                setDisplayedMessages(data.messages.messages.slice(0, MESSAGES_PER_PAGE));
+                setMessageCount(data.messages.count);
+                setCurrentPage(1);
+            } catch (error) {
+                console.error('Error fetching messages:', error);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+        fetchMessages();
+    }, [channelId]);
 
     const loadMore = () => {
         const nextPage = currentPage + 1;
         const start = 0;
         const end = nextPage * MESSAGES_PER_PAGE;
-        setDisplayedMessages(initialMessages.slice(start, end));
+        setDisplayedMessages(displayedMessages.slice(start, end));
         setCurrentPage(nextPage);
     };
 
@@ -66,7 +85,7 @@ export default function MessagesClient({
                 </Button>
             </div>
 
-            <MessageTimeline messages={displayedMessages} />
+            <MessageTimeline messages={displayedMessages} isLoading={isLoading} />
 
             {hasMore && (
                 <div className="flex justify-center pt-4">
