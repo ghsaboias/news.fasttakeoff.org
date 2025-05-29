@@ -17,6 +17,7 @@ export default function MessagesClient({
     channelId
 }: MessagesClientProps) {
     const [channel, setChannel] = useState<DiscordChannel | null>(null);
+    const [allMessages, setAllMessages] = useState<DiscordMessage[]>([]);
     const [displayedMessages, setDisplayedMessages] = useState<DiscordMessage[]>([]);
     const [messageCount, setMessageCount] = useState(0);
     const [currentPage, setCurrentPage] = useState(1);
@@ -30,6 +31,7 @@ export default function MessagesClient({
                 if (!response.ok) throw new Error('Failed to fetch messages');
                 const data = await response.json();
                 setChannel(data.channel);
+                setAllMessages(data.messages.messages);
                 setDisplayedMessages(data.messages.messages.slice(0, MESSAGES_PER_PAGE));
                 setMessageCount(data.messages.count);
                 setCurrentPage(1);
@@ -44,9 +46,8 @@ export default function MessagesClient({
 
     const loadMore = () => {
         const nextPage = currentPage + 1;
-        const start = 0;
         const end = nextPage * MESSAGES_PER_PAGE;
-        setDisplayedMessages(displayedMessages.slice(start, end));
+        setDisplayedMessages(allMessages.slice(0, end));
         setCurrentPage(nextPage);
     };
 
