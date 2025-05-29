@@ -28,7 +28,6 @@ function groupMessagesByDate(messages: DiscordMessage[]) {
 
 export default function MessageTimeline({ messages, isLoading = false }: MessageTimelineProps) {
     const timelineGroups = groupMessagesByDate(messages);
-    console.log(messages);
 
     if (isLoading) {
         return (
