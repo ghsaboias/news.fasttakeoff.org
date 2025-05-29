@@ -24,6 +24,7 @@ export default async function MessagesPage({ params }: PageProps) {
     } catch (error) {
         console.error('Error fetching messages:', error);
     }
+    console.log(channel, messages);
 
     return (
         <div className="flex flex-col gap-8 w-[90vw] mx-auto py-8">
