@@ -37,7 +37,7 @@ export default function MessageTimeline({ messages, isLoading = false }: Message
         );
     }
 
-    if (!isLoading && !messages?.length) {
+    if (!messages?.length) {
         return (
             <div className="text-center p-8 text-muted-foreground">
                 No messages found
