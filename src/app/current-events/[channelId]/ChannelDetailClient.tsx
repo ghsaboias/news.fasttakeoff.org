@@ -3,6 +3,7 @@
 import ReportCard from "@/components/current-events/ReportCard";
 import { Button } from "@/components/ui/button";
 import { DiscordChannel, Report } from "@/lib/types/core";
+import { MessageSquare } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useMemo } from "react";
@@ -45,7 +46,22 @@ export default function ChannelDetailClient({ reports, channel }: { reports: Rep
 
     return (
         <div className="mx-auto flex flex-col gap-6 w-[90%] py-6">
-            <h3 className="text-xl font-bold tracking-tight">{channel.name ?? 'Unknown Channel'}</h3>
+            <div className="flex items-center justify-between">
+                <div className="space-y-1">
+                    <h1 className="text-2xl font-bold">{channel.name}</h1>
+                </div>
+                <div className="flex gap-2">
+                    <Button asChild variant="outline">
+                        <Link href={`/current-events/${channelId}/messages`}>
+                            <MessageSquare className="mr-2 h-4 w-4" />
+                            View Messages
+                        </Link>
+                    </Button>
+                    <Button asChild variant="outline">
+                        <Link href="/current-events">Back</Link>
+                    </Button>
+                </div>
+            </div>
             <div className="space-y-6">
                 {latestReport && (
                     <>
