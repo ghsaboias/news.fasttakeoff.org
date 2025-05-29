@@ -10,6 +10,7 @@ export async function GET(request: Request) {
             throw new Error('Missing channelId parameter');
         }
 
-        return getChannelDetails(env, channelId);
+        const channel = await getChannelDetails(env, channelId);
+        return channel;
     }, 'Failed to fetch messages');
 } 
