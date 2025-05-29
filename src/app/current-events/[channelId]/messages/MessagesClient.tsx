@@ -30,19 +30,14 @@ export default function MessagesClient({
                 const response = await fetch(`/api/messages?channelId=${channelId}`);
                 if (!response.ok) throw new Error('Failed to fetch messages');
                 const data = await response.json();
-
-                // Batch all state updates before marking as not loading
-                const messages = data.messages.messages;
-                setAllMessages(messages);
-                setDisplayedMessages(messages.slice(0, MESSAGES_PER_PAGE));
-                setMessageCount(data.messages.count);
                 setChannel(data.channel);
+                setAllMessages(data.messages.messages);
+                setDisplayedMessages(data.messages.messages.slice(0, MESSAGES_PER_PAGE));
+                setMessageCount(data.messages.count);
                 setCurrentPage(1);
-
-                // Only mark as not loading after a small delay to ensure state updates are processed
-                setTimeout(() => setIsLoading(false), 0);
             } catch (error) {
                 console.error('Error fetching messages:', error);
+            } finally {
                 setIsLoading(false);
             }
         };
