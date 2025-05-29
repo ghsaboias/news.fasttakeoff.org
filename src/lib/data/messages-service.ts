@@ -164,7 +164,7 @@ export class MessagesService {
         return [];
     }
 
-    private async getAllCachedMessagesForChannel(channelId: string): Promise<CachedMessages | null> {
+    async getAllCachedMessagesForChannel(channelId: string): Promise<CachedMessages | null> {
         return this.getFromCache(channelId);
     }
 

@@ -89,11 +89,14 @@ export class ChannelsService {
         }
 
         const messagesService = new MessagesService(this.env);
-        const messages = await messagesService.getMessages(channelId);
+        const cachedMessages = await messagesService.getAllCachedMessagesForChannel(channelId);
 
         return {
             channel,
-            messages: { count: messages.length, messages }
+            messages: {
+                count: cachedMessages?.messages.length || 0,
+                messages: cachedMessages?.messages || []
+            }
         };
     }
 
