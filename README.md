@@ -43,6 +43,163 @@ The application's core data handling is managed by services and transformers wit
 - **`src/lib/utils.ts`**: Provides a collection of general utility functions for tasks such as date/time formatting and manipulation (e.g., `formatDate`, `formatTime`, `getStartDate`), parsing specific text formats (e.g., `parseDispositionNotes` for executive order relations), class name construction for Tailwind CSS (`cn`), and accessing the Cloudflare Worker environment context (`getCacheContext`).
 - **`src/lib/api-utils.ts`**: Offers helpers for Next.js API routes, including a `withErrorHandling` higher-order function to standardize error responses and JSON formatting, and default cache headers (`API_CACHE_HEADERS`) for API responses.
 
+## Core Features
+
+### 1. Current Events (Discord Integration)
+
+The Current Events section provides real-time monitoring and AI-powered report generation from Discord channels.
+
+#### Functionality
+
+- Monitors specific Discord channels for bot messages
+- Filters messages using bot username and discriminator
+- Generates AI-powered reports with headline, city, and body content
+- Supports multiple timeframes for report generation
+- Translation support for multiple languages
+
+#### API Endpoints
+
+- `GET /api/reports` - Fetch cached reports
+- `GET /api/translate` - Translate report content
+
+#### Required Environment Variables
+
+```bash
+# Discord Integration
+DISCORD_TOKEN=<your-discord-bot-token>
+DISCORD_GUILD_ID=<your-guild-id>
+
+# AI Provider (Choose one)
+GROQ_API_KEY=<your-groq-api-key>
+OPENROUTER_API_KEY=<your-openrouter-api-key>
+```
+
+#### Troubleshooting
+
+- Verify Discord bot permissions and token
+- Check AI provider status and API keys
+- Review logs for specific error messages
+
+### 2. News Globe
+
+Interactive 3D visualization of news reports with geographic data.
+
+#### Functionality
+
+- 3D visualization using Three.js
+- Real-time geocoding of news locations
+- Interactive markers for report display
+
+#### API Endpoints
+
+- `GET /api/geocode` - Geocode city names for globe placement
+
+### 3. Brazil News
+
+Automated aggregation and AI-powered summarization of Brazilian news.
+
+#### Functionality
+
+- Aggregates news from major Brazilian RSS feeds
+- Two-stage AI processing:
+  - Curation based on impact and verifiability
+  - Structured summarization by categories
+- Historical archive with timestamp selection
+- Hourly updates with caching
+
+#### API Endpoints
+
+- `GET /api/summaries/list` - List available summaries
+- `GET /api/summaries/[key]` - Fetch specific summary
+- Social Media Integration:
+  - `POST /api/instagram/post` - Post to Instagram
+  - `POST /api/twitter/post` - Post to Twitter
+
+#### Required Environment Variables
+
+```bash
+# Social Media Integration
+INSTAGRAM_ACCESS_TOKEN=<your-instagram-long-lived-access-token>
+INSTAGRAM_ACCOUNT_ID=<your-instagram-account-id>
+TWITTER_CLIENT_ID=<your-twitter-app-client-id>
+TWITTER_CLIENT_SECRET=<your-twitter-client-secret>
+```
+
+#### Troubleshooting
+
+- RSS Feed Issues:
+  - System continues with available feeds if some fail
+  - Check logs for specific feed errors
+  - Verify source URLs in configuration
+- Cache Management:
+  - Clear KV cache through Cloudflare dashboard
+  - Cache refreshes hourly
+  - Force refresh with `?fresh=true` parameter
+
+### 4. Executive Orders
+
+Tracks and displays executive orders from the Federal Register API.
+
+#### Functionality
+
+- Fetches and displays executive orders
+- AI-powered summarization
+- Historical tracking and caching
+- Structured display of metadata and full text
+
+#### API Endpoints
+
+- `GET /api/executive-orders` - List orders
+- `GET /api/executive-orders/[id]` - Get specific order
+- `GET /api/summarize` - Generate AI summary
+
+## Development and Testing
+
+### Environment Setup
+
+```bash
+# API Configuration
+SERVER_API_URL=https://news.fasttakeoff.org  # Production URL
+# Use http://localhost:8787 for local development
+
+# Authentication & Payments
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=<your-clerk-publishable-key>
+CLERK_SECRET_KEY=<your-clerk-secret-key>
+STRIPE_SECRET_KEY=<your-stripe-secret-key>
+STRIPE_PRICE_ID=<your-stripe-price-id>
+STRIPE_WEBHOOK_SECRET=<your-stripe-webhook-secret>
+```
+
+### Testing Workflow
+
+```bash
+# Report Generation Testing
+scripts/generate-reports.sh  # Generate test reports
+scripts/check-truncation.sh  # Verify report truncation
+scripts/full-test.sh        # Full test including build
+
+# Local Development
+npm run dev                 # Start local server
+npm run preview:patch:test  # Test with Cloudflare Worker
+npm run deploy             # Deploy to production
+```
+
+### Cache Management
+
+- All endpoints use stale-while-revalidate strategy
+- Default cache TTL: 1 hour
+- KV namespaces:
+  - `EXECUTIVE_ORDERS_CACHE`
+  - `REPORTS_CACHE`
+  - `CHANNELS_CACHE`
+  - `MESSAGES_CACHE`
+  - `FEEDS_CACHE`
+  - `AUTH_TOKENS`
+
+## License
+
+MIT
+
 ## Basic Project Structure
 
 ```
@@ -99,15 +256,6 @@ wrangler.toml           # Cloudflare Workers configuration
   - NEXT_PUBLIC_CLERK_SIGN_UP_URL=/sign-up
   - NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL=/
   - NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL=/
-  # For Stripe redirects, ensure this matches your deployment or local setup
-  SERVER_API_URL=https://news.fasttakeoff.org # (Production URL, override with http://localhost:8787 for local Cloudflare Worker dev)
-  # Twitter Integration (for posting reports)
-  TWITTER_CLIENT_ID=<your-twitter-app-client-id>
-  TWITTER_CLIENT_SECRET=<your-twitter-app-client-secret>
-  # Note: Twitter integration also requires an 'AUTH_TOKENS' KV namespace in Cloudflare for storing OAuth tokens.
-  # Instagram Integration (for posting reports)
-  INSTAGRAM_ACCESS_TOKEN=<your-instagram-long-lived-access-token>
-  INSTAGRAM_ACCOUNT_ID=<your-instagram-account-id> # (Currently hardcoded in instagram-service.ts but should be env var)
 
 ### Installation
 
@@ -202,6 +350,116 @@ The Brazil News section provides AI-generated summaries of Brazilian news, with 
 - **Historical Archive**: Users can access and compare summaries from different time periods using a select dropdown, with summaries cached for quick access.
 - **Auto-Refresh**: The page revalidates every hour to ensure fresh content.
 
+### Required Environment Variables
+
+```bash
+# AI Provider Configuration (Choose one)
+GROQ_API_KEY=<your-groq-api-key>        # If using Groq
+OPENROUTER_API_KEY=<your-openrouter-api-key>  # If using OpenRouter
+
+# Social Media Integration
+INSTAGRAM_ACCESS_TOKEN=<your-instagram-long-lived-access-token>
+INSTAGRAM_ACCOUNT_ID=<your-instagram-account-id>
+
+# Discord Integration
+DISCORD_TOKEN=<your-discord-bot-token>
+DISCORD_GUILD_ID=<your-guild-id>
+
+# Authentication & Payments
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=<your-clerk-publishable-key>
+CLERK_SECRET_KEY=<your-clerk-secret-key>
+STRIPE_SECRET_KEY=<your-stripe-secret-key>
+STRIPE_PRICE_ID=<your-stripe-price-id>
+STRIPE_WEBHOOK_SECRET=<your-stripe-webhook-secret>
+
+# API Configuration
+SERVER_API_URL=https://news.fasttakeoff.org  # Production URL
+# Use http://localhost:8787 for local development
+
+# Twitter Integration
+TWITTER_CLIENT_ID=<your-twitter-app-client-id>
+TWITTER_CLIENT_SECRET=<your-twitter-client-secret>
+```
+
+### Testing and Development
+
+1. Report Generation Testing:
+
+```bash
+# If dev server is already running:
+scripts/generate-reports.sh  # Generate test reports
+scripts/check-truncation.sh  # Verify report truncation
+
+# For full test including build:
+scripts/full-test.sh
+```
+
+2. Local Development with Cloudflare:
+
+```bash
+# Start local development server
+npm run dev
+
+# Test with Cloudflare Worker
+npm run preview:patch:test  # Required after major code changes
+
+# Deploy to production
+npm run deploy
+```
+
+### Brazil News Aggregation
+
+The system aggregates and summarizes news from major Brazilian RSS feeds through a two-stage AI process:
+
+1. **Update Cycle**:
+
+   - Automatic hourly updates
+   - Historical archives maintained in `FEEDS_CACHE`
+   - Accessible via `/brazil-news` with timestamp selection
+
+2. **AI Processing**:
+   - Stage 1: Curation of relevant news based on impact and verifiability
+   - Stage 2: Structured summarization by categories (Federal Politics, Economy, Judiciary, São Paulo)
+
+### Troubleshooting Common Issues
+
+1. **RSS Feed Failures**:
+
+   - System continues with available feeds if some sources fail
+   - Check logs for specific feed errors
+   - Verify source URLs in configuration
+
+2. **Cache Issues**:
+
+   - Clear KV cache manually through Cloudflare dashboard
+   - Local development uses separate cache
+   - Cache automatically refreshes hourly
+
+3. **Report Generation Failures**:
+   - Check AI provider status and API keys
+   - Verify Discord bot permissions
+   - Review logs for specific error messages
+
+### API Routes
+
+1. **Reports and Summaries**:
+
+   - `GET /api/reports` - Fetch cached reports
+   - `GET /api/summaries/list` - List available news summaries
+   - `GET /api/summaries/[key]` - Fetch specific summary by key
+   - `GET /api/translate` - Translate report content
+
+2. **Social Media**:
+
+   - `POST /api/instagram/post` - Post report to Instagram
+   - Instagram posts use default brain image and formatted captions
+   - Twitter integration via `/api/twitter/post`
+
+3. **Cache Control**:
+   - All endpoints use stale-while-revalidate strategy
+   - Default cache TTL: 1 hour
+   - Force refresh with `?fresh=true` parameter
+
 #### Executive Order Display
 
 - **List View (`/executive-orders`)**: Displays a paginated and searchable list of executive orders. Initial data is fetched server-side, with client-side components handling search, filtering, and pagination of the loaded set. Each order is presented as a card linking to its detailed view.
@@ -266,21 +524,3 @@ Key KV namespaces used (defined in `wrangler.toml`):
 - `MESSAGES_CACHE`: Caches messages fetched from Discord channels.
 - `SUBSCRIPTIONS_CACHE`: Caches Stripe subscription data.
 - `AUTH_TOKENS`: Stores OAuth tokens for Twitter API access.
-
-## License
-
-MIT
-
-### Cloudflare Worker Configuration (`wrangler.toml`)
-
-Key configurations in `wrangler.toml` include:
-
-- **Cron Triggers**: Defines schedules for automated tasks (e.g., `"0 * * * *"`, `"2 * * * *"`).
-- **KV Namespaces**: Bindings for data storage:
-  - `EXECUTIVE_ORDERS_CACHE`
-  - `REPORTS_CACHE`
-  - `CHANNELS_CACHE`
-  - `MESSAGES_CACHE`
-  - `SUBSCRIPTIONS_CACHE` (for Stripe subscription data)
-  - `AUTH_TOKENS` (crucial for Twitter OAuth token storage)
-- **Environment Variables**: Production values for public URLs and Clerk keys are often set here.
