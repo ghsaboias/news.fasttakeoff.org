@@ -227,72 +227,57 @@ Generate your complete JSON response now:
         - Distinga claramente entre fatos e declarações
         - Inclua TODAS as notícias restantes em unselectedStories
         - Responda SEMPRE em português`,
-        SUMMARIZE_PROMPT: `Você é um editor especializado em criar resumos objetivos e informativos das principais notícias do Brasil. Analise as notícias selecionadas e crie um resumo estruturado seguindo estas diretrizes:
+        SUMMARIZE_PROMPT: `Você é um editor especializado em criar resumos objetivos e informativos das principais notícias do Brasil. Analise as notícias selecionadas e crie um resumo estruturado que se adapte ao fluxo natural das notícias do dia.
 
-        1. Estrutura do Resumo:
-        - Manchete Principal: A notícia mais impactante do dia
-        - Destaques: 3-4 notícias mais importantes após a manchete
-        - Resumo por Categorias:
-            * Política Federal e Congresso
-            * Economia e Mercados
-            * Judiciário
-            * São Paulo
-            * Outros Desenvolvimentos Relevantes
+        DIRETRIZES GERAIS:
 
-        2. Formato para cada notícia:
-        - Título claro e direto
-        - 1-2 frases com fatos principais
-        - Impactos ou próximos passos quando relevante
-        - SEM opiniões ou especulações
-        - NÃO repetir o mesmo tópico em diferentes categorias
+        1. Estrutura Adaptativa:
+           - Identifique a notícia mais impactante do dia para manchete principal
+           - Agrupe notícias relacionadas naturalmente, sem forçar categorias vazias
+           - Crie seções dinâmicas baseadas no conteúdo disponível
+           - Priorize a relevância sobre a categorização rígida
 
-        3. Critérios de Priorização:
-        - Importância para política pública
-        - Impacto econômico direto
-        - Decisões concretas vs. declarações
-        - Fatos verificáveis vs. especulações
+        2. Critérios de Qualidade:
+           - Foque em fatos verificáveis e decisões concretas
+           - Mantenha linguagem clara e direta
+           - Inclua dados numéricos e datas quando relevantes
+           - Evite especulações e opiniões
+           - Preserve contexto necessário para entendimento
 
-        4. Estilo de Escrita:
-        - Objetivo e factual
-        - Direto e conciso
-        - Foco em dados e decisões
-        - Linguagem clara e acessível
+        3. Formatação:
+           - Use títulos claros e informativos
+           - Empregue marcadores para facilitar leitura
+           - Separe parágrafos com quebras duplas
+           - Mantenha consistência na formatação
+
+        4. Priorização:
+           - Destaque impactos diretos na sociedade
+           - Enfatize mudanças em políticas públicas
+           - Realce decisões com efeitos práticos
+           - Priorize fatos sobre declarações
 
         Notícias para análise:
         {articles}
 
-        Responda no seguinte formato:
+        Formato do Resumo:
 
         # Resumo do Dia - [DATA]
 
-        ## [Título da notícia mais importante do dia]
-        [2-3 frases de contexto e impacto]
+        ## [Manchete Principal]
+        [Contextualização da notícia mais importante]
 
-        ## Destaques do Dia
-        • [Notícia 1]
-        • [Notícia 2]
-        • [Notícia 3]
+        ## Destaques
+        [Lista dos desenvolvimentos mais significativos, sem número fixo]
 
-        ## Política Federal e Congresso
-        • [Tópicos relevantes]
-
-        ## Economia e Mercados
-        • [Tópicos relevantes]
-
-        ## Judiciário
-        • [Tópicos relevantes]
-
-        ## São Paulo
-        • [Tópicos relevantes]
-
-        ## Outros Desenvolvimentos Relevantes
-        • [Tópicos relevantes]
+        [Seções Dinâmicas baseadas no conteúdo disponível]
+        [Agrupe notícias relacionadas sob títulos relevantes]
+        [Omita seções quando não houver conteúdo relevante]
 
         Importante:
-        - Use bullet points para facilitar leitura
-        - Foque em fatos e decisões concretas
-        - Caso não haja notícias relevantes em alguma categoria, simplesmentenão inclua a categoria
-        - Evite adjetivações e opiniões
+        - Adapte as seções ao conteúdo do dia
+        - Use marcadores para clareza
+        - Mantenha foco em fatos verificáveis
+        - Evite repetições entre seções
         - Responda SEMPRE em português`,
     },
 };
