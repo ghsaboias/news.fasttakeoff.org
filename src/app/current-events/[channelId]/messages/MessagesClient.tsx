@@ -2,6 +2,7 @@
 
 import MessageTimeline from "@/components/current-events/timeline/MessageTimeline";
 import { Button } from "@/components/ui/button";
+import { Loader } from "@/components/ui/loader";
 import { DiscordChannel, DiscordMessage } from "@/lib/types/core";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
@@ -53,6 +54,14 @@ export default function MessagesClient({
 
     const hasMore = displayedMessages.length < messageCount;
 
+    if (isLoading) {
+        return (
+            <div className="flex items-center justify-center p-8">
+                <Loader size="xl" />
+            </div>
+        );
+    }
+
     if (!channel) {
         return (
             <div className="flex flex-col items-center justify-center gap-4">
@@ -86,7 +95,7 @@ export default function MessagesClient({
                 </Button>
             </div>
 
-            <MessageTimeline messages={displayedMessages} isLoading={isLoading} />
+            <MessageTimeline messages={displayedMessages} />
 
             {hasMore && (
                 <div className="flex justify-center pt-4">
