@@ -131,7 +131,7 @@ export const AI = {
         // Maximum context window size
         MAX_CONTEXT_TOKENS: 128000,
         // Maximum retries for AI API calls
-        MAX_ATTEMPTS: 5,
+        MAX_ATTEMPTS: 3,
         // Prompt template for report generation - NOTE: This might need adjustment if switching models significantly
         SYSTEM_PROMPT: 'You are an experienced news wire journalist. Always complete your full response. Respond in valid JSON format with: {"headline": "clear, specific, descriptive headline in ALL CAPS", "city": "single city name properly capitalized", "body": "cohesive narrative with paragraphs separated by double newlines (\\n\\n)"}',
 

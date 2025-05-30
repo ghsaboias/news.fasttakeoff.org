@@ -84,6 +84,36 @@ function createPrompt(messages: DiscordMessage[], previousReports: Report[]): st
     return prompt;
 }
 
+function isReportTruncated(report: { body: string }): boolean {
+    // Trim whitespace to ensure we're checking the actual last character
+    const trimmedBody = report.body.trim();
+
+    // If empty, it's invalid but not truncated
+    if (!trimmedBody) return false;
+
+    // Case 1: Regular sentence ending with punctuation
+    if (/[.!?]$/.test(trimmedBody)) {
+        return false;
+    }
+
+    // Case 2: Quote ending with ! or ? (no additional punctuation needed)
+    if (/[!?]["""]$/.test(trimmedBody)) {
+        return false;
+    }
+
+    // Case 3: Quote ending with period
+    if (/[.]["""]$/.test(trimmedBody)) {
+        return false;
+    }
+
+    // If it doesn't match any of the above cases, it's considered truncated
+    // Examples of truncated text:
+    // - He said "We will win        (missing closing quote and punctuation)
+    // - The temperature is 75       (missing period)
+    // - She stated "It's done"      (missing period after quote)
+    return true;
+}
+
 async function createReportWithAI(
     prompt: string,
     messages: DiscordMessage[],
@@ -171,6 +201,12 @@ async function createReportWithAI(
                 console.log(`[REPORTS] Invalid/Missing fields in AI response for channel ${channelInfo.id}: ${errors.join(', ')}`);
                 console.log(`[REPORTS] Raw AI data: ${JSON.stringify(reportData)}`);
                 throw new Error(`Invalid report format: missing or invalid fields (${errors.join(', ')})`);
+            }
+
+            // Add this check after parsing the report data but before returning
+            if (isReportTruncated({ body })) {
+                console.log(`[REPORTS] Detected truncated report for channel ${channelInfo.name}. Last character: "${body.trim().slice(-1)}"`);
+                throw new Error('Report appears to be truncated (ends with letter without punctuation)');
             }
 
             const lastMessageTimestamp = messages[0]?.timestamp || new Date().toISOString();
@@ -402,7 +438,7 @@ export class ReportsService {
         const { keys: messageKeys } = await this.messagesService.env.MESSAGES_CACHE.list();
         const allChannelIds = messageKeys.map((key: { name: string }) => key.name.replace('messages:', ''));
         const generatedReports: Report[] = [];
-        const batchSize = 10; // Process channels in batches of 10
+        const batchSize = 5;
 
         console.log(`[_generateAndCacheReportsForTimeframes] Processing for timeframes: ${timeframesToProcess.join(', ')}`);
 
