@@ -84,7 +84,7 @@ Content: ${story.originalSnippet}
         body: JSON.stringify({
             model: aiConfig.model,
             messages: [{ role: 'user', content: prompt }],
-            temperature: 0.3, // Lower temperature for more consistent summaries
+            temperature: 0.5, // Lower temperature for more consistent summaries
             response_format: { type: "text" } // We want formatted text, not JSON
         }),
     });
