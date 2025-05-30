@@ -42,6 +42,16 @@ export default function Footer() {
                                     Current Events
                                 </Link>
                             </li>
+                            <li>
+                                <Link href="/news-globe" className="hover:underline">
+                                    News Globe
+                                </Link>
+                            </li>
+                            <li>
+                                <Link href="/brazil-news" className="hover:underline">
+                                    Brazil News
+                                </Link>
+                            </li>
                         </ul>
                     </div>
                     <div className="space-y-4">
@@ -50,6 +60,11 @@ export default function Footer() {
                             <li>
                                 <a href="https://twitter.com/fasttakeoff" className="hover:underline">
                                     Twitter
+                                </a>
+                            </li>
+                            <li>
+                                <a href="https://www.instagram.com/fast.takeoff.news/" className="hover:underline">
+                                    Instagram
                                 </a>
                             </li>
                         </ul>
