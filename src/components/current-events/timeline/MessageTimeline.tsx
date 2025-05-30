@@ -1,13 +1,10 @@
 "use client";
 
-import { Loader } from "@/components/ui/loader";
 import { DiscordMessage } from "@/lib/types/core";
-import { useEffect, useState } from "react";
 import MessageItem from "./MessageItemTimeline";
 
 interface MessageTimelineProps {
     messages: DiscordMessage[];
-    isLoading?: boolean;
 }
 
 function groupMessagesByDate(messages: DiscordMessage[]) {
@@ -28,38 +25,10 @@ function groupMessagesByDate(messages: DiscordMessage[]) {
     );
 }
 
-export default function MessageTimeline({ messages, isLoading = false }: MessageTimelineProps) {
+export default function MessageTimeline({ messages }: MessageTimelineProps) {
     const timelineGroups = groupMessagesByDate(messages);
-    const [showNoMessages, setShowNoMessages] = useState(false);
 
-    useEffect(() => {
-        let timeout: NodeJS.Timeout;
-
-        if (isLoading) {
-            setShowNoMessages(false);
-        } else if (!messages?.length) {
-            // Only show "No messages found" after 7 seconds of no messages
-            timeout = setTimeout(() => {
-                setShowNoMessages(true);
-            }, 7000);
-        } else {
-            setShowNoMessages(false);
-        }
-
-        return () => {
-            if (timeout) clearTimeout(timeout);
-        };
-    }, [isLoading, messages]);
-
-    if (isLoading || (!messages?.length && !showNoMessages)) {
-        return (
-            <div className="flex items-center justify-center p-8">
-                <Loader size="xl" />
-            </div>
-        );
-    }
-
-    if (showNoMessages) {
+    if (!messages.length) {
         return (
             <div className="text-center p-8 text-muted-foreground">
                 No messages found
