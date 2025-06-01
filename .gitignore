@@ -76,3 +76,5 @@ test-data/
 src/app/api/prompt-test/route.ts
 
 .cursor/rules
+
+flow.md
