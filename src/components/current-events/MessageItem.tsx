@@ -22,7 +22,10 @@ export default function MessageItem({ message, index, noAccordion = false }: Mes
         <div className="space-y-4 bg-secondary-light rounded-lg">
             {/* Content Section */}
             {message.content && (
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col justify-between gap-2">
+                    <time dateTime={message.timestamp}>
+                        {formatDate(message.timestamp)}
+                    </time>
                     <div>
                         <h4 className="font-semibold text-sm">Source:</h4>
                         <a
@@ -34,9 +37,6 @@ export default function MessageItem({ message, index, noAccordion = false }: Mes
                             {message.content}
                         </a>
                     </div>
-                    <time dateTime={message.timestamp}>
-                        {formatDate(message.timestamp)}
-                    </time>
                 </div>
             )}
 

@@ -88,9 +88,8 @@ export default function MessagesClient({
                     </span>
                 </div>
                 <Button asChild variant="outline">
-                    <Link href="/current-events">
-                        <ArrowLeft className="mr-2 h-4 w-4" />
-                        Back
+                    <Link href={`/current-events/${channelId}`}>
+                        <ArrowLeft className="h-4 w-4" />
                     </Link>
                 </Button>
             </div>
