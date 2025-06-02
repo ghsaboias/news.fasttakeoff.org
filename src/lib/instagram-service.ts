@@ -1,7 +1,6 @@
 import { Cloudflare } from '../../worker-configuration';
 import { URLs } from './config';
 import { Report } from './types/core';
-const BRAIN_IMAGE_URL = URLs.BRAIN_IMAGE;
 const WEBSITE_URL = URLs.WEBSITE_URL;
 
 // Instagram API constants
@@ -9,6 +8,10 @@ const INSTAGRAM_ACCOUNT_ID = '9985118404840500';
 const INSTAGRAM_CREATE_MEDIA_URL = `https://graph.instagram.com/v20.0/${INSTAGRAM_ACCOUNT_ID}/media`;
 const INSTAGRAM_PUBLISH_MEDIA_URL = `https://graph.instagram.com/v20.0/${INSTAGRAM_ACCOUNT_ID}/media_publish`;
 const INSTAGRAM_CAPTION_MAX_LENGTH = 2200;
+
+// Worker URLs
+const SVG_GENERATOR_URL = 'https://svg-generator.gsaboia.workers.dev';
+const BROWSER_WORKER_URL = 'https://browser-worker.gsaboia.workers.dev';
 
 // Helper function to generate hashtags from channel name
 function generateHashtagsFromChannelName(channelName: string): string[] {
@@ -98,8 +101,11 @@ export class InstagramService {
             // Construct final caption
             const caption = `${headerLine}\n\n${dateCityLine}\n\n${processedBody}\n\n${footerLines}`;
 
+            const svgUrl = `${SVG_GENERATOR_URL}/?headline=${encodeURIComponent(report.headline)}`;
+            const screenshotUrl = `${BROWSER_WORKER_URL}/?url=${encodeURIComponent(svgUrl)}`;
+
             const createMediaPayload = {
-                image_url: BRAIN_IMAGE_URL,
+                image_url: screenshotUrl,
                 caption: caption,
                 access_token: this.accessToken,
             };
