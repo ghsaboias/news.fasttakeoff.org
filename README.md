@@ -25,6 +25,8 @@ A Next.js application aggregating executive orders from the Federal Register API
     - OpenRouter: https://openrouter.ai/api/v1
   - Twitter API: https://api.twitter.com/2/
   - Instagram Graph API: https://graph.instagram.com/
+  - SVG Generator: https://svg-generator.gsaboia.workers.dev (for Instagram post images)
+  - Browser Worker: https://browser-worker.gsaboia.workers.dev (for Instagram post image rendering)
 - **Dependencies**: groq-sdk, lucide-react, class-variance-authority, full list in package.json
 - **Configuration**: ESLint (eslint.config.mjs), PostCSS (postcss.config.mjs), TypeScript (tsconfig.json)
 
@@ -491,7 +493,7 @@ A new interactive feature that displays news reports as markers on a 3D globe. I
 The application can automatically post generated reports to social media platforms:
 
 - **Twitter**: Uses `TwitterService` (`src/lib/twitter-service.ts`) to post reports as tweets. It handles OAuth 2.0 for authentication, storing tokens in a Cloudflare KV namespace (`AUTH_TOKENS`).
-- **Instagram**: Uses `InstagramService` (`src/lib/instagram-service.ts`) to post reports to an Instagram Business account. This includes an image and a caption.
+- **Instagram**: Uses `InstagramService` (`src/lib/instagram-service.ts`) to post reports to an Instagram Business account. This includes an image with the report headline overlaid and a caption with the full report details.
 
 **Automation Note**: Social media posting is automatically triggered as part of the report generation process, which runs on a schedule (see Scheduled Tasks below) and can also be manually triggered.
 
