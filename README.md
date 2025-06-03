@@ -111,9 +111,6 @@ Automated aggregation and AI-powered summarization of Brazilian news.
 
 - `GET /api/summaries/list` - List available summaries
 - `GET /api/summaries/[key]` - Fetch specific summary
-- Social Media Integration:
-  - `POST /api/instagram/post` - Post to Instagram
-  - `POST /api/twitter/post` - Post to Twitter
 
 #### Required Environment Variables
 
@@ -449,13 +446,7 @@ The system aggregates and summarizes news from major Brazilian RSS feeds through
    - `GET /api/summaries/[key]` - Fetch specific summary by key
    - `GET /api/translate` - Translate report content
 
-2. **Social Media**:
-
-   - `POST /api/instagram/post` - Post report to Instagram
-   - Instagram posts use default brain image and formatted captions
-   - Twitter integration via `/api/twitter/post`
-
-3. **Cache Control**:
+2. **Cache Control**:
    - All endpoints use stale-while-revalidate strategy
    - Default cache TTL: 1 hour
    - Force refresh with `?fresh=true` parameter
