@@ -102,7 +102,7 @@ export class InstagramService {
             const caption = `${headerLine}\n\n${dateCityLine}\n\n${processedBody}\n\n${footerLines}`;
 
             const svgUrl = `${SVG_GENERATOR_URL}/?headline=${encodeURIComponent(report.headline)}`;
-            const screenshotUrl = `${BROWSER_WORKER_URL}/?url=${encodeURIComponent(svgUrl)}`;
+            const screenshotUrl = `${BROWSER_WORKER_URL}/?url=${svgUrl}`;
 
             const createMediaPayload = {
                 image_url: screenshotUrl,
