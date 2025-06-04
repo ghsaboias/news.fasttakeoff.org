@@ -19,7 +19,7 @@ export async function scheduled(event: ScheduledEvent, env: Cloudflare.Env): Pro
         let taskResult: string | undefined;
 
         switch (event.cron) {
-            case '0 * * * *':
+            case '*/10 * * * *':  // Changed from '0 * * * *'
             case 'MESSAGES':
                 await Promise.all([
                     messagesService.updateMessages(),
@@ -27,7 +27,7 @@ export async function scheduled(event: ScheduledEvent, env: Cloudflare.Env): Pro
                 ]);
                 taskResult = 'Updated messages and feed summary';
                 break;
-            case '2 * * * *':
+            case '2-59/10 * * * *':  // Changed from '2 * * * *'
                 await reportsService.createFreshReports();
                 taskResult = 'Created fresh reports';
                 break;
