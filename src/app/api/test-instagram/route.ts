@@ -6,7 +6,7 @@ import { Cloudflare } from '../../../../worker-configuration';
 
 export const runtime = 'edge';
 
-export async function GET(request: Request) {
+export async function GET() {
     try {
         // Create a mock report with a problematic long headline
         const mockReport: Report = {
