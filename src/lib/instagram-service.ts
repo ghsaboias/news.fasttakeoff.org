@@ -59,6 +59,10 @@ export class InstagramService {
             const svgUrl = `${SVG_GENERATOR_URL}/?headline=${encodeURIComponent(report.headline)}`;
             const screenshotUrl = `${BROWSER_WORKER_URL}/?url=${encodeURIComponent(svgUrl)}`;
 
+            console.log(`[INSTAGRAM] DEBUG - Headline: "${report.headline}"`);
+            console.log(`[INSTAGRAM] DEBUG - SVG URL: ${svgUrl}`);
+            console.log(`[INSTAGRAM] DEBUG - Screenshot URL: ${screenshotUrl}`);
+
             // PRE-GENERATE the screenshot to warm the cache
             console.log(`[INSTAGRAM] Pre-generating screenshot for report: ${report.reportId}`);
             const preGenStart = Date.now();
