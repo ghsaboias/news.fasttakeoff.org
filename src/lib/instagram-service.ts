@@ -57,14 +57,14 @@ export class InstagramService {
         try {
             // Use pre-generated screenshot URL if available, otherwise generate on-demand
             let screenshotUrl: string;
-            
+
             if (report.screenshotUrl) {
                 console.log(`[INSTAGRAM] Using pre-generated screenshot URL: ${report.screenshotUrl}`);
                 screenshotUrl = report.screenshotUrl;
-                
+
                 // Optional: Validate the pre-generated URL is still accessible
                 try {
-                    const validateResponse = await fetch(screenshotUrl, { 
+                    const validateResponse = await fetch(screenshotUrl, {
                         method: 'HEAD',
                         signal: AbortSignal.timeout(5000) // Quick validation
                     });
@@ -132,6 +132,33 @@ export class InstagramService {
 
             // Construct final caption
             const caption = `${headerLine}\n\n${dateCityLine}\n\n${processedBody}\n\n${footerLines}`;
+
+            async function verifyImage(url: string) {
+                try {
+                    const r = await fetch(url, { method: 'HEAD', signal: AbortSignal.timeout(6000) });
+                    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+                    const ct = r.headers.get('content-type') || '';
+                    const len = +(r.headers.get('content-length') || 0);
+                    if (!ct.startsWith('image/') || len < 10_000) {
+                        throw new Error(`bad content-type ${ct} len ${len}`);
+                    }
+                    return true;
+                } catch (e) {
+                    console.warn('[INSTAGRAM] image verification failed:', e);
+                    return false;
+                }
+            }
+
+            // right before createMediaPayload
+            if (!(await verifyImage(screenshotUrl))) {
+                // force fresh render
+                const svgUrl = `${SVG_GENERATOR_URL}/?headline=${encodeURIComponent(report.headline)}`;
+                screenshotUrl = `${BROWSER_WORKER_URL}/?url=${encodeURIComponent(svgUrl)}&bust=${Date.now()}`;
+                console.log('[INSTAGRAM] Re-rendered screenshot URL:', screenshotUrl);
+                if (!(await verifyImage(screenshotUrl))) {
+                    throw new Error('Screenshot service failed twice; aborting post.');
+                }
+            }
 
             const createMediaPayload = {
                 image_url: screenshotUrl,
