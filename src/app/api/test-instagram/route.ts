@@ -4,8 +4,6 @@ import { NextResponse } from 'next/server';
 import { v4 as uuidv4 } from 'uuid';
 import { Cloudflare } from '../../../../worker-configuration';
 
-export const runtime = 'edge';
-
 export async function GET() {
     try {
         // Create a mock report with a problematic long headline
