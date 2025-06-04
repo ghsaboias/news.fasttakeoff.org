@@ -55,6 +55,26 @@ export class InstagramService {
         console.log(`[INSTAGRAM] Posting to Instagram API for report ID: ${report.reportId}`);
 
         try {
+            // Generate URLs for image creation
+            const svgUrl = `${SVG_GENERATOR_URL}/?headline=${encodeURIComponent(report.headline)}`;
+            const screenshotUrl = `${BROWSER_WORKER_URL}/?url=${encodeURIComponent(svgUrl)}`;
+
+            // PRE-GENERATE the screenshot to warm the cache
+            console.log(`[INSTAGRAM] Pre-generating screenshot for report: ${report.reportId}`);
+            const preGenStart = Date.now();
+            try {
+                const preGenResponse = await fetch(screenshotUrl);
+                const preGenTime = Date.now() - preGenStart;
+                console.log(`[INSTAGRAM] Pre-generation completed in ${preGenTime}ms, status: ${preGenResponse.status}`);
+
+                if (!preGenResponse.ok) {
+                    throw new Error(`Pre-generation failed: ${preGenResponse.status}`);
+                }
+            } catch (error) {
+                console.error(`[INSTAGRAM] Pre-generation failed for report ${report.reportId}:`, error);
+                throw new Error(`Failed to pre-generate screenshot: ${error instanceof Error ? error.message : String(error)}`);
+            }
+
             // Step 1: Create media container
             const reportLink = `\n\nRead more: ${WEBSITE_URL}/current-events/${report.channelId}/${report.reportId}`;
             const reportLinkCallToAction = "\n\n(Link in bio!)";
@@ -100,9 +120,6 @@ export class InstagramService {
 
             // Construct final caption
             const caption = `${headerLine}\n\n${dateCityLine}\n\n${processedBody}\n\n${footerLines}`;
-
-            const svgUrl = `${SVG_GENERATOR_URL}/?headline=${encodeURIComponent(report.headline)}`;
-            const screenshotUrl = `${BROWSER_WORKER_URL}/?url=${svgUrl}`;
 
             const createMediaPayload = {
                 image_url: screenshotUrl,
