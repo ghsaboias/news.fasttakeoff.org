@@ -531,26 +531,12 @@ export class ReportsService {
      * Production method: Generates reports for timeframes active based on the current UTC hour.
      */
     async createFreshReports(): Promise<void> {
-        console.log('[REPORTS - createFreshReports] Production run starting.');
-        const allConfiguredTimeframes: TimeframeKey[] = [...TIME.TIMEFRAMES];
-        const now = new Date();
-        const hour = now.getUTCHours();
+        console.log('[REPORTS - createFreshReports] Production run starting (DEBUG MODE - 10 min intervals).');
 
-        const activeTimeframes = allConfiguredTimeframes.filter(tf => {
-            const cronConfig = TIME.CRON as Record<TimeframeKey, number>;
-            const cron2h = cronConfig['2h'];
-            const cron6h = cronConfig['6h'];
-            if (tf === '2h' && hour % cron2h === 0 && hour % cron6h !== 0) return true;
-            if (tf === '6h' && hour % cron6h === 0) return true;
-            return false;
-        });
+        // For debugging: always process 2h timeframe
+        const activeTimeframes: TimeframeKey[] = ['2h'];
 
-        console.log(`[REPORTS - createFreshReports] Determined active timeframes for this run: ${activeTimeframes.join(', ') || 'NONE'}`);
-
-        if (activeTimeframes.length === 0) {
-            console.log('[REPORTS - createFreshReports] No timeframes are active based on the current hour. Exiting.');
-            return;
-        }
+        console.log(`[REPORTS - createFreshReports] DEBUG MODE: Processing timeframe: ${activeTimeframes.join(', ')}`);
 
         const generatedReports = await this._generateAndCacheReportsForTimeframes(activeTimeframes);
         await this._postTopReportToSocialMedia(generatedReports);
