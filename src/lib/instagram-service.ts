@@ -64,21 +64,44 @@ export class InstagramService {
             console.log(`[INSTAGRAM] DEBUG - Screenshot URL: ${screenshotUrl}`);
 
             // PRE-GENERATE the screenshot to warm the cache
-            console.log(`[INSTAGRAM] Pre-generating screenshot for report: ${report.reportId}`);
+            console.log(`[INSTAGRAM] === PRE-GENERATION STARTING ===`);
+            console.log(`[INSTAGRAM] Report ID: ${report.reportId}`);
+            console.log(`[INSTAGRAM] SVG URL: ${svgUrl}`);
+            console.log(`[INSTAGRAM] Screenshot URL: ${screenshotUrl}`);
+            
             const preGenStart = Date.now();
             try {
+                console.log(`[INSTAGRAM] Fetching screenshot from browser-worker...`);
                 const preGenResponse = await fetch(screenshotUrl);
                 const preGenTime = Date.now() - preGenStart;
-                console.log(`[INSTAGRAM] Pre-generation completed in ${preGenTime}ms, status: ${preGenResponse.status}`);
+                
+                console.log(`[INSTAGRAM] Pre-generation response received in ${preGenTime}ms`);
+                console.log(`[INSTAGRAM] Response status: ${preGenResponse.status} ${preGenResponse.statusText}`);
+                console.log(`[INSTAGRAM] Response headers:`, Object.fromEntries(preGenResponse.headers.entries()));
 
                 if (!preGenResponse.ok) {
                     const errorBody = await preGenResponse.text();
-                    console.log(`[INSTAGRAM] Pre-generation error body: ${errorBody}`);
+                    console.error(`[INSTAGRAM] Pre-generation failed with status ${preGenResponse.status}`);
+                    console.error(`[INSTAGRAM] Error response body: ${errorBody}`);
+                    console.error(`[INSTAGRAM] Error response headers:`, Object.fromEntries(preGenResponse.headers.entries()));
                     throw new Error(`Pre-generation failed: ${preGenResponse.status} - ${errorBody}`);
                 }
+                
+                const contentType = preGenResponse.headers.get('content-type');
+                const contentLength = preGenResponse.headers.get('content-length');
+                console.log(`[INSTAGRAM] Pre-generation successful - Content-Type: ${contentType}, Content-Length: ${contentLength}`);
+                
             } catch (error) {
-                console.log(`[INSTAGRAM] Pre-generation fetch error type: ${error instanceof Error ? error.constructor.name : 'Unknown'}`);
-                console.log(`[INSTAGRAM] Pre-generation fetch error message: ${error instanceof Error ? error.message : String(error)}`);
+                console.error(`[INSTAGRAM] === PRE-GENERATION ERROR ===`);
+                console.error(`[INSTAGRAM] Error type: ${error instanceof Error ? error.constructor.name : 'Unknown'}`);
+                console.error(`[INSTAGRAM] Error message: ${error instanceof Error ? error.message : String(error)}`);
+                if (error instanceof Error && error.stack) {
+                    console.error(`[INSTAGRAM] Error stack: ${error.stack}`);
+                }
+                console.error(`[INSTAGRAM] URLs that failed:`);
+                console.error(`[INSTAGRAM] - SVG URL: ${svgUrl}`);
+                console.error(`[INSTAGRAM] - Screenshot URL: ${screenshotUrl}`);
+                console.error(`[INSTAGRAM] === END PRE-GENERATION ERROR ===`);
                 throw new Error(`Failed to pre-generate screenshot: ${error instanceof Error ? error.message : String(error)}`);
             }
 
