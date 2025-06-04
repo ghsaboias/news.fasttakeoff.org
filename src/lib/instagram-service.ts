@@ -72,10 +72,13 @@ export class InstagramService {
                 console.log(`[INSTAGRAM] Pre-generation completed in ${preGenTime}ms, status: ${preGenResponse.status}`);
 
                 if (!preGenResponse.ok) {
-                    throw new Error(`Pre-generation failed: ${preGenResponse.status}`);
+                    const errorBody = await preGenResponse.text();
+                    console.log(`[INSTAGRAM] Pre-generation error body: ${errorBody}`);
+                    throw new Error(`Pre-generation failed: ${preGenResponse.status} - ${errorBody}`);
                 }
             } catch (error) {
-                console.error(`[INSTAGRAM] Pre-generation failed for report ${report.reportId}:`, error);
+                console.log(`[INSTAGRAM] Pre-generation fetch error type: ${error instanceof Error ? error.constructor.name : 'Unknown'}`);
+                console.log(`[INSTAGRAM] Pre-generation fetch error message: ${error instanceof Error ? error.message : String(error)}`);
                 throw new Error(`Failed to pre-generate screenshot: ${error instanceof Error ? error.message : String(error)}`);
             }
 
