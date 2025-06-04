@@ -1,6 +1,7 @@
 import { getAIAPIKey, getAIProviderConfig } from '@/lib/ai-config';
 import { AI, CACHE, TIME, TimeframeKey } from '@/lib/config';
 import { InstagramService } from '@/lib/instagram-service';
+import { ScreenshotService } from '@/lib/screenshot-service';
 import { DiscordMessage, Report } from '@/lib/types/core';
 import { v4 as uuidv4 } from 'uuid';
 import { Cloudflare } from '../../../worker-configuration';
@@ -190,12 +191,12 @@ async function createReportWithAI(
             }
 
             // Validate required fields
-            const { headline, city, body } = reportData;
+            const { headline: rawHeadline, city, body } = reportData;
             const isValidString = (str: unknown): str is string => typeof str === 'string' && str.trim() !== '';
 
-            if (!isValidString(headline) || !isValidString(city) || !isValidString(body)) {
+            if (!isValidString(rawHeadline) || !isValidString(city) || !isValidString(body)) {
                 const errors: string[] = [];
-                if (!isValidString(headline)) errors.push('headline');
+                if (!isValidString(rawHeadline)) errors.push('headline');
                 if (!isValidString(city)) errors.push('city');
                 if (!isValidString(body)) errors.push('body');
                 console.log(`[REPORTS] Invalid/Missing fields in AI response for channel ${channelInfo.id}: ${errors.join(', ')}`);
@@ -210,11 +211,23 @@ async function createReportWithAI(
             }
 
             const lastMessageTimestamp = messages[0]?.timestamp || new Date().toISOString();
+            const headline = rawHeadline.toUpperCase();
+
+            // Generate screenshot URL for social media
+            let screenshotUrl: string | undefined;
+            try {
+                console.log(`[REPORTS] Generating screenshot for report: ${headline}`);
+                screenshotUrl = await ScreenshotService.generateScreenshotUrl(headline);
+                console.log(`[REPORTS] Screenshot URL generated: ${screenshotUrl}`);
+            } catch (error) {
+                console.error(`[REPORTS] Failed to generate screenshot for report:`, error);
+                // Continue without screenshot - social media posting will handle gracefully
+            }
 
             return {
-                headline: (reportData.headline as string).toUpperCase(),
-                city: reportData.city as string,
-                body: reportData.body as string,
+                headline,
+                city,
+                body,
                 reportId: uuidv4(),
                 channelId: channelInfo.id,
                 channelName: channelInfo.name,
@@ -224,6 +237,7 @@ async function createReportWithAI(
                 generatedAt: new Date().toISOString(),
                 timeframe,
                 messageIds: messages.map(msg => msg.id),
+                screenshotUrl,
             };
         } catch (error) {
             attempts++;

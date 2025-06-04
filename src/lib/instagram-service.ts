@@ -55,54 +55,36 @@ export class InstagramService {
         console.log(`[INSTAGRAM] Posting to Instagram API for report ID: ${report.reportId}`);
 
         try {
-            // Generate URLs for image creation
-            const svgUrl = `${SVG_GENERATOR_URL}/?headline=${encodeURIComponent(report.headline)}`;
-            const screenshotUrl = `${BROWSER_WORKER_URL}/?url=${encodeURIComponent(svgUrl)}`;
-
-            console.log(`[INSTAGRAM] DEBUG - Headline: "${report.headline}"`);
-            console.log(`[INSTAGRAM] DEBUG - SVG URL: ${svgUrl}`);
-            console.log(`[INSTAGRAM] DEBUG - Screenshot URL: ${screenshotUrl}`);
-
-            // PRE-GENERATE the screenshot to warm the cache
-            console.log(`[INSTAGRAM] === PRE-GENERATION STARTING ===`);
-            console.log(`[INSTAGRAM] Report ID: ${report.reportId}`);
-            console.log(`[INSTAGRAM] SVG URL: ${svgUrl}`);
-            console.log(`[INSTAGRAM] Screenshot URL: ${screenshotUrl}`);
+            // Use pre-generated screenshot URL if available, otherwise generate on-demand
+            let screenshotUrl: string;
             
-            const preGenStart = Date.now();
-            try {
-                console.log(`[INSTAGRAM] Fetching screenshot from browser-worker...`);
-                const preGenResponse = await fetch(screenshotUrl);
-                const preGenTime = Date.now() - preGenStart;
+            if (report.screenshotUrl) {
+                console.log(`[INSTAGRAM] Using pre-generated screenshot URL: ${report.screenshotUrl}`);
+                screenshotUrl = report.screenshotUrl;
                 
-                console.log(`[INSTAGRAM] Pre-generation response received in ${preGenTime}ms`);
-                console.log(`[INSTAGRAM] Response status: ${preGenResponse.status} ${preGenResponse.statusText}`);
-                console.log(`[INSTAGRAM] Response headers:`, Object.fromEntries(preGenResponse.headers.entries()));
-
-                if (!preGenResponse.ok) {
-                    const errorBody = await preGenResponse.text();
-                    console.error(`[INSTAGRAM] Pre-generation failed with status ${preGenResponse.status}`);
-                    console.error(`[INSTAGRAM] Error response body: ${errorBody}`);
-                    console.error(`[INSTAGRAM] Error response headers:`, Object.fromEntries(preGenResponse.headers.entries()));
-                    throw new Error(`Pre-generation failed: ${preGenResponse.status} - ${errorBody}`);
+                // Optional: Validate the pre-generated URL is still accessible
+                try {
+                    const validateResponse = await fetch(screenshotUrl, { 
+                        method: 'HEAD',
+                        signal: AbortSignal.timeout(5000) // Quick validation
+                    });
+                    if (!validateResponse.ok) {
+                        console.warn(`[INSTAGRAM] Pre-generated screenshot not accessible (${validateResponse.status}), falling back to on-demand generation`);
+                        throw new Error('Pre-generated screenshot not accessible');
+                    }
+                    console.log(`[INSTAGRAM] Pre-generated screenshot validated successfully`);
+                } catch (validateError) {
+                    console.warn(`[INSTAGRAM] Screenshot validation failed, falling back to on-demand generation:`, validateError);
+                    // Fall through to on-demand generation
+                    const svgUrl = `${SVG_GENERATOR_URL}/?headline=${encodeURIComponent(report.headline)}`;
+                    screenshotUrl = `${BROWSER_WORKER_URL}/?url=${encodeURIComponent(svgUrl)}`;
+                    console.log(`[INSTAGRAM] Fallback screenshot URL: ${screenshotUrl}`);
                 }
-                
-                const contentType = preGenResponse.headers.get('content-type');
-                const contentLength = preGenResponse.headers.get('content-length');
-                console.log(`[INSTAGRAM] Pre-generation successful - Content-Type: ${contentType}, Content-Length: ${contentLength}`);
-                
-            } catch (error) {
-                console.error(`[INSTAGRAM] === PRE-GENERATION ERROR ===`);
-                console.error(`[INSTAGRAM] Error type: ${error instanceof Error ? error.constructor.name : 'Unknown'}`);
-                console.error(`[INSTAGRAM] Error message: ${error instanceof Error ? error.message : String(error)}`);
-                if (error instanceof Error && error.stack) {
-                    console.error(`[INSTAGRAM] Error stack: ${error.stack}`);
-                }
-                console.error(`[INSTAGRAM] URLs that failed:`);
-                console.error(`[INSTAGRAM] - SVG URL: ${svgUrl}`);
-                console.error(`[INSTAGRAM] - Screenshot URL: ${screenshotUrl}`);
-                console.error(`[INSTAGRAM] === END PRE-GENERATION ERROR ===`);
-                throw new Error(`Failed to pre-generate screenshot: ${error instanceof Error ? error.message : String(error)}`);
+            } else {
+                console.log(`[INSTAGRAM] No pre-generated screenshot, creating on-demand`);
+                const svgUrl = `${SVG_GENERATOR_URL}/?headline=${encodeURIComponent(report.headline)}`;
+                screenshotUrl = `${BROWSER_WORKER_URL}/?url=${encodeURIComponent(svgUrl)}`;
+                console.log(`[INSTAGRAM] On-demand screenshot URL: ${screenshotUrl}`);
             }
 
             // Step 1: Create media container

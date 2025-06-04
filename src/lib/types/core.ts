@@ -189,6 +189,7 @@ export interface Report {
     userGenerated?: boolean;
     messageIds?: string[];
     timeframe?: string;
+    screenshotUrl?: string; // Pre-generated screenshot URL for social media
 }
 
 export interface CachedMessages {
