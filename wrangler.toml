@@ -50,6 +50,17 @@ binding = "FEEDS_CACHE"
 id = "570aca506a0c42a3bbae031791885844"
 preview_id = "570aca506a0c42a3bbae031791885844"
 
+# R2 bucket binding for Instagram images
+[[r2_buckets]]
+binding = "INSTAGRAM_IMAGES"
+bucket_name = "news-images"
+preview_bucket_name = "news-images-dev"
+
+# Service bindings for worker-to-worker communication
+[[services]]
+binding = "SVG_WORKER"
+service = "svg-generator"
+
 [[routes]]
 pattern = "news.fasttakeoff.org"
 custom_domain = true
@@ -63,6 +74,7 @@ NEXT_PUBLIC_CLERK_SIGN_UP_FORCE_REDIRECT_URL = "/"
 NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY = "pk_live_Y2xlcmsuZmFzdHRha2VvZmYub3JnJA"
 NEXT_PUBLIC_API_URL = "https://news.fasttakeoff.org"
 SERVER_API_URL = "https://news.fasttakeoff.org"
+R2_PUBLIC_URL = "https://images.fasttakeoff.org"
 
 [placement]
 mode = "smart"
