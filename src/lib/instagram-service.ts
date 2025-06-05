@@ -145,6 +145,7 @@ export class InstagramService {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(createMediaPayload),
             });
+            console.log('[INSTAGRAM] createMediaResponse:', createMediaResponse);
 
             if (!createMediaResponse.ok) {
                 const errorText = await createMediaResponse.text();
