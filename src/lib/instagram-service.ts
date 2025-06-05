@@ -58,33 +58,26 @@ export class InstagramService {
             // Use pre-generated screenshot URL if available, otherwise generate on-demand
             let screenshotUrl: string;
 
-            if (report.screenshotUrl) {
-                console.log(`[INSTAGRAM] Using pre-generated screenshot URL: ${report.screenshotUrl}`);
-                screenshotUrl = report.screenshotUrl;
+            const svgUrl = `${SVG_GENERATOR_URL}/?headline=${encodeURIComponent(report.headline)}`;
+            screenshotUrl = `${BROWSER_WORKER_URL}/?url=${encodeURIComponent(svgUrl)}`;
+            console.log(`[INSTAGRAM] On-demand screenshot URL: ${screenshotUrl}`);
 
-                // Optional: Validate the pre-generated URL is still accessible
-                try {
-                    const validateResponse = await fetch(screenshotUrl, {
-                        method: 'HEAD',
-                        signal: AbortSignal.timeout(5000) // Quick validation
-                    });
-                    if (!validateResponse.ok) {
-                        console.warn(`[INSTAGRAM] Pre-generated screenshot not accessible (${validateResponse.status}), falling back to on-demand generation`);
-                        throw new Error('Pre-generated screenshot not accessible');
-                    }
-                    console.log(`[INSTAGRAM] Pre-generated screenshot validated successfully`);
-                } catch (validateError) {
-                    console.warn(`[INSTAGRAM] Screenshot validation failed, falling back to on-demand generation:`, validateError);
-                    // Fall through to on-demand generation
-                    const svgUrl = `${SVG_GENERATOR_URL}/?headline=${encodeURIComponent(report.headline)}`;
-                    screenshotUrl = `${BROWSER_WORKER_URL}/?url=${encodeURIComponent(svgUrl)}`;
-                    console.log(`[INSTAGRAM] Fallback screenshot URL: ${screenshotUrl}`);
+            try {
+                const validateResponse = await fetch(screenshotUrl, {
+                    method: 'HEAD',
+                    signal: AbortSignal.timeout(30000)
+                });
+                if (!validateResponse.ok) {
+                    console.warn(`[INSTAGRAM] Pre-generated screenshot not accessible (${validateResponse.status}), falling back to on-demand generation`);
+                    throw new Error('Pre-generated screenshot not accessible');
                 }
-            } else {
-                console.log(`[INSTAGRAM] No pre-generated screenshot, creating on-demand`);
+                console.log(`[INSTAGRAM] Pre-generated screenshot validated successfully`);
+            } catch (validateError) {
+                console.warn(`[INSTAGRAM] Screenshot validation failed, falling back to on-demand generation:`, validateError);
+                // Fall through to on-demand generation
                 const svgUrl = `${SVG_GENERATOR_URL}/?headline=${encodeURIComponent(report.headline)}`;
                 screenshotUrl = `${BROWSER_WORKER_URL}/?url=${encodeURIComponent(svgUrl)}`;
-                console.log(`[INSTAGRAM] On-demand screenshot URL: ${screenshotUrl}`);
+                console.log(`[INSTAGRAM] Fallback screenshot URL: ${screenshotUrl}`);
             }
 
             // Step 1: Create media container
@@ -145,7 +138,7 @@ export class InstagramService {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(createMediaPayload),
             });
-            console.log('[INSTAGRAM] createMediaResponse:', createMediaResponse);
+            console.log('[INSTAGRAM] createMediaResponse:', createMediaResponse.status, createMediaResponse.statusText);
 
             if (!createMediaResponse.ok) {
                 const errorText = await createMediaResponse.text();
