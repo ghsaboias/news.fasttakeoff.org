@@ -46,7 +46,7 @@ Generated: ${new Date(report.generatedAt).toISOString()}
     }).join('\n---\n'); // Join reports with a separator
 }
 
-function createPrompt(messages: DiscordMessage[], previousReports: Report[]): string {
+function createPrompt(messages: DiscordMessage[], previousReports: Report[]): { prompt: string; tokenCount: number } {
     const tokenPerChar = AI.REPORT_GENERATION.TOKEN_PER_CHAR;
     const overheadTokens = AI.REPORT_GENERATION.OVERHEAD_TOKENS;
     const outputBuffer = AI.REPORT_GENERATION.OUTPUT_BUFFER;
@@ -80,8 +80,7 @@ function createPrompt(messages: DiscordMessage[], previousReports: Report[]): st
         .replace('{previousReportsContext}', previousReportContext);
 
     const finalTokenEstimate = Math.ceil(prompt.length * tokenPerChar);
-    console.log(`[PROMPT] Estimated tokens: ${finalTokenEstimate}/${maxTokens} (messages: ${formattedMessages.length}/${messages.length})`);
-    return prompt;
+    return { prompt, tokenCount: finalTokenEstimate };
 }
 
 function isReportTruncated(report: { body: string }): boolean {
@@ -115,7 +114,7 @@ function isReportTruncated(report: { body: string }): boolean {
 }
 
 async function createReportWithAI(
-    prompt: string,
+    promptData: { prompt: string; tokenCount: number },
     messages: DiscordMessage[],
     channelInfo: { id: string; name: string; count: number },
     env: Cloudflare.Env,
@@ -141,7 +140,7 @@ async function createReportWithAI(
                             role: "system",
                             content: AI.REPORT_GENERATION.SYSTEM_PROMPT,
                         },
-                        { role: "user", content: prompt }
+                        { role: "user", content: promptData.prompt }
                     ],
                     model: aiConfig.model,
                     max_tokens: AI.REPORT_GENERATION.OUTPUT_BUFFER,
@@ -333,13 +332,18 @@ export class ReportsService {
         }
 
         const report = await tryCatch(
-            () => createReportWithAI(
-                createPrompt(messages, previousReports),
-                messages,
-                { id: channelId, name: channelName, count: messages.length },
-                this.env,
-                timeframe,
-            ),
+            async () => {
+                const promptData = createPrompt(messages, previousReports);
+                const generatedReport = await createReportWithAI(
+                    promptData,
+                    messages,
+                    { id: channelId, name: channelName, count: messages.length },
+                    this.env,
+                    timeframe,
+                );
+                console.log(`[REPORTS] Generated ${timeframe} report for channel ${channelName} - ${messages.length} messages and ${promptData.tokenCount} tokens.`);
+                return generatedReport;
+            },
             `Error generating ${timeframe} report for channel ${channelName}`
         );
 
@@ -438,7 +442,7 @@ export class ReportsService {
         const generatedReports: Report[] = [];
         const batchSize = 5;
 
-        console.log(`[_generateAndCacheReportsForTimeframes] Processing for timeframes: ${timeframesToProcess.join(', ')}`);
+        console.log(`[REPORTS] Processing for timeframes: ${timeframesToProcess.join(', ')}`);
 
         // Pre-fetch all channel names to avoid repeated API calls
         const allDiscordChannels = await this.channelsService.getChannels();
@@ -448,10 +452,10 @@ export class ReportsService {
         }
 
         for (const timeframe of timeframesToProcess) {
-            console.log(`[_generateAndCacheReportsForTimeframes] Processing timeframe: ${timeframe}`);
+            console.log(`[REPORTS] Processing timeframe: ${timeframe}`);
             for (let i = 0; i < allChannelIds.length; i += batchSize) {
                 const channelBatch = allChannelIds.slice(i, i + batchSize);
-                console.log(`[_generateAndCacheReportsForTimeframes] Processing batch of ${channelBatch.length} channels for timeframe ${timeframe}. Start index: ${i}`);
+                console.log(`[REPORTS] Processing batch of ${channelBatch.length} channels for timeframe ${timeframe}. Start index: ${i}`);
 
                 const reportCacheKeys = channelBatch.map(channelId => `reports:${channelId}:${timeframe}`);
                 const cachedReportsMap = await this.cacheManager.batchGet<Report[]>('REPORTS_CACHE', reportCacheKeys);
@@ -467,13 +471,18 @@ export class ReportsService {
                         }
 
                         const report = await tryCatch(
-                            () => createReportWithAI(
-                                createPrompt(messages, previousReports),
-                                messages,
-                                { id: channelId, name: channelName, count: messages.length },
-                                this.env,
-                                timeframe
-                            ),
+                            async () => {
+                                const promptData = createPrompt(messages, previousReports);
+                                const generatedReport = await createReportWithAI(
+                                    promptData,
+                                    messages,
+                                    { id: channelId, name: channelName, count: messages.length },
+                                    this.env,
+                                    timeframe
+                                );
+                                console.log(`[REPORTS] Generated ${timeframe} report for channel ${channelName} - ${messages.length} messages and ${promptData.tokenCount} tokens.`);
+                                return generatedReport;
+                            },
                             `Error generating ${timeframe} report for channel ${channelName} (${channelId})`
                         );
 
@@ -482,7 +491,6 @@ export class ReportsService {
                             const cachedReports = cachedReportsMap.get(`reports:${channelId}:${timeframe}`) || [];
                             const updatedReports = [report, ...cachedReports.filter(r => r.reportId !== report.reportId)];
                             await this.cacheReport(channelId, timeframe, updatedReports);
-                            console.log(`[REPORTS] Generated ${timeframe} report for channel ${channelName} (${channelId}) with ${messages.length} messages. Report ID: ${report.reportId}`);
                             return report;
                         }
                         return null;
@@ -496,18 +504,18 @@ export class ReportsService {
                 generatedReports.push(...reportsFromBatch);
 
                 if (reportsFromBatch.length > 0) {
-                    console.log(`[_generateAndCacheReportsForTimeframes] Finished processing batch for timeframe ${timeframe}. Generated ${reportsFromBatch.length} reports in this batch.`);
+                    console.log(`[REPORTS] Generated ${reportsFromBatch.length} in batch ${i}.`);
                 }
             }
         }
-        console.log(`[_generateAndCacheReportsForTimeframes] Finished all timeframes. Generated ${generatedReports.length} reports in total.`);
+        console.log(`[REPORTS] Generated ${generatedReports.length} total reports.`);
         return generatedReports;
     }
 
     private async _postTopReportToSocialMedia(generatedReports: Report[]): Promise<void> {
         if (generatedReports.length > 0) {
             const topReport = generatedReports.sort((a, b) => (b.messageCount || 0) - (a.messageCount || 0))[0];
-            console.log(`[_postTopReportToSocialMedia] Top report for posting: ${topReport.reportId} from channel ${topReport.channelName} with ${topReport.messageCount} sources.`);
+            console.log(`[REPORTS] Posting top report: ${topReport.channelName} with ${topReport.messageCount} sources.`);
 
             try {
                 await this.instagramService.postNews(topReport);
@@ -523,7 +531,7 @@ export class ReportsService {
                 console.error(`[REPORTS] Failed to post report ${topReport.reportId} to Twitter:`, err);
             }
         } else {
-            console.log('[_postTopReportToSocialMedia] No reports generated, skipping social media posts.');
+            console.log('[REPORTS] No reports generated, skipping social media posts.');
         }
     }
 
@@ -531,7 +539,7 @@ export class ReportsService {
      * Production method: Generates reports for timeframes active based on the current UTC hour.
      */
     async createFreshReports(): Promise<void> {
-        console.log('[REPORTS - createFreshReports] Production run starting.');
+        console.log('[REPORTS] Production run starting.');
         const allConfiguredTimeframes: TimeframeKey[] = [...TIME.TIMEFRAMES];
         const now = new Date();
         const hour = now.getUTCHours();
@@ -546,13 +554,13 @@ export class ReportsService {
         });
 
         if (activeTimeframes.length === 0) {
-            console.log('[REPORTS - createFreshReports] No timeframes are active based on the current hour. Exiting.');
+            console.log('[REPORTS] No timeframes are active based on the current hour. Exiting.');
             return;
         }
 
         const generatedReports = await this._generateAndCacheReportsForTimeframes(activeTimeframes);
         await this._postTopReportToSocialMedia(generatedReports);
-        console.log('[REPORTS - createFreshReports] Production run finished.');
+        console.log('[REPORTS] Production run finished.');
     }
 
     /**
@@ -568,12 +576,12 @@ export class ReportsService {
         }
 
         if (timeframesToProcess.length === 0) {
-            console.warn('[REPORTS - generateReportsForManualTrigger] No timeframes specified or resolved for manual run. Exiting.');
+            console.warn('[REPORTS] No timeframes specified or resolved for manual run. Exiting.');
             return;
         }
 
         const generatedReports = await this._generateAndCacheReportsForTimeframes(timeframesToProcess);
         await this._postTopReportToSocialMedia(generatedReports);
-        console.log('[REPORTS - generateReportsForManualTrigger] Manual run finished.');
+        console.log('[REPORTS] Manual run finished.');
     }
 }
