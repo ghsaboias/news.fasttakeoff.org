@@ -68,16 +68,11 @@ export class InstagramService {
                     signal: AbortSignal.timeout(30000)
                 });
                 if (!validateResponse.ok) {
-                    console.warn(`[INSTAGRAM] Pre-generated screenshot not accessible (${validateResponse.status}), falling back to on-demand generation`);
-                    throw new Error('Pre-generated screenshot not accessible');
+                    console.warn(`[INSTAGRAM] Pre-generated screenshot not accessible (${validateResponse.status}, ${validateResponse.statusText}), falling back to on-demand generation`);
                 }
-                console.log(`[INSTAGRAM] Pre-generated screenshot validated successfully`);
-            } catch (validateError) {
-                console.warn(`[INSTAGRAM] Screenshot validation failed, falling back to on-demand generation:`, validateError);
-                // Fall through to on-demand generation
-                const svgUrl = `${SVG_GENERATOR_URL}/?headline=${encodeURIComponent(report.headline)}`;
-                screenshotUrl = `${BROWSER_WORKER_URL}/?url=${encodeURIComponent(svgUrl)}`;
-                console.log(`[INSTAGRAM] Fallback screenshot URL: ${screenshotUrl}`);
+            } catch (error) {
+                console.warn(`[INSTAGRAM] Screenshot validation failed, falling back to on-demand generation:`, error);
+                throw new Error('Pre-generated screenshot not accessible');
             }
 
             // Step 1: Create media container
