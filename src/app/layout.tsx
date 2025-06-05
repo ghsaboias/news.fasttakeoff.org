@@ -47,6 +47,20 @@ export default function RootLayout({
               gtag('config', 'G-ZZQ4KRK7H5');
             `}
           </Script>
+          {/* Google News Showcase */}
+          <Script src="https://news.google.com/swg/js/v1/swg-basic.js" strategy="afterInteractive" />
+          <Script id="google-news-showcase" strategy="afterInteractive">
+            {`
+              (self.SWG_BASIC = self.SWG_BASIC || []).push(basicSubscriptions => {
+                basicSubscriptions.init({
+                  type: "NewsArticle",
+                  isPartOfType: ["Product"],
+                  isPartOfProductId: "CAownKXbCw:openaccess",
+                  clientOptions: { theme: "light", lang: "en" },
+                });
+              });
+            `}
+          </Script>
         </head>
         <body
           className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen flex flex-col justify-center mx-auto`}
