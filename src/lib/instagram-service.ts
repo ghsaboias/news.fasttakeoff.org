@@ -139,6 +139,7 @@ export class InstagramService {
                     if (!r.ok) throw new Error(`HTTP ${r.status}`);
                     const ct = r.headers.get('content-type') || '';
                     const len = +(r.headers.get('content-length') || 0);
+                    console.log('[INSTAGRAM] image verification:', ct, len);
                     if (!ct.startsWith('image/') || len < 10_000) {
                         throw new Error(`bad content-type ${ct} len ${len}`);
                     }
