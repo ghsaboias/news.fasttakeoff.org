@@ -406,12 +406,9 @@ export class ReportsService {
             return [];
         }
 
-        const reports = await Promise.all(
-            keys.map(async (key: { name: string }) => {
-                const cachedReports = await this.cacheManager.get<Report[]>('REPORTS_CACHE', key.name);
-                return cachedReports || [];
-            })
-        );
+        const keyNames = keys.map((key: { name: string }) => key.name);
+        const batchResults = await this.cacheManager.batchGet<Report[]>('REPORTS_CACHE', keyNames);
+        const reports = Array.from(batchResults.values()).map(item => item ?? []);
 
         const validReports = reports
             .flat()
@@ -426,12 +423,12 @@ export class ReportsService {
             return reports || [];
         }
         const { keys } = await this.env.REPORTS_CACHE.list({ prefix: `reports:${channelId}:` });
-        const reports = await Promise.all(
-            keys.map(async (key: { name: string }) => {
-                const cachedReports = await this.cacheManager.get<Report[]>('REPORTS_CACHE', key.name);
-                return cachedReports || [];
-            })
-        );
+        if (keys.length === 0) {
+            return [];
+        }
+        const keyNames = keys.map((key: { name: string }) => key.name);
+        const batchResults = await this.cacheManager.batchGet<Report[]>('REPORTS_CACHE', keyNames);
+        const reports = Array.from(batchResults.values()).map(item => item ?? []);
         return reports.flat();
     }
 
@@ -452,10 +449,12 @@ export class ReportsService {
 
         for (const timeframe of timeframesToProcess) {
             console.log(`[_generateAndCacheReportsForTimeframes] Processing timeframe: ${timeframe}`);
-
             for (let i = 0; i < allChannelIds.length; i += batchSize) {
                 const channelBatch = allChannelIds.slice(i, i + batchSize);
                 console.log(`[_generateAndCacheReportsForTimeframes] Processing batch of ${channelBatch.length} channels for timeframe ${timeframe}. Start index: ${i}`);
+
+                const reportCacheKeys = channelBatch.map(channelId => `reports:${channelId}:${timeframe}`);
+                const cachedReportsMap = await this.cacheManager.batchGet<Report[]>('REPORTS_CACHE', reportCacheKeys);
 
                 const batchPromises = channelBatch.map(async (channelId) => {
                     try {
@@ -464,7 +463,6 @@ export class ReportsService {
                         const messages = await this.messagesService.getMessagesForTimeframe(channelId, timeframe);
 
                         if (messages.length === 0) {
-                            // console.log(`[REPORTS] No messages for channel ${channelName} (${channelId}) in timeframe ${timeframe}, skipping report generation.`);
                             return null;
                         }
 
@@ -474,13 +472,14 @@ export class ReportsService {
                                 messages,
                                 { id: channelId, name: channelName, count: messages.length },
                                 this.env,
-                                timeframe,
+                                timeframe
                             ),
                             `Error generating ${timeframe} report for channel ${channelName} (${channelId})`
                         );
 
                         if (report) {
-                            const cachedReports = await this.getReportsFromCache(channelId, timeframe) || [];
+                            // Use cachedReportsMap instead of calling getReportsFromCache individually
+                            const cachedReports = cachedReportsMap.get(`reports:${channelId}:${timeframe}`) || [];
                             const updatedReports = [report, ...cachedReports.filter(r => r.reportId !== report.reportId)];
                             await this.cacheReport(channelId, timeframe, updatedReports);
                             console.log(`[REPORTS] Generated ${timeframe} report for channel ${channelName} (${channelId}) with ${messages.length} messages. Report ID: ${report.reportId}`);
@@ -489,7 +488,7 @@ export class ReportsService {
                         return null;
                     } catch (error) {
                         console.error(`[REPORTS] Critical error processing channel ${channelId} in batch for timeframe ${timeframe}:`, error);
-                        return null; // Ensure promise resolves to prevent Promise.all from rejecting early
+                        return null;
                     }
                 });
 

@@ -28,4 +28,12 @@ export class CacheManager {
             console.error(`[CacheManager] Background refresh failed for ${key}:`, err);
         }
     }
+
+    async batchGet<T>(namespace: keyof Cloudflare.Env, keys: string[]): Promise<Map<string, T | null>> {
+        const cache = this.env[namespace] as KVNamespace;
+        const results = await Promise.all(
+            keys.map(key => cache?.get<T>(key, { type: 'json' }))
+        );
+        return new Map(keys.map((key, index) => [key, results[index] ?? null]));
+    }
 }
