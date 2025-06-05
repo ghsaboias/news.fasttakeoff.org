@@ -1,7 +1,6 @@
 import { getAIAPIKey, getAIProviderConfig } from '@/lib/ai-config';
 import { AI, CACHE, TIME, TimeframeKey } from '@/lib/config';
 import { InstagramService } from '@/lib/instagram-service';
-import { ScreenshotService } from '@/lib/screenshot-service';
 import { DiscordMessage, Report } from '@/lib/types/core';
 import { v4 as uuidv4 } from 'uuid';
 import { Cloudflare } from '../../../worker-configuration';
@@ -213,17 +212,6 @@ async function createReportWithAI(
             const lastMessageTimestamp = messages[0]?.timestamp || new Date().toISOString();
             const headline = rawHeadline.toUpperCase();
 
-            // Generate screenshot URL for social media
-            let screenshotUrl: string | undefined;
-            try {
-                console.log(`[REPORTS] Generating screenshot for report: ${headline}`);
-                screenshotUrl = await ScreenshotService.generateScreenshotUrl(headline);
-                console.log(`[REPORTS] Screenshot URL generated: ${screenshotUrl}`);
-            } catch (error) {
-                console.error(`[REPORTS] Failed to generate screenshot for report:`, error);
-                // Continue without screenshot - social media posting will handle gracefully
-            }
-
             return {
                 headline,
                 city,
@@ -237,7 +225,6 @@ async function createReportWithAI(
                 generatedAt: new Date().toISOString(),
                 timeframe,
                 messageIds: messages.map(msg => msg.id),
-                screenshotUrl,
             };
         } catch (error) {
             attempts++;
