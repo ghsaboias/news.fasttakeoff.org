@@ -141,10 +141,7 @@ export class MessagesService {
         const cached = await this.getFromCache(channelId, { since });
         if (cached) {
             const age = (Date.now() - new Date(cached.cachedAt).getTime()) / 1000;
-            if (age < CACHE.TTL.MESSAGES && cached.messages.length > 0) {
-                console.log(`[MESSAGES] Using ${cached.messages.length} messages for ${timeframe} of channel ${cached.channelName}`);
-                return cached.messages;
-            }
+            if (age < CACHE.TTL.MESSAGES && cached.messages.length > 0) return cached.messages;
         }
 
         // Cache miss or expired, fetch fresh data
