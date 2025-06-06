@@ -45,26 +45,138 @@ export class InstagramService {
         }
     }
 
+    private calculateFontSize(headline: string): number {
+        const words = headline.split(' ');
+        const lines = this.breakIntoLines(words, 20); // Using same logic as SVG worker
+        const maxLineLength = Math.max(...lines.map(line => line.length));
+
+        const BASE_FONT_SIZE = 60;
+        return Math.min(
+            BASE_FONT_SIZE,
+            (800 / maxLineLength) * 1.5,
+            900 / (lines.length * 1.5)
+        );
+    }
+
+    private breakIntoLines(words: string[], maxLength: number): string[] {
+        const lines: string[] = [];
+        let currentLine: string[] = [];
+        let currentLength = 0;
+
+        for (const word of words) {
+            if (currentLength + word.length > maxLength || word.length > maxLength) {
+                if (currentLine.length > 0) {
+                    lines.push(currentLine.join(' '));
+                    currentLine = [];
+                    currentLength = 0;
+                }
+
+                if (word.length > maxLength) {
+                    const chunks = word.match(new RegExp(`.{1,${maxLength}}`, 'g')) || [];
+                    lines.push(...chunks);
+                } else {
+                    currentLine = [word];
+                    currentLength = word.length;
+                }
+            } else {
+                currentLine.push(word);
+                currentLength += word.length + 1;
+            }
+        }
+
+        if (currentLine.length > 0) {
+            lines.push(currentLine.join(' '));
+        }
+
+        return lines;
+    }
+
+    private escapeHtml(text: string): string {
+        return text
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+    }
+
+    private generateHtml(headline: string): string {
+        const lines = this.breakIntoLines(headline.split(' '), 20);
+        const fontSize = this.calculateFontSize(headline);
+        const lineHeight = fontSize * 1.3;
+
+        return `<!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=1080, height=1080">
+            <style>
+                body { 
+                    margin: 0; 
+                    padding: 0; 
+                    width: 1080px; 
+                    height: 1080px; 
+                    overflow: hidden;
+                    position: relative;
+                }
+                .background {
+                    position: absolute;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    background-image: url('https://news.fasttakeoff.org/images/brain.png');
+                    background-size: cover;
+                    background-position: center;
+                }
+                .overlay {
+                    position: absolute;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    background: rgba(0, 0, 0, 0.4);
+                }
+                .content-wrapper {
+                    position: absolute;
+                    top: 50%;
+                    left: 50%;
+                    transform: translate(-50%, -50%);
+                    width: 900px;
+                    padding: ${fontSize}px 0;
+                    background: rgba(0, 0, 0, 0.3);
+                    border-radius: 10px;
+                    text-align: center;
+                }
+                .headline {
+                    color: white;
+                    font-family: Arial, sans-serif;
+                    font-size: ${fontSize}px;
+                    font-weight: bold;
+                    line-height: ${lineHeight}px;
+                    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+                    -webkit-text-stroke: 2px black;
+                    margin: 0;
+                    padding: 0 40px;
+                }
+            </style>
+        </head>
+        <body>
+            <div class="background"></div>
+            <div class="overlay"></div>
+            <div class="content-wrapper">
+                <div class="headline">${lines.map(line => this.escapeHtml(line)).join('<br>')}</div>
+            </div>
+        </body>
+        </html>`;
+    }
+
     private async generateAndStoreImage(report: Report): Promise<string> {
         console.log(`[INSTAGRAM] Starting image generation for report ${report.reportId}`);
 
         try {
-            // Step 1: Generate SVG via service binding
-            const svgStartTime = Date.now();
-            const svgRequest = new Request(
-                `https://internal/?headline=${encodeURIComponent(report.headline)}`,
-                { method: 'GET' }
-            );
-
-            console.log(`[INSTAGRAM] Calling SVG worker via service binding`);
-            const svgResponse = await this.env.SVG_WORKER.fetch(svgRequest.url);
-
-            if (!svgResponse.ok) {
-                throw new Error(`SVG generation failed: ${svgResponse.status} ${svgResponse.statusText}`);
-            }
-
-            const svgHtml = await svgResponse.text();
-            console.log(`[INSTAGRAM] SVG generated in ${Date.now() - svgStartTime}ms`);
+            // Step 1: Generate HTML directly (no SVG worker needed!)
+            const html = this.generateHtml(report.headline);
 
             // Step 2: Generate screenshot via Browser Rendering API
             const screenshotStartTime = Date.now();
@@ -78,16 +190,18 @@ export class InstagramService {
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
-                    html: svgHtml,
+                    html: html,
                     screenshotOptions: {
-                        omitBackground: true,
                         type: 'jpeg',
-                        quality: 80,
+                        quality: 90,
+                        fullPage: false
                     },
                     viewport: {
                         width: 1080,
                         height: 1080,
+                        deviceScaleFactor: 1
                     },
+                    waitForTimeout: 2000 // Wait 2s for image to load
                 })
             });
 
@@ -99,9 +213,10 @@ export class InstagramService {
             const imageBuffer = await screenshotResponse.arrayBuffer();
             console.log(`[INSTAGRAM] Screenshot generated in ${Date.now() - screenshotStartTime}ms, size: ${imageBuffer.byteLength} bytes`);
 
-            // Step 3: Store in R2
+            // Step 3: Store in R2 (keep this the same)
             const r2StartTime = Date.now();
-            const r2Key = `${report.reportId}.jpg`;
+            const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+            const r2Key = `instagram/${report.reportId}/${timestamp}.jpg`;
 
             const r2UploadResult = await this.env.INSTAGRAM_IMAGES.put(r2Key, imageBuffer, {
                 httpMetadata: {
