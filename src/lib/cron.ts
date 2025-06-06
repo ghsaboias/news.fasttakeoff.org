@@ -2,7 +2,7 @@ import { TimeframeKey } from '@/lib/config';
 import { Cloudflare } from '../../worker-configuration';
 import { FeedsService } from './data/feeds-service';
 import { MessagesService } from './data/messages-service';
-import { ReportsService } from './data/reports-service';
+import { ReportGeneratorService } from './data/report-generator-service';
 
 interface ScheduledEvent {
     scheduledTime: number;
@@ -14,7 +14,7 @@ export async function scheduled(event: ScheduledEvent, env: Cloudflare.Env): Pro
     console.log(`[CRON] Triggered. event.cron: "${event.cron}", scheduledTime: ${new Date(event.scheduledTime).toISOString()}`);
     try {
         const messagesService = new MessagesService(env);
-        const reportsService = new ReportsService(env);
+        const reportGeneratorService = new ReportGeneratorService(env);
         const feedsService = new FeedsService(env);
         let taskResult: string | undefined;
 
@@ -28,19 +28,19 @@ export async function scheduled(event: ScheduledEvent, env: Cloudflare.Env): Pro
                 taskResult = 'Updated messages and feed summary';
                 break;
             case '2 * * * *':
-                await reportsService.createFreshReports();
+                await reportGeneratorService.createFreshReports();
                 taskResult = 'Created fresh reports';
                 break;
             case 'REPORTS_2H':
-                await reportsService.generateReportsForManualTrigger(['2h'] as TimeframeKey[]);
+                await reportGeneratorService.generateReportsForManualTrigger(['2h'] as TimeframeKey[]);
                 taskResult = 'Generated 2h reports';
                 break;
             case 'REPORTS_6H':
-                await reportsService.generateReportsForManualTrigger(['6h'] as TimeframeKey[]);
+                await reportGeneratorService.generateReportsForManualTrigger(['6h'] as TimeframeKey[]);
                 taskResult = 'Generated 6h reports';
                 break;
             case 'REPORTS':
-                await reportsService.generateReportsForManualTrigger('ALL');
+                await reportGeneratorService.generateReportsForManualTrigger('ALL');
                 taskResult = 'Generated all reports';
                 break;
             case 'FEEDS':
