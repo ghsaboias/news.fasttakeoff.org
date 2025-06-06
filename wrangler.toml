@@ -56,11 +56,6 @@ binding = "INSTAGRAM_IMAGES"
 bucket_name = "news-images"
 preview_bucket_name = "news-images-dev"
 
-# Service bindings for worker-to-worker communication
-[[services]]
-binding = "SVG_WORKER"
-service = "svg-generator"
-
 [[routes]]
 pattern = "news.fasttakeoff.org"
 custom_domain = true
