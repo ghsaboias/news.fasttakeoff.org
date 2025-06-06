@@ -1,7 +1,11 @@
 import { Cloudflare, KVNamespace } from '../../worker-configuration';
 
 export class CacheManager {
-    constructor(private env: Cloudflare.Env) { }
+    private readonly env: Cloudflare.Env;
+
+    constructor(env: Cloudflare.Env) {
+        this.env = env;
+    }
 
     async get<T>(namespace: keyof Cloudflare.Env, key: string): Promise<T | null> {
         const cache = this.env[namespace] as KVNamespace;
@@ -35,5 +39,9 @@ export class CacheManager {
             keys.map(key => cache?.get<T>(key, { type: 'json' }))
         );
         return new Map(keys.map((key, index) => [key, results[index] ?? null]));
+    }
+
+    getKVNamespace(namespace: keyof Cloudflare.Env): KVNamespace | null {
+        return this.env[namespace] as KVNamespace || null;
     }
 }

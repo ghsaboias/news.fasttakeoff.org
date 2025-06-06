@@ -11,6 +11,9 @@ export class MessagesService {
 
     constructor(env: Cloudflare.Env) {
         this.env = env;
+        if (!env.MESSAGES_CACHE) {
+            throw new Error('Missing required KV namespace: MESSAGES_CACHE');
+        }
         this.cacheManager = new CacheManager(env);
         this.channelsService = new ChannelsService(env);
     }
@@ -135,30 +138,30 @@ export class MessagesService {
     }
 
     async getMessagesForTimeframe(channelId: string, timeframe: TimeframeKey): Promise<DiscordMessage[]> {
-        const hours: Record<TimeframeKey, number> = { '2h': 2, '6h': 6 };
-        const since = new Date(Date.now() - hours[timeframe] * 60 * 60 * 1000);
-
-        const cached = await this.getFromCache(channelId, { since });
-        if (cached) {
-            const age = (Date.now() - new Date(cached.cachedAt).getTime()) / 1000;
-            if (age < CACHE.TTL.MESSAGES && cached.messages.length > 0) return cached.messages;
+        const key = `messages:${channelId}`;
+        const cached = await this.cacheManager.get<CachedMessages>('MESSAGES_CACHE', key);
+        if (!cached?.messages || !Array.isArray(cached.messages)) {
+            return [];
         }
 
-        // Cache miss or expired, fetch fresh data
-        const messages = await this.getMessages(channelId, { since });
-        return messages;
+        const timeframeMs = timeframe === '2h' ? TIME.TWO_HOURS_MS : TIME.SIX_HOURS_MS;
+        const cutoffTime = Date.now() - timeframeMs;
+
+        return cached.messages
+            .filter(msg => new Date(msg.timestamp).getTime() > cutoffTime)
+            .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
     }
 
     async getMessagesForReport(channelId: string, messageIds: string[]): Promise<DiscordMessage[]> {
-        if (!messageIds.length) return [];
-
-        const cached = await this.getFromCache(channelId, { messageIds });
-        if (cached) {
-            console.log(`[MESSAGES] Retrieved ${cached.messages.length}/${messageIds.length} messages by ID for channel ${channelId}`);
-            return cached.messages;
+        const key = `messages:${channelId}`;
+        const cached = await this.cacheManager.get<CachedMessages>('MESSAGES_CACHE', key);
+        if (!cached?.messages || !Array.isArray(cached.messages)) {
+            return [];
         }
 
-        return [];
+        return cached.messages
+            .filter(msg => messageIds.includes(msg.id))
+            .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
     }
 
     async getAllCachedMessagesForChannel(channelId: string): Promise<CachedMessages | null> {
@@ -241,5 +244,15 @@ export class MessagesService {
             throw new Error('[MESSAGES] No messages fetched across all channels—possible API failure');
         }
         console.log('[MESSAGES] Update completed');
+    }
+
+    async listMessageKeys(): Promise<{ name: string }[]> {
+        const messagesCache = this.cacheManager.getKVNamespace('MESSAGES_CACHE');
+        if (!messagesCache) {
+            console.log('MESSAGES_CACHE namespace not available');
+            return [];
+        }
+        const { keys } = await messagesCache.list();
+        return keys;
     }
 }

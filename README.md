@@ -37,7 +37,7 @@ The application's core data handling is managed by services and transformers wit
 - **`src/lib/data/channels-service.ts` (`ChannelsService`)**: Fetches Discord channels from the API, filters them based on criteria (type, emoji prefix, permissions), and caches the results. Essential for identifying relevant channels for news monitoring.
 - **`src/lib/data/messages-service.ts` (`MessagesService`)**: Responsible for fetching messages from specified Discord channels, handling pagination, and caching them. Provides the raw source material for report generation.
 - **`src/lib/data/executive-orders.ts`**: Fetches lists of executive orders and individual order details from the Federal Register API. Implements caching for individual orders and mechanisms to look up orders by number.
-- **`src/lib/data/reports-service.ts` (`ReportsService`)**: Orchestrates the generation of news reports. It retrieves messages, prepares prompts for the AI, calls the AI provider, processes the response, and caches the generated reports. It also triggers social media posting.
+- **`src/lib/data/report-generator-service.ts` (`ReportGeneratorService`)**: Core service that orchestrates the generation of news reports. It retrieves messages, prepares prompts for the AI, calls the AI provider, processes the response, and caches the generated reports. It also handles social media posting through integration with Twitter and Instagram services.
 - **`src/lib/transformers/executive-orders.ts`**: Transforms raw executive order data fetched from the Federal Register API into a structured `ExecutiveOrder` type used throughout the application, simplifying data handling in the frontend and other services.
 
 ### Common Utilities & API Helpers
@@ -225,7 +225,15 @@ src/
 │   ├── Footer.tsx        # Application footer
 │   └── ui/               # shadcn/ui components (e.g., button.tsx)
 ├── lib/                  # Utilities and data logic
-│   ├── data/             # API clients (e.g., discord-channels.ts)
+│   ├── data/             # Core services
+│   │   ├── channels-service.ts      # Discord channel management
+│   │   ├── messages-service.ts      # Discord message handling
+│   │   ├── report-generator-service.ts  # Report generation orchestration
+│   │   ├── report-ai-service.ts     # AI integration for reports
+│   │   ├── report-cache-service.ts  # Report caching logic
+│   │   ├── executive-orders.ts      # Executive order data handling
+│   │   ├── feeds-service.ts         # RSS feed processing
+│   │   └── rss-service.ts           # RSS feed fetching
 │   ├── transformers/     # Data transformation (e.g., executive-orders.ts)
 │   └── types/            # TypeScript interfaces (e.g., core.ts)
 .gitignore              # Excludes node_modules, .next/, etc.
