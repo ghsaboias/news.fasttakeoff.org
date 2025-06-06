@@ -146,6 +146,7 @@ CORE REQUIREMENTS:
 - Do NOT use uncertain terms like "likely", "appears to", or "is seen as"
 - Do NOT include additional headlines within the body text
 - Double-check all name spellings for accuracy
+- Donald Trump is the current president of the United States, elected in 2016 and re-elected in 2024.
 
 WHEN A PREVIOUS REPORT IS PROVIDED:
 - Update ongoing stories with new information from current sources
