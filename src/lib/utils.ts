@@ -183,29 +183,31 @@ export function convertTimestampToUnixTimestamp(timestamp: string): number {
 export function groupAndSortReports(reports: Report[]): Report[] {
   if (!reports.length) return []
 
-  // Get today's date (start of day)
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
-  const todayTimestamp = today.getTime()
+  // Find the most recent generation timestamp
+  const latestGenerationTime = reports.reduce((latest, report) => {
+    const reportTime = new Date(report.generatedAt).getTime()
+    return reportTime > latest ? reportTime : latest
+  }, 0)
 
-  // Group reports into "today" and "older"
-  const todayReports: Report[] = []
+  // Group reports by generation run
+  // Reports are considered from the same run if they're within 10 minutes of the latest generation
+  const runThreshold = 10 * 60 * 1000 // 10 minutes in milliseconds
+  const latestRunReports: Report[] = []
   const olderReports: Report[] = []
 
   reports.forEach(report => {
-    const reportDate = new Date(report.generatedAt)
-    reportDate.setHours(0, 0, 0, 0)
-    const reportTimestamp = reportDate.getTime()
+    const reportTime = new Date(report.generatedAt).getTime()
+    const timeDiff = latestGenerationTime - reportTime
 
-    if (reportTimestamp === todayTimestamp) {
-      todayReports.push(report)
+    if (timeDiff <= runThreshold) {
+      latestRunReports.push(report)
     } else {
       olderReports.push(report)
     }
   })
 
-  // Sort today's reports by messageCount (highest first)
-  const sortedTodayReports = todayReports.sort((a, b) => {
+  // Sort latest run reports by messageCount (highest first)
+  const sortedLatestReports = latestRunReports.sort((a, b) => {
     return (b.messageCount || 0) - (a.messageCount || 0)
   })
 
@@ -214,6 +216,6 @@ export function groupAndSortReports(reports: Report[]): Report[] {
     return new Date(b.generatedAt).getTime() - new Date(a.generatedAt).getTime()
   })
 
-  // Combine today's and older reports
-  return [...sortedTodayReports, ...sortedOlderReports]
+  // Combine latest run and older reports
+  return [...sortedLatestReports, ...sortedOlderReports]
 }
