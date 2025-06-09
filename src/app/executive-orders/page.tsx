@@ -8,6 +8,9 @@ export async function generateMetadata() {
     return {
         title: 'Executive Orders - Fast Takeoff News',
         description: 'Latest executive orders and presidential directives.',
+        alternates: {
+            canonical: 'https://news.fasttakeoff.org/executive-orders'
+        }
     };
 }
 

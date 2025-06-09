@@ -6,6 +6,9 @@ export async function generateMetadata() {
     return {
         title: 'Current Events - Fast Takeoff News',
         description: 'Latest updates from Discord channels.',
+        alternates: {
+            canonical: 'https://news.fasttakeoff.org/current-events'
+        }
     };
 }
 
