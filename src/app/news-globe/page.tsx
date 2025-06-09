@@ -1,4 +1,4 @@
-import NewsGlobe from '@/components/NewsGlobe';
+import NewsGlobeClient from './NewsGlobeClient';
 
 export async function generateMetadata() {
     return {
@@ -11,5 +11,5 @@ export async function generateMetadata() {
 }
 
 export default function NewsGlobePage() {
-    return <NewsGlobe />;
+    return <NewsGlobeClient />;
 } 
