@@ -183,42 +183,37 @@ export function convertTimestampToUnixTimestamp(timestamp: string): number {
 export function groupAndSortReports(reports: Report[]): Report[] {
   if (!reports.length) return []
 
-  // Round timestamps to the nearest hour and find the latest hour
-  const getHourTimestamp = (date: Date) => {
-    const rounded = new Date(date)
-    rounded.setMinutes(0, 0, 0)
-    return rounded.getTime()
-  }
+  // Get today's date (start of day)
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  const todayTimestamp = today.getTime()
 
-  // Find the latest hour timestamp
-  const latestHourTimestamp = reports.reduce((latest, report) => {
-    const hourTimestamp = getHourTimestamp(new Date(report.generatedAt))
-    return hourTimestamp > latest ? hourTimestamp : latest
-  }, 0)
-
-  // Group reports into "latest run" and "older"
-  const latestRunReports: Report[] = []
+  // Group reports into "today" and "older"
+  const todayReports: Report[] = []
   const olderReports: Report[] = []
 
   reports.forEach(report => {
-    const hourTimestamp = getHourTimestamp(new Date(report.generatedAt))
-    if (hourTimestamp === latestHourTimestamp) {
-      latestRunReports.push(report)
+    const reportDate = new Date(report.generatedAt)
+    reportDate.setHours(0, 0, 0, 0)
+    const reportTimestamp = reportDate.getTime()
+
+    if (reportTimestamp === todayTimestamp) {
+      todayReports.push(report)
     } else {
       olderReports.push(report)
     }
   })
 
-  // Sort latest run reports by messageCount
-  const sortedLatestReports = latestRunReports.sort((a, b) => {
+  // Sort today's reports by messageCount (highest first)
+  const sortedTodayReports = todayReports.sort((a, b) => {
     return (b.messageCount || 0) - (a.messageCount || 0)
   })
 
-  // Sort older reports by generatedAt
+  // Sort older reports by generatedAt (newest first)
   const sortedOlderReports = olderReports.sort((a, b) => {
     return new Date(b.generatedAt).getTime() - new Date(a.generatedAt).getTime()
   })
 
-  // Combine latest and older reports
-  return [...sortedLatestReports, ...sortedOlderReports]
+  // Combine today's and older reports
+  return [...sortedTodayReports, ...sortedOlderReports]
 }
