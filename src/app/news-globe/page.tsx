@@ -1,5 +1,3 @@
-'use client'
-
 import NewsGlobe from '@/components/NewsGlobe';
 
 export async function generateMetadata() {
