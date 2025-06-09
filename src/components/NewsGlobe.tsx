@@ -351,7 +351,7 @@ const NewsGlobe: React.FC = () => {
                 className={`absolute top-5 left-5 z-10 transition-opacity duration-500 ${selectedReport ? 'md:opacity-100 opacity-0' : 'opacity-100'
                     }`}
             >
-                <Image src="/images/brain_transparent.png" alt="Home" width={32} height={32} />
+                <Image src="/images/brain_transparent.webp" alt="Home" width={32} height={32} />
             </Link>
 
             <div className="flex w-full h-full">
