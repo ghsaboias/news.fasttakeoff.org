@@ -1,6 +1,5 @@
 import RootLayoutClient from '@/components/RootLayoutClient';
 import { ClerkProvider } from '@clerk/nextjs';
-import type { Metadata } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
 import Script from 'next/script';
 import './globals.css';
@@ -35,23 +34,16 @@ export default function RootLayout({
               ]
             })}
           </script>
-          {/* Preload Clerk's core script */}
+          {/* Only preload core Clerk script - remove OAuth preload */}
           <link
             rel='preload'
             href='https://clerk.fasttakeoff.org/npm/@clerk/clerk-js@latest/dist/clerk.browser.js'
             as='script'
             crossOrigin='anonymous'
           />
-          {/* Preload Clerk's OAuth script */}
-          <link
-            rel='preload'
-            href='https://clerk.fasttakeoff.org/npm/@clerk/clerk-js@latest/dist/clerk.oauth.js'
-            as='script'
-            crossOrigin='anonymous'
-          />
-          {/* Google Analytics */}
-          <Script src="https://www.googletagmanager.com/gtag/js?id=G-ZZQ4KRK7H5" strategy="afterInteractive" />
-          <Script id="google-analytics" strategy="afterInteractive">
+          {/* Google Analytics - Load after user interaction */}
+          <Script src="https://www.googletagmanager.com/gtag/js?id=G-ZZQ4KRK7H5" strategy="lazyOnload" />
+          <Script id="google-analytics" strategy="lazyOnload">
             {`
               window.dataLayer = window.dataLayer || [];
               function gtag(){dataLayer.push(arguments);}
@@ -59,9 +51,9 @@ export default function RootLayout({
               gtag('config', 'G-ZZQ4KRK7H5');
             `}
           </Script>
-          {/* Google News Showcase */}
-          <Script src="https://news.google.com/swg/js/v1/swg-basic.js" strategy="afterInteractive" />
-          <Script id="google-news-showcase" strategy="afterInteractive">
+          {/* Google News Showcase - Load after user interaction */}
+          <Script src="https://news.google.com/swg/js/v1/swg-basic.js" strategy="lazyOnload" />
+          <Script id="google-news-showcase" strategy="lazyOnload">
             {`
               (self.SWG_BASIC = self.SWG_BASIC || []).push(basicSubscriptions => {
                 basicSubscriptions.init({
