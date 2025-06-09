@@ -7,7 +7,7 @@ export const metadata: Metadata = {
         icon: [
             { url: '/favicon.ico', type: 'image/x-icon', sizes: '32x32' },
         ],
-        apple: '/images/brain-180.png',
+        apple: '/images/brain-180.webp',
     },
     openGraph: {
         title: 'Fast Takeoff News',
@@ -16,7 +16,7 @@ export const metadata: Metadata = {
         siteName: 'Fast Takeoff News',
         images: [
             {
-                url: 'https://news.fasttakeoff.org/images/og-screenshot.png',
+                url: 'https://news.fasttakeoff.org/images/og-screenshot.webp',
                 width: 1200,
                 height: 630,
                 alt: 'Fast Takeoff News - AI-powered news for everyone',
@@ -30,11 +30,11 @@ export const metadata: Metadata = {
         title: 'Fast Takeoff News',
         description: 'AI-powered news for everyone. Get the latest news from on-the-ground sources.',
         images: [{
-            url: 'https://news.fasttakeoff.org/images/og-screenshot.png',
+            url: 'https://news.fasttakeoff.org/images/og-screenshot.webp',
             width: 1200,
             height: 630,
             alt: 'Fast Takeoff News - AI-powered news for everyone',
-            type: 'image/png',
+            type: 'image/webp',
         }],
         creator: '@fasttakeoff',
         site: '@fasttakeoff',

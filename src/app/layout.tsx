@@ -34,6 +34,22 @@ export default function RootLayout({
               ]
             })}
           </script>
+          {/* Non-blocking font load with preload */}
+          <link
+            rel='preload'
+            href='https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap'
+            as='style'
+          />
+          <link
+            rel='stylesheet'
+            href='https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap'
+            media='print'
+          />
+          <Script id="font-loader" strategy="afterInteractive">
+            {`
+              document.querySelector('link[href*="Space+Grotesk"]').media = 'all';
+            `}
+          </Script>
           {/* Only preload core Clerk script - remove OAuth preload */}
           <link
             rel='preload'
