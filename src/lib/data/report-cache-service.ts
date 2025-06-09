@@ -70,14 +70,21 @@ export class ReportCacheService {
         return this.cacheManager.batchGet<Report[]>('REPORTS_CACHE', keys);
     }
 
-    async getAllReportsFromCache(): Promise<Report[]> {
+    async getAllReportsFromCache(limit?: number): Promise<Report[]> {
         const reportsCache = this.cacheManager.getKVNamespace('REPORTS_CACHE');
         if (!reportsCache) {
             console.log('REPORTS_CACHE namespace not available');
             return [];
         }
 
-        const { keys } = await reportsCache.list({ prefix: 'reports:' });
+        // Add pagination to reduce KV operations - limit keys fetched
+        const listOptions: { prefix: string; limit?: number } = { prefix: 'reports:' };
+        if (limit && limit <= 20) {
+            // For small limits (like homepage), only fetch recent keys
+            listOptions.limit = Math.min(limit * 3, 30); // Fetch 3x limit to account for multiple timeframes per channel
+        }
+
+        const { keys } = await reportsCache.list(listOptions);
         if (keys.length === 0) {
             console.log('No reports found in REPORTS_CACHE');
             return [];
@@ -87,9 +94,12 @@ export class ReportCacheService {
         const batchResults = await this.cacheManager.batchGet<Report[]>('REPORTS_CACHE', keyNames);
         const reports = Array.from(batchResults.values()).map(item => item ?? []);
 
-        return reports
+        const sortedReports = reports
             .flat()
             .sort((a: Report, b: Report) => new Date(b.generatedAt || '').getTime() - new Date(a.generatedAt || '').getTime());
+
+        // Apply limit after sorting if specified
+        return limit ? sortedReports.slice(0, limit) : sortedReports;
     }
 
     async getAllReportsForChannelFromCache(channelId: string, timeframe?: TimeframeKey): Promise<Report[]> {
