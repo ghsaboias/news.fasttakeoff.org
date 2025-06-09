@@ -1,3 +1,4 @@
+import { TIME, TimeframeKey } from '@/lib/config'
 import { getChannels } from '@/lib/data/channels-service'
 import { ReportGeneratorService } from '@/lib/data/report-generator-service'
 import { getCacheContext } from '@/lib/utils'
@@ -12,26 +13,40 @@ export async function GET() {
     // Get recent reports from all channels
     const allReports = []
     const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000)
+    const timeframes: TimeframeKey[] = [...TIME.TIMEFRAMES] // Get all configured timeframes
 
     for (const channel of channels) {
       try {
-        const reports = await reportGeneratorService.cacheService.getAllReportsForChannelFromCache(channel.id)
-        if (reports) {
-          const recentReports = reports
-            .filter(report => new Date(report.generatedAt) >= oneDayAgo)
-            .map(report => ({ ...report, channelName: channel.name }))
-          allReports.push(...recentReports)
+        // Fetch reports for each timeframe
+        for (const timeframe of timeframes) {
+          const reports = await reportGeneratorService.cacheService.getReportsFromCache(channel.id, timeframe)
+          if (reports) {
+            const recentReports = reports
+              .filter(report => new Date(report.generatedAt) >= oneDayAgo)
+              .map(report => ({ ...report, channelName: channel.name }))
+            allReports.push(...recentReports)
+          }
         }
       } catch (error) {
         console.error(`Error fetching reports for channel ${channel.id}:`, error)
       }
     }
 
+    // Sort by newest first and deduplicate by reportId
+    const uniqueReports = Array.from(
+      allReports.reduce((map, report) => {
+        if (!map.has(report.reportId)) {
+          map.set(report.reportId, report)
+        }
+        return map
+      }, new Map()).values()
+    )
+
     // Sort by newest first
-    allReports.sort((a, b) => new Date(b.generatedAt).getTime() - new Date(a.generatedAt).getTime())
+    uniqueReports.sort((a, b) => new Date(b.generatedAt).getTime() - new Date(a.generatedAt).getTime())
 
     // Take top 50 for feed
-    const feedReports = allReports.slice(0, 50)
+    const feedReports = uniqueReports.slice(0, 50)
 
     const baseUrl = 'https://news.fasttakeoff.org'
     const buildDate = new Date().toUTCString()
