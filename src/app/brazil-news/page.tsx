@@ -6,6 +6,9 @@ export async function generateMetadata() {
     return {
         title: 'Brazil News - Fast Takeoff News',
         description: 'Latest news and updates from Brazil.',
+        alternates: {
+            canonical: 'https://news.fasttakeoff.org/brazil-news'
+        }
     };
 }
 

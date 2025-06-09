@@ -4,10 +4,28 @@ import { DiscordChannel, Report } from '@/lib/types/core';
 import { getCacheContext } from '@/lib/utils';
 import ChannelDetailClient from './ChannelDetailClient';
 
-export async function generateMetadata() {
+export async function generateMetadata({ params }: { params: Promise<{ channelId: string }> }) {
+    const { channelId } = await params;
+    const { env } = getCacheContext();
+    const reportGeneratorService = new ReportGeneratorService(env);
+    const channels: DiscordChannel[] = await getChannels(env);
+    const currentChannel = channels.find((c) => c.id === channelId);
+    
     return {
-        title: `Channel Details - Fast Takeoff News`,
-        description: 'View reports for this channel',
+        title: `${currentChannel?.name || 'Channel'} Reports - Fast Takeoff News`,
+        description: `Latest breaking news and reports from ${currentChannel?.name || 'this channel'}. Real-time updates as stories develop.`,
+        alternates: {
+            canonical: `https://news.fasttakeoff.org/current-events/${channelId}`
+        },
+        robots: {
+            index: true, // INDEX these - they contain breaking news
+            follow: true
+        },
+        openGraph: {
+            title: `${currentChannel?.name || 'Channel'} Reports - Fast Takeoff News`,
+            description: `Latest breaking news and reports from ${currentChannel?.name || 'this channel'}`,
+            type: 'article'
+        }
     };
 }
 

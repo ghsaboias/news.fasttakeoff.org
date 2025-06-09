@@ -12,12 +12,26 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
         return {
             title: 'Executive Order - Fast Takeoff News',
             description: 'Executive order details',
+            alternates: {
+                canonical: `https://news.fasttakeoff.org/executive-orders/${id}`
+            },
+            robots: {
+                index: false, // Don't index missing pages
+                follow: true
+            }
         };
     }
 
     return {
         title: `${order.title} - Fast Takeoff News`,
         description: order.summary || 'Executive order details',
+        alternates: {
+            canonical: `https://news.fasttakeoff.org/executive-orders/${id}`
+        },
+        robots: {
+            index: true, // Executive orders are valuable content, keep indexed
+            follow: true
+        }
     };
 }
 
