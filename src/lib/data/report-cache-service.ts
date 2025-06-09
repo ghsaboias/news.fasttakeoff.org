@@ -1,5 +1,6 @@
 import { CACHE, TIME, TimeframeKey } from '@/lib/config';
 import { Report } from '@/lib/types/core';
+import { groupAndSortReports } from '@/lib/utils';
 import { Cloudflare } from '../../../worker-configuration';
 import { CacheManager } from '../cache-utils';
 
@@ -94,11 +95,12 @@ export class ReportCacheService {
         const batchResults = await this.cacheManager.batchGet<Report[]>('REPORTS_CACHE', keyNames);
         const reports = Array.from(batchResults.values()).map(item => item ?? []);
 
-        const sortedReports = reports
-            .flat()
-            .sort((a: Report, b: Report) => new Date(b.generatedAt || '').getTime() - new Date(a.generatedAt || '').getTime());
+        const allReports = reports.flat();
 
-        // Apply limit after sorting if specified
+        // Use the original groupAndSortReports logic to prioritize today's reports by message count
+        const sortedReports = groupAndSortReports(allReports);
+
+        // Apply limit after proper sorting if specified
         return limit ? sortedReports.slice(0, limit) : sortedReports;
     }
 
