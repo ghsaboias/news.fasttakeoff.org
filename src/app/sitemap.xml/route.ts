@@ -147,8 +147,9 @@ ${urls.map(url => `  <url>
 
         return new NextResponse(sitemap, {
             headers: {
-                'Content-Type': 'application/xml',
-                'Cache-Control': 'public, max-age=3600, s-maxage=3600', // Cache for 1 hour
+                'Content-Type': 'application/xml; charset=utf-8',
+                'Cache-Control': 'public, max-age=3600, s-maxage=3600',
+                'X-Robots-Tag': 'noindex', // Don't index sitemap itself
             },
         })
     } catch (error) {

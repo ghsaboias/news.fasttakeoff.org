@@ -4,14 +4,12 @@ import type { Metadata } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
 import Script from 'next/script';
 import './globals.css';
+import { metadata } from './metadata';
 
 const geistSans = Geist({ variable: '--font-geist-sans', subsets: ['latin'] });
 const geistMono = Geist_Mono({ variable: '--font-geist-mono', subsets: ['latin'] });
 
-export const metadata: Metadata = {
-  title: 'Fast Takeoff News',
-  description: 'AI-powered news for everyone.',
-};
+export { metadata };
 
 export default function RootLayout({
   children,
@@ -24,6 +22,19 @@ export default function RootLayout({
         <head>
           <link rel='manifest' href='/manifest.json' />
           <link rel='alternate' type='application/rss+xml' title='Fast Takeoff News RSS' href='/rss' />
+          {/* Structured Data */}
+          <script type="application/ld+json">
+            {JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "NewsMediaOrganization",
+              "name": "Fast Takeoff News",
+              "url": "https://news.fasttakeoff.org",
+              "logo": "https://news.fasttakeoff.org/favicon.ico",
+              "sameAs": [
+                "https://twitter.com/fasttakeoff"
+              ]
+            })}
+          </script>
           {/* Preload Clerk's core script */}
           <link
             rel='preload'
