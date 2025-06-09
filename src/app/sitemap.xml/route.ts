@@ -2,6 +2,9 @@ import { fetchExecutiveOrders } from '@/lib/data/executive-orders'
 import { Report } from '@/lib/types/core'
 import { getStartDate } from '@/lib/utils'
 import { NextResponse } from 'next/server'
+import { ReportGeneratorService } from '@/lib/data/report-generator-service'
+import { getChannels } from '@/lib/data/channels-service'
+import { getCacheContext } from '@/lib/utils'
 
 const BASE_URL = 'https://news.fasttakeoff.org'
 
@@ -52,8 +55,48 @@ export async function GET() {
             console.error('Error fetching executive orders for sitemap:', error)
         }
 
-        // Reports - fetch from API
+        // Reports - fetch directly from cache for better performance
         try {
+            const { env } = getCacheContext()
+            const reportGeneratorService = new ReportGeneratorService(env)
+            const channels = await getChannels(env)
+            const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
+            
+            // Get fresh reports from all channels
+            for (const channel of channels) {
+                try {
+                    const reports = await reportGeneratorService.cacheService.getAllReportsForChannelFromCache(channel.id)
+                    if (reports) {
+                        // Add channel pages
+                        urls.push({
+                            url: `${BASE_URL}/current-events/${channel.id}`,
+                            lastModified: new Date().toISOString(),
+                            changeFrequency: 'hourly',
+                            priority: 0.7
+                        })
+                        
+                        // Add recent individual reports with higher priority
+                        const freshReports = reports
+                            .filter(report => new Date(report.generatedAt) >= sevenDaysAgo)
+                            .slice(0, 30) // Limit per channel
+                            
+                        freshReports.forEach(report => {
+                            urls.push({
+                                url: `${BASE_URL}/current-events/${report.channelId}/${report.reportId}`,
+                                lastModified: report.generatedAt,
+                                changeFrequency: 'daily',
+                                priority: 0.8 // Higher priority for breaking news
+                            })
+                        })
+                    }
+                } catch (error) {
+                    console.error(`Error fetching reports for channel ${channel.id}:`, error)
+                }
+            }
+        } catch (error) {
+            console.error('Error with cache approach, falling back to API:', error)
+            
+            // Fallback to API approach
             const reportsResponse = await fetch(`${BASE_URL}/api/reports`, {
                 method: 'GET',
                 headers: {
@@ -89,8 +132,6 @@ export async function GET() {
                     }
                 })
             }
-        } catch (error) {
-            console.error('Error fetching reports for sitemap:', error)
         }
 
         // Generate XML
