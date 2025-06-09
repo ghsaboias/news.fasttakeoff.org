@@ -62,6 +62,73 @@ export async function generateMetadata({ params }: { params: Promise<{ channelId
     };
 }
 
-export default function ReportDetailPage() {
-    return <ReportClient />;
+export default async function ReportDetailPage({ params }: { params: Promise<{ channelId: string, reportId: string }> }) {
+    const { channelId, reportId } = await params;
+    const { env } = getCacheContext();
+    const reportGeneratorService = new ReportGeneratorService(env);
+
+    // Get the specific report for structured data
+    const reports = await reportGeneratorService.cacheService.getAllReportsForChannelFromCache(channelId) || [];
+    const report = reports.find(r => r.reportId === reportId);
+    const channels = await getChannels(env);
+    const channel = channels.find(c => c.id === channelId);
+
+    // Generate structured data for the report
+    let structuredData = null;
+    if (report) {
+        structuredData = {
+            '@context': 'https://schema.org',
+            '@type': 'NewsArticle',
+            headline: report.headline || `Breaking: ${channel?.name || 'News'} Report`,
+            description: report.body.substring(0, 160) || 'Breaking news analysis',
+            articleBody: report.body,
+            datePublished: report.generatedAt,
+            dateModified: report.generatedAt,
+            author: {
+                '@type': 'Organization',
+                name: 'Fast Takeoff News',
+                url: 'https://news.fasttakeoff.org'
+            },
+            publisher: {
+                '@type': 'Organization',
+                name: 'Fast Takeoff News',
+                logo: {
+                    '@type': 'ImageObject',
+                    url: 'https://news.fasttakeoff.org/images/logo.png',
+                    width: 512,
+                    height: 512
+                }
+            },
+            mainEntityOfPage: {
+                '@type': 'WebPage',
+                '@id': `https://news.fasttakeoff.org/current-events/${channelId}/${reportId}`
+            },
+            articleSection: 'Breaking News',
+            keywords: [
+                'breaking news',
+                'real-time news',
+                'news analysis',
+                channel?.name || 'current events',
+                ...(report?.headline?.split(' ').slice(0, 8) || [])
+            ].filter(Boolean).join(', '),
+            ...(report.city && {
+                contentLocation: {
+                    '@type': 'Place',
+                    name: report.city
+                }
+            })
+        };
+    }
+
+    return (
+        <>
+            {structuredData && (
+                <script
+                    type="application/ld+json"
+                    dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
+                />
+            )}
+            <ReportClient />
+        </>
+    );
 }
