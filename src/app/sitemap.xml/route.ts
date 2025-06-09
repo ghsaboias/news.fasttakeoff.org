@@ -1,10 +1,9 @@
-import { fetchExecutiveOrders } from '@/lib/data/executive-orders'
-import { Report } from '@/lib/types/core'
-import { getStartDate } from '@/lib/utils'
-import { NextResponse } from 'next/server'
-import { ReportGeneratorService } from '@/lib/data/report-generator-service'
 import { getChannels } from '@/lib/data/channels-service'
-import { getCacheContext } from '@/lib/utils'
+import { fetchExecutiveOrders } from '@/lib/data/executive-orders'
+import { ReportGeneratorService } from '@/lib/data/report-generator-service'
+import { Report } from '@/lib/types/core'
+import { getCacheContext, getStartDate } from '@/lib/utils'
+import { NextResponse } from 'next/server'
 
 const BASE_URL = 'https://news.fasttakeoff.org'
 
@@ -61,7 +60,7 @@ export async function GET() {
             const reportGeneratorService = new ReportGeneratorService(env)
             const channels = await getChannels(env)
             const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
-            
+
             // Get fresh reports from all channels
             for (const channel of channels) {
                 try {
@@ -74,12 +73,12 @@ export async function GET() {
                             changeFrequency: 'hourly',
                             priority: 0.7
                         })
-                        
+
                         // Add recent individual reports with higher priority
                         const freshReports = reports
                             .filter(report => new Date(report.generatedAt) >= sevenDaysAgo)
                             .slice(0, 30) // Limit per channel
-                            
+
                         freshReports.forEach(report => {
                             urls.push({
                                 url: `${BASE_URL}/current-events/${report.channelId}/${report.reportId}`,
@@ -95,7 +94,7 @@ export async function GET() {
             }
         } catch (error) {
             console.error('Error with cache approach, falling back to API:', error)
-            
+
             // Fallback to API approach
             const reportsResponse = await fetch(`${BASE_URL}/api/reports`, {
                 method: 'GET',
