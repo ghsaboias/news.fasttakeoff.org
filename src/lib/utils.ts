@@ -183,21 +183,32 @@ export function convertTimestampToUnixTimestamp(timestamp: string): number {
 export function groupAndSortReports(reports: Report[]): Report[] {
   if (!reports.length) return []
 
-  // Find the most recent generation timestamp
+  // Find the most recent generation timestamp without mutating the input array
   const latestGenerationTime = reports.reduce((latest, report) => {
-    const reportTime = new Date(report.generatedAt).getTime()
-    return reportTime > latest ? reportTime : latest
-  }, 0)
+    if (!report.generatedAt) return latest
+    return !latest || new Date(report.generatedAt).getTime() > new Date(latest).getTime()
+      ? report.generatedAt
+      : latest
+  }, '' as string)
 
-  // Group reports by generation run
-  // Reports are considered from the same run if they're within 10 minutes of the latest generation
-  const runThreshold = 10 * 60 * 1000 // 10 minutes in milliseconds
+  if (!latestGenerationTime) return reports // If no valid timestamps, return as-is
+
+  // Since reports are generated every ~2h, we need to find all reports from the latest generation run
+  // Reports from the same run should have very similar timestamps (within a few minutes)
+  const runThreshold = 15 * 60 * 1000 // 15 minutes in milliseconds (generous buffer for generation time)
   const latestRunReports: Report[] = []
   const olderReports: Report[] = []
 
+  const latestTime = new Date(latestGenerationTime).getTime()
+
   reports.forEach(report => {
+    if (!report.generatedAt) {
+      olderReports.push(report)
+      return
+    }
+
     const reportTime = new Date(report.generatedAt).getTime()
-    const timeDiff = latestGenerationTime - reportTime
+    const timeDiff = Math.abs(latestTime - reportTime) // Use absolute difference
 
     if (timeDiff <= runThreshold) {
       latestRunReports.push(report)
@@ -206,16 +217,19 @@ export function groupAndSortReports(reports: Report[]): Report[] {
     }
   })
 
-  // Sort latest run reports by messageCount (highest first)
+  // Sort latest run reports by messageCount (highest first) - this is what shows on homepage
   const sortedLatestReports = latestRunReports.sort((a, b) => {
     return (b.messageCount || 0) - (a.messageCount || 0)
   })
 
   // Sort older reports by generatedAt (newest first)
   const sortedOlderReports = olderReports.sort((a, b) => {
+    if (!a.generatedAt && !b.generatedAt) return 0
+    if (!a.generatedAt) return 1
+    if (!b.generatedAt) return -1
     return new Date(b.generatedAt).getTime() - new Date(a.generatedAt).getTime()
   })
 
-  // Combine latest run and older reports
+  // Return latest run reports first (sorted by message count), then older reports
   return [...sortedLatestReports, ...sortedOlderReports]
 }
