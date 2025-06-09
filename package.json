@@ -17,7 +17,8 @@
     "dev:worker": "wrangler dev --port 8771",
     "watch:build": "npx watch 'npm run build:worker' -- src",
     "build:cron:test": "./run_cron_test.sh",
-    "playground": "tsx scripts/standalone-playground.ts"
+    "playground": "tsx scripts/standalone-playground.ts",
+    "analyze": "ANALYZE=true next build"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.39.0",
@@ -59,6 +60,7 @@
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20250506.0",
     "@eslint/eslintrc": "^3",
+    "@next/bundle-analyzer": "^15.3.3",
     "@opennextjs/cloudflare": "^0.6.0",
     "@types/node": "^20.17.30",
     "@types/react": "^19",
