@@ -7,10 +7,9 @@ import ChannelDetailClient from './ChannelDetailClient';
 export async function generateMetadata({ params }: { params: Promise<{ channelId: string }> }) {
     const { channelId } = await params;
     const { env } = getCacheContext();
-    const reportGeneratorService = new ReportGeneratorService(env);
     const channels: DiscordChannel[] = await getChannels(env);
     const currentChannel = channels.find((c) => c.id === channelId);
-    
+
     return {
         title: `${currentChannel?.name || 'Channel'} Reports - Fast Takeoff News`,
         description: `Latest breaking news and reports from ${currentChannel?.name || 'this channel'}. Real-time updates as stories develop.`,
