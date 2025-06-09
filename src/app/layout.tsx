@@ -23,6 +23,7 @@ export default function RootLayout({
       <html lang='en'>
         <head>
           <link rel='manifest' href='/manifest.json' />
+          <link rel='alternate' type='application/rss+xml' title='Fast Takeoff News RSS' href='/rss' />
           {/* Preload Clerk's core script */}
           <link
             rel='preload'

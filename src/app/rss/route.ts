@@ -64,7 +64,7 @@ export async function GET() {
     <webMaster>admin@fasttakeoff.org (Fast Takeoff News)</webMaster>
     <category>News</category>
     <ttl>120</ttl>
-    <atom:link href="${baseUrl}/api/rss/breaking-news" rel="self" type="application/rss+xml" />
+    <atom:link href="${baseUrl}/rss" rel="self" type="application/rss+xml" />
     
 ${feedReports.map(report => {
       const pubDate = new Date(report.generatedAt).toUTCString()
