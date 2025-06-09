@@ -1,10 +1,9 @@
 import HomeContent from "@/components/HomeContent";
-import { fetchExecutiveOrders } from "@/lib/data/executive-orders";
 import { ReportGeneratorService } from "@/lib/data/report-generator-service";
-import { getCacheContext, getStartDate } from "@/lib/utils";
+import { getCacheContext } from "@/lib/utils";
 import { Suspense } from "react";
 
-export const dynamic = 'force-dynamic'
+export const revalidate = 300; // 5 minutes
 
 export async function generateMetadata() {
   return {
@@ -24,37 +23,25 @@ async function getServerSideData() {
     const reportGeneratorService = new ReportGeneratorService(env);
     const reports = await reportGeneratorService.cacheService.getAllReportsFromCache(4);
 
-    // Fetch executive orders server-side (top 3)
-    const startDate = getStartDate(1);
-    const { orders } = await fetchExecutiveOrders(1, startDate);
-    const sortedOrders = [...orders].sort((a, b) => {
-      const dateA = a.publication.publicationDate || a.date;
-      const dateB = b.publication.publicationDate || b.date;
-      return new Date(dateB).getTime() - new Date(dateA).getTime();
-    });
-    const executiveOrders = sortedOrders.slice(0, 3);
-
     return {
-      reports: reports || [],
-      executiveOrders: executiveOrders || []
+      reports: reports || []
     };
   } catch (error) {
     console.error('Error fetching server-side data:', error);
     return {
-      reports: [],
-      executiveOrders: []
+      reports: []
     };
   }
 }
 
 export default async function Home() {
-  const { reports, executiveOrders } = await getServerSideData();
+  const { reports } = await getServerSideData();
 
   return (
     <Suspense fallback={<div>Loading...</div>}>
       <HomeContent
         initialReports={reports}
-        initialExecutiveOrders={executiveOrders}
+        initialExecutiveOrders={[]}
       />
     </Suspense>
   )

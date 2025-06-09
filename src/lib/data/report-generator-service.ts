@@ -163,6 +163,15 @@ export class ReportGeneratorService {
             }
         }
         console.log(`[REPORTS] Generated ${generatedReports.length} total reports.`);
+
+        // Cache top reports for homepage if we generated any reports
+        if (generatedReports.length > 0) {
+            const topReports = generatedReports
+                .sort((a, b) => (b.messageCount || 0) - (a.messageCount || 0))
+                .slice(0, 10);
+            await this.cacheService.cacheHomepageReports(topReports);
+        }
+
         return generatedReports;
     }
 

@@ -78,8 +78,17 @@ export class ReportCacheService {
             return [];
         }
 
-        // For homepage requests (small limits), fetch all keys to ensure proper sorting
-        // Only apply KV pagination for larger requests to avoid performance issues
+        // For homepage requests (small limits), try to use cached homepage reports first
+        if (limit && limit <= 20) {
+            const homepageReports = await this.getHomepageReports();
+            if (homepageReports && homepageReports.length > 0) {
+                console.log(`[REPORTS] Using cached homepage reports (${homepageReports.length} available)`);
+                return homepageReports.slice(0, limit);
+            }
+            console.log('[REPORTS] No cached homepage reports found, falling back to full fetch');
+        }
+
+        // Fallback to original logic for larger requests or when homepage cache is empty
         const listOptions: { prefix: string; limit?: number } = { prefix: 'reports:' };
         if (limit && limit > 20) {
             // Only limit KV keys for large requests
@@ -125,5 +134,23 @@ export class ReportCacheService {
         const batchResults = await this.cacheManager.batchGet<Report[]>('REPORTS_CACHE', keyNames);
         const reports = Array.from(batchResults.values()).map(item => item ?? []);
         return reports.flat();
+    }
+
+    /**
+     * Cache the top reports from the latest cron run for homepage display
+     */
+    async cacheHomepageReports(reports: Report[]): Promise<void> {
+        const key = 'homepage:latest-reports';
+        const topReports = reports.slice(0, 10); // Store top 10 reports
+        await this.cacheManager.put('REPORTS_CACHE', key, topReports, CACHE.TTL.REPORTS);
+        console.log(`[REPORTS] Cached ${topReports.length} reports for homepage`);
+    }
+
+    /**
+     * Get cached homepage reports from the latest cron run
+     */
+    async getHomepageReports(): Promise<Report[] | null> {
+        const key = 'homepage:latest-reports';
+        return this.cacheManager.get<Report[]>('REPORTS_CACHE', key);
     }
 } 
