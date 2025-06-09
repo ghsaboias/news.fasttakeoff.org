@@ -78,6 +78,13 @@ export default function HomeContent({ initialReports, initialExecutiveOrders }: 
 
     // Fetch reports on mount
     useEffect(() => {
+        // Skip fetching if we already have initial data from server
+        if (initialReports.length > 0) {
+            setReports(initialReports)
+            setReportsLoading(false)
+            return
+        }
+
         async function fetchReports() {
             try {
                 const response = await fetch('/api/reports')
@@ -94,10 +101,17 @@ export default function HomeContent({ initialReports, initialExecutiveOrders }: 
         }
 
         fetchReports()
-    }, [])
+    }, [initialReports])
 
     // Fetch executive orders on mount (only if US-based)
     useEffect(() => {
+        // Skip fetching if we already have initial data from server
+        if (initialExecutiveOrders.length > 0) {
+            setExecutiveOrders(initialExecutiveOrders)
+            setExecutiveOrdersLoading(false)
+            return
+        }
+
         async function fetchExecutiveOrders() {
             try {
                 const response = await fetch('/api/executive-orders')
@@ -117,7 +131,7 @@ export default function HomeContent({ initialReports, initialExecutiveOrders }: 
         } else if (isUSBased === false) {
             setExecutiveOrdersLoading(false)
         }
-    }, [isUSBased])
+    }, [isUSBased, initialExecutiveOrders])
 
     const filteredReports = useMemo(() => {
         if (!searchQuery.trim()) {
