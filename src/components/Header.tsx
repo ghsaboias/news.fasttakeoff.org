@@ -22,7 +22,7 @@ export default function Header() {
     return (
         <header className="mx-auto flex h-16 items-center justify-between sm:px-8 sm:w-[95vw] w-[90vw]">
             <Link href="/" className="flex items-center gap-2 text-xl text-[#167F6E] font-semibold">
-                <Image src="/images/brain_transparent.png" alt="Fast Takeoff News" width={32} height={32} />
+                <Image src="/images/brain_transparent.png" alt="Fast Takeoff News" width={32} height={32} priority />
                 <p className="hidden lg:block">Fast Takeoff News</p>
             </Link>
             <div className="items-center gap-6 hidden min-[600px]:flex">
