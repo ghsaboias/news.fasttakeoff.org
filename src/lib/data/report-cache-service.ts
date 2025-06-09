@@ -78,11 +78,12 @@ export class ReportCacheService {
             return [];
         }
 
-        // Add pagination to reduce KV operations - limit keys fetched
+        // For homepage requests (small limits), fetch all keys to ensure proper sorting
+        // Only apply KV pagination for larger requests to avoid performance issues
         const listOptions: { prefix: string; limit?: number } = { prefix: 'reports:' };
-        if (limit && limit <= 20) {
-            // For small limits (like homepage), only fetch recent keys
-            listOptions.limit = Math.min(limit * 3, 30); // Fetch 3x limit to account for multiple timeframes per channel
+        if (limit && limit > 20) {
+            // Only limit KV keys for large requests
+            listOptions.limit = Math.min(limit * 3, 100);
         }
 
         const { keys } = await reportsCache.list(listOptions);
