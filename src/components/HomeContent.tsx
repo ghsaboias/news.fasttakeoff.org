@@ -6,7 +6,6 @@ import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { useGeolocation } from "@/lib/hooks/useGeolocation"
 import { ExecutiveOrder, Report } from "@/lib/types/core"
-import { groupAndSortReports } from "@/lib/utils"
 import { Search } from "lucide-react"
 import Link from "next/link"
 import { useEffect, useMemo, useState } from "react"
@@ -70,8 +69,8 @@ export default function HomeContent({ initialReports, initialExecutiveOrders }: 
     const [searchQuery, setSearchQuery] = useState("")
     const [reports, setReports] = useState<Report[]>(initialReports)
     const [executiveOrders, setExecutiveOrders] = useState<ExecutiveOrder[]>(initialExecutiveOrders)
-    const [reportsLoading, setReportsLoading] = useState(true)
-    const [executiveOrdersLoading, setExecutiveOrdersLoading] = useState(true)
+    const [reportsLoading, setReportsLoading] = useState(initialReports.length === 0)
+    const [executiveOrdersLoading, setExecutiveOrdersLoading] = useState(initialExecutiveOrders.length === 0)
 
     // Use the consolidated geolocation hook
     const { isUSBased } = useGeolocation({ assumeNonUSOnError: true })
@@ -90,8 +89,7 @@ export default function HomeContent({ initialReports, initialExecutiveOrders }: 
                 const response = await fetch('/api/reports')
                 if (!response.ok) throw new Error('Failed to fetch reports')
                 const data = await response.json()
-                const sortedReports = groupAndSortReports(data)
-                setReports(sortedReports)
+                setReports(data) // Data is already sorted by the API
             } catch (error) {
                 console.error('Error fetching reports:', error)
                 setReports([])
@@ -185,9 +183,9 @@ export default function HomeContent({ initialReports, initialExecutiveOrders }: 
                 ) : (
                     <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                         {filteredReports.length > 0 ? (
-                            filteredReports.map(report => (
+                            filteredReports.slice(0, 4).map(report => (
                                 <ReportCard key={report.reportId} report={report} showReadMore={false} clickableChannel={true} clickableReport={true} />
-                            )).slice(0, 4)
+                            ))
                         ) : (
                             <div className="col-span-2 text-center py-8">
                                 <p className="text-muted-foreground">
