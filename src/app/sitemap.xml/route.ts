@@ -1,11 +1,11 @@
-import { getChannels } from '@/lib/data/channels-service'
-import { fetchExecutiveOrders } from '@/lib/data/executive-orders'
-import { ReportGeneratorService } from '@/lib/data/report-generator-service'
-import { Report } from '@/lib/types/core'
-import { getCacheContext, getStartDate } from '@/lib/utils'
 import { NextResponse } from 'next/server'
 
 const BASE_URL = 'https://news.fasttakeoff.org'
+
+// In-memory cache for sitemap
+let cachedSitemap: string | null = null
+let cacheTimestamp: number = 0
+const CACHE_DURATION = 60 * 60 * 1000 // 1 hour in milliseconds
 
 interface SitemapUrl {
     url: string
@@ -14,11 +14,55 @@ interface SitemapUrl {
     priority: number
 }
 
-export async function GET() {
-    try {
-        const urls: SitemapUrl[] = []
+function generateStaticSitemap(): string {
+    const urls: SitemapUrl[] = []
+    const now = new Date().toISOString()
 
-        // Static pages
+    // Static pages - these are the core pages that should always be available
+    const staticPages = [
+        { path: '', priority: 1.0, changeFreq: 'daily' as const },
+        { path: '/current-events', priority: 0.9, changeFreq: 'hourly' as const },
+        { path: '/executive-orders', priority: 0.9, changeFreq: 'daily' as const },
+        { path: '/brazil-news', priority: 0.8, changeFreq: 'daily' as const },
+        { path: '/news-globe', priority: 0.7, changeFreq: 'daily' as const },
+        { path: '/privacy-policy', priority: 0.3, changeFreq: 'monthly' as const },
+    ]
+
+    staticPages.forEach(page => {
+        urls.push({
+            url: `${BASE_URL}${page.path}`,
+            lastModified: now,
+            changeFrequency: page.changeFreq,
+            priority: page.priority
+        })
+    })
+
+    // Generate XML
+    const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+${urls.map(url => `  <url>
+    <loc>${url.url}</loc>
+    <lastmod>${url.lastModified}</lastmod>
+    <changefreq>${url.changeFrequency}</changefreq>
+    <priority>${url.priority}</priority>
+  </url>`).join('\n')}
+</urlset>`
+
+    return sitemap
+}
+
+async function updateCacheInBackground() {
+    try {
+        // Import expensive operations only when updating cache
+        const { getChannels } = await import('@/lib/data/channels-service')
+        const { fetchExecutiveOrders } = await import('@/lib/data/executive-orders')
+        const { ReportGeneratorService } = await import('@/lib/data/report-generator-service')
+        const { getCacheContext, getStartDate } = await import('@/lib/utils')
+
+        const urls: SitemapUrl[] = []
+        const now = new Date().toISOString()
+
+        // Static pages first
         const staticPages = [
             { path: '', priority: 1.0, changeFreq: 'daily' as const },
             { path: '/current-events', priority: 0.9, changeFreq: 'hourly' as const },
@@ -31,60 +75,61 @@ export async function GET() {
         staticPages.forEach(page => {
             urls.push({
                 url: `${BASE_URL}${page.path}`,
-                lastModified: new Date().toISOString(),
+                lastModified: now,
                 changeFrequency: page.changeFreq,
                 priority: page.priority
             })
         })
 
-        // Executive Orders - fetch recent ones (last 6 months)
+        // Executive Orders - limit to recent ones only
         try {
-            const startDate = getStartDate(180) // Last 6 months
-            const { orders } = await fetchExecutiveOrders(1, startDate) // Get first page of orders
-
-            orders.forEach(order => {
+            const startDate = getStartDate(30) // Last 30 days only
+            const { orders } = await fetchExecutiveOrders(1, startDate)
+            
+            // Limit to first 20 orders
+            orders.slice(0, 20).forEach(order => {
                 urls.push({
                     url: `${BASE_URL}/executive-orders/${order.id}`,
-                    lastModified: order.publication?.publicationDate || order.date || new Date().toISOString(),
+                    lastModified: order.publication?.publicationDate || order.date || now,
                     changeFrequency: 'weekly',
                     priority: 0.8
                 })
             })
         } catch (error) {
-            console.error('Error fetching executive orders for sitemap:', error)
+            console.error('Error fetching executive orders for sitemap cache:', error)
         }
 
-        // Reports - fetch directly from cache for better performance
+        // Reports - limit scope significantly
         try {
             const { env } = getCacheContext()
             const reportGeneratorService = new ReportGeneratorService(env)
             const channels = await getChannels(env)
-            const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
+            const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000)
 
-            // Get fresh reports from all channels
-            for (const channel of channels) {
+            // Process only first 5 channels to limit execution time
+            for (const channel of channels.slice(0, 5)) {
                 try {
                     const reports = await reportGeneratorService.cacheService.getAllReportsForChannelFromCache(channel.id)
                     if (reports) {
-                        // Add channel pages
+                        // Add channel page
                         urls.push({
                             url: `${BASE_URL}/current-events/${channel.id}`,
-                            lastModified: new Date().toISOString(),
+                            lastModified: now,
                             changeFrequency: 'hourly',
                             priority: 0.7
                         })
 
-                        // Add recent individual reports with higher priority
-                        const freshReports = reports
-                            .filter(report => new Date(report.generatedAt) >= sevenDaysAgo)
-                            .slice(0, 30) // Limit per channel
+                        // Add only very recent reports (last 3 days, max 10 per channel)
+                        const recentReports = reports
+                            .filter(report => new Date(report.generatedAt) >= threeDaysAgo)
+                            .slice(0, 10)
 
-                        freshReports.forEach(report => {
+                        recentReports.forEach(report => {
                             urls.push({
                                 url: `${BASE_URL}/current-events/${report.channelId}/${report.reportId}`,
                                 lastModified: report.generatedAt,
                                 changeFrequency: 'daily',
-                                priority: 0.8 // Higher priority for breaking news
+                                priority: 0.8
                             })
                         })
                     }
@@ -93,47 +138,10 @@ export async function GET() {
                 }
             }
         } catch (error) {
-            console.error('Error with cache approach, falling back to API:', error)
-
-            // Fallback to API approach
-            const reportsResponse = await fetch(`${BASE_URL}/api/reports`, {
-                method: 'GET',
-                headers: {
-                    'User-Agent': 'Sitemap Generator'
-                }
-            })
-
-            if (reportsResponse.ok) {
-                const reports = await reportsResponse.json() as Report[]
-
-                // Add channel pages
-                const channelIds = new Set(reports.map(report => report.channelId).filter(Boolean))
-                channelIds.forEach(channelId => {
-                    if (channelId) {
-                        urls.push({
-                            url: `${BASE_URL}/current-events/${channelId}`,
-                            lastModified: new Date().toISOString(),
-                            changeFrequency: 'hourly',
-                            priority: 0.7
-                        })
-                    }
-                })
-
-                // Add individual report pages
-                reports.forEach(report => {
-                    if (report.channelId && report.reportId) {
-                        urls.push({
-                            url: `${BASE_URL}/current-events/${report.channelId}/${report.reportId}`,
-                            lastModified: report.generatedAt || new Date().toISOString(),
-                            changeFrequency: 'daily',
-                            priority: 0.6
-                        })
-                    }
-                })
-            }
+            console.error('Error updating sitemap cache:', error)
         }
 
-        // Generate XML
+        // Generate and cache new sitemap
         const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 ${urls.map(url => `  <url>
@@ -144,15 +152,51 @@ ${urls.map(url => `  <url>
   </url>`).join('\n')}
 </urlset>`
 
-        return new NextResponse(sitemap, {
+        cachedSitemap = sitemap
+        cacheTimestamp = Date.now()
+        console.log('Sitemap cache updated successfully')
+    } catch (error) {
+        console.error('Error updating sitemap cache:', error)
+    }
+}
+
+export async function GET() {
+    try {
+        const now = Date.now()
+        
+        // Check if cache is valid
+        const cacheIsValid = cachedSitemap && (now - cacheTimestamp) < CACHE_DURATION
+        
+        if (!cacheIsValid) {
+            // If no cache or cache expired, start background update
+            if (!cachedSitemap) {
+                // First time - return static sitemap immediately
+                cachedSitemap = generateStaticSitemap()
+                cacheTimestamp = now
+            }
+            
+            // Update cache in background (don't await)
+            updateCacheInBackground().catch(console.error)
+        }
+
+        return new NextResponse(cachedSitemap, {
             headers: {
                 'Content-Type': 'application/xml; charset=utf-8',
                 'Cache-Control': 'public, max-age=3600, s-maxage=3600',
-                'X-Robots-Tag': 'noindex', // Don't index sitemap itself
+                'X-Robots-Tag': 'noindex',
             },
         })
     } catch (error) {
-        console.error('Error generating sitemap:', error)
-        return new NextResponse('Error generating sitemap', { status: 500 })
+        console.error('Error serving sitemap:', error)
+        
+        // Fallback to static sitemap on any error
+        const fallbackSitemap = generateStaticSitemap()
+        return new NextResponse(fallbackSitemap, {
+            headers: {
+                'Content-Type': 'application/xml; charset=utf-8',
+                'Cache-Control': 'public, max-age=1800, s-maxage=1800', // 30 min cache on errors
+                'X-Robots-Tag': 'noindex',
+            },
+        })
     }
-} 
+}
