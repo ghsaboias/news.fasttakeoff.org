@@ -62,7 +62,7 @@ interface HomeContentProps {
 //                 <div className="bg-muted rounded h-8 w-full"></div>
 //             </CardFooter>
 //         </Card>
-//     )
+// )
 // }
 
 export default function HomeContent({ initialReports, initialExecutiveOrders }: HomeContentProps) {
@@ -103,6 +103,7 @@ export default function HomeContent({ initialReports, initialExecutiveOrders }: 
 
             {/* Search Section - Fixed height */}
             <section className="mx-auto sm:px-4 w-[90%] mb-8 h-[48px]">
+                <h2 className="sr-only">Search Reports</h2>
                 <div className="relative max-w-2xl mx-auto">
                     <Search className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
                     <Input
@@ -116,6 +117,7 @@ export default function HomeContent({ initialReports, initialExecutiveOrders }: 
 
             {/* Reports Section - Fixed height grid */}
             <section className="mx-auto sm:px-4 w-[90%] min-h-[800px] sm:min-h-[600px]">
+                <h2 className="sr-only">Latest Reports</h2>
                 <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                     {reports.length === 0 ? (
                         // Show skeletons while loading

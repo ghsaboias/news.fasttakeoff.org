@@ -55,7 +55,16 @@ export default function Header() {
                         <UserButton />
                         <Sheet open={isMenuOpen} onOpenChange={setIsMenuOpen}>
                             <SheetTrigger asChild>
-                                <Menu className="min-[600px]:hidden" />
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    aria-label="Open navigation menu"
+                                    aria-expanded={isMenuOpen}
+                                    aria-controls="mobile-navigation"
+                                    className="min-[600px]:hidden"
+                                >
+                                    <Menu className="h-5 w-5" />
+                                </Button>
                             </SheetTrigger>
                             <SheetContent side="right" className="w-[300px]">
                                 <SheetHeader>
@@ -104,7 +113,16 @@ export default function Header() {
                         </Link>
                         <Sheet open={isMenuOpen} onOpenChange={setIsMenuOpen}>
                             <SheetTrigger asChild>
-                                <Menu className="min-[600px]:hidden" />
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    aria-label="Open navigation menu"
+                                    aria-expanded={isMenuOpen}
+                                    aria-controls="mobile-navigation"
+                                    className="min-[600px]:hidden"
+                                >
+                                    <Menu className="h-5 w-5" />
+                                </Button>
                             </SheetTrigger>
                             <SheetContent side="right" className="w-[300px]">
                                 <SheetHeader>
