@@ -7,7 +7,7 @@ import { useGeolocation } from "@/lib/hooks/useGeolocation"
 import { ExecutiveOrder, Report } from "@/lib/types/core"
 import { Search } from "lucide-react"
 import Link from "next/link"
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 
 interface HomeContentProps {
     initialReports: Report[]
@@ -66,23 +66,52 @@ interface HomeContentProps {
 
 export default function HomeContent({ initialReports, initialExecutiveOrders }: HomeContentProps) {
     const [searchQuery, setSearchQuery] = useState("")
+    const [reports, setReports] = useState<Report[]>(initialReports)
+    const [executiveOrders, setExecutiveOrders] = useState<ExecutiveOrder[]>(initialExecutiveOrders)
+    const [isLoading, setIsLoading] = useState(false)
+
+    // DEBUG: Log what we're receiving
+    console.log('HomeContent props:', {
+        initialReports: initialReports,
+        reportsLength: initialReports?.length,
+        initialExecutiveOrders: initialExecutiveOrders,
+        executiveOrdersLength: initialExecutiveOrders?.length
+    })
 
     // Use the consolidated geolocation hook
     const { isUSBased } = useGeolocation({ assumeNonUSOnError: true })
 
+    // Client-side fallback when server-side data is empty
+    useEffect(() => {
+        if (initialReports.length === 0 && !isLoading && reports.length === 0) {
+            setIsLoading(true)
+
+            // Fetch reports and executive orders in parallel
+            Promise.all([
+                fetch('/api/reports?limit=4').then(res => res.ok ? res.json() : []).catch(() => []),
+                fetch('/api/executive-orders?limit=3').then(res => res.ok ? res.json() : []).catch(() => [])
+            ]).then(([reportsData, ordersData]) => {
+                setReports(reportsData || [])
+                setExecutiveOrders(ordersData || [])
+            }).finally(() => {
+                setIsLoading(false)
+            })
+        }
+    }, [initialReports.length, isLoading, reports.length])
+
     const filteredReports = useMemo(() => {
         if (!searchQuery.trim()) {
-            return initialReports
+            return reports
         }
 
         const query = searchQuery.toLowerCase()
-        return initialReports.filter(report =>
+        return reports.filter(report =>
             (report.channelName?.toLowerCase() || '').includes(query) ||
             (report.headline?.toLowerCase() || '').includes(query) ||
             (report.city?.toLowerCase() || '').includes(query) ||
             (report.body?.toLowerCase() || '').includes(query)
         )
-    }, [initialReports, searchQuery])
+    }, [reports, searchQuery])
 
     return (
         <div className="flex flex-col pb-16 w-[100vw] justify-center">
@@ -114,7 +143,12 @@ export default function HomeContent({ initialReports, initialExecutiveOrders }: 
             {/* Reports Section */}
             <section className="mx-auto sm:px-4 w-[90%]">
                 <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-                    {filteredReports.length > 0 ? (
+                    {isLoading ? (
+                        // Show loading state
+                        <div className="col-span-2 text-center py-8">
+                            <p className="text-muted-foreground">Loading reports...</p>
+                        </div>
+                    ) : filteredReports.length > 0 ? (
                         filteredReports.slice(0, 4).map(report => (
                             <ReportCard key={report.reportId} report={report} showReadMore={false} clickableChannel={true} clickableReport={true} />
                         ))
@@ -129,7 +163,7 @@ export default function HomeContent({ initialReports, initialExecutiveOrders }: 
             </section>
 
             {/* Latest Executive Orders Section - RENDER CONDITIONALLY */}
-            {isUSBased === true && initialExecutiveOrders.length > 0 && (
+            {isUSBased === true && executiveOrders.length > 0 && (
                 <section className="mx-auto sm:px-4 w-[90%] mt-16">
                     <div className="flex flex-col gap-6">
                         <div className="flex items-center justify-between">
@@ -139,7 +173,7 @@ export default function HomeContent({ initialReports, initialExecutiveOrders }: 
                             </Link>
                         </div>
                         <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-                            {initialExecutiveOrders.map(order => (
+                            {executiveOrders.map(order => (
                                 <OrderCard key={order.id} order={order} />
                             ))}
                         </div>
