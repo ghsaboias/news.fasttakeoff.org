@@ -1,0 +1,56 @@
+/* Critical styles for initial render */
+:root {
+  --font-geist-mono: "Geist Mono", monospace;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+main {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: start;
+}
+
+/* Hero section critical styles */
+.hero-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  text-align: center;
+  width: 90%;
+  margin: 0 auto;
+}
+
+@media (min-width: 540px) {
+  .hero-section {
+    height: 36vh;
+  }
+}
+
+.hero-title {
+  font-size: 3.75rem;
+  font-weight: 700;
+  color: #167f6e;
+  line-height: 1;
+}
+
+@media (min-width: 768px) {
+  .hero-title {
+    font-size: 4.5rem;
+  }
+}
+
+/* Loading state */
+.loading-placeholder {
+  text-align: center;
+  padding: 2rem 0;
+  color: #666;
+}

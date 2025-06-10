@@ -2,12 +2,13 @@
 
 import ReportCard from "@/components/current-events/ReportCard"
 import OrderCard from "@/components/executive-orders/OrderCard"
+import ReportCardSkeleton from "@/components/skeletons/ReportCardSkeleton"
 import { Input } from "@/components/ui/input"
 import { useGeolocation } from "@/lib/hooks/useGeolocation"
 import { ExecutiveOrder, Report } from "@/lib/types/core"
 import { Search } from "lucide-react"
 import Link from "next/link"
-import { useEffect, useMemo, useState } from "react"
+import { useMemo, useState } from "react"
 
 interface HomeContentProps {
     initialReports: Report[]
@@ -66,30 +67,11 @@ interface HomeContentProps {
 
 export default function HomeContent({ initialReports, initialExecutiveOrders }: HomeContentProps) {
     const [searchQuery, setSearchQuery] = useState("")
-    const [reports, setReports] = useState<Report[]>(initialReports)
-    const [executiveOrders, setExecutiveOrders] = useState<ExecutiveOrder[]>(initialExecutiveOrders)
-    const [isLoading, setIsLoading] = useState(false)
+    const [reports] = useState<Report[]>(initialReports)
+    const [executiveOrders] = useState<ExecutiveOrder[]>(initialExecutiveOrders)
 
     // Use the consolidated geolocation hook
     const { isUSBased } = useGeolocation({ assumeNonUSOnError: true })
-
-    // Client-side fallback when server-side data is empty
-    useEffect(() => {
-        if (initialReports.length === 0 && !isLoading && reports.length === 0) {
-            setIsLoading(true)
-
-            // Fetch reports and executive orders in parallel
-            Promise.all([
-                fetch('/api/reports?limit=4').then(res => res.ok ? res.json() : []).catch(() => []),
-                fetch('/api/executive-orders?limit=3').then(res => res.ok ? res.json() : []).catch(() => [])
-            ]).then(([reportsData, ordersData]) => {
-                setReports(reportsData || [])
-                setExecutiveOrders(ordersData || [])
-            }).finally(() => {
-                setIsLoading(false)
-            })
-        }
-    }, [initialReports.length, isLoading, reports.length])
 
     const filteredReports = useMemo(() => {
         if (!searchQuery.trim()) {
@@ -107,11 +89,11 @@ export default function HomeContent({ initialReports, initialExecutiveOrders }: 
 
     return (
         <div className="flex flex-col pb-16 w-[100vw] justify-center">
-            {/* Hero Section */}
-            <section className="flex flex-col items-center justify-center min-[540px]:h-[36vh] gap-4 text-center max-[540px]:w-[90%] max-[540px]:mx-auto max-[540px]:mb-10 max-[540px]:mt-4">
+            {/* Hero Section - Fixed height to prevent layout shift */}
+            <section className="hero-section">
                 <div className="flex flex-col items-center gap-8">
                     <div className="flex flex-col items-center gap-4">
-                        <h1 className="text-6xl md:text-7xl font-bold text-[#167F6E] leading-none flex flex-col sm:block">
+                        <h1 className="hero-title">
                             Fast Takeoff News
                         </h1>
                         <p className="text-3xl">AI-powered news for everyone.</p>
@@ -119,8 +101,8 @@ export default function HomeContent({ initialReports, initialExecutiveOrders }: 
                 </div>
             </section>
 
-            {/* Search Section */}
-            <section className="mx-auto sm:px-4 w-[90%] mb-8">
+            {/* Search Section - Fixed height */}
+            <section className="mx-auto sm:px-4 w-[90%] mb-8 h-[48px]">
                 <div className="relative max-w-2xl mx-auto">
                     <Search className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
                     <Input
@@ -132,17 +114,23 @@ export default function HomeContent({ initialReports, initialExecutiveOrders }: 
                 </div>
             </section>
 
-            {/* Reports Section */}
-            <section className="mx-auto sm:px-4 w-[90%]">
+            {/* Reports Section - Fixed height grid */}
+            <section className="mx-auto sm:px-4 w-[90%] min-h-[800px] sm:min-h-[600px]">
                 <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-                    {isLoading ? (
-                        // Show loading state
-                        <div className="col-span-2 text-center py-8">
-                            <p className="text-muted-foreground">Loading reports...</p>
-                        </div>
+                    {reports.length === 0 ? (
+                        // Show skeletons while loading
+                        Array.from({ length: 4 }).map((_, i) => (
+                            <ReportCardSkeleton key={i} />
+                        ))
                     ) : filteredReports.length > 0 ? (
                         filteredReports.slice(0, 4).map(report => (
-                            <ReportCard key={report.reportId} report={report} showReadMore={false} clickableChannel={true} clickableReport={true} />
+                            <ReportCard
+                                key={report.reportId}
+                                report={report}
+                                showReadMore={false}
+                                clickableChannel={true}
+                                clickableReport={true}
+                            />
                         ))
                     ) : (
                         <div className="col-span-2 text-center py-8">
@@ -154,9 +142,9 @@ export default function HomeContent({ initialReports, initialExecutiveOrders }: 
                 </div>
             </section>
 
-            {/* Latest Executive Orders Section - RENDER CONDITIONALLY */}
+            {/* Latest Executive Orders Section - Fixed height when visible */}
             {isUSBased === true && executiveOrders.length > 0 && (
-                <section className="mx-auto sm:px-4 w-[90%] mt-16">
+                <section className="mx-auto sm:px-4 w-[90%] mt-16 min-h-[300px]">
                     <div className="flex flex-col gap-6">
                         <div className="flex items-center justify-between">
                             <h2 className="text-2xl font-bold tracking-tight md:text-3xl">Latest Executive Orders</h2>
