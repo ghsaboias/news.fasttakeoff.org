@@ -101,40 +101,43 @@ async function updateCacheInBackground() {
 
         // Reports - limit scope significantly
         try {
-            const { env } = getCacheContext()
-            const reportGeneratorService = new ReportGeneratorService(env)
-            const channels = await getChannels(env)
-            const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000)
+            // Only access Cloudflare context in runtime, not during build
+            if (typeof process !== 'undefined' && process.env.NODE_ENV === 'development') {
+                const { env } = getCacheContext()
+                const reportGeneratorService = new ReportGeneratorService(env)
+                const channels = await getChannels(env)
+                const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000)
 
-            // Process only first 5 channels to limit execution time
-            for (const channel of channels.slice(0, 5)) {
-                try {
-                    const reports = await reportGeneratorService.cacheService.getAllReportsForChannelFromCache(channel.id)
-                    if (reports) {
-                        // Add channel page
-                        urls.push({
-                            url: `${BASE_URL}/current-events/${channel.id}`,
-                            lastModified: now,
-                            changeFrequency: 'hourly',
-                            priority: 0.7
-                        })
-
-                        // Add only very recent reports (last 3 days, max 10 per channel)
-                        const recentReports = reports
-                            .filter(report => new Date(report.generatedAt) >= threeDaysAgo)
-                            .slice(0, 10)
-
-                        recentReports.forEach(report => {
+                // Process only first 5 channels to limit execution time
+                for (const channel of channels.slice(0, 5)) {
+                    try {
+                        const reports = await reportGeneratorService.cacheService.getAllReportsForChannelFromCache(channel.id)
+                        if (reports) {
+                            // Add channel page
                             urls.push({
-                                url: `${BASE_URL}/current-events/${report.channelId}/${report.reportId}`,
-                                lastModified: report.generatedAt,
-                                changeFrequency: 'daily',
-                                priority: 0.8
+                                url: `${BASE_URL}/current-events/${channel.id}`,
+                                lastModified: now,
+                                changeFrequency: 'hourly',
+                                priority: 0.7
                             })
-                        })
+
+                            // Add only very recent reports (last 3 days, max 10 per channel)
+                            const recentReports = reports
+                                .filter(report => new Date(report.generatedAt) >= threeDaysAgo)
+                                .slice(0, 10)
+
+                            recentReports.forEach(report => {
+                                urls.push({
+                                    url: `${BASE_URL}/current-events/${report.channelId}/${report.reportId}`,
+                                    lastModified: report.generatedAt,
+                                    changeFrequency: 'daily',
+                                    priority: 0.8
+                                })
+                            })
+                        }
+                    } catch (error) {
+                        console.error(`Error fetching reports for channel ${channel.id}:`, error)
                     }
-                } catch (error) {
-                    console.error(`Error fetching reports for channel ${channel.id}:`, error)
                 }
             }
         } catch (error) {

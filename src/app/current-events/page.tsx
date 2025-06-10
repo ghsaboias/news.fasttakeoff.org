@@ -1,6 +1,8 @@
-import { Report } from '@/lib/types/core';
+import { ReportGeneratorService } from '@/lib/data/report-generator-service';
+import { getCacheContext } from '@/lib/utils';
 import CurrentEventsClient from './CurrentEventsClient';
-export const dynamic = 'force-dynamic'
+
+export const revalidate = 300; // 5 minutes - same as homepage
 
 export async function generateMetadata() {
     return {
@@ -12,19 +14,20 @@ export async function generateMetadata() {
     };
 }
 
-export default async function CurrentEventsPage() {
-    let reports: Report[] = [];
-
+async function getServerSideData() {
     try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'}/api/reports?limit=100`, {
-            cache: 'no-store'
-        });
-        if (response.ok) {
-            reports = await response.json() as Report[];
-        }
+        const { env } = getCacheContext();
+        const reportGeneratorService = new ReportGeneratorService(env);
+        const reports = await reportGeneratorService.cacheService.getAllReportsFromCache(100);
+        return reports || [];
     } catch (error) {
         console.error('Error fetching reports on server:', error);
+        return [];
     }
+}
+
+export default async function CurrentEventsPage() {
+    const reports = await getServerSideData();
 
     return (
         <div className="flex flex-col gap-8 w-[90vw] mx-auto">

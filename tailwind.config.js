@@ -64,6 +64,7 @@ module.exports = {
       },
       fontFamily: {
         sans: ["Inter", "sans-serif"],
+        mono: ["var(--font-geist-mono)", "monospace"],
       },
     },
   },

@@ -29,28 +29,9 @@ export default function CurrentEventsClient({ reports, isLoading = false }: Prop
     const [loading, setLoading] = useState(isLoading);
 
     useEffect(() => {
-        if (reports.length > 0) {
-            setReportData(reports);
-            setLoading(false);
-            return;
-        }
-
-        const fetchReports = async () => {
-            try {
-                setLoading(true);
-                const response = await fetch('/api/reports?limit=100');
-                if (!response.ok) throw new Error('Failed to fetch reports');
-                const data = await response.json() as Report[];
-                setReportData(data);
-            } catch (error) {
-                console.error('Error fetching reports on client:', error);
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        fetchReports();
-    }, [reports]); // Dependency array ensures this runs if props change
+        setReportData(reports);
+        setLoading(false);
+    }, [reports]);
 
     const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const query = e.target.value;
@@ -98,26 +79,24 @@ export default function CurrentEventsClient({ reports, isLoading = false }: Prop
         return sorted;
     }, [filteredReports, sortBy]);
 
-    const groupedReports = useMemo(() => {
-        const groups: Record<string, Report[]> = {};
+    const channelsWithLatest = useMemo(() => {
+        // Since sortedReports is already sorted, the first report per channel is the latest
+        const channelMap = new Map<string, { latest: Report; count: number }>();
+
         sortedReports.forEach(report => {
             const channel = report.channelName || 'Uncategorized';
-            if (!groups[channel]) groups[channel] = [];
-            groups[channel].push(report);
+            if (!channelMap.has(channel)) {
+                channelMap.set(channel, { latest: report, count: 1 });
+            } else {
+                channelMap.get(channel)!.count++;
+            }
         });
-        return groups;
-    }, [sortedReports]);
 
-    const channelsWithLatest = useMemo(() => {
-        const entries = Object.entries(groupedReports)
-            .map(([channel, reportsInChannel]) => {
-                if (reportsInChannel.length === 0) return null;
-                const latest = [...reportsInChannel].sort(
-                    (a: Report, b: Report) => new Date(b.generatedAt).getTime() - new Date(a.generatedAt).getTime()
-                )[0];
-                return { channel, latestReport: latest, reportCount: reportsInChannel.length };
-            })
-            .filter((item): item is { channel: string; latestReport: Report; reportCount: number } => item !== null);
+        const entries = Array.from(channelMap.entries()).map(([channel, data]) => ({
+            channel,
+            latestReport: data.latest,
+            reportCount: data.count
+        }));
 
         switch (sortBy) {
             case "activity":
@@ -130,7 +109,7 @@ export default function CurrentEventsClient({ reports, isLoading = false }: Prop
                     (a, b) => new Date(b.latestReport.generatedAt).getTime() - new Date(a.latestReport.generatedAt).getTime()
                 );
         }
-    }, [groupedReports, sortBy]);
+    }, [sortedReports, sortBy]);
 
     const lastUpdated = reportData.length > 0 ? reportData[0]?.generatedAt : null;
 
