@@ -1,11 +1,18 @@
 import RootLayoutClient from '@/components/RootLayoutClient';
 import { ClerkProvider } from '@clerk/nextjs';
-import { Geist, Geist_Mono } from 'next/font/google';
+import { Geist_Mono } from 'next/font/google';
+import { Space_Grotesk } from 'next/font/google';
 import Script from 'next/script';
 import './globals.css';
 import { metadata } from './metadata';
 
-const geistSans = Geist({ variable: '--font-geist-sans', subsets: ['latin'] });
+// Load Space Grotesk through Next.js optimization
+const spaceGrotesk = Space_Grotesk({ 
+  subsets: ['latin'],
+  display: 'swap',
+  preload: true
+});
+
 const geistMono = Geist_Mono({ variable: '--font-geist-mono', subsets: ['latin'] });
 
 export { metadata };
@@ -34,22 +41,7 @@ export default function RootLayout({
               ]
             })}
           </script>
-          {/* Non-blocking font load with preload */}
-          <link
-            rel='preload'
-            href='https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap'
-            as='style'
-          />
-          <link
-            rel='stylesheet'
-            href='https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap'
-            media='print'
-          />
-          <Script id="font-loader" strategy="afterInteractive">
-            {`
-              document.querySelector('link[href*="Space+Grotesk"]').media = 'all';
-            `}
-          </Script>
+
           {/* Only preload core Clerk script - remove OAuth preload */}
           <link
             rel='preload'
@@ -83,7 +75,7 @@ export default function RootLayout({
           </Script>
         </head>
         <body
-          className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen flex flex-col justify-center mx-auto`}
+          className={`${spaceGrotesk.className} ${geistMono.variable} antialiased min-h-screen flex flex-col justify-center mx-auto`}
         >
           <RootLayoutClient>{children}</RootLayoutClient>
         </body>

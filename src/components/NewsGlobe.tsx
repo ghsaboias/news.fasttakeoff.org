@@ -222,7 +222,7 @@ const Globe = ({ onSelectReport }: { onSelectReport: (report: NewsMarkerData) =>
         const fetchAndProcessNews = async () => {
             setNewsItems([]);
             try {
-                const response = await fetch('/api/reports');
+                const response = await fetch('/api/reports?limit=20');
                 if (!response.ok) {
                     console.error(`Failed to fetch reports: ${response.status}`);
                     return;
