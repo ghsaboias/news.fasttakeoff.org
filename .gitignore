@@ -73,6 +73,8 @@ scripts/
 
 test-data/
 
+tests/
+
 src/app/api/prompt-test/route.ts
 
 .cursor/rules
