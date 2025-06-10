@@ -99,7 +99,7 @@ export class ReportCacheService {
                 // For small requests, try to get recent reports more efficiently
                 const recentKeys = await this.getRecentReportKeys(limit * 2); // Get 2x to account for filtering
                 if (recentKeys.length > 0) {
-                    const batchResults = await this.cacheManager.batchGet<Report[]>('REPORTS_CACHE', recentKeys, 800);
+                    const batchResults = await this.cacheManager.batchGet<Report[]>('REPORTS_CACHE', recentKeys, 1200);
                     const reports = Array.from(batchResults.values()).map(item => item ?? []);
                     const allReports = reports.flat();
                     const sortedReports = groupAndSortReports(allReports);
@@ -209,7 +209,7 @@ export class ReportCacheService {
     async getHomepageReports(): Promise<Report[] | null> {
         try {
             const key = 'homepage:latest-reports';
-            const reports = await this.cacheManager.get<Report[]>('REPORTS_CACHE', key, 1000); // 300ms timeout
+            const reports = await this.cacheManager.get<Report[]>('REPORTS_CACHE', key, 1000); // 1000ms timeout
 
             if (reports && reports.length > 0) {
                 return reports;
@@ -218,7 +218,7 @@ export class ReportCacheService {
             // Fallback to backup cache
             console.log('[REPORTS] Primary homepage cache empty, trying backup');
             const backupKey = 'homepage:backup-reports';
-            const backupReports = await this.cacheManager.get<Report[]>('REPORTS_CACHE', backupKey, 300);
+            const backupReports = await this.cacheManager.get<Report[]>('REPORTS_CACHE', backupKey, 800);
 
             return backupReports || null;
         } catch (error) {

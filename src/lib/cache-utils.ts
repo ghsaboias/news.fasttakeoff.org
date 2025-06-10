@@ -34,7 +34,7 @@ export class CacheManager {
         }
     }
 
-    async get<T>(namespace: keyof Cloudflare.Env, key: string, timeoutMs: number = 500): Promise<T | null> {
+    async get<T>(namespace: keyof Cloudflare.Env, key: string, timeoutMs: number = 1000): Promise<T | null> {
         // Check request-level cache first
         const requestCacheKey = this.getRequestCacheKey(namespace as string, key);
         if (requestCache.has(requestCacheKey)) {
@@ -80,7 +80,7 @@ export class CacheManager {
         }
     }
 
-    async batchGet<T>(namespace: keyof Cloudflare.Env, keys: string[], timeoutMs: number = 1000): Promise<Map<string, T | null>> {
+    async batchGet<T>(namespace: keyof Cloudflare.Env, keys: string[], timeoutMs: number = 1500): Promise<Map<string, T | null>> {
         const cache = this.env[namespace] as KVNamespace;
         if (!cache) return new Map();
 
