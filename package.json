@@ -18,7 +18,11 @@
     "watch:build": "npx watch 'npm run build:worker' -- src",
     "build:cron:test": "./run_cron_test.sh",
     "playground": "tsx scripts/standalone-playground.ts",
-    "analyze": "ANALYZE=true next build"
+    "analyze": "ANALYZE=true next build",
+    "test": "vitest",
+    "test:watch": "vitest watch",
+    "test:pure": "vitest run tests/unit/cache-utils.test.ts tests/unit/transformers.test.ts tests/unit/config.test.ts",
+    "test:unit": "vitest run tests/unit"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.39.0",
@@ -72,6 +76,8 @@
     "ts-node": "^10.9.2",
     "tsx": "^4.19.3",
     "typescript": "^5",
-    "wrangler": "^4.7.0"
+    "wrangler": "^4.7.0",
+    "vitest": "^2.1.8",
+    "@vitest/coverage-v8": "^2.1.8"
   }
 }
