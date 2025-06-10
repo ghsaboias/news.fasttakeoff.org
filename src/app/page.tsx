@@ -20,12 +20,26 @@ async function getServerSideData() {
   try {
     const { env } = getCacheContext();
 
+    // Check if we have a valid Cloudflare environment
+    if (!env || !env.REPORTS_CACHE || !env.EXECUTIVE_ORDERS_CACHE) {
+      console.log('[SERVER] Cloudflare environment not available, skipping server-side data fetch');
+      return {
+        reports: [],
+        executiveOrders: []
+      };
+    }
+
     // Fetch both reports and executive orders server-side in parallel
     const [reports, executiveOrders] = await Promise.all([
       // Fetch reports
       (async () => {
-        const reportGeneratorService = new ReportGeneratorService(env);
-        return await reportGeneratorService.cacheService.getAllReportsFromCache(4);
+        try {
+          const reportGeneratorService = new ReportGeneratorService(env);
+          return await reportGeneratorService.cacheService.getAllReportsFromCache(4);
+        } catch (error) {
+          console.error('Error fetching reports server-side:', error);
+          return [];
+        }
       })(),
       // Fetch executive orders
       (async (): Promise<ExecutiveOrder[]> => {
