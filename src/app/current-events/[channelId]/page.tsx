@@ -6,38 +6,75 @@ import ChannelDetailClient from './ChannelDetailClient';
 
 export async function generateMetadata({ params }: { params: Promise<{ channelId: string }> }) {
     const { channelId } = await params;
-    const { env } = getCacheContext();
-    const channels: DiscordChannel[] = await getChannels(env);
-    const currentChannel = channels.find((c) => c.id === channelId);
 
-    return {
-        title: `${currentChannel?.name || 'Channel'} Reports - Fast Takeoff News`,
-        description: `Latest breaking news and reports from ${currentChannel?.name || 'this channel'}. Real-time updates as stories develop.`,
-        alternates: {
-            canonical: `https://news.fasttakeoff.org/current-events/${channelId}`
-        },
-        robots: {
-            index: true, // INDEX these - they contain breaking news
-            follow: true
-        },
-        openGraph: {
-            title: `${currentChannel?.name || 'Channel'} Reports - Fast Takeoff News`,
-            description: `Latest breaking news and reports from ${currentChannel?.name || 'this channel'}`,
-            type: 'article'
+    try {
+        const { env } = getCacheContext();
+
+        // Check if we have a valid Cloudflare environment
+        if (!env || !env.CHANNELS_CACHE) {
+            return {
+                title: 'Channel Reports - Fast Takeoff News',
+                description: 'Latest breaking news and reports from this channel. Real-time updates as stories develop.',
+                alternates: {
+                    canonical: `https://news.fasttakeoff.org/current-events/${channelId}`
+                }
+            };
         }
-    };
+
+        const channels: DiscordChannel[] = await getChannels(env);
+        const currentChannel = channels.find((c) => c.id === channelId);
+
+        return {
+            title: `${currentChannel?.name || 'Channel'} Reports - Fast Takeoff News`,
+            description: `Latest breaking news and reports from ${currentChannel?.name || 'this channel'}. Real-time updates as stories develop.`,
+            alternates: {
+                canonical: `https://news.fasttakeoff.org/current-events/${channelId}`
+            },
+            robots: {
+                index: true, // INDEX these - they contain breaking news
+                follow: true
+            },
+            openGraph: {
+                title: `${currentChannel?.name || 'Channel'} Reports - Fast Takeoff News`,
+                description: `Latest breaking news and reports from ${currentChannel?.name || 'this channel'}`,
+                type: 'article'
+            }
+        };
+    } catch (error) {
+        console.error('Error generating metadata:', error);
+        return {
+            title: 'Channel Reports - Fast Takeoff News',
+            description: 'Latest breaking news and reports from this channel. Real-time updates as stories develop.',
+            alternates: {
+                canonical: `https://news.fasttakeoff.org/current-events/${channelId}`
+            }
+        };
+    }
 }
 
 export default async function ChannelDetailPage({ params }: { params: Promise<{ channelId: string }> }) {
     const { channelId } = await params;
-    const { env } = getCacheContext();
-    const reportGeneratorService = new ReportGeneratorService(env);
 
-    const channels: DiscordChannel[] = await getChannels(env);
-    const currentChannel = channels.find((c) => c.id === channelId) || null;
-    console.log('[ChannelDetailPage] currentChannel', currentChannel);
+    try {
+        const { env } = getCacheContext();
 
-    const reports: Report[] = await reportGeneratorService.cacheService.getAllReportsForChannelFromCache(channelId) || [];
+        // Check if we have a valid Cloudflare environment
+        if (!env || !env.CHANNELS_CACHE || !env.REPORTS_CACHE) {
+            console.log('[SERVER] Cloudflare environment not available, using empty data');
+            return <ChannelDetailClient reports={[]} channel={null} />;
+        }
 
-    return <ChannelDetailClient reports={reports} channel={currentChannel} />;
+        const reportGeneratorService = new ReportGeneratorService(env);
+
+        const channels: DiscordChannel[] = await getChannels(env);
+        const currentChannel = channels.find((c) => c.id === channelId) || null;
+        console.log('[ChannelDetailPage] currentChannel', currentChannel);
+
+        const reports: Report[] = await reportGeneratorService.cacheService.getAllReportsForChannelFromCache(channelId) || [];
+
+        return <ChannelDetailClient reports={reports} channel={currentChannel} />;
+    } catch (error) {
+        console.error('Error in ChannelDetailPage:', error);
+        return <ChannelDetailClient reports={[]} channel={null} />;
+    }
 }

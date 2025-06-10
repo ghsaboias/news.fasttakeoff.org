@@ -6,15 +6,38 @@ import { DiscordChannel, Report } from "@/lib/types/core";
 import { ArrowLeft, MessageSquare } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 export default function ChannelDetailClient({ reports, channel }: { reports: Report[]; channel: DiscordChannel | null }) {
     const params = useParams();
     const channelId = Array.isArray(params.channelId) ? params.channelId[0] : params.channelId;
 
+    const [clientReports, setClientReports] = useState<Report[]>(reports);
+    const [clientChannel, setClientChannel] = useState<DiscordChannel | null>(channel);
+    const [isLoading, setIsLoading] = useState(false);
+
+    // Client-side fallback when server-side data is empty
+    useEffect(() => {
+        if (reports.length === 0 && !channel && !isLoading && clientReports.length === 0) {
+            setIsLoading(true);
+
+            // Fetch both reports and channel data in parallel
+            Promise.all([
+                fetch(`/api/reports?channelId=${channelId}`).then(res => res.ok ? res.json() : []).catch(() => []),
+                fetch(`/api/channels`).then(res => res.ok ? res.json() : []).catch(() => [])
+            ]).then(([reportsData, channelsData]) => {
+                setClientReports(reportsData || []);
+                const foundChannel = channelsData.find((c: DiscordChannel) => c.id === channelId) || null;
+                setClientChannel(foundChannel);
+            }).finally(() => {
+                setIsLoading(false);
+            });
+        }
+    }, [reports.length, channel, channelId, isLoading, clientReports.length]);
+
     const sortedReports = useMemo(() => {
-        return [...reports].sort((a, b) => new Date(b.generatedAt).getTime() - new Date(a.generatedAt).getTime());
-    }, [reports]);
+        return [...clientReports].sort((a, b) => new Date(b.generatedAt).getTime() - new Date(a.generatedAt).getTime());
+    }, [clientReports]);
 
     const latestReport = sortedReports[0];
     const olderReports = sortedReports.slice(1);
@@ -31,9 +54,17 @@ export default function ChannelDetailClient({ reports, channel }: { reports: Rep
         return Object.entries(groups).sort((a, b) => new Date(b[0]).getTime() - new Date(a[0]).getTime());
     }, [olderReports]);
 
-    if (!channelId || !channel) {
+    if (isLoading) {
+        return (
+            <div className="p-6 max-w-5xl mx-auto flex flex-col items-center justify-center py-12">
+                <p className="text-lg text-muted-foreground">Loading channel data...</p>
+            </div>
+        );
+    }
+
+    if (!channelId || !clientChannel) {
         console.log('[ChannelDetailClient] channelId', channelId);
-        console.log('[ChannelDetailClient] channel', channel);
+        console.log('[ChannelDetailClient] channel', clientChannel);
         return (
             <div className="p-6 max-w-5xl mx-auto flex flex-col items-center justify-center py-12">
                 <p className="text-lg text-red-500">Channel not found</p>
@@ -48,7 +79,7 @@ export default function ChannelDetailClient({ reports, channel }: { reports: Rep
         <div className="mx-auto flex flex-col gap-6 w-[90%] py-6">
             <div className="flex items-center justify-between">
                 <div className="space-y-1">
-                    <h1 className="text-2xl font-bold">{channel.name}</h1>
+                    <h1 className="text-2xl font-bold">{clientChannel.name}</h1>
                 </div>
                 <div className="flex gap-2">
                     <Button asChild variant="outline">
