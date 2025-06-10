@@ -119,13 +119,15 @@ export default function ReportClient() {
                                 <LinkBadge href={`/current-events/${report?.channelId}`} variant="outline" className="hover:bg-muted text-md">
                                     {report?.channelName}
                                 </LinkBadge>
-                                <div className="flex items-center gap-2 flex-wrap">
-                                    <Button asChild variant="outline">
-                                        <Link href={`/current-events/${channelId}/messages`}>
-                                            <MessageSquare className="h-4 w-4" />
-                                        </Link>
-                                    </Button>
-                                    <div className="relative">
+                                <div className="flex items-center gap-2">
+                                    <div className="flex items-center">
+                                        <Button asChild variant="outline">
+                                            <Link href={`/current-events/${channelId}/messages`}>
+                                                <MessageSquare className="h-4 w-4" />
+                                            </Link>
+                                        </Button>
+                                    </div>
+                                    <div className="flex items-center">
                                         <DropdownMenu>
                                             <DropdownMenuTrigger asChild>
                                                 <Button variant="outline" size="icon" className="p-2 hover:bg-muted min-w-fit">
@@ -151,11 +153,13 @@ export default function ReportClient() {
                                             </DropdownMenuContent>
                                         </DropdownMenu>
                                     </div>
-                                    <Button asChild variant="outline">
-                                        <Link href={`/current-events/${channelId}`}>
-                                            <ArrowLeft className="h-4 w-4" />
-                                        </Link>
-                                    </Button>
+                                    <div className="flex items-center">
+                                        <Button asChild variant="outline">
+                                            <Link href={`/current-events/${channelId}`}>
+                                                <ArrowLeft className="h-4 w-4" />
+                                            </Link>
+                                        </Button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
