@@ -3,7 +3,7 @@
 import { ClerkProvider } from '@clerk/nextjs';
 import { usePathname } from 'next/navigation';
 import Script from 'next/script';
-import { PropsWithChildren, useEffect, useState } from 'react';
+import { PropsWithChildren } from 'react';
 
 // Public paths that don't need authentication
 const PUBLIC_PATHS = [
@@ -17,16 +17,6 @@ const PUBLIC_PATHS = [
 
 export default function AuthProvider({ children }: PropsWithChildren) {
     const pathname = usePathname();
-    const [mounted, setMounted] = useState(false);
-
-    useEffect(() => {
-        setMounted(true);
-    }, []);
-
-    // Don't render anything until mounted to prevent hydration issues
-    if (!mounted) {
-        return null;
-    }
 
     const isPublicPath = PUBLIC_PATHS.some(path =>
         pathname === path || pathname.startsWith(`${path}/`)
@@ -44,7 +34,7 @@ export default function AuthProvider({ children }: PropsWithChildren) {
 
             <ClerkProvider
                 appearance={{
-                    baseTheme: undefined, // Prevent theme loading for public pages
+                    baseTheme: isPublicPath ? undefined : undefined, // Keep theme loading minimal
                     variables: { colorPrimary: '#167F6E' }
                 }}
             >
