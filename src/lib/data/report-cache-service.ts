@@ -209,7 +209,7 @@ export class ReportCacheService {
     async getHomepageReports(): Promise<Report[] | null> {
         try {
             const key = 'homepage:latest-reports';
-            const reports = await this.cacheManager.get<Report[]>('REPORTS_CACHE', key, 300); // 300ms timeout
+            const reports = await this.cacheManager.get<Report[]>('REPORTS_CACHE', key, 1000); // 300ms timeout
 
             if (reports && reports.length > 0) {
                 return reports;
