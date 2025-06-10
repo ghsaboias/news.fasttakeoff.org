@@ -4,6 +4,26 @@ import { DiscordChannel, Report } from '@/lib/types/core';
 import { getCacheContext } from '@/lib/utils';
 import ChannelDetailClient from './ChannelDetailClient';
 
+// ISR: Revalidate every 10 minutes for channel pages
+export const revalidate = 600;
+
+// Pre-generate channel pages
+export async function generateStaticParams() {
+    try {
+        const { env } = await getCacheContext();
+        if (!env) return [];
+
+        const channels = await getChannels(env);
+        // Generate top 10 most active channels
+        return channels.slice(0, 10).map(channel => ({
+            channelId: channel.id
+        }));
+    } catch (error) {
+        console.error('Error generating static params for channels:', error);
+        return [];
+    }
+}
+
 export async function generateMetadata({ params }: { params: Promise<{ channelId: string }> }) {
     const { channelId } = await params;
 
