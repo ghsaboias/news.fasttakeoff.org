@@ -1,13 +1,12 @@
 import RootLayoutClient from '@/components/RootLayoutClient';
 import { ClerkProvider } from '@clerk/nextjs';
-import { Geist_Mono } from 'next/font/google';
-import { Space_Grotesk } from 'next/font/google';
+import { Geist_Mono, Space_Grotesk } from 'next/font/google';
 import Script from 'next/script';
 import './globals.css';
 import { metadata } from './metadata';
 
 // Load Space Grotesk through Next.js optimization
-const spaceGrotesk = Space_Grotesk({ 
+const spaceGrotesk = Space_Grotesk({
   subsets: ['latin'],
   display: 'swap',
   preload: true
