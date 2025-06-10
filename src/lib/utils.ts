@@ -171,9 +171,21 @@ export function formatTime(timestamp: string | undefined, showDate: boolean = fa
 
 /**
  * Returns the Cloudflare environment object from the cache context
+ * Uses async mode as recommended by Cloudflare for SSG pages
+ * @returns Promise<Cloudflare environment object>
+ */
+export const getCacheContext = async (): Promise<{ env: Cloudflare.Env }> => {
+  return await getCloudflareContext({ async: true }) as unknown as { env: Cloudflare.Env };
+};
+
+/**
+ * Legacy sync version for API routes that are always dynamic
+ * @deprecated Use getCacheContext() instead for consistency
  * @returns Cloudflare environment object
  */
-export const getCacheContext = (): { env: Cloudflare.Env } => getCloudflareContext() as unknown as { env: Cloudflare.Env };
+export const getCacheContextSync = (): { env: Cloudflare.Env } => {
+  return getCloudflareContext() as unknown as { env: Cloudflare.Env };
+};
 
 export function convertTimestampToUnixTimestamp(timestamp: string): number {
   const date = new Date(timestamp);

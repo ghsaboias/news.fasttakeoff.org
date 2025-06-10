@@ -4,7 +4,7 @@ import { NextResponse } from 'next/server';
 
 export async function GET() {
     try {
-        const { env } = getCacheContext();
+        const { env } = await getCacheContext();
         const feedsService = new FeedsService(env);
         const summaries = await feedsService.listAvailableSummaries();
         return NextResponse.json(summaries);

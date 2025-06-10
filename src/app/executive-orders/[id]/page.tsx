@@ -5,7 +5,7 @@ import ExecutiveOrderClient from './ExecutiveOrderClient';
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
     const { id } = await params;
-    const { env } = getCacheContext();
+    const { env } = await getCacheContext();
     const order = await fetchExecutiveOrderById(id, env);
 
     if (!order) {
@@ -38,7 +38,7 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
 export default async function ExecutiveOrderPage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = await params;
     console.log(`Rendering page for executive order ${id}`);
-    const { env } = getCacheContext();
+    const { env } = await getCacheContext();
     const order = await fetchExecutiveOrderById(id, env);
     if (!order) {
         console.log(`No order found for ${id}, triggering notFound`);

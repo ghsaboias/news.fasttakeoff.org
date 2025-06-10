@@ -6,7 +6,7 @@ import { NextResponse } from 'next/server'
 
 export async function GET() {
   try {
-    const { env } = getCacheContext()
+    const { env } = await getCacheContext()
     const reportGeneratorService = new ReportGeneratorService(env)
     const channels = await getChannels(env)
 

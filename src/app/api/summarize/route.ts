@@ -129,7 +129,7 @@ async function generateSummary(order: ExecutiveOrder): Promise<string> {
 
 export async function GET() {
     try {
-        const { env } = getCacheContext();
+        const { env } = await getCacheContext();
         const feedsService = new FeedsService(env);
         const result = await feedsService.getOrCreateSummary();
         return NextResponse.json(result);
