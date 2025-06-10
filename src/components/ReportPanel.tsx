@@ -1,5 +1,7 @@
+'use client';
+
 import { Button } from '@/components/ui/button';
-import { formatTime } from '@/lib/utils';
+import { LocalDateTimeFull } from '@/components/utils/LocalDateTime';
 import { X } from 'lucide-react';
 import Link from 'next/link';
 
@@ -31,7 +33,10 @@ export const ReportPanel: React.FC<ReportPanelProps> = ({ report, onClose }) => 
                 <div className="flex items-center text-sm text-muted-foreground">
                     <span>{report.city}</span>
                     <span className="mx-2">•</span>
-                    <span>{formatTime(report.generatedAt, true)}</span>
+                    <LocalDateTimeFull
+                        dateString={report.generatedAt}
+                        options={{ dateStyle: 'short', timeStyle: 'short' }}
+                    />
                 </div>
 
                 <div className="text-foreground/90 leading-relaxed">

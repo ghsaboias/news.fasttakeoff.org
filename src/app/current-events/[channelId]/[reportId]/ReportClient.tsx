@@ -10,8 +10,8 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Loader } from "@/components/ui/loader";
+import { LocalDateTimeFull } from "@/components/utils/LocalDateTime";
 import { DiscordMessage, Report } from "@/lib/types/core";
-import { formatTime } from "@/lib/utils";
 import { ArrowLeft, Check, Globe, MessageSquare } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
@@ -168,7 +168,13 @@ export default function ReportClient() {
                                 {translatedContent?.headline || report?.headline}
                             </h1>
                             <p className="text-muted-foreground">
-                                {formatTime(report?.generatedAt, true)} - {translatedContent?.city || report?.city}
+                                {report?.generatedAt && (
+                                    <LocalDateTimeFull
+                                        dateString={report.generatedAt}
+                                        options={{ dateStyle: 'short', timeStyle: 'short' }}
+                                    />
+                                )}
+                                {report?.generatedAt ? ' - ' : ''}{translatedContent?.city || report?.city}
                             </p>
                             <div className="prose prose-zinc max-w-none overflow-y-auto text-justify">
                                 {translatedContent ? (

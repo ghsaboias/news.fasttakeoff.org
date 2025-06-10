@@ -3,8 +3,8 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { LocalDateTimeFull } from "@/components/utils/LocalDateTime";
 import { Report } from "@/lib/types/core";
-import { formatTime } from "@/lib/utils";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import LinkBadge from "./LinkBadge";
@@ -60,7 +60,6 @@ export default function ReportCard({
     }, [report.body]); // Re-run effect if body content changes
 
     // Calculate derived values
-    const timestampDisplay = report.generatedAt ? formatTime(report.generatedAt, true) : 'Recent';
     const channelHref = showChannelName && clickableChannel && report.channelId ? `/current-events/${report.channelId}` : undefined;
     const readMoreHref = showReadMore && report.channelId && report.reportId ? `/current-events/${report.channelId}/${report.reportId}` : undefined;
     const timeframeText = showTimeframe && report.timeframe ? report.timeframe : undefined;
@@ -103,7 +102,14 @@ export default function ReportCard({
                         <div /> // Empty div to maintain space for justify-between if channel info is not shown
                     )}
                     <div className="text-xs text-muted-foreground">
-                        {timestampDisplay}
+                        {report.generatedAt ? (
+                            <LocalDateTimeFull
+                                dateString={report.generatedAt}
+                                options={{ dateStyle: 'short', timeStyle: 'short' }}
+                            />
+                        ) : (
+                            'Recent'
+                        )}
                     </div>
                 </div>
                 <CardTitle className="text-lg font-semibold line-clamp-2 leading-tight">
