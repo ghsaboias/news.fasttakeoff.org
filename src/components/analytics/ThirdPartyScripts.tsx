@@ -31,7 +31,13 @@ export default function ThirdPartyScripts() {
               type: "NewsArticle",
               isPartOfType: ["Product"],
               isPartOfProductId: "CAownKXbCw:openaccess",
-              clientOptions: { theme: "light", lang: "en" },
+              clientOptions: { 
+                theme: "light", 
+                lang: "en",
+                iframeAttributes: {
+                  title: "Google News Showcase subscription service"
+                }
+              },
             });
           });
         `}
