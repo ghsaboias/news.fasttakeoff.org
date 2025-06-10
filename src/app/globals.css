@@ -19,10 +19,10 @@
   --popover-foreground: #ffffff;
 
   /* Primary (Fast Takeoff Teal) */
-  --primary: #158a73; /* Darker shade for better contrast */
-  --primary-hover: #1db39c; /* Original color for hover state */
+  --primary: #0d6b5a; /* Darker shade for better contrast */
+  --primary-hover: #158a73; /* Original color for hover state */
   --primary-foreground: #ffffff;
-  --primary-light: rgba(21, 138, 115, 0.1);
+  --primary-light: rgba(13, 107, 90, 0.1);
 
   /* Secondary */
   --secondary: #1a1b1c;
