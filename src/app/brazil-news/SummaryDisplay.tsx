@@ -220,7 +220,7 @@ export function SummaryDisplay() {
                         ),
                         li: ({ ...props }) => (
                             <li className="flex gap-2">
-                                <span className="text-muted-foreground">•</span>
+                                <span className="text-muted-foreground my-2">•</span>
                                 <span>{props.children}</span>
                             </li>
                         ),
