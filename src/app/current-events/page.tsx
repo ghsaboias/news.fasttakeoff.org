@@ -25,7 +25,7 @@ async function getServerSideData() {
         }
 
         const reportGeneratorService = new ReportGeneratorService(env);
-        const reports = await reportGeneratorService.cacheService.getAllReportsFromCache(100);
+        const reports = await reportGeneratorService.cacheService.getAllReportsFromCache(200);
         return reports || [];
     } catch (error) {
         console.error('Error fetching reports on server:', error);
