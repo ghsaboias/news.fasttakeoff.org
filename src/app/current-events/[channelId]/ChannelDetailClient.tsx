@@ -45,7 +45,12 @@ export default function ChannelDetailClient({ reports, channel }: { reports: Rep
     const timelineGroups = useMemo(() => {
         const groups: Record<string, Report[]> = {};
         olderReports.forEach(report => {
-            const dateStr = new Date(report.generatedAt).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
+            const dateStr = new Date(report.generatedAt).toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+                timeZone: 'UTC' // Force UTC to prevent hydration mismatches
+            });
             if (!groups[dateStr]) {
                 groups[dateStr] = [];
             }

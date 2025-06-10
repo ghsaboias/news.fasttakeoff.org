@@ -260,12 +260,14 @@ export class InstagramService {
         const formattedDate = date.toLocaleDateString('en-US', {
             month: 'short',
             day: 'numeric',
-            year: 'numeric'
+            year: 'numeric',
+            timeZone: 'UTC' // Force UTC to prevent hydration mismatches
         });
         const formattedTime = date.toLocaleTimeString('en-US', {
             hour: '2-digit',
             minute: '2-digit',
-            hour12: true
+            hour12: true,
+            timeZone: 'UTC' // Force UTC to prevent hydration mismatches
         });
 
         // Calculate space needed for fixed elements

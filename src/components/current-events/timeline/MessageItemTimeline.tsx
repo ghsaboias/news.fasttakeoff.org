@@ -2,15 +2,9 @@
 
 import MediaPreview from "@/components/current-events/MediaPreview";
 import { AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { LocalDateTimeFull } from "@/components/utils/LocalDateTime";
 import { DiscordMessage } from "@/lib/types/core";
 import Image from "next/image";
-
-function formatDate(timestamp: string) {
-    return new Date(timestamp).toLocaleString('en-US', {
-        dateStyle: 'medium',
-        timeStyle: 'short'
-    });
-}
 
 interface MessageItemProps {
     message: DiscordMessage;
@@ -36,7 +30,13 @@ export default function MessageItemTimeline({ message, index, noAccordion = fals
                         </a>
                     </div>
                     <time dateTime={message.timestamp} className="text-sm text-muted-foreground whitespace-nowrap">
-                        {formatDate(message.timestamp)}
+                        <LocalDateTimeFull
+                            dateString={message.timestamp}
+                            options={{
+                                dateStyle: 'medium',
+                                timeStyle: 'short'
+                            }}
+                        />
                     </time>
                 </div>
             )}

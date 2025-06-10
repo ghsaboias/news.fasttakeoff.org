@@ -35,7 +35,10 @@ export default function ThirdPartyScripts() {
                 theme: "light", 
                 lang: "en",
                 iframeAttributes: {
-                  title: "Google News Showcase subscription service"
+                  title: "Google News Showcase background service - no content",
+                  "aria-hidden": "true",
+                  sandbox: "allow-scripts allow-same-origin",
+                  referrerpolicy: "strict-origin-when-cross-origin"
                 }
               },
             });

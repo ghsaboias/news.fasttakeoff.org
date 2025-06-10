@@ -2,7 +2,12 @@ import { AI } from '@/lib/config';
 import { DiscordMessage, Report } from '@/lib/types/core';
 
 export function formatSingleMessage(message: DiscordMessage): string {
-    const timestamp = new Date(message.timestamp).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
+    const timestamp = new Date(message.timestamp).toLocaleTimeString('en-US', {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false,
+        timeZone: 'UTC' // Force UTC to prevent hydration mismatches
+    });
     const parts = message.content.includes("https") ? [] : [`[${timestamp}] Message: ${message.content}`];
 
     if (message.embeds?.length) {

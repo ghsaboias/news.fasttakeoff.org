@@ -2,21 +2,10 @@
 
 import { Loader } from '@/components/ui/loader';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { LocalDateTimeFull } from '@/components/utils/LocalDateTime';
 import { SummaryResult } from '@/lib/types/core';
 import { useEffect, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
-
-// Helper function to format date
-function formatDate(dateString: string): string {
-    const date = new Date(dateString);
-    return date.toLocaleString('pt-BR', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-    });
-}
 
 // Helper function to convert bullet points in text to proper markdown list items
 function formatTextWithBulletPoints(text: string): string {
@@ -142,14 +131,34 @@ export function SummaryDisplay() {
                 <Select value={selectedKey} onValueChange={setSelectedKey}>
                     <SelectTrigger>
                         <SelectValue placeholder="Select a summary">
-                            {selectedKey === 'current' ? 'Current Summary' : formatDate(summaryOptions.find(opt => opt.key === selectedKey)?.createdAt || '')}
+                            {selectedKey === 'current' ? 'Current Summary' : (
+                                <LocalDateTimeFull
+                                    dateString={summaryOptions.find(opt => opt.key === selectedKey)?.createdAt || ''}
+                                    options={{
+                                        day: '2-digit',
+                                        month: '2-digit',
+                                        year: 'numeric',
+                                        hour: '2-digit',
+                                        minute: '2-digit'
+                                    }}
+                                />
+                            )}
                         </SelectValue>
                     </SelectTrigger>
                     <SelectContent>
                         <SelectItem value="current">Current Summary</SelectItem>
                         {summaryOptions.map((option) => (
                             <SelectItem key={option.key} value={option.key}>
-                                {formatDate(option.createdAt)}
+                                <LocalDateTimeFull
+                                    dateString={option.createdAt}
+                                    options={{
+                                        day: '2-digit',
+                                        month: '2-digit',
+                                        year: 'numeric',
+                                        hour: '2-digit',
+                                        minute: '2-digit'
+                                    }}
+                                />
                             </SelectItem>
                         ))}
                     </SelectContent>
