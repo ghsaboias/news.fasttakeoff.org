@@ -33,6 +33,26 @@ export default function CurrentEventsClient({ reports, isLoading = false }: Prop
         setLoading(false);
     }, [reports]);
 
+    // Client-side fallback when server-side data is empty
+    useEffect(() => {
+        if (reports.length === 0 && !loading && reportData.length === 0) {
+            setLoading(true);
+
+            fetch('/api/reports?limit=100')
+                .then(res => res.ok ? res.json() : [])
+                .then(data => {
+                    setReportData(data || []);
+                })
+                .catch(error => {
+                    console.error('Error fetching reports client-side:', error);
+                    setReportData([]);
+                })
+                .finally(() => {
+                    setLoading(false);
+                });
+        }
+    }, [reports.length, loading, reportData.length]);
+
     const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const query = e.target.value;
         setSearchQuery(query);

@@ -17,6 +17,13 @@ export async function generateMetadata() {
 async function getServerSideData() {
     try {
         const { env } = getCacheContext();
+
+        // Check if we have a valid Cloudflare environment
+        if (!env || !env.REPORTS_CACHE) {
+            console.log('[SERVER] Cloudflare environment not available, skipping server-side data fetch');
+            return [];
+        }
+
         const reportGeneratorService = new ReportGeneratorService(env);
         const reports = await reportGeneratorService.cacheService.getAllReportsFromCache(100);
         return reports || [];
