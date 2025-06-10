@@ -8,6 +8,8 @@ import { Suspense } from "react";
 // Aggressive caching for breaking news - balance freshness vs performance
 export const revalidate = 180; // 3 minutes
 
+export const dynamic = 'force-dynamic';
+
 export async function generateMetadata() {
   return {
     title: 'Fast Takeoff News',
@@ -20,14 +22,6 @@ export async function generateMetadata() {
 
 async function getServerSideData() {
   const startTime = Date.now();
-
-  // Handle build-time gracefully - return empty data during static generation
-  if (process.env.NEXT_PHASE === 'phase-production-build') {
-    return {
-      reports: [],
-      executiveOrders: []
-    };
-  }
 
   // Clear request-level cache at the start of each request
   CacheManager.clearRequestCache();
