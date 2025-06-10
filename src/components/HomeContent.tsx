@@ -70,14 +70,6 @@ export default function HomeContent({ initialReports, initialExecutiveOrders }: 
     const [executiveOrders, setExecutiveOrders] = useState<ExecutiveOrder[]>(initialExecutiveOrders)
     const [isLoading, setIsLoading] = useState(false)
 
-    // DEBUG: Log what we're receiving
-    console.log('HomeContent props:', {
-        initialReports: initialReports,
-        reportsLength: initialReports?.length,
-        initialExecutiveOrders: initialExecutiveOrders,
-        executiveOrdersLength: initialExecutiveOrders?.length
-    })
-
     // Use the consolidated geolocation hook
     const { isUSBased } = useGeolocation({ assumeNonUSOnError: true })
 
