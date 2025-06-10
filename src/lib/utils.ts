@@ -29,10 +29,38 @@ export function getStartDate(yearsAgo: number = 5): string {
 
 /**
  * Formats a date string into a human-readable format
+ * Uses UTC to ensure consistency between server and client
  * @param dateString Date string to format
  * @param options Intl.DateTimeFormatOptions to customize the format
  */
 export function formatDate(
+  dateString: string | undefined,
+  options: Intl.DateTimeFormatOptions = {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    timeZone: 'UTC' // Force UTC to prevent hydration mismatches
+  }
+): string {
+  if (!dateString) return 'Date unavailable'
+
+  try {
+    const date = new Date(dateString)
+    // Use UTC explicitly to ensure server-client consistency
+    return date.toLocaleDateString('en-US', { ...options, timeZone: 'UTC' })
+  } catch (error) {
+    console.error('Error formatting date:', error)
+    return 'Invalid date'
+  }
+}
+
+/**
+ * Formats a date string in the user's local timezone
+ * Should only be used on the client side to avoid hydration mismatches
+ * @param dateString Date string to format
+ * @param options Intl.DateTimeFormatOptions to customize the format
+ */
+export function formatDateLocal(
   dateString: string | undefined,
   options: Intl.DateTimeFormatOptions = {
     year: 'numeric',
@@ -44,7 +72,7 @@ export function formatDate(
 
   try {
     const date = new Date(dateString)
-    return date.toLocaleDateString('en-US', options)
+    return date.toLocaleDateString(undefined, options) // Use user's locale and timezone
   } catch (error) {
     console.error('Error formatting date:', error)
     return 'Invalid date'
@@ -128,6 +156,7 @@ function parseCustomDateString(dateString: string): Date | null {
 
 /**
  * Formats a timestamp to show only the time in HH:MM format
+ * Uses UTC to ensure consistency between server and client
  * @param timestamp ISO timestamp string or custom format like "Seg, 19 Mai 2025 18:58:57 -0300"
  * @returns Time in HH:MM format
  */
@@ -155,17 +184,93 @@ export function formatTime(timestamp: string | undefined, showDate: boolean = fa
         hour12: false,
         year: 'numeric',
         month: 'numeric',
-        day: 'numeric'
+        day: 'numeric',
+        timeZone: 'UTC' // Force UTC to prevent hydration mismatches
       });
     } else {
       return date.toLocaleTimeString('en-GB', {
         hour: '2-digit',
         minute: '2-digit',
+        timeZone: 'UTC' // Force UTC to prevent hydration mismatches
       });
     }
   } catch (error) {
     console.error('Error formatting time:', error);
     return 'Invalid time';
+  }
+}
+
+/**
+ * Formats a timestamp to show time in the user's local timezone
+ * Should only be used on the client side to avoid hydration mismatches
+ * @param timestamp ISO timestamp string or custom format
+ * @param showDate Whether to include date information
+ * @returns Time in local timezone
+ */
+export function formatTimeLocal(timestamp: string | undefined, showDate: boolean = false): string {
+  if (!timestamp) return 'Time unavailable';
+
+  let date: Date | null = new Date(timestamp);
+
+  // If the initial parsing results in an invalid date, try parsing the custom format
+  if (isNaN(date.getTime())) {
+    date = parseCustomDateString(timestamp);
+  }
+
+  // If date is still null or invalid after trying custom parsing, return 'Invalid time'
+  if (!date || isNaN(date.getTime())) {
+    console.error('Error formatting time: Invalid date input', timestamp);
+    return 'Invalid time';
+  }
+
+  try {
+    if (showDate) {
+      return date.toLocaleString(undefined, {
+        year: 'numeric',
+        month: 'numeric',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false
+      });
+    } else {
+      return date.toLocaleTimeString(undefined, {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false
+      });
+    }
+  } catch (error) {
+    console.error('Error formatting time:', error);
+    return 'Invalid time';
+  }
+}
+
+/**
+ * Formats a date and time together in the user's local timezone
+ * Should only be used on the client side to avoid hydration mismatches
+ * @param dateString Date string to format
+ * @param options Intl.DateTimeFormatOptions to customize the format
+ */
+export function formatDateTimeLocal(
+  dateString: string | undefined,
+  options: Intl.DateTimeFormatOptions = {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false
+  }
+): string {
+  if (!dateString) return 'Date unavailable'
+
+  try {
+    const date = new Date(dateString)
+    return date.toLocaleString(undefined, options) // Use user's locale and timezone
+  } catch (error) {
+    console.error('Error formatting datetime:', error)
+    return 'Invalid date'
   }
 }
 

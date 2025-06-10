@@ -10,10 +10,11 @@ interface MessageTimelineProps {
 function groupMessagesByDate(messages: DiscordMessage[]) {
     const groups: Record<string, DiscordMessage[]> = {};
     messages?.forEach(message => {
-        const dateStr = new Date(message.timestamp).toLocaleDateString(undefined, {
+        const dateStr = new Date(message.timestamp).toLocaleDateString('en-US', {
             year: 'numeric',
             month: 'long',
-            day: 'numeric'
+            day: 'numeric',
+            timeZone: 'UTC' // Force UTC to prevent hydration mismatches
         });
         if (!groups[dateStr]) {
             groups[dateStr] = [];

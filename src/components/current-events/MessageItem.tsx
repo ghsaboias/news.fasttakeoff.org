@@ -1,15 +1,10 @@
 "use client";
 
 import { AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { LocalDateTimeFull } from "@/components/utils/LocalDateTime";
 import { DiscordMessage } from "@/lib/types/core";
 import Image from "next/image";
 import MediaPreview from "./MediaPreview";
-function formatDate(timestamp: string) {
-    return new Date(timestamp).toLocaleString('en-US', {
-        dateStyle: 'medium',
-        timeStyle: 'short'
-    });
-}
 
 interface MessageItemProps {
     message: DiscordMessage;
@@ -24,7 +19,13 @@ export default function MessageItem({ message, index, noAccordion = false }: Mes
             {message.content && (
                 <div className="flex flex-col justify-between gap-2">
                     <time dateTime={message.timestamp}>
-                        {formatDate(message.timestamp)}
+                        <LocalDateTimeFull
+                            dateString={message.timestamp}
+                            options={{
+                                dateStyle: 'medium',
+                                timeStyle: 'short'
+                            }}
+                        />
                     </time>
                     <div>
                         <h4 className="font-semibold text-sm">Source:</h4>
