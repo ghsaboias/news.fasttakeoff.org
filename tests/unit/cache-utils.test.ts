@@ -1,5 +1,5 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { CacheManager } from '@/lib/cache-utils';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { createMockEnv } from '../setup';
 
 describe('CacheManager', () => {
@@ -7,6 +7,9 @@ describe('CacheManager', () => {
   let mockEnv: any;
 
   beforeEach(() => {
+    // Clear request cache before each test to prevent interference
+    CacheManager.clearRequestCache();
+
     mockEnv = createMockEnv();
     cacheManager = new CacheManager(mockEnv);
   });
@@ -70,7 +73,7 @@ describe('CacheManager', () => {
     it('should retrieve multiple keys efficiently', async () => {
       const keys = ['key1', 'key2', 'key3'];
       const values = [{ data: 'value1' }, { data: 'value2' }, null];
-      
+
       mockEnv.MESSAGES_CACHE.get
         .mockResolvedValueOnce(values[0])
         .mockResolvedValueOnce(values[1])
@@ -98,7 +101,7 @@ describe('CacheManager', () => {
 
     it('should handle fetch failures gracefully', async () => {
       const fetchFn = vi.fn().mockRejectedValue(new Error('Fetch failed'));
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => { });
 
       await expect(
         cacheManager.refreshInBackground('test-key', 'MESSAGES_CACHE', fetchFn, 3600)

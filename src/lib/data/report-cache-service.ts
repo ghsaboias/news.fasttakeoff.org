@@ -72,6 +72,7 @@ export class ReportCacheService {
     }
 
     async getAllReportsFromCache(limit?: number): Promise<Report[]> {
+        const startTime = Date.now();
         const reportsCache = this.cacheManager.getKVNamespace('REPORTS_CACHE');
         if (!reportsCache) {
             console.log('REPORTS_CACHE namespace not available');
@@ -80,38 +81,83 @@ export class ReportCacheService {
 
         // For homepage requests (small limits), try to use cached homepage reports first
         if (limit && limit <= 20) {
-            const homepageReports = await this.getHomepageReports();
-            if (homepageReports && homepageReports.length > 0) {
-                console.log(`[REPORTS] Using cached homepage reports (${homepageReports.length} available)`);
-                return homepageReports.slice(0, limit);
+            try {
+                const homepageReports = await this.getHomepageReports();
+                if (homepageReports && homepageReports.length > 0) {
+                    console.log(`[REPORTS] Using cached homepage reports (${homepageReports.length} available) in ${Date.now() - startTime}ms`);
+                    return homepageReports.slice(0, limit);
+                }
+                console.log('[REPORTS] No cached homepage reports found, falling back to optimized fetch');
+            } catch (error) {
+                console.warn('[REPORTS] Homepage cache failed, falling back:', error);
             }
-            console.log('[REPORTS] No cached homepage reports found, falling back to full fetch');
         }
 
-        // Fallback to original logic for larger requests or when homepage cache is empty
+        // Optimized fallback: Use smaller KV operations for homepage requests
+        if (limit && limit <= 10) {
+            try {
+                // For small requests, try to get recent reports more efficiently
+                const recentKeys = await this.getRecentReportKeys(limit * 2); // Get 2x to account for filtering
+                if (recentKeys.length > 0) {
+                    const batchResults = await this.cacheManager.batchGet<Report[]>('REPORTS_CACHE', recentKeys, 800);
+                    const reports = Array.from(batchResults.values()).map(item => item ?? []);
+                    const allReports = reports.flat();
+                    const sortedReports = groupAndSortReports(allReports);
+                    console.log(`[REPORTS] Used optimized fetch for ${recentKeys.length} keys in ${Date.now() - startTime}ms`);
+                    return sortedReports.slice(0, limit);
+                }
+            } catch (error) {
+                console.warn('[REPORTS] Optimized fetch failed, falling back to full scan:', error);
+            }
+        }
+
+        // Original fallback logic for larger requests or when optimized methods fail
         const listOptions: { prefix: string; limit?: number } = { prefix: 'reports:' };
         if (limit && limit > 20) {
             // Only limit KV keys for large requests
             listOptions.limit = Math.min(limit * 3, 100);
+        } else {
+            // For homepage, limit to reduce scan time
+            listOptions.limit = 50;
         }
 
-        const { keys } = await reportsCache.list(listOptions);
-        if (keys.length === 0) {
-            console.log('No reports found in REPORTS_CACHE');
+        try {
+            const { keys } = await reportsCache.list(listOptions);
+            if (keys.length === 0) {
+                console.log('No reports found in REPORTS_CACHE');
+                return [];
+            }
+
+            const keyNames = keys.map((key: { name: string }) => key.name);
+            const batchResults = await this.cacheManager.batchGet<Report[]>('REPORTS_CACHE', keyNames, 1500);
+            const reports = Array.from(batchResults.values()).map(item => item ?? []);
+
+            const allReports = reports.flat();
+
+            // Use the original groupAndSortReports logic to prioritize today's reports by message count
+            const sortedReports = groupAndSortReports(allReports);
+
+            console.log(`[REPORTS] Full scan completed in ${Date.now() - startTime}ms`);
+            // Apply limit after proper sorting if specified
+            return limit ? sortedReports.slice(0, limit) : sortedReports;
+        } catch (error) {
+            console.error('[REPORTS] All fetch methods failed:', error);
             return [];
         }
+    }
 
-        const keyNames = keys.map((key: { name: string }) => key.name);
-        const batchResults = await this.cacheManager.batchGet<Report[]>('REPORTS_CACHE', keyNames);
-        const reports = Array.from(batchResults.values()).map(item => item ?? []);
+    // Helper method to get recent report keys more efficiently
+    private async getRecentReportKeys(limit: number): Promise<string[]> {
+        const reportsCache = this.cacheManager.getKVNamespace('REPORTS_CACHE');
+        if (!reportsCache) return [];
 
-        const allReports = reports.flat();
+        // Get a small list of recent keys
+        const { keys } = await reportsCache.list({
+            prefix: 'reports:',
+            limit: Math.min(limit * 3, 30) // Conservative limit for speed
+        });
 
-        // Use the original groupAndSortReports logic to prioritize today's reports by message count
-        const sortedReports = groupAndSortReports(allReports);
-
-        // Apply limit after proper sorting if specified
-        return limit ? sortedReports.slice(0, limit) : sortedReports;
+        return keys.map((key: { name: string }) => key.name);
     }
 
     async getAllReportsForChannelFromCache(channelId: string, timeframe?: TimeframeKey): Promise<Report[]> {
@@ -140,17 +186,44 @@ export class ReportCacheService {
      * Cache the top reports from the latest cron run for homepage display
      */
     async cacheHomepageReports(reports: Report[]): Promise<void> {
-        const key = 'homepage:latest-reports';
-        const topReports = reports.slice(0, 10); // Store top 10 reports
-        await this.cacheManager.put('REPORTS_CACHE', key, topReports, CACHE.TTL.REPORTS);
-        console.log(`[REPORTS] Cached ${topReports.length} reports for homepage`);
+        try {
+            const key = 'homepage:latest-reports';
+            const topReports = reports.slice(0, 10); // Store top 10 reports
+
+            // Use longer TTL for homepage cache to ensure availability
+            await this.cacheManager.put('REPORTS_CACHE', key, topReports, CACHE.TTL.REPORTS);
+
+            // Also cache a backup with shorter TTL for immediate availability
+            const backupKey = 'homepage:backup-reports';
+            await this.cacheManager.put('REPORTS_CACHE', backupKey, topReports, 3600); // 1 hour backup
+
+            console.log(`[REPORTS] Cached ${topReports.length} reports for homepage (primary + backup)`);
+        } catch (error) {
+            console.error('[REPORTS] Failed to cache homepage reports:', error);
+        }
     }
 
     /**
      * Get cached homepage reports from the latest cron run
      */
     async getHomepageReports(): Promise<Report[] | null> {
-        const key = 'homepage:latest-reports';
-        return this.cacheManager.get<Report[]>('REPORTS_CACHE', key);
+        try {
+            const key = 'homepage:latest-reports';
+            const reports = await this.cacheManager.get<Report[]>('REPORTS_CACHE', key, 300); // 300ms timeout
+
+            if (reports && reports.length > 0) {
+                return reports;
+            }
+
+            // Fallback to backup cache
+            console.log('[REPORTS] Primary homepage cache empty, trying backup');
+            const backupKey = 'homepage:backup-reports';
+            const backupReports = await this.cacheManager.get<Report[]>('REPORTS_CACHE', backupKey, 300);
+
+            return backupReports || null;
+        } catch (error) {
+            console.warn('[REPORTS] Failed to get homepage reports:', error);
+            return null;
+        }
     }
 } 
