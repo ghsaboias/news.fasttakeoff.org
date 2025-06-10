@@ -2,6 +2,7 @@ import { TIME, TimeframeKey } from '@/lib/config';
 import { DiscordMessage, Report } from '@/lib/types/core';
 import { Cloudflare } from '../../../worker-configuration';
 import { InstagramService } from '../instagram-service';
+import { pingSearchEngines } from '../seo/ping-search-engines';
 import { TwitterService } from '../twitter-service';
 import { ChannelsService } from './channels-service';
 import { MessagesService } from './messages-service';
@@ -50,6 +51,13 @@ export class ReportGeneratorService {
             const cachedReports = await this.cacheService.getReportsFromCache(channelId, timeframe) || [];
             const updatedReports = [report, ...cachedReports.filter(r => r.reportId !== report.reportId)];
             await this.cacheService.cacheReport(channelId, timeframe, updatedReports);
+
+            // Ping search engines immediately after caching
+            const newUrls = [
+                `https://news.fasttakeoff.org/current-events/${channelId}/${report.reportId}`,
+                `https://news.fasttakeoff.org/current-events/${channelId}`
+            ];
+            pingSearchEngines(newUrls).catch(() => { }); // Fire and forget
 
             return { report, messages };
         } catch (error) {
@@ -145,6 +153,14 @@ export class ReportGeneratorService {
                             const cachedReports = cachedReportsMap.get(`reports:${channelId}:${timeframe}`) || [];
                             const updatedReports = [report, ...cachedReports.filter(r => r.reportId !== report.reportId)];
                             await this.cacheService.cacheReport(channelId, timeframe, updatedReports);
+
+                            // Ping search engines for batch-generated reports
+                            const newUrls = [
+                                `https://news.fasttakeoff.org/current-events/${channelId}/${report.reportId}`,
+                                `https://news.fasttakeoff.org/current-events/${channelId}`
+                            ];
+                            pingSearchEngines(newUrls).catch(() => { }); // Fire and forget
+
                             return report;
                         }
                         return null;

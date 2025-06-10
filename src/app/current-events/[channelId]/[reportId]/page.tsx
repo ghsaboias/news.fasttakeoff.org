@@ -3,6 +3,39 @@ import { ReportGeneratorService } from '@/lib/data/report-generator-service';
 import { getCacheContext } from '@/lib/utils';
 import ReportClient from './ReportClient';
 
+// ISR: Revalidate every 5 minutes for breaking news
+export const revalidate = 300;
+
+// Pre-generate some popular report pages
+export async function generateStaticParams() {
+    try {
+        const { env } = await getCacheContext();
+        if (!env) return [];
+
+        const reportGeneratorService = new ReportGeneratorService(env);
+        const channels = await getChannels(env);
+
+        // Get recent reports from top 5 channels
+        const params: Array<{ channelId: string; reportId: string }> = [];
+        for (const channel of channels.slice(0, 5)) {
+            const reports = await reportGeneratorService.cacheService.getAllReportsForChannelFromCache(channel.id);
+            if (reports) {
+                // Get 3 most recent reports per channel
+                reports.slice(0, 3).forEach(report => {
+                    params.push({
+                        channelId: channel.id,
+                        reportId: report.reportId
+                    });
+                });
+            }
+        }
+        return params.slice(0, 20); // Limit to 20 pre-generated pages
+    } catch (error) {
+        console.error('Error generating static params:', error);
+        return [];
+    }
+}
+
 export async function generateMetadata({ params }: { params: Promise<{ channelId: string, reportId: string }> }) {
     const { channelId, reportId } = await params;
 
