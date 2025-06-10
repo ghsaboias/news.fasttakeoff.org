@@ -85,7 +85,7 @@ async function updateCacheInBackground() {
         try {
             const startDate = getStartDate(30) // Last 30 days only
             const { orders } = await fetchExecutiveOrders(1, startDate)
-            
+
             // Limit to first 20 orders
             orders.slice(0, 20).forEach(order => {
                 urls.push({
@@ -103,7 +103,7 @@ async function updateCacheInBackground() {
         try {
             // Only access Cloudflare context in runtime, not during build
             if (typeof process !== 'undefined' && process.env.NODE_ENV === 'development') {
-                const { env } = getCacheContext()
+                const { env } = await getCacheContext()
                 const reportGeneratorService = new ReportGeneratorService(env)
                 const channels = await getChannels(env)
                 const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000)
@@ -166,10 +166,10 @@ ${urls.map(url => `  <url>
 export async function GET() {
     try {
         const now = Date.now()
-        
+
         // Check if cache is valid
         const cacheIsValid = cachedSitemap && (now - cacheTimestamp) < CACHE_DURATION
-        
+
         if (!cacheIsValid) {
             // If no cache or cache expired, start background update
             if (!cachedSitemap) {
@@ -177,7 +177,7 @@ export async function GET() {
                 cachedSitemap = generateStaticSitemap()
                 cacheTimestamp = now
             }
-            
+
             // Update cache in background (don't await)
             updateCacheInBackground().catch(console.error)
         }
@@ -191,7 +191,7 @@ export async function GET() {
         })
     } catch (error) {
         console.error('Error serving sitemap:', error)
-        
+
         // Fallback to static sitemap on any error
         const fallbackSitemap = generateStaticSitemap()
         return new NextResponse(fallbackSitemap, {

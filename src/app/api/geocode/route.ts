@@ -13,7 +13,7 @@ interface GoogleGeocodeLocation {
 }
 
 export async function GET(request: Request) {
-    const { env } = getCacheContext();
+    const { env } = await getCacheContext();
     const cacheManager = new CacheManager(env);
 
     const { searchParams } = new URL(request.url);

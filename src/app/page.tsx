@@ -18,7 +18,7 @@ export async function generateMetadata() {
 
 async function getServerSideData() {
   try {
-    const { env } = getCacheContext();
+    const { env } = await getCacheContext();
 
     // Check if we have a valid Cloudflare environment
     if (!env || !env.REPORTS_CACHE || !env.EXECUTIVE_ORDERS_CACHE) {

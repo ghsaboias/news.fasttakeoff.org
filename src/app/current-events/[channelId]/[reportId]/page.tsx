@@ -7,7 +7,7 @@ export async function generateMetadata({ params }: { params: Promise<{ channelId
     const { channelId, reportId } = await params;
 
     try {
-        const { env } = getCacheContext();
+        const { env } = await getCacheContext();
 
         // Check if we have a valid Cloudflare environment
         if (!env || !env.REPORTS_CACHE || !env.CHANNELS_CACHE) {
@@ -90,7 +90,7 @@ export default async function ReportDetailPage({ params }: { params: Promise<{ c
     const { channelId, reportId } = await params;
 
     try {
-        const { env } = getCacheContext();
+        const { env } = await getCacheContext();
 
         // Check if we have a valid Cloudflare environment
         if (!env || !env.REPORTS_CACHE || !env.CHANNELS_CACHE) {

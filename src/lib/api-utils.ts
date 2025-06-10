@@ -9,7 +9,7 @@ export async function withErrorHandling<T>(
     handler: (env: Cloudflare.Env) => Promise<T>,
     errorMessage: string
 ): Promise<NextResponse> {
-    const { env } = getCacheContext();
+    const { env } = await getCacheContext();
     try {
         const result = await handler(env);
         return NextResponse.json(result, { headers: API_CACHE_HEADERS });
