@@ -2,6 +2,7 @@
 
 import { ClerkProvider } from '@clerk/nextjs';
 import { usePathname } from 'next/navigation';
+import Script from 'next/script';
 import { PropsWithChildren, useEffect, useState } from 'react';
 
 // Public paths that don't need authentication
@@ -16,31 +17,39 @@ const PUBLIC_PATHS = [
 
 export default function AuthProvider({ children }: PropsWithChildren) {
     const pathname = usePathname();
-    const [isAuthRequired, setIsAuthRequired] = useState(false);
-    const [isLoading, setIsLoading] = useState(true);
+    const [mounted, setMounted] = useState(false);
 
     useEffect(() => {
-        // Check if current path requires auth
-        const needsAuth = !PUBLIC_PATHS.some(path =>
-            pathname === path || pathname.startsWith(`${path}/`)
-        );
+        setMounted(true);
+    }, []);
 
-        setIsAuthRequired(needsAuth);
-        setIsLoading(false);
-    }, [pathname]);
-
-    // Show nothing while determining auth requirement
-    if (isLoading) {
+    // Don't render anything until mounted to prevent hydration issues
+    if (!mounted) {
         return null;
     }
 
-    // If auth is not required, render children directly
-    if (!isAuthRequired) {
-        return <>{children}</>;
-    }
+    const isPublicPath = PUBLIC_PATHS.some(path =>
+        pathname === path || pathname.startsWith(`${path}/`)
+    );
 
-    // If auth is required, wrap with ClerkProvider
     return (
-        <ClerkProvider>{children}</ClerkProvider>
+        <>
+            {/* Load Clerk script only when needed */}
+            {!isPublicPath && (
+                <Script
+                    src="https://clerk.fasttakeoff.org/npm/@clerk/clerk-js@latest/dist/clerk.browser.js"
+                    strategy="lazyOnload"
+                />
+            )}
+
+            <ClerkProvider
+                appearance={{
+                    baseTheme: undefined, // Prevent theme loading for public pages
+                    variables: { colorPrimary: '#167F6E' }
+                }}
+            >
+                {children}
+            </ClerkProvider>
+        </>
     );
 } 
