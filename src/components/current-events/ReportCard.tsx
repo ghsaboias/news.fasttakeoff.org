@@ -68,10 +68,6 @@ export default function ReportCard({
     const paragraphs = report.body.split('\n\n').filter(Boolean);
     const itemUnitText = report.messageCount === 1 ? itemUnitSingular : itemUnitSingular ? `${itemUnitSingular}s` : '';
 
-    // Footer content logic (from ReportCardFooter)
-    const showFooterContentRow = timeframeText || (report.messageCount !== undefined && itemUnitSingular);
-    const hasFooterContent = readMoreHref || showFooterContentRow;
-
     return (
         <Card className="h-[500px] sm:h-[400px] flex flex-col gap-2 py-4">
             <CardHeader>
