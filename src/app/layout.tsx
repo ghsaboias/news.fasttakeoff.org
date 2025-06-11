@@ -1,15 +1,16 @@
 import RootLayoutClient from '@/components/RootLayoutClient';
 import ThirdPartyScripts from '@/components/analytics/ThirdPartyScripts';
-import { Geist_Mono, Space_Grotesk } from 'next/font/google';
+import { Carlito, Geist_Mono } from 'next/font/google';
 import './critical.css';
 import './globals.css';
 import { metadata } from './metadata';
 
 // Load Space Grotesk through Next.js optimization
-const spaceGrotesk = Space_Grotesk({
+const carlito = Carlito({
   subsets: ['latin'],
   display: 'swap',
-  preload: true
+  preload: true,
+  weight: ['400', '700']
 });
 
 const geistMono = Geist_Mono({ variable: '--font-geist-mono', subsets: ['latin'] });
@@ -41,7 +42,7 @@ export default function RootLayout({
         </script>
       </head>
       <body
-        className={`${spaceGrotesk.className} ${geistMono.variable} antialiased min-h-screen flex flex-col justify-center mx-auto`}
+        className={`${carlito.className} ${geistMono.variable} antialiased min-h-screen flex flex-col justify-center mx-auto`}
       >
         <RootLayoutClient>{children}</RootLayoutClient>
         <ThirdPartyScripts />

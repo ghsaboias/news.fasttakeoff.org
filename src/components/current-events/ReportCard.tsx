@@ -1,9 +1,9 @@
 'use client';
 
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { LocalDateTimeFull } from "@/components/utils/LocalDateTime";
+import LocalDateTime from "@/components/utils/LocalDateTime";
+import { TIME } from "@/lib/config";
 import { Report } from "@/lib/types/core";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
@@ -11,22 +11,12 @@ import LinkBadge from "./LinkBadge";
 
 interface ReportCardProps {
     report: Report;
-    reportCount?: number;
-    showChannelName?: boolean;
-    showTimeframe?: boolean;
     clickableChannel?: boolean;
-    showReadMore?: boolean;
-    clickableReport?: boolean;
 }
 
 export default function ReportCard({
     report,
-    reportCount,
-    showChannelName = true,
-    showTimeframe = true,
     clickableChannel = true,
-    clickableReport = false,
-    showReadMore = true
 }: ReportCardProps) {
     // Content scroll state (from ReportCardContent)
     const [isAtBottom, setIsAtBottom] = useState(false);
@@ -60,83 +50,88 @@ export default function ReportCard({
     }, [report.body]); // Re-run effect if body content changes
 
     // Calculate derived values
-    const channelHref = showChannelName && clickableChannel && report.channelId ? `/current-events/${report.channelId}` : undefined;
-    const readMoreHref = showReadMore && report.channelId && report.reportId ? `/current-events/${report.channelId}/${report.reportId}` : undefined;
-    const timeframeText = showTimeframe && report.timeframe ? report.timeframe : undefined;
-    const itemUnitSingular = clickableReport ? 'source' : 'update';
-    const itemCountLinkHref = clickableReport && report.channelId && report.reportId ? `/current-events/${report.channelId}/${report.reportId}` : undefined;
+    const channelHref = clickableChannel && report.channelId ? `/current-events/${report.channelId}` : undefined;
+    const itemUnitSingular = 'source';
+    const itemCountLinkHref = report.channelId && report.reportId ? `/current-events/${report.channelId}/${report.reportId}` : undefined;
     const paragraphs = report.body.split('\n\n').filter(Boolean);
     const itemUnitText = report.messageCount === 1 ? itemUnitSingular : itemUnitSingular ? `${itemUnitSingular}s` : '';
 
+    // This regex matches most emoji at the start of a string
+    const emojiRegex = /^(\p{Emoji_Presentation}|\p{Emoji}\uFE0F)/u;
+    const match = report.channelName?.match(emojiRegex);
+    // const leadingEmoji = match ? match[0] : undefined;
+    const channelNameWithoutEmoji = report.channelName?.replace(emojiRegex, '').trim();
+
+    // Helper to convert timeframe string to ms
+    function timeframeToMs(timeframe?: string): number | undefined {
+        if (!timeframe) return undefined;
+        if (timeframe === '2h') return TIME.TWO_HOURS_MS;
+        if (timeframe === '6h') return TIME.SIX_HOURS_MS;
+        return undefined;
+    }
+
     return (
-        <Card className="h-[500px] sm:h-[400px] flex flex-col gap-2 py-4">
+        <Card className="flex flex-col gap-4">
             <CardHeader>
-                {/* Header content (from ReportCardHeader) */}
-                <div className="flex justify-end gap-2 mb-1 items-center">
-                    <div className="text-xs text-foreground">
-                        {report.generatedAt ? (
-                            <LocalDateTimeFull
-                                dateString={report.generatedAt}
-                                options={{ dateStyle: 'short', timeStyle: 'short' }}
-                            />
+                <CardTitle className="text-lg font-semibold line-clamp-2 leading-tight hover:text-accent">
+                    <Link href={`/current-events/${report.channelId}/${report.reportId}`}>
+                        {report.headline}
+                    </Link>
+                </CardTitle>
+                <div className="flex justify-between items-center">
+                    <p className="text-sm font-medium line-clamp-1">
+                        {report.city} - {report.generatedAt && report.timeframe ? (
+                            (() => {
+                                const end = new Date(report.generatedAt);
+                                const ms = timeframeToMs(report.timeframe);
+                                if (!ms) return 'Recent';
+                                const start = new Date(end.getTime() - ms);
+                                return (
+                                    <>
+                                        <LocalDateTime dateString={start.toISOString()} className="text-sm" options={{ dateStyle: 'medium', timeStyle: 'short' }} />
+                                        {" - "}
+                                        <LocalDateTime dateString={end.toISOString()} className="text-sm" options={{ timeStyle: 'short' }} />
+                                    </>
+                                );
+                            })()
                         ) : (
                             'Recent'
                         )}
-                    </div>
+                    </p>
                 </div>
-                <CardTitle className="text-lg font-semibold line-clamp-2 leading-tight">
-                    {report.headline}
-                </CardTitle>
-                <p className="text-sm font-medium line-clamp-1">{report.city}</p>
             </CardHeader>
 
-            <CardContent className="flex-grow flex flex-col pt-0">
-                {/* Content with scroll (from ReportCardContent) */}
-                <div className="text-sm flex-grow h-16 relative">
-                    <div
-                        ref={contentRef}
-                        className="overflow-y-auto h-full scrollbar-none hover:scrollbar-thin hover:scrollbar-track-transparent hover:scrollbar-thumb-gray-300"
-                    >
-                        {paragraphs.map((paragraph, index) => (
-                            <p key={index} className="mb-2 last:mb-0 text-justify">
-                                {paragraph}
-                            </p>
-                        ))}
-                    </div>
-                    {!isAtBottom && (
-                        <div className="absolute inset-x-0 bottom-0 h-8 bg-gradient-to-t from-background to-transparent pointer-events-none z-10"></div>
+            <CardContent className="flex flex-col pt-0">
+                <div className="text-sm">
+                    {paragraphs.length > 0 && (
+                        <p className="text-justify">
+                            {paragraphs[0]}
+                        </p>
                     )}
                 </div>
             </CardContent>
 
             {/* Footer with all tags and actions */}
-            <CardFooter className="flex flex-col gap-2 justify-between items-start my-2">
-                {readMoreHref && (
-                    <Button asChild variant="outline" size="sm" className="w-full">
-                        <Link href={readMoreHref}>
-                            Read More
-                        </Link>
-                    </Button>
-                )}
-                <div className="flex flex-wrap justify-between w-full">
-                    <div className="flex flex-col flex-wrap gap-2">
-                        {showChannelName && report.channelName && (
+            <CardFooter className="flex flex-col gap-2 justify-between items-start">
+                <div className="flex items-end justify-between w-full gap-2">
+                    <div className="flex items-center gap-2">
+                        {report.channelName && (
                             channelHref ? (
                                 <LinkBadge
                                     href={channelHref}
                                     variant="outline"
                                     className="px-1 py-0 h-5 hover:bg-accent"
                                 >
-                                    {report.channelName}
+                                    {channelNameWithoutEmoji}
                                 </LinkBadge>
                             ) : (
                                 <Badge variant="secondary" className="px-1 py-0 h-5">
-                                    {report.channelName}
+                                    {channelNameWithoutEmoji}
                                 </Badge>
                             )
                         )}
                         {(report.messageCount !== undefined && itemUnitSingular) && (
-                            clickableReport && itemCountLinkHref ? (
+                            itemCountLinkHref ? (
                                 <LinkBadge
                                     href={itemCountLinkHref}
                                     variant="outline"
@@ -150,21 +145,9 @@ export default function ReportCard({
                                 </Badge>
                             )
                         )}
-                        {reportCount !== undefined && (
-                            <Badge variant="secondary" className="px-1 py-0 h-5">
-                                {reportCount} {reportCount === 1 ? 'report' : 'reports'}
-                            </Badge>
-                        )}
-                    </div>
-                    <div className="flex flex-col gap-2 items-center justify-center">
-                        {timeframeText && (
-                            <Badge variant="secondary" className="p-2 text-white">
-                                {timeframeText}
-                            </Badge>
-                        )}
                     </div>
                 </div>
             </CardFooter>
-        </Card>
+        </Card >
     )
 }

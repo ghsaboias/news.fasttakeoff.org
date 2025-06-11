@@ -96,7 +96,7 @@ export default function MessageItemTimeline({ message, index, noAccordion = fals
                                     unoptimized
                                 />
                             )}
-                            <span className="text-sm text-muted-foreground">
+                            <span className="text-sm">
                                 {embed.author.name}
                             </span>
                         </div>

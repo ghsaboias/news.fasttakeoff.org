@@ -153,8 +153,8 @@ export default function CurrentEventsClient({ reports, isLoading = false }: Prop
                 </div>
             </div>
             <div className="w-full flex flex-col gap-4 sm:flex-row sm:items-center justify-between">
-                <div className="relative w-full">
-                    <Search className="absolute left-2.5 top-2.5 h-4 w-4 card-text" />
+                <div className="relative w-full px-6">
+                    <Search className="absolute left-8 top-2.5 h-4 w-4 card-text" />
                     <Input
                         placeholder="Search topics..."
                         value={searchQuery}
@@ -195,14 +195,12 @@ export default function CurrentEventsClient({ reports, isLoading = false }: Prop
                         <p className="text-lg text-muted-foreground">Loading reports...</p>
                     </div>
                 ) : channelsWithLatest.length > 0 ? (
-                    channelsWithLatest.map(({ channel, latestReport, reportCount }) => (
+                    channelsWithLatest.map(({ channel, latestReport }) => (
                         <Link key={channel} href={`/current-events/${latestReport?.channelId}`} className="rounded-lg">
                             {latestReport && (
                                 <ReportCard
                                     report={latestReport}
-                                    reportCount={reportCount}
                                     clickableChannel={false}
-                                    showReadMore={false}
                                 />
                             )}
                         </Link>

@@ -114,30 +114,21 @@ export default function ChannelDetailClient({ reports, channel }: { reports: Rep
             </div>
             <div className="space-y-6">
                 {latestReport && (
-                    <>
-                        <h4 className="text-lg font-semibold mb-2">Latest Report</h4>
-                        <Link href={`/current-events/${channelId}/${latestReport.reportId}`} className="hover:bg-muted transition-shadow rounded-lg">
-                            <ReportCard report={latestReport} showChannelName={false} showReadMore={false} />
-                        </Link>
-                    </>
+                    <ReportCard report={latestReport} clickableChannel={false} />
                 )}
                 {timelineGroups.length > 0 && (
                     timelineGroups.map(([date, reportsOnDate]) => (
                         <div key={date} className="space-y-4">
                             <div className="flex items-center gap-2 border-b border-foreground pb-2">
-                                <div className="w-2 h-2 bg-primary rounded-full" />
+                                <div className="w-2 h-2 rounded-full bg-foreground" />
                                 <span className="text-sm font-medium text-foreground">{date}</span>
                             </div>
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 {reportsOnDate.map((report) => (
-                                    <Link href={`/current-events/${channelId}/${report.reportId}`} key={report.reportId} className="hover:bg-muted transition-shadow rounded-lg">
-                                        <ReportCard
-                                            report={report}
-                                            showChannelName={false}
-                                            showReadMore={false}
-                                            clickableChannel={false}
-                                        />
-                                    </Link>
+                                    <ReportCard
+                                        report={report}
+                                        clickableChannel={false}
+                                    />
                                 ))}
                             </div>
                         </div>
