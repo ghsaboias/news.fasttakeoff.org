@@ -124,9 +124,9 @@ export default function ChannelDetailClient({ reports, channel }: { reports: Rep
                 {timelineGroups.length > 0 && (
                     timelineGroups.map(([date, reportsOnDate]) => (
                         <div key={date} className="space-y-4">
-                            <div className="flex items-center gap-2 border-b border-muted-foreground pb-2">
+                            <div className="flex items-center gap-2 border-b border-foreground pb-2">
                                 <div className="w-2 h-2 bg-primary rounded-full" />
-                                <span className="text-sm font-medium text-muted-foreground">{date}</span>
+                                <span className="text-sm font-medium text-foreground">{date}</span>
                             </div>
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 {reportsOnDate.map((report) => (

@@ -116,7 +116,7 @@ export default function ReportClient() {
                     <div className="flex flex-col gap-6">
                         <div className="flex items-center gap-2 justify-between">
                             <div className="flex flex-col gap-2 sm:flex-row sm:justify-between sm:space-y-0 sm:gap-4 sm:w-full">
-                                <LinkBadge href={`/current-events/${report?.channelId}`} variant="outline" className="hover:bg-muted text-md">
+                                <LinkBadge href={`/current-events/${report?.channelId}`} variant="outline" className="hover:bg-accent text-md">
                                     {report?.channelName}
                                 </LinkBadge>
                                 <div className="flex items-center gap-3">
@@ -167,7 +167,7 @@ export default function ReportClient() {
                             <h1 className="text-2xl font-bold">
                                 {translatedContent?.headline || report?.headline}
                             </h1>
-                            <p className="text-muted-foreground">
+                            <p>
                                 {report?.generatedAt && (
                                     <LocalDateTimeFull
                                         dateString={report.generatedAt}

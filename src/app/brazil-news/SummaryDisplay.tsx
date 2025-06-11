@@ -200,7 +200,7 @@ export function SummaryDisplay() {
                                 return <>{props.children}</>;
                             }
 
-                            return <p className="my-2 leading-relaxed" {...props} />;
+                            return <p className="leading-relaxed" {...props} />;
                         },
                         strong: ({ ...props }) => {
                             // Check if this is a standalone strong element that's likely a heading
@@ -220,13 +220,13 @@ export function SummaryDisplay() {
                         ),
                         li: ({ ...props }) => (
                             <li className="flex gap-2">
-                                <span className="text-muted-foreground my-2">•</span>
+                                <span className="card-text">•</span>
                                 <span>{props.children}</span>
                             </li>
                         ),
                         // Add blockquote styling
                         blockquote: ({ ...props }) => (
-                            <blockquote className="border-l-2 border-muted-foreground pl-4 my-4 italic" {...props} />
+                            <blockquote className="border-l-2 border-foreground pl-4 my-4 italic" {...props} />
                         ),
                         // Add heading styles
                         h1: ({ ...props }) => (

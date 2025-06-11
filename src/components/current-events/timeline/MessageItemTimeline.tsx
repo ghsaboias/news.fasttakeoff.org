@@ -29,7 +29,7 @@ export default function MessageItemTimeline({ message, index, noAccordion = fals
                             {message.content}
                         </a>
                     </div>
-                    <time dateTime={message.timestamp} className="text-sm text-muted-foreground whitespace-nowrap">
+                    <time dateTime={message.timestamp} className="text-sm text-foreground whitespace-nowrap">
                         <LocalDateTimeFull
                             dateString={message.timestamp}
                             options={{

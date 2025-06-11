@@ -44,11 +44,11 @@ export default function MessageTimeline({ messages }: MessageTimelineProps) {
                     <div className="sticky top-0 bg-background/95 backdrop-blur-sm z-10 py-2">
                         <h3 className="text-lg font-semibold">{date}</h3>
                     </div>
-                    <div className="space-y-4 pl-4 border-l-2 border-secondary-foreground">
+                    <div className="space-y-4 pl-4 border-l-2 border-foreground">
                         {dateMessages.map((message, index) => (
                             <div key={message.id} className="relative">
                                 {/* Timeline dot */}
-                                <div className="absolute -left-[25px] top-1 w-4 h-4 bg-secondary-foreground border-2 border-secondary-foreground rounded-full"></div>
+                                <div className="absolute -left-[25px] top-1 w-4 h-4 bg-foreground border-2 border-foreground rounded-full"></div>
                                 {/* Message content */}
                                 <div className="pl-4">
                                     <MessageItem

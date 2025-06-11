@@ -146,15 +146,15 @@ export default function CurrentEventsClient({ reports, isLoading = false }: Prop
                         </Badge>
                     </div>
                     {lastUpdated && !loading && (
-                        <span className="text-xs text-muted-foreground">
+                        <span className="text-xs text-foreground">
                             Last updated: {new Date(lastUpdated).toISOString().substring(11, 19)}
                         </span>
                     )}
                 </div>
             </div>
             <div className="w-full flex flex-col gap-4 sm:flex-row sm:items-center justify-between">
-                <div className="relative max-w-sm">
-                    <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                <div className="relative w-full">
+                    <Search className="absolute left-2.5 top-2.5 h-4 w-4 card-text" />
                     <Input
                         placeholder="Search topics..."
                         value={searchQuery}
@@ -196,7 +196,7 @@ export default function CurrentEventsClient({ reports, isLoading = false }: Prop
                     </div>
                 ) : channelsWithLatest.length > 0 ? (
                     channelsWithLatest.map(({ channel, latestReport, reportCount }) => (
-                        <Link key={channel} href={`/current-events/${latestReport?.channelId}`} className="rounded-lg hover:shadow-lg transition-shadow">
+                        <Link key={channel} href={`/current-events/${latestReport?.channelId}`} className="rounded-lg">
                             {latestReport && (
                                 <ReportCard
                                     report={latestReport}

@@ -26,7 +26,7 @@ export default function MessagesAccordion({ channelData, channelMessages = [], i
             <div>
                 <Accordion type="single" collapsible className="w-full">
                     <AccordionItem value="messages">
-                        <AccordionTrigger className="text-base font-semibold hover:no-underline cursor-pointer bg-secondary px-4 hover:bg-secondary-hover">
+                        <AccordionTrigger className="text-foreground font-semibold hover:no-underline cursor-pointer px-4 border border-foreground hover:bg-accent">
                             <div className="flex items-center gap-2">
                                 Sources
                                 <Badge variant="secondary" className="ml-2 bg-transparent">

@@ -55,7 +55,7 @@ export default function HomeContent({ initialReports, initialExecutiveOrders }: 
             <section className="mx-auto m-6 w-[90%] h-[48px]">
                 <h2 className="sr-only">Search Reports</h2>
                 <div className="relative max-w-2xl mx-auto">
-                    <Search className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
+                    <Search className="absolute left-3 top-2.5 h-5 w-5 card-text" />
                     <Input
                         placeholder="Search all reports..."
                         value={searchQuery}

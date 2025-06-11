@@ -77,7 +77,7 @@ export default function MessagesClient({
     }
 
     return (
-        <div className="space-y-6">
+        <div>
             <div className="flex items-center justify-between">
                 <div className="space-y-1">
                     <h1 className="text-2xl font-bold flex items-center gap-2">
@@ -97,7 +97,7 @@ export default function MessagesClient({
             <MessageTimeline messages={displayedMessages} />
 
             {hasMore && (
-                <div className="flex justify-center pt-4">
+                <div className="flex justify-center pt-8">
                     <Button
                         onClick={loadMore}
                         variant="outline"

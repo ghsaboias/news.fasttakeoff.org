@@ -76,32 +76,8 @@ export default function ReportCard({
         <Card className="h-[500px] sm:h-[400px] flex flex-col gap-2 py-4">
             <CardHeader>
                 {/* Header content (from ReportCardHeader) */}
-                <div className="flex justify-between gap-2 mb-1 items-center">
-                    {showChannelName && report.channelName ? (
-                        <div className="flex flex-row gap-2 items-center">
-                            {channelHref ? (
-                                <LinkBadge
-                                    href={channelHref}
-                                    variant="outline"
-                                    className="px-1 py-0 h-5 hover:bg-muted"
-                                >
-                                    {report.channelName}
-                                </LinkBadge>
-                            ) : (
-                                <Badge variant="secondary" className="px-1 py-0 h-5">
-                                    {report.channelName}
-                                </Badge>
-                            )}
-                            {reportCount !== undefined && (
-                                <Badge variant="secondary" className="px-1 py-0 h-5">
-                                    {reportCount} {reportCount === 1 ? 'report' : 'reports'}
-                                </Badge>
-                            )}
-                        </div>
-                    ) : (
-                        <div /> // Empty div to maintain space for justify-between if channel info is not shown
-                    )}
-                    <div className="text-xs text-muted-foreground">
+                <div className="flex justify-end gap-2 mb-1 items-center">
+                    <div className="text-xs text-foreground">
                         {report.generatedAt ? (
                             <LocalDateTimeFull
                                 dateString={report.generatedAt}
@@ -137,46 +113,62 @@ export default function ReportCard({
                 </div>
             </CardContent>
 
-            {/* Footer (from ReportCardFooter) - only render if there's content */}
-            {hasFooterContent && (
-                <CardFooter className="flex flex-col gap-2 justify-between items-start my-2">
-                    {readMoreHref && (
-                        <Button asChild variant="outline" size="sm" className="w-full">
-                            <Link href={readMoreHref}>
-                                Read More
-                            </Link>
-                        </Button>
-                    )}
-                    {showFooterContentRow && (
-                        <div className="flex flex-row gap-1 justify-between w-full items-center">
-                            {timeframeText ? (
-                                <Badge variant="secondary" className="px-1 py-0 h-5">
-                                    {timeframeText}
-                                </Badge>
+            {/* Footer with all tags and actions */}
+            <CardFooter className="flex flex-col gap-2 justify-between items-start my-2">
+                {readMoreHref && (
+                    <Button asChild variant="outline" size="sm" className="w-full">
+                        <Link href={readMoreHref}>
+                            Read More
+                        </Link>
+                    </Button>
+                )}
+                <div className="flex flex-wrap justify-between w-full">
+                    <div className="flex flex-col flex-wrap gap-2">
+                        {showChannelName && report.channelName && (
+                            channelHref ? (
+                                <LinkBadge
+                                    href={channelHref}
+                                    variant="outline"
+                                    className="px-1 py-0 h-5 hover:bg-accent"
+                                >
+                                    {report.channelName}
+                                </LinkBadge>
                             ) : (
-                                // Placeholder to maintain structure for justify-between if item count is shown
-                                (report.messageCount !== undefined && itemUnitSingular) ? <div /> : null
-                            )}
-
-                            {(report.messageCount !== undefined && itemUnitSingular) && (
-                                clickableReport && itemCountLinkHref ? (
-                                    <Button variant="outline" size="sm" asChild>
-                                        <Link href={itemCountLinkHref}>
-                                            <span className="font-medium">{report.messageCount}</span> {itemUnitText}
-                                        </Link>
-                                    </Button>
-                                ) : (
-                                    <div className="text-xs text-muted-foreground">
-                                        <span className="font-medium">{report.messageCount}</span> {itemUnitText}
-                                    </div>
-                                )
-                            )}
-                            {/* Placeholder if timeframe is shown but item count is not, to balance justify-between */}
-                            {timeframeText && !(report.messageCount !== undefined && itemUnitSingular) && <div />}
-                        </div>
-                    )}
-                </CardFooter>
-            )}
+                                <Badge variant="secondary" className="px-1 py-0 h-5">
+                                    {report.channelName}
+                                </Badge>
+                            )
+                        )}
+                        {(report.messageCount !== undefined && itemUnitSingular) && (
+                            clickableReport && itemCountLinkHref ? (
+                                <LinkBadge
+                                    href={itemCountLinkHref}
+                                    variant="outline"
+                                    className="px-1 py-0 h-5 hover:bg-accent"
+                                >
+                                    {report.messageCount} {itemUnitText}
+                                </LinkBadge>
+                            ) : (
+                                <Badge variant="secondary" className="px-1 py-0 h-5">
+                                    {report.messageCount} {itemUnitText}
+                                </Badge>
+                            )
+                        )}
+                        {reportCount !== undefined && (
+                            <Badge variant="secondary" className="px-1 py-0 h-5">
+                                {reportCount} {reportCount === 1 ? 'report' : 'reports'}
+                            </Badge>
+                        )}
+                    </div>
+                    <div className="flex flex-col gap-2 items-center justify-center">
+                        {timeframeText && (
+                            <Badge variant="secondary" className="p-2">
+                                {timeframeText}
+                            </Badge>
+                        )}
+                    </div>
+                </div>
+            </CardFooter>
         </Card>
     )
 }

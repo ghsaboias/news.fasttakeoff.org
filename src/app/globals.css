@@ -8,13 +8,13 @@
 
 :root {
   /* Base Colors */
-  --background: #0a0b0c; /* Dark background */
-  --foreground: #ffffff; /* White text */
+  --background: #ffffff; /* Dark background */
+  --foreground: #000000; /* White text */
   --black-transparent: rgba(0, 0, 0, 0.8);
 
   /* UI Elements */
-  --card: #0f1011;
-  --card-foreground: #ffffff;
+  --card: #ffffff;
+  --card-text: #000000;
   --popover: #0f1011;
   --popover-foreground: #ffffff;
 
