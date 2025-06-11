@@ -90,7 +90,7 @@ export default function HomeContent({ initialReports, initialExecutiveOrders }: 
     return (
         <div className="flex flex-col pb-16 w-[100vw] justify-center">
             {/* Hero Section - Fixed height to prevent layout shift */}
-            <section className="hero-section">
+            <section className="hero-section m-6">
                 <div className="flex flex-col items-center gap-8">
                     <div className="flex flex-col items-center gap-4">
                         <h1 className="hero-title">
@@ -102,7 +102,7 @@ export default function HomeContent({ initialReports, initialExecutiveOrders }: 
             </section>
 
             {/* Search Section - Fixed height */}
-            <section className="mx-auto sm:px-4 w-[90%] mb-8 h-[48px]">
+            <section className="mx-auto m-6 w-[90%] h-[48px]">
                 <h2 className="sr-only">Search Reports</h2>
                 <div className="relative max-w-2xl mx-auto">
                     <Search className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
