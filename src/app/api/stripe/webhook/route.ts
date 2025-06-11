@@ -18,11 +18,16 @@ if (!clerkSecretKey && !isBuildTime) {
     throw new Error('CLERK_SECRET_KEY environment variable is not set');
 }
 
-// Initialize Stripe with fetch-based client
-const stripe = new Stripe(stripeSecretKey || '', {
-    apiVersion: '2025-05-28.basil',
-    httpClient: Stripe.createFetchHttpClient(),
-});
+// Helper to initialize Stripe only when needed
+function getStripeInstance(): Stripe {
+    if (!stripeSecretKey) {
+        throw new Error('STRIPE_SECRET_KEY environment variable is not set');
+    }
+    return new Stripe(stripeSecretKey, {
+        apiVersion: '2025-05-28.basil',
+        httpClient: Stripe.createFetchHttpClient(),
+    });
+}
 
 // Helper to read raw body from ReadableStream
 async function getRawBody(req: Request) {
@@ -44,6 +49,9 @@ export async function POST(req: Request) {
         console.log('Skipping webhook handler during build time');
         return NextResponse.json({ received: true });
     }
+
+    // Initialize Stripe only when actually processing the webhook
+    const stripe = getStripeInstance();
 
     // Get raw body
     let rawBody;
