@@ -29,12 +29,6 @@ main {
   margin: 0 auto;
 }
 
-@media (min-width: 540px) {
-  .hero-section {
-    height: 36vh;
-  }
-}
-
 .hero-title {
   font-size: 3.75rem;
   font-weight: 700;
