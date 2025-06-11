@@ -84,17 +84,37 @@ export class ReportGeneratorService {
     }
 
     async getReportAndMessages(channelId: string, reportId: string, timeframe?: TimeframeKey): Promise<{ report: Report | null; messages: DiscordMessage[] }> {
-        const effectiveTimeframe = timeframe || await this.getReportTimeframe(reportId) || '2h';
-        const cachedReports = await this.cacheService.getReportsFromCache(channelId, effectiveTimeframe);
-        if (cachedReports) {
-            const report = cachedReports.find(r => r.reportId === reportId);
-            if (report) {
-                const messages = report.messageIds?.length
-                    ? await this.messagesService.getMessagesForReport(channelId, report.messageIds)
-                    : await this.messagesService.getMessagesForTimeframe(channelId, effectiveTimeframe);
-                return { report, messages };
+        // If timeframe is provided, use it directly
+        if (timeframe) {
+            const cachedReports = await this.cacheService.getReportsFromCache(channelId, timeframe);
+            if (cachedReports) {
+                const report = cachedReports.find(r => r.reportId === reportId);
+                if (report) {
+                    const messages = report.messageIds?.length
+                        ? await this.messagesService.getMessagesForReport(channelId, report.messageIds)
+                        : await this.messagesService.getMessagesForTimeframe(channelId, timeframe);
+                    return { report, messages };
+                }
+            }
+            return { report: null, messages: [] };
+        }
+
+        // If no timeframe provided, check each timeframe for this channel (more efficient than scanning all reports)
+        const timeframes: TimeframeKey[] = [...TIME.TIMEFRAMES];
+
+        for (const tf of timeframes) {
+            const cachedReports = await this.cacheService.getReportsFromCache(channelId, tf);
+            if (cachedReports) {
+                const report = cachedReports.find(r => r.reportId === reportId);
+                if (report) {
+                    const messages = report.messageIds?.length
+                        ? await this.messagesService.getMessagesForReport(channelId, report.messageIds)
+                        : await this.messagesService.getMessagesForTimeframe(channelId, tf);
+                    return { report, messages };
+                }
             }
         }
+
         return { report: null, messages: [] };
     }
 
