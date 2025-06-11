@@ -1,4 +1,5 @@
 import { withErrorHandling } from '@/lib/api-utils';
+import { TimeframeKey } from '@/lib/config';
 import { ReportGeneratorService } from '@/lib/data/report-generator-service';
 
 export async function GET(request: Request) {
@@ -50,4 +51,42 @@ export async function GET(request: Request) {
 
         return reports;
     }, 'Failed to fetch report(s)');
+}
+
+export async function POST(request: Request) {
+    return withErrorHandling(async env => {
+        const body = await request.json();
+        const { channelId, timeframe = '2h', model } = body;
+
+        if (!channelId) {
+            throw new Error('Missing channelId');
+        }
+
+        const reportGeneratorService = new ReportGeneratorService(env);
+
+        // If model is specified, we need to temporarily override the AI config
+        if (model) {
+            // Override the model for this request by modifying the environment
+            // This is a bit hacky but works for testing purposes
+            (env as unknown as { [key: string]: string | undefined }).AI_MODEL_OVERRIDE = model;
+        }
+
+        try {
+            const { report, messages } = await reportGeneratorService.createReportAndGetMessages(
+                channelId,
+                timeframe as TimeframeKey
+            );
+
+            if (!report) {
+                throw new Error('No report generated - possibly no messages in timeframe');
+            }
+
+            return { report, messages };
+        } finally {
+            // Clean up the override
+            if (model) {
+                delete (env as unknown as { [key: string]: string | undefined }).AI_MODEL_OVERRIDE;
+            }
+        }
+    }, 'Failed to generate report');
 }
