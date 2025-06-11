@@ -5,12 +5,21 @@ export async function GET(request: Request) {
     return withErrorHandling(async env => {
         const { searchParams } = new URL(request.url);
         const channelId = searchParams.get('channelId');
-        const reportId = searchParams.get('reportId');
+        let reportId = searchParams.get('reportId');
         const limitParam = searchParams.get('limit');
 
         // Handle specific report requests (no caching for these)
         if (reportId) {
             if (!channelId) throw new Error('Missing channelId');
+            
+            // Clean up reportId - remove any trailing colons and numbers (like :1)
+            // This handles potential URL encoding issues or routing artifacts
+            reportId = reportId.replace(/:[\d]+$/, '').trim();
+            
+            if (!reportId) throw new Error('Invalid reportId after cleaning');
+            
+            console.log(`[API] Fetching report: channelId=${channelId}, reportId=${reportId}`);
+            
             const reportGeneratorService = new ReportGeneratorService(env);
             const { report, messages } = await reportGeneratorService.getReportAndMessages(channelId, reportId);
             if (!report) throw new Error('Report not found');

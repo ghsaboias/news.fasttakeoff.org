@@ -49,14 +49,31 @@ export default function ReportClient() {
     useEffect(() => {
         const fetchReportAndMessages = async () => {
             setIsLoading(true);
-            const reportResponse = await fetch(`/api/reports?channelId=${channelId}&reportId=${reportId}`);
-            if (!reportResponse.ok) throw new Error('Failed to fetch report');
-            const data = await reportResponse.json();
-            setReport(data.report);
-            setMessages(data.messages);
-            setIsLoading(false);
+            try {
+                console.log(`[CLIENT] Fetching report: channelId=${channelId}, reportId=${reportId}`);
+                const reportResponse = await fetch(`/api/reports?channelId=${channelId}&reportId=${reportId}`);
+                
+                if (!reportResponse.ok) {
+                    const errorText = await reportResponse.text();
+                    console.error(`[CLIENT] API Error ${reportResponse.status}:`, errorText);
+                    throw new Error(`Failed to fetch report: ${reportResponse.status} - ${errorText}`);
+                }
+                
+                const data = await reportResponse.json();
+                console.log(`[CLIENT] Successfully fetched report:`, data.report?.headline || 'No headline');
+                setReport(data.report);
+                setMessages(data.messages);
+            } catch (error) {
+                console.error('[CLIENT] Error fetching report and messages:', error);
+                toast.error('Failed to load report. Please try again.');
+            } finally {
+                setIsLoading(false);
+            }
         };
-        fetchReportAndMessages();
+        
+        if (channelId && reportId) {
+            fetchReportAndMessages();
+        }
     }, [channelId, reportId]);
 
     useEffect(() => {
