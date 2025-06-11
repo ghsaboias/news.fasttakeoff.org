@@ -45,19 +45,19 @@ export default function Header() {
             {
                 user ? (
                     <div className="flex items-center gap-4">
-                        <Link href="/profile" className="text-sm font-medium hover:underline">Profile</Link>
+                        <Link href="/profile" className="text-sm font-medium hover:underline text-background">Profile</Link>
                         <UserButton />
                         <Sheet open={isMenuOpen} onOpenChange={setIsMenuOpen}>
                             <SheetTrigger asChild>
                                 <Button
-                                    variant="ghost"
+                                    variant="outline"
                                     size="icon"
                                     aria-label="Open navigation menu"
                                     aria-expanded={isMenuOpen}
                                     aria-controls="mobile-navigation"
-                                    className="min-[600px]:hidden text-background bg-transparent"
+                                    className="min-[600px]:hidden bg-transparent"
                                 >
-                                    <Menu className="h-5 w-5 text-foreground" />
+                                    <Menu className="h-5 w-5 text-background" />
                                 </Button>
                             </SheetTrigger>
                             <SheetContent side="right" className="w-[300px]">
