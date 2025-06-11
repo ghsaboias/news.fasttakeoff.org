@@ -124,10 +124,11 @@ export default function ChannelDetailClient({ reports, channel }: { reports: Rep
                                 <span className="text-sm font-medium text-foreground">{date}</span>
                             </div>
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                {reportsOnDate.map((report) => (
+                                {reportsOnDate.map((report, index) => (
                                     <ReportCard
                                         report={report}
                                         clickableChannel={false}
+                                        key={index}
                                     />
                                 ))}
                             </div>

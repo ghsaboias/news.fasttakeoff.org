@@ -56,6 +56,11 @@ binding = "INSTAGRAM_IMAGES"
 bucket_name = "news-images"
 preview_bucket_name = "news-images-dev"
 
+[[d1_databases]]
+binding = "DB"
+database_name = "prod-emails"
+database_id = "06082f10-b7ba-4a98-bf03-5c4ac36a6e36"
+
 [[routes]]
 pattern = "news.fasttakeoff.org"
 custom_domain = true

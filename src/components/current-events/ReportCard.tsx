@@ -6,7 +6,6 @@ import LocalDateTime from "@/components/utils/LocalDateTime";
 import { TIME } from "@/lib/config";
 import { Report } from "@/lib/types/core";
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
 import LinkBadge from "./LinkBadge";
 
 interface ReportCardProps {
@@ -18,37 +17,6 @@ export default function ReportCard({
     report,
     clickableChannel = true,
 }: ReportCardProps) {
-    // Content scroll state (from ReportCardContent)
-    const [isAtBottom, setIsAtBottom] = useState(false);
-    const contentRef = useRef<HTMLDivElement>(null);
-
-    // Scroll detection logic (from ReportCardContent)
-    useEffect(() => {
-        const element = contentRef.current;
-        if (!element) return;
-
-        const checkAndUpdateScrollState = () => {
-            if (element.scrollHeight <= element.clientHeight) {
-                setIsAtBottom(true);
-            } else {
-                const { scrollTop, scrollHeight, clientHeight } = element;
-                const isBottom = Math.abs(scrollHeight - clientHeight - scrollTop) < 1.5;
-                setIsAtBottom(isBottom);
-            }
-        };
-
-        checkAndUpdateScrollState(); // Initial check on mount and when body changes
-
-        element.addEventListener('scroll', checkAndUpdateScrollState);
-        // Listen for window resize as clientHeight can change
-        window.addEventListener('resize', checkAndUpdateScrollState);
-
-        return () => {
-            element.removeEventListener('scroll', checkAndUpdateScrollState);
-            window.removeEventListener('resize', checkAndUpdateScrollState);
-        };
-    }, [report.body]); // Re-run effect if body content changes
-
     // Calculate derived values
     const channelHref = clickableChannel && report.channelId ? `/current-events/${report.channelId}` : undefined;
     const itemUnitSingular = 'source';
@@ -58,7 +26,7 @@ export default function ReportCard({
 
     // This regex matches most emoji at the start of a string
     const emojiRegex = /^(\p{Emoji_Presentation}|\p{Emoji}\uFE0F)/u;
-    const match = report.channelName?.match(emojiRegex);
+    // const match = report.channelName?.match(emojiRegex);
     // const leadingEmoji = match ? match[0] : undefined;
     const channelNameWithoutEmoji = report.channelName?.replace(emojiRegex, '').trim();
 

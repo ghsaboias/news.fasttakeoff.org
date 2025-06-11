@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input"
 import { useGeolocation } from "@/lib/hooks/useGeolocation"
 import { ExecutiveOrder, Report } from "@/lib/types/core"
 import Link from "next/link"
-import { useMemo, useState } from "react"
+import { useState } from "react"
 
 interface HomeContentProps {
     initialReports: Report[]
@@ -16,26 +16,50 @@ interface HomeContentProps {
 }
 
 export default function HomeContent({ initialReports, initialExecutiveOrders }: HomeContentProps) {
-    const [searchQuery, setSearchQuery] = useState("")
     const [reports] = useState<Report[]>(initialReports)
     const [executiveOrders] = useState<ExecutiveOrder[]>(initialExecutiveOrders)
+    const [email, setEmail] = useState("")
+    const [isSubmitting, setIsSubmitting] = useState(false)
+    const [submitMessage, setSubmitMessage] = useState("")
 
     // Use the consolidated geolocation hook
     const { isUSBased } = useGeolocation({ assumeNonUSOnError: true })
 
-    const filteredReports = useMemo(() => {
-        if (!searchQuery.trim()) {
-            return reports
+    const handleEmailSubmit = async (e: React.FormEvent) => {
+        e.preventDefault()
+
+        if (!email.trim()) {
+            setSubmitMessage("Please enter your email address")
+            return
         }
 
-        const query = searchQuery.toLowerCase()
-        return reports.filter(report =>
-            (report.channelName?.toLowerCase() || '').includes(query) ||
-            (report.headline?.toLowerCase() || '').includes(query) ||
-            (report.city?.toLowerCase() || '').includes(query) ||
-            (report.body?.toLowerCase() || '').includes(query)
-        )
-    }, [reports, searchQuery])
+        setIsSubmitting(true)
+        setSubmitMessage("")
+
+        try {
+            const response = await fetch('/api/emails', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ email: email.trim() }),
+            })
+
+            const data = await response.json()
+
+            if (response.ok) {
+                setSubmitMessage("Successfully subscribed! 🎉")
+                setEmail("")
+            } else {
+                setSubmitMessage(data.error || "Failed to subscribe")
+            }
+        } catch (error) {
+            console.error('Error submitting email:', error)
+            setSubmitMessage("Something went wrong. Please try again.")
+        } finally {
+            setIsSubmitting(false)
+        }
+    }
 
     return (
         <div className="flex flex-col pb-8 w-[100vw] justify-center">
@@ -48,8 +72,8 @@ export default function HomeContent({ initialReports, initialExecutiveOrders }: 
                         Array.from({ length: 4 }).map((_, i) => (
                             <ReportCardSkeleton key={i} />
                         ))
-                    ) : filteredReports.length > 0 ? (
-                        filteredReports.slice(0, 4).map(report => (
+                    ) : reports.length > 0 ? (
+                        reports.slice(0, 4).map(report => (
                             <ReportCard
                                 key={report.reportId}
                                 report={report}
@@ -58,7 +82,7 @@ export default function HomeContent({ initialReports, initialExecutiveOrders }: 
                     ) : (
                         <div className="col-span-2 text-center py-8">
                             <p className="text-muted-foreground">
-                                {searchQuery ? "No reports found matching your search." : "No reports found."}
+                                No reports found.
                             </p>
                         </div>
                     )}
@@ -76,10 +100,25 @@ export default function HomeContent({ initialReports, initialExecutiveOrders }: 
                             <p className="text-3xl">AI-powered news for everyone.</p>
                         </div>
                     </div>
-                    <div className="flex items-center gap-4 sm:w-1/2 w-[90%]">
-                        <Input type="email" placeholder="Enter your email" />
-                        <Button>Subscribe</Button>
-                    </div>
+                    <form onSubmit={handleEmailSubmit} className="flex flex-col items-center gap-4 sm:w-1/2 w-[90%]">
+                        <div className="flex items-center gap-4 w-full">
+                            <Input
+                                type="email"
+                                placeholder="Enter your email"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                disabled={isSubmitting}
+                                required
+                            />
+                            <Button type="submit" disabled={isSubmitting}>
+                                {isSubmitting ? "..." : "Subscribe"}
+                            </Button>
+                        </div>
+
+                        <p className={`text-sm h-5 ${submitMessage.includes('🎉') ? 'text-green-600' : 'text-red-600'}`}>
+                            {submitMessage}
+                        </p>
+                    </form>
                 </section>
             </div>
 
