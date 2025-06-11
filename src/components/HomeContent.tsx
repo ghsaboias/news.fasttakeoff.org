@@ -15,56 +15,6 @@ interface HomeContentProps {
     initialExecutiveOrders: ExecutiveOrder[]
 }
 
-// // Skeleton component for ReportCard
-// function ReportCardSkeleton() {
-//     return (
-//         <Card className="h-[500px] sm:h-[400px] flex flex-col gap-2 py-4 animate-pulse">
-//             <CardHeader>
-//                 <div className="flex justify-between gap-2 mb-1 items-center">
-//                     <div className="flex flex-row gap-2 items-center">
-//                         <div className="bg-muted rounded h-5 w-20"></div>
-//                     </div>
-//                     <div className="bg-muted rounded h-3 w-16"></div>
-//                 </div>
-//                 <div className="bg-muted rounded h-6 w-3/4 mb-2"></div>
-//                 <div className="bg-muted rounded h-4 w-1/2"></div>
-//             </CardHeader>
-//             <CardContent className="flex-grow flex flex-col pt-0">
-//                 <div className="text-sm flex-grow h-16 space-y-2">
-//                     <div className="bg-muted rounded h-4 w-full"></div>
-//                     <div className="bg-muted rounded h-4 w-full"></div>
-//                     <div className="bg-muted rounded h-4 w-3/4"></div>
-//                     <div className="bg-muted rounded h-4 w-full"></div>
-//                     <div className="bg-muted rounded h-4 w-2/3"></div>
-//                 </div>
-//             </CardContent>
-//             <CardFooter className="flex flex-col gap-2 justify-between items-start my-2">
-//                 <div className="bg-muted rounded h-8 w-full"></div>
-//                 <div className="flex flex-row gap-1 justify-between w-full items-center">
-//                     <div className="bg-muted rounded h-5 w-12"></div>
-//                     <div className="bg-muted rounded h-6 w-16"></div>
-//                 </div>
-//             </CardFooter>
-//         </Card>
-//     )
-// }
-
-// // Skeleton component for OrderCard
-// function OrderCardSkeleton() {
-//     return (
-//         <Card className="gap-4 animate-pulse">
-//             <CardHeader>
-//                 <div className="bg-muted rounded h-6 w-full mb-2"></div>
-//                 <div className="bg-muted rounded h-6 w-3/4 mb-2"></div>
-//                 <div className="bg-muted rounded h-4 w-1/2"></div>
-//             </CardHeader>
-//             <CardFooter>
-//                 <div className="bg-muted rounded h-8 w-full"></div>
-//             </CardFooter>
-//         </Card>
-// )
-// }
-
 export default function HomeContent({ initialReports, initialExecutiveOrders }: HomeContentProps) {
     const [searchQuery, setSearchQuery] = useState("")
     const [reports] = useState<Report[]>(initialReports)
