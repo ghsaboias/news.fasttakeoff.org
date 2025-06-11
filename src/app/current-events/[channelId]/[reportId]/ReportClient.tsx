@@ -51,6 +51,7 @@ export default function ReportClient() {
         const fetchReportAndMessages = async () => {
             setIsLoading(true);
             const reportResponse = await fetch(`/api/reports?channelId=${channelId}&reportId=${reportId}`);
+            console.log("reportResponse", reportResponse);
             if (!reportResponse.ok) throw new Error('Failed to fetch report');
             const data = await reportResponse.json();
             console.log("data", data);
