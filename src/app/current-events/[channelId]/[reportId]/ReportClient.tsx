@@ -38,6 +38,7 @@ export default function ReportClient() {
     const params = useParams();
     const channelId = Array.isArray(params.channelId) ? params.channelId[0] : params.channelId;
     const reportId = Array.isArray(params.reportId) ? params.reportId[0] : params.reportId;
+    console.log(channelId, reportId);
 
     const [report, setReport] = useState<Report | null>(null);
     const [messages, setMessages] = useState<DiscordMessage[]>([]);
@@ -52,6 +53,7 @@ export default function ReportClient() {
             const reportResponse = await fetch(`/api/reports?channelId=${channelId}&reportId=${reportId}`);
             if (!reportResponse.ok) throw new Error('Failed to fetch report');
             const data = await reportResponse.json();
+            console.log("data", data);
             setReport(data.report);
             setMessages(data.messages);
             setIsLoading(false);
