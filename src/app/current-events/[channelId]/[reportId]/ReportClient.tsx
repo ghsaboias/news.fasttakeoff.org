@@ -113,15 +113,22 @@ export default function ReportClient() {
                         <Loader size="xl" />
                     </div>
                 ) : (
-                    <div className="flex flex-col gap-4">
+                    <div className="flex flex-col gap-6">
                         <div className="flex items-center gap-2 justify-between">
                             <div className="flex flex-col gap-2 sm:flex-row sm:justify-between sm:space-y-0 sm:gap-4 sm:w-full">
                                 <LinkBadge href={`/current-events/${report?.channelId}`} variant="outline" className="hover:bg-muted text-md">
                                     {report?.channelName}
                                 </LinkBadge>
-                                <div className="flex items-center gap-2">
+                                <div className="flex items-center gap-3">
                                     <div className="flex items-center">
-                                        <Button asChild variant="outline">
+                                        <Button asChild variant="outline" className="min-w-[40px] flex justify-center">
+                                            <Link href={`/current-events/${channelId}`}>
+                                                <ArrowLeft className="h-4 w-4" />
+                                            </Link>
+                                        </Button>
+                                    </div>
+                                    <div className="flex items-center">
+                                        <Button asChild variant="outline" className="min-w-[40px] flex justify-center">
                                             <Link href={`/current-events/${channelId}/messages`}>
                                                 <MessageSquare className="h-4 w-4" />
                                             </Link>
@@ -130,8 +137,8 @@ export default function ReportClient() {
                                     <div className="flex items-center">
                                         <DropdownMenu>
                                             <DropdownMenuTrigger asChild>
-                                                <Button variant="outline" size="icon" className="p-2 hover:bg-muted min-w-fit">
-                                                    <div className="flex items-center gap-1">
+                                                <Button variant="outline" size="icon" className="p-2 hover:bg-muted min-w-[64px] flex justify-center">
+                                                    <div className="flex items-center gap-2">
                                                         <Globe className="h-5 w-5" />
                                                         <span className="text-xs font-medium">{selectedLanguage.toUpperCase()}</span>
                                                     </div>
@@ -152,13 +159,6 @@ export default function ReportClient() {
                                                 ))}
                                             </DropdownMenuContent>
                                         </DropdownMenu>
-                                    </div>
-                                    <div className="flex items-center">
-                                        <Button asChild variant="outline">
-                                            <Link href={`/current-events/${channelId}`}>
-                                                <ArrowLeft className="h-4 w-4" />
-                                            </Link>
-                                        </Button>
                                     </div>
                                 </div>
                             </div>
