@@ -52,6 +52,10 @@ export class ReportAIService {
         const apiKey = getAIAPIKey(this.env as unknown as { [key: string]: string | undefined });
         const apiUrl = aiConfig.endpoint;
 
+        // Check for model override in environment (for testing)
+        const modelOverride = (this.env as unknown as { [key: string]: string | undefined }).AI_MODEL_OVERRIDE;
+        const modelToUse = modelOverride || aiConfig.model;
+
         const response = await fetch(apiUrl, {
             method: 'POST',
             headers: {
@@ -66,7 +70,7 @@ export class ReportAIService {
                     },
                     { role: "user", content: prompt }
                 ],
-                model: aiConfig.model,
+                model: modelToUse,
                 max_tokens: AI.REPORT_GENERATION.OUTPUT_BUFFER,
                 response_format: {
                     type: "json_schema",
