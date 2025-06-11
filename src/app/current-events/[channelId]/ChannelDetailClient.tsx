@@ -16,9 +16,15 @@ export default function ChannelDetailClient({ reports, channel }: { reports: Rep
     const [clientChannel, setClientChannel] = useState<DiscordChannel | null>(channel);
     const [isLoading, setIsLoading] = useState(false);
 
-    // Client-side fallback when server-side data is empty
+    // Client-side fallback when server-side data is empty or channel is not found
     useEffect(() => {
-        if (reports.length === 0 && !channel && !isLoading && clientReports.length === 0) {
+        if ((!channel || reports.length === 0) && !isLoading && clientReports.length === 0) {
+            console.log('[ChannelDetailClient] Fetching data client-side:', {
+                hasChannel: !!channel,
+                reportsLength: reports.length,
+                isLoading,
+                clientReportsLength: clientReports.length
+            });
             setIsLoading(true);
 
             // Fetch both reports and channel data in parallel
@@ -26,8 +32,15 @@ export default function ChannelDetailClient({ reports, channel }: { reports: Rep
                 fetch(`/api/reports?channelId=${channelId}`).then(res => res.ok ? res.json() : []).catch(() => []),
                 fetch(`/api/channels`).then(res => res.ok ? res.json() : []).catch(() => [])
             ]).then(([reportsData, channelsData]) => {
+                console.log('[ChannelDetailClient] Fetched data:', {
+                    reportsLength: reportsData?.length || 0,
+                    channelsLength: channelsData?.length || 0
+                });
                 setClientReports(reportsData || []);
                 const foundChannel = channelsData.find((c: DiscordChannel) => c.id === channelId) || null;
+                if (!foundChannel) {
+                    console.log('[ChannelDetailClient] Channel not found in fetched data:', channelId);
+                }
                 setClientChannel(foundChannel);
             }).finally(() => {
                 setIsLoading(false);
