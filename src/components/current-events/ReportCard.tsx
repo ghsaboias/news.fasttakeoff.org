@@ -162,7 +162,7 @@ export default function ReportCard({
                     </div>
                     <div className="flex flex-col gap-2 items-center justify-center">
                         {timeframeText && (
-                            <Badge variant="secondary" className="p-2">
+                            <Badge variant="secondary" className="p-2 text-white">
                                 {timeframeText}
                             </Badge>
                         )}

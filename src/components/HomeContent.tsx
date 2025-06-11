@@ -38,35 +38,37 @@ export default function HomeContent({ initialReports, initialExecutiveOrders }: 
     }, [reports, searchQuery])
 
     return (
-        <div className="flex flex-col pb-16 w-[100vw] justify-center">
-            {/* Hero Section - Fixed height to prevent layout shift */}
-            <section className="hero-section m-6">
-                <div className="flex flex-col items-center gap-8">
-                    <div className="flex flex-col items-center gap-4">
-                        <h1 className="hero-title">
-                            Fast Takeoff News
-                        </h1>
-                        <p className="text-3xl">AI-powered news for everyone.</p>
+        <div className="flex flex-col pb-8 w-[100vw] justify-center">
+            <div className="my-8">
+                {/* Hero Section - Fixed height to prevent layout shift */}
+                <section className="hero-section m-4 sm:m-8">
+                    <div className="flex flex-col items-center gap-8">
+                        <div className="flex flex-col items-center gap-4">
+                            <h1 className="hero-title">
+                                Fast Takeoff News
+                            </h1>
+                            <p className="text-3xl">AI-powered news for everyone.</p>
+                        </div>
                     </div>
-                </div>
-            </section>
+                </section>
 
-            {/* Search Section - Fixed height */}
-            <section className="mx-auto m-6 w-[90%] h-[48px]">
-                <h2 className="sr-only">Search Reports</h2>
-                <div className="relative max-w-2xl mx-auto">
-                    <Search className="absolute left-3 top-2.5 h-5 w-5 card-text" />
-                    <Input
-                        placeholder="Search all reports..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="pl-10 h-10 text-lg"
-                    />
-                </div>
-            </section>
+                {/* Search Section - Fixed height */}
+                <section className="mx-auto mx-6 mt-6 w-[90%] sm:w-full h-[48px]">
+                    <h2 className="sr-only">Search Reports</h2>
+                    <div className="relative max-w-2xl mx-auto">
+                        <Search className="absolute left-3 top-2.5 h-5 w-5 card-text" />
+                        <Input
+                            placeholder="Search all reports..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            className="pl-10 h-10 text-lg"
+                        />
+                    </div>
+                </section>
+            </div>
 
             {/* Reports Section - Fixed height grid */}
-            <section className="mx-auto sm:px-4 w-[90%] min-h-[800px] sm:min-h-[600px]">
+            <section className="mx-auto sm:px-4 w-[95%] min-h-[800px] sm:min-h-[600px]">
                 <h2 className="sr-only">Latest Reports</h2>
                 <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                     {reports.length === 0 ? (

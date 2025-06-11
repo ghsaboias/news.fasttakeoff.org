@@ -1,31 +1,28 @@
 "use client"
 
 import { Button } from "@/components/ui/button";
-import { getAIProviderConfig } from "@/lib/ai-config";
 import { useGeolocation } from "@/lib/hooks/useGeolocation";
 import { UserButton, useUser } from "@clerk/nextjs";
 import { Menu } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
-import { Badge } from "./ui/badge";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "./ui/sheet";
 
 export default function Header() {
     const { user } = useUser()
     const [isMenuOpen, setIsMenuOpen] = useState(false);
-    const aiConfig = getAIProviderConfig();
 
     // Use the consolidated geolocation hook
     const { isUSBased } = useGeolocation({ initialValue: false });
 
     return (
-        <header className="mx-auto flex h-16 items-center justify-between sm:px-8 sm:w-[95vw] w-[90vw]">
+        <header className="mx-auto flex h-16 items-center justify-between sm:px-8 bg-foreground px-4 ">
             <Link href="/" className="flex items-center gap-2 text-xl text-[#167F6E] font-semibold">
                 <Image src="/images/brain_transparent.webp" alt="Fast Takeoff News" width={32} height={32} priority />
                 <p className="hidden lg:block">Fast Takeoff News</p>
             </Link>
-            <div className="items-center gap-6 hidden min-[600px]:flex">
+            <div className="items-center gap-6 hidden min-[600px]:flex text-background">
                 {
                     isUSBased && (
                         <>
@@ -48,9 +45,6 @@ export default function Header() {
             {
                 user ? (
                     <div className="flex items-center gap-4">
-                        <Badge variant="secondary" className="hidden md:block">
-                            {aiConfig.displayName}
-                        </Badge>
                         <Link href="/profile" className="text-sm font-medium hover:underline">Profile</Link>
                         <UserButton />
                         <Sheet open={isMenuOpen} onOpenChange={setIsMenuOpen}>
@@ -61,9 +55,9 @@ export default function Header() {
                                     aria-label="Open navigation menu"
                                     aria-expanded={isMenuOpen}
                                     aria-controls="mobile-navigation"
-                                    className="min-[600px]:hidden"
+                                    className="min-[600px]:hidden text-background bg-transparent"
                                 >
-                                    <Menu className="h-5 w-5" />
+                                    <Menu className="h-5 w-5 text-foreground" />
                                 </Button>
                             </SheetTrigger>
                             <SheetContent side="right" className="w-[300px]">
@@ -89,18 +83,12 @@ export default function Header() {
                                     <Link href="/brazil-news" className="text-sm font-medium hover:underline">
                                         Brazil News
                                     </Link>
-                                    <Badge variant="secondary">
-                                        {aiConfig.displayName}
-                                    </Badge>
                                 </div>
                             </SheetContent>
                         </Sheet>
                     </div>
                 ) : (
                     <div className="flex items-center gap-4">
-                        <Badge variant="secondary" className="hidden lg:block">
-                            {aiConfig.displayName}
-                        </Badge>
                         <Link href="/sign-in" prefetch>
                             <Button variant="outline" size="sm">
                                 Sign In
@@ -114,14 +102,14 @@ export default function Header() {
                         <Sheet open={isMenuOpen} onOpenChange={setIsMenuOpen}>
                             <SheetTrigger asChild>
                                 <Button
-                                    variant="ghost"
+                                    variant="outline"
                                     size="icon"
                                     aria-label="Open navigation menu"
                                     aria-expanded={isMenuOpen}
                                     aria-controls="mobile-navigation"
-                                    className="min-[600px]:hidden"
+                                    className="min-[600px]:hidden text-background"
                                 >
-                                    <Menu className="h-5 w-5" />
+                                    <Menu className="h-5 w-5 text-foreground" />
                                 </Button>
                             </SheetTrigger>
                             <SheetContent side="right" className="w-[300px]">
@@ -147,9 +135,6 @@ export default function Header() {
                                     <Link href="/brazil-news" className="text-sm font-medium hover:underline">
                                         Brazil News
                                     </Link>
-                                    <Badge variant="secondary">
-                                        {aiConfig.displayName}
-                                    </Badge>
                                 </div>
                             </SheetContent>
                         </Sheet>
