@@ -52,6 +52,7 @@ ${urls.map(url => `  <url>
 }
 
 async function updateCacheInBackground() {
+    console.log('Starting sitemap background update...')
     try {
         // Import expensive operations only when updating cache
         const { getChannels } = await import('@/lib/data/channels-service')
@@ -101,17 +102,24 @@ async function updateCacheInBackground() {
 
         // Reports - limit scope significantly
         try {
+            console.log('Getting Cloudflare context...')
             // Access Cloudflare context in production runtime
             const { env } = await getCacheContext()
+            console.log('Cloudflare context obtained:', !!env)
             if (env && env.REPORTS_CACHE && env.CHANNELS_CACHE) {
+                console.log('Creating ReportGeneratorService...')
                 const reportGeneratorService = new ReportGeneratorService(env)
+                console.log('Getting channels...')
                 const channels = await getChannels(env)
+                console.log(`Found ${channels.length} channels`)
                 const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
 
                 // Process only first 5 channels to limit execution time
                 for (const channel of channels.slice(0, 5)) {
                     try {
+                        console.log(`Processing channel ${channel.id} (${channel.name})...`)
                         const reports = await reportGeneratorService.cacheService.getAllReportsForChannelFromCache(channel.id)
+                        console.log(`Found ${reports?.length || 0} reports for channel ${channel.id}`)
                         if (reports) {
                             // Add channel page
                             urls.push({
@@ -125,6 +133,8 @@ async function updateCacheInBackground() {
                             const recentReports = reports
                                 .filter(report => new Date(report.generatedAt) >= thirtyDaysAgo)
                                 .slice(0, 100)
+                            
+                            console.log(`After filtering: ${recentReports.length} recent reports for channel ${channel.id}`)
 
                             recentReports.forEach(report => {
                                 urls.push({
@@ -143,6 +153,8 @@ async function updateCacheInBackground() {
         } catch (error) {
             console.error('Error updating sitemap cache:', error)
         }
+        
+        console.log(`Total URLs generated: ${urls.length}`)
 
         // Generate and cache new sitemap
         const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
@@ -159,7 +171,8 @@ ${urls.map(url => `  <url>
         cacheTimestamp = Date.now()
         console.log(`Sitemap cache updated successfully with ${urls.length} URLs`)
     } catch (error) {
-        console.error('Error updating sitemap cache:', error)
+        console.error('Error updating sitemap cache (outer catch):', error)
+        console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace')
     }
 }
 
