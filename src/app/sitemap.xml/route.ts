@@ -101,9 +101,9 @@ async function updateCacheInBackground() {
 
         // Reports - limit scope significantly
         try {
-            // Only access Cloudflare context in runtime, not during build
-            if (typeof process !== 'undefined' && process.env.NODE_ENV === 'development') {
-                const { env } = await getCacheContext()
+            // Access Cloudflare context in production runtime
+            const { env } = await getCacheContext()
+            if (env && env.REPORTS_CACHE && env.CHANNELS_CACHE) {
                 const reportGeneratorService = new ReportGeneratorService(env)
                 const channels = await getChannels(env)
                 const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000)
@@ -186,7 +186,6 @@ export async function GET() {
             headers: {
                 'Content-Type': 'application/xml; charset=utf-8',
                 'Cache-Control': 'public, max-age=3600, s-maxage=3600',
-                'X-Robots-Tag': 'noindex',
             },
         })
     } catch (error) {
@@ -198,7 +197,6 @@ export async function GET() {
             headers: {
                 'Content-Type': 'application/xml; charset=utf-8',
                 'Cache-Control': 'public, max-age=1800, s-maxage=1800', // 30 min cache on errors
-                'X-Robots-Tag': 'noindex',
             },
         })
     }
