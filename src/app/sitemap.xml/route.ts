@@ -1,3 +1,4 @@
+import { DiscordChannel } from '@/lib/types/core'
 import { NextResponse } from 'next/server'
 
 const BASE_URL = 'https://news.fasttakeoff.org'
@@ -100,15 +101,15 @@ async function updateCacheInBackground() {
                 console.log('Creating ReportGeneratorService...')
                 const reportGeneratorService = new ReportGeneratorService(env)
                 console.log('Getting channels...')
-                
+
                 // Add timeout to prevent hanging
                 const channelsPromise = getChannels(env)
-                const timeoutPromise = new Promise((_, reject) => 
+                const timeoutPromise = new Promise((_, reject) =>
                     setTimeout(() => reject(new Error('Channels timeout after 10s')), 10000)
                 )
-                
+
                 try {
-                    const channels = await Promise.race([channelsPromise, timeoutPromise]) as any
+                    const channels = await Promise.race([channelsPromise, timeoutPromise]) as DiscordChannel[]
                     console.log(`Found ${channels.length} channels`)
                     const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
 
