@@ -100,45 +100,59 @@ async function updateCacheInBackground() {
                 console.log('Creating ReportGeneratorService...')
                 const reportGeneratorService = new ReportGeneratorService(env)
                 console.log('Getting channels...')
-                const channels = await getChannels(env)
-                console.log(`Found ${channels.length} channels`)
-                const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
+                
+                // Add timeout to prevent hanging
+                const channelsPromise = getChannels(env)
+                const timeoutPromise = new Promise((_, reject) => 
+                    setTimeout(() => reject(new Error('Channels timeout after 10s')), 10000)
+                )
+                
+                try {
+                    const channels = await Promise.race([channelsPromise, timeoutPromise]) as any
+                    console.log(`Found ${channels.length} channels`)
+                    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
 
-                // Process only first 5 channels to limit execution time
-                for (const channel of channels.slice(0, 5)) {
-                    try {
-                        console.log(`Processing channel ${channel.id} (${channel.name})...`)
-                        const reports = await reportGeneratorService.cacheService.getAllReportsForChannelFromCache(channel.id)
-                        console.log(`Found ${reports?.length || 0} reports for channel ${channel.id}`)
-                        if (reports) {
-                            // Add channel page
-                            urls.push({
-                                url: `${BASE_URL}/current-events/${channel.id}`,
-                                lastModified: now,
-                                changeFrequency: 'hourly',
-                                priority: 0.7
-                            })
-
-                            // Add only very recent reports (last 30 days, max 100 per channel)
-                            const recentReports = reports
-                                .filter(report => new Date(report.generatedAt) >= thirtyDaysAgo)
-                                .slice(0, 100)
-
-                            console.log(`After filtering: ${recentReports.length} recent reports for channel ${channel.id}`)
-
-                            recentReports.forEach(report => {
+                    // Process only first 5 channels to limit execution time
+                    for (const channel of channels.slice(0, 5)) {
+                        try {
+                            console.log(`Processing channel ${channel.id} (${channel.name})...`)
+                            const reports = await reportGeneratorService.cacheService.getAllReportsForChannelFromCache(channel.id)
+                            console.log(`Found ${reports?.length || 0} reports for channel ${channel.id}`)
+                            if (reports) {
+                                // Add channel page
                                 urls.push({
-                                    url: `${BASE_URL}/current-events/${report.channelId}/${report.reportId}`,
-                                    lastModified: report.generatedAt,
-                                    changeFrequency: 'daily',
-                                    priority: 0.8
+                                    url: `${BASE_URL}/current-events/${channel.id}`,
+                                    lastModified: now,
+                                    changeFrequency: 'hourly',
+                                    priority: 0.7
                                 })
-                            })
+
+                                // Add only very recent reports (last 30 days, max 100 per channel)
+                                const recentReports = reports
+                                    .filter(report => new Date(report.generatedAt) >= thirtyDaysAgo)
+                                    .slice(0, 100)
+
+                                console.log(`After filtering: ${recentReports.length} recent reports for channel ${channel.id}`)
+
+                                recentReports.forEach(report => {
+                                    urls.push({
+                                        url: `${BASE_URL}/current-events/${report.channelId}/${report.reportId}`,
+                                        lastModified: report.generatedAt,
+                                        changeFrequency: 'daily',
+                                        priority: 0.8
+                                    })
+                                })
+                            }
+                        } catch (error) {
+                            console.error(`Error fetching reports for channel ${channel.id}:`, error)
                         }
-                    } catch (error) {
-                        console.error(`Error fetching reports for channel ${channel.id}:`, error)
                     }
+                } catch (channelsError) {
+                    console.error('Channels fetch failed:', channelsError)
+                    // Continue with empty channels if fetch fails
                 }
+            } else {
+                console.log('Missing env.REPORTS_CACHE or env.CHANNELS_CACHE')
             }
         } catch (error) {
             console.error('Error updating sitemap cache:', error)
