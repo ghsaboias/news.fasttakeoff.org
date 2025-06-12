@@ -17,10 +17,17 @@ export class ChannelsService {
 
     filterChannels(channels: DiscordChannel[]): DiscordChannel[] {
         const guildId = this.env.DISCORD_GUILD_ID || '';
-        return channels
+        console.log(`[Discord] Filtering ${channels.length} channels with criteria:`);
+        console.log(`[Discord] - Allowed emojis: ${DISCORD.CHANNELS.ALLOWED_EMOJIS.join(', ')}`);
+
+        const filtered = channels
             .filter(c => {
                 const isValidType = c.type === 0;
-                const hasAllowedEmoji = DISCORD.CHANNELS.ALLOWED_EMOJIS.includes(Array.from(c.name)[0] || '');
+                const firstChar = Array.from(c.name)[0] || '';
+                const hasAllowedEmoji = DISCORD.CHANNELS.ALLOWED_EMOJIS.includes(firstChar);
+
+                console.log(`[Discord] Channel "${c.name}" (type: ${c.type}): validType=${isValidType}, firstChar="${firstChar}", hasEmoji=${hasAllowedEmoji}`);
+
                 if (!isValidType || !hasAllowedEmoji) return false;
 
                 const guildPermission = c.permission_overwrites?.find(p => p.id === guildId);
@@ -30,12 +37,16 @@ export class ChannelsService {
                 return (denyBits & DISCORD.CHANNELS.PERMISSIONS.VIEW_CHANNEL_BIT) !== DISCORD.CHANNELS.PERMISSIONS.VIEW_CHANNEL_BIT;
             })
             .sort((a, b) => a.position - b.position);
+
+        console.log(`[Discord] Filtered result: ${filtered.length} channels passed filters`);
+        return filtered;
     }
 
     async fetchAllChannelsFromAPI(): Promise<DiscordChannel[]> {
         const guildId = this.env.DISCORD_GUILD_ID;
         const url = `${API.DISCORD.BASE_URL}/guilds/${guildId}/channels`;
         try {
+            console.log(`[Discord] Fetching channels for guild: ${guildId}`);
             const response = await fetch(url, {
                 headers: {
                     Authorization: this.env.DISCORD_TOKEN || '',
@@ -53,7 +64,10 @@ export class ChannelsService {
                 console.log(`[Discord] Error Body: ${errorBody}`);
                 throw new Error(`Discord API error: ${response.status} - ${errorBody}`);
             }
-            return response.json();
+            const channels = await response.json();
+            console.log(`[Discord] Raw API returned ${channels.length} channels`);
+            console.log(`[Discord] First few channels:`, channels.slice(0, 3).map((c: DiscordChannel) => ({ id: c.id, name: c.name, type: c.type })));
+            return channels;
         } catch (error) {
             console.error(`Error fetching channels for guild ${guildId}:`, error);
             return [];
