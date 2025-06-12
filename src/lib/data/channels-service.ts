@@ -56,27 +56,37 @@ export class ChannelsService {
         
         try {
             console.log(`[Discord] Fetching channels for guild: ${guildId}`);
+            
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout
+            
             const response = await fetch(url, {
                 headers: {
                     Authorization: this.env.DISCORD_TOKEN || '',
                     'User-Agent': API.DISCORD.USER_AGENT,
                     'Content-Type': 'application/json',
                 },
+                signal: controller.signal
             });
-
+            
+            clearTimeout(timeoutId);
             console.log(`[Discord] Response status: ${response.status}`);
             console.log(`[Discord] Response ok: ${response.ok}`);
 
             if (response.status === 429) {
                 const retryAfter = parseFloat(response.headers.get('retry-after') || '1') * 1000;
                 console.log(`[Discord] Rate limited, retrying after ${retryAfter}ms`);
+                return [];
             }
             if (!response.ok) {
                 const errorBody = await response.text();
                 console.log(`[Discord] Error Body: ${errorBody}`);
                 throw new Error(`Discord API error: ${response.status} - ${errorBody}`);
             }
+            
+            console.log(`[Discord] About to parse JSON...`);
             const channels = await response.json();
+            console.log(`[Discord] JSON parsed successfully`);
             console.log(`[Discord] Raw API returned ${channels.length} channels`);
             console.log(`[Discord] Raw response type: ${typeof channels}`);
             console.log(`[Discord] Is array: ${Array.isArray(channels)}`);
