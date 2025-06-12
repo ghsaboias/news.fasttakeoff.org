@@ -104,8 +104,8 @@ async function updateCacheInBackground() {
 
                 // Add timeout to prevent hanging
                 const channelsPromise = getChannels(env)
-                const timeoutPromise = new Promise((_, reject) =>
-                    setTimeout(() => reject(new Error('Channels timeout after 10s')), 10000)
+                const timeoutPromise = new Promise((_, reject) => 
+                setTimeout(() => reject(new Error('Channels timeout after 30s')), 30000)
                 )
 
                 try {

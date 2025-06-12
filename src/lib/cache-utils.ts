@@ -34,7 +34,7 @@ export class CacheManager {
         }
     }
 
-    async get<T>(namespace: keyof Cloudflare.Env, key: string, timeoutMs: number = 1000): Promise<T | null> {
+    async get<T>(namespace: keyof Cloudflare.Env, key: string, timeoutMs: number = 5000): Promise<T | null> {
         // Check request-level cache first
         const requestCacheKey = this.getRequestCacheKey(namespace as string, key);
         if (requestCache.has(requestCacheKey)) {
