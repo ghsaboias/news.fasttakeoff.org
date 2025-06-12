@@ -5,7 +5,7 @@ const BASE_URL = 'https://news.fasttakeoff.org'
 // In-memory cache for sitemap
 let cachedSitemap: string | null = null
 let cacheTimestamp: number = 0
-const CACHE_DURATION = 60 * 60 * 1000 // 1 hour in milliseconds
+const CACHE_DURATION = 5 * 60 * 1000 // 5 minutes for testing
 
 interface SitemapUrl {
     url: string
@@ -176,16 +176,20 @@ ${urls.map(url => `  <url>
     }
 }
 
-export async function GET() {
+export async function GET(request: Request) {
     try {
         const now = Date.now()
+        const url = new URL(request.url)
+        const forceRefresh = url.searchParams.get('fresh') === 'true'
 
         // Check if cache is valid
-        const cacheIsValid = cachedSitemap && (now - cacheTimestamp) < CACHE_DURATION
+        const cacheIsValid = cachedSitemap && (now - cacheTimestamp) < CACHE_DURATION && !forceRefresh
 
         if (!cacheIsValid) {
+            console.log('Cache invalid, starting background update...', { forceRefresh, cacheAge: now - cacheTimestamp })
             // If no cache or cache expired, start background update
             if (!cachedSitemap) {
+                console.log('No cached sitemap, generating static fallback...')
                 // First time - return static sitemap immediately
                 cachedSitemap = generateStaticSitemap()
                 cacheTimestamp = now
@@ -193,6 +197,8 @@ export async function GET() {
 
             // Update cache in background (don't await)
             updateCacheInBackground().catch(console.error)
+        } else {
+            console.log('Serving cached sitemap', { cacheAge: now - cacheTimestamp, cacheValid: cacheIsValid })
         }
 
         return new NextResponse(cachedSitemap, {
