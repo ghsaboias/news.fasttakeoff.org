@@ -82,23 +82,11 @@ async function updateCacheInBackground() {
             })
         })
 
-        // Executive Orders - limit to recent ones only
+        // Executive Orders - skip due to geo-fencing issues
+        // Focus on reports which are the main content
         try {
-            console.log('Fetching executive orders...')
-            const startDate = getStartDate(30) // Last 30 days only
-            const { orders } = await fetchExecutiveOrders(1, startDate)
-            console.log(`Fetched ${orders.length} executive orders`)
-
-            // Limit to first 20 orders
-            orders.slice(0, 20).forEach(order => {
-                urls.push({
-                    url: `${BASE_URL}/executive-orders/${order.id}`,
-                    lastModified: order.publication?.publicationDate || order.date || now,
-                    changeFrequency: 'weekly',
-                    priority: 0.8
-                })
-            })
-            console.log('Executive orders processing complete')
+            console.log('Skipping executive orders due to geo-fencing, proceeding to reports...')
+            // Skip executive orders entirely for now
         } catch (error) {
             console.error('Error fetching executive orders for sitemap cache:', error)
         }
