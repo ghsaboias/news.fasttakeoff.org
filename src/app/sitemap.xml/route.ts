@@ -56,9 +56,8 @@ async function updateCacheInBackground() {
     try {
         // Import expensive operations only when updating cache
         const { getChannels } = await import('@/lib/data/channels-service')
-        const { fetchExecutiveOrders } = await import('@/lib/data/executive-orders')
         const { ReportGeneratorService } = await import('@/lib/data/report-generator-service')
-        const { getCacheContext, getStartDate } = await import('@/lib/utils')
+        const { getCacheContext } = await import('@/lib/utils')
 
         const urls: SitemapUrl[] = []
         const now = new Date().toISOString()
@@ -124,7 +123,7 @@ async function updateCacheInBackground() {
                             const recentReports = reports
                                 .filter(report => new Date(report.generatedAt) >= thirtyDaysAgo)
                                 .slice(0, 100)
-                            
+
                             console.log(`After filtering: ${recentReports.length} recent reports for channel ${channel.id}`)
 
                             recentReports.forEach(report => {
@@ -144,7 +143,7 @@ async function updateCacheInBackground() {
         } catch (error) {
             console.error('Error updating sitemap cache:', error)
         }
-        
+
         console.log(`Total URLs generated: ${urls.length}`)
 
         // Generate and cache new sitemap
