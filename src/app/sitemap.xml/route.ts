@@ -84,8 +84,10 @@ async function updateCacheInBackground() {
 
         // Executive Orders - limit to recent ones only
         try {
+            console.log('Fetching executive orders...')
             const startDate = getStartDate(30) // Last 30 days only
             const { orders } = await fetchExecutiveOrders(1, startDate)
+            console.log(`Fetched ${orders.length} executive orders`)
 
             // Limit to first 20 orders
             orders.slice(0, 20).forEach(order => {
@@ -96,6 +98,7 @@ async function updateCacheInBackground() {
                     priority: 0.8
                 })
             })
+            console.log('Executive orders processing complete')
         } catch (error) {
             console.error('Error fetching executive orders for sitemap cache:', error)
         }
