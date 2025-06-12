@@ -106,7 +106,7 @@ async function updateCacheInBackground() {
             if (env && env.REPORTS_CACHE && env.CHANNELS_CACHE) {
                 const reportGeneratorService = new ReportGeneratorService(env)
                 const channels = await getChannels(env)
-                const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000)
+                const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
 
                 // Process only first 5 channels to limit execution time
                 for (const channel of channels.slice(0, 5)) {
@@ -121,10 +121,10 @@ async function updateCacheInBackground() {
                                 priority: 0.7
                             })
 
-                            // Add only very recent reports (last 3 days, max 10 per channel)
+                            // Add only very recent reports (last 30 days, max 100 per channel)
                             const recentReports = reports
-                                .filter(report => new Date(report.generatedAt) >= threeDaysAgo)
-                                .slice(0, 10)
+                                .filter(report => new Date(report.generatedAt) >= thirtyDaysAgo)
+                                .slice(0, 100)
 
                             recentReports.forEach(report => {
                                 urls.push({
@@ -157,7 +157,7 @@ ${urls.map(url => `  <url>
 
         cachedSitemap = sitemap
         cacheTimestamp = Date.now()
-        console.log('Sitemap cache updated successfully')
+        console.log(`Sitemap cache updated successfully with ${urls.length} URLs`)
     } catch (error) {
         console.error('Error updating sitemap cache:', error)
     }
