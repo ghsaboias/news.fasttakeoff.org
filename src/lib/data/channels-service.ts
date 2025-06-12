@@ -44,7 +44,16 @@ export class ChannelsService {
 
     async fetchAllChannelsFromAPI(): Promise<DiscordChannel[]> {
         const guildId = this.env.DISCORD_GUILD_ID;
+        const token = this.env.DISCORD_TOKEN;
         const url = `${API.DISCORD.BASE_URL}/guilds/${guildId}/channels`;
+        
+        console.log(`[Discord] === DEBUGGING DISCORD API ===`);
+        console.log(`[Discord] Guild ID: ${guildId} (length: ${guildId?.length})`);
+        console.log(`[Discord] Token present: ${!!token}`);
+        console.log(`[Discord] Token length: ${token?.length}`);
+        console.log(`[Discord] Token first 20 chars: ${token?.substring(0, 20)}...`);
+        console.log(`[Discord] API URL: ${url}`);
+        
         try {
             console.log(`[Discord] Fetching channels for guild: ${guildId}`);
             const response = await fetch(url, {
@@ -54,6 +63,9 @@ export class ChannelsService {
                     'Content-Type': 'application/json',
                 },
             });
+
+            console.log(`[Discord] Response status: ${response.status}`);
+            console.log(`[Discord] Response ok: ${response.ok}`);
 
             if (response.status === 429) {
                 const retryAfter = parseFloat(response.headers.get('retry-after') || '1') * 1000;
@@ -66,10 +78,17 @@ export class ChannelsService {
             }
             const channels = await response.json();
             console.log(`[Discord] Raw API returned ${channels.length} channels`);
-            console.log(`[Discord] First few channels:`, channels.slice(0, 3).map((c: DiscordChannel) => ({ id: c.id, name: c.name, type: c.type })));
+            console.log(`[Discord] Raw response type: ${typeof channels}`);
+            console.log(`[Discord] Is array: ${Array.isArray(channels)}`);
+            console.log(`[Discord] Raw response:`, JSON.stringify(channels).substring(0, 500));
+            if (channels.length > 0) {
+                console.log(`[Discord] First channel sample:`, JSON.stringify(channels[0]));
+            }
             return channels;
         } catch (error) {
-            console.error(`Error fetching channels for guild ${guildId}:`, error);
+            console.error(`[Discord] FETCH ERROR:`, error);
+            console.error(`[Discord] Error type:`, typeof error);
+            console.error(`[Discord] Error message:`, error instanceof Error ? error.message : 'Unknown error');
             return [];
         }
     }
