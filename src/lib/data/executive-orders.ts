@@ -12,10 +12,10 @@ export async function fetchExecutiveOrders(
     category?: string
 ): Promise<ApiResponse> {
     try {
-        // Check if we're in a build environment
-        const isBuildOrStaticGeneration =
-            process.env.NODE_ENV === 'production' &&
-            typeof window === 'undefined';
+        // Check if we're in a build environment (but not production runtime)
+        const isBuildOrStaticGeneration = 
+            process.env.NEXT_PHASE === 'phase-production-build' || 
+            process.env.NEXT_PHASE === 'phase-export';
 
         // If we're in build/static generation, return empty data
         if (isBuildOrStaticGeneration) {
