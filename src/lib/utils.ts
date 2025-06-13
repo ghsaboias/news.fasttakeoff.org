@@ -283,15 +283,6 @@ export const getCacheContext = async (): Promise<{ env: Cloudflare.Env }> => {
   return await getCloudflareContext({ async: true }) as unknown as { env: Cloudflare.Env };
 };
 
-/**
- * Legacy sync version for API routes that are always dynamic
- * @deprecated Use getCacheContext() instead for consistency
- * @returns Cloudflare environment object
- */
-export const getCacheContextSync = (): { env: Cloudflare.Env } => {
-  return getCloudflareContext() as unknown as { env: Cloudflare.Env };
-};
-
 export function convertTimestampToUnixTimestamp(timestamp: string): number {
   const date = new Date(timestamp);
   return Math.floor(date.getTime() / 1000);
