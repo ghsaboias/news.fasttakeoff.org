@@ -1,6 +1,6 @@
 import HomeContent from "@/components/HomeContent";
 import { CacheManager } from "@/lib/cache-utils";
-import { ReportGeneratorService } from "@/lib/data/report-generator-service";
+import { ReportService } from "@/lib/data/report-service";
 import { ExecutiveOrder, Report } from "@/lib/types/core";
 import { getCacheContext } from "@/lib/utils";
 import { Suspense } from "react";
@@ -56,8 +56,8 @@ async function getServerSideData() {
       (async () => {
         try {
           const reportStartTime = Date.now();
-          const reportGeneratorService = new ReportGeneratorService(env);
-          const result = await reportGeneratorService.cacheService.getAllReportsFromCache(4);
+          const reportService = new ReportService(env);
+          const result = await reportService.getAllReports(4);
           console.log(`[PERF] Reports fetch took ${Date.now() - reportStartTime}ms`);
           return result;
         } catch (error) {

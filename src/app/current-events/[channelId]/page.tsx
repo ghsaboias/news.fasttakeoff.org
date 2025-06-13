@@ -1,5 +1,5 @@
 import { getChannels } from '@/lib/data/channels-service';
-import { ReportGeneratorService } from '@/lib/data/report-generator-service';
+import { ReportService } from '@/lib/data/report-service';
 import { DiscordChannel, Report } from '@/lib/types/core';
 import { getCacheContext } from '@/lib/utils';
 import ChannelDetailClient from './ChannelDetailClient';
@@ -84,13 +84,13 @@ export default async function ChannelDetailPage({ params }: { params: Promise<{ 
             return <ChannelDetailClient reports={[]} channel={null} />;
         }
 
-        const reportGeneratorService = new ReportGeneratorService(env);
+        const reportService = new ReportService(env);
 
         const channels: DiscordChannel[] = await getChannels(env);
         const currentChannel = channels.find((c) => c.id === channelId) || null;
         console.log('[ChannelDetailPage] currentChannel', currentChannel);
 
-        const reports: Report[] = await reportGeneratorService.cacheService.getAllReportsForChannelFromCache(channelId) || [];
+        const reports: Report[] = await reportService.getAllReportsForChannel(channelId) || [];
 
         return <ChannelDetailClient reports={reports} channel={currentChannel} />;
     } catch (error) {

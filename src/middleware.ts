@@ -7,7 +7,6 @@ export default clerkMiddleware(
     async (auth, req) => {
         if (isProtectedRoute(req)) {
             const { userId } = await auth();
-            console.log("Middleware: userId=", userId, "URL=", req.url); // Debug
             await auth.protect();
         }
     },

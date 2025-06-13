@@ -4,22 +4,20 @@ import { Cloudflare } from '../../../worker-configuration';
 import { InstagramService } from '../instagram-service';
 import { pingSearchEngines } from '../seo/ping-search-engines';
 import { TwitterService } from '../twitter-service';
+import { ReportAI, ReportContext } from '../utils/report-ai';
+import { ReportCache } from '../utils/report-cache';
 import { ChannelsService } from './channels-service';
 import { MessagesService } from './messages-service';
-import { ReportAIService } from './report-ai-service';
-import { ReportCacheService } from './report-cache-service';
 
-export class ReportGeneratorService {
-    private aiService: ReportAIService;
-    public cacheService: ReportCacheService;
+export class ReportService {
     private messagesService: MessagesService;
     private channelsService: ChannelsService;
     private instagramService: InstagramService;
     private twitterService: TwitterService;
+    private env: Cloudflare.Env;
 
     constructor(env: Cloudflare.Env) {
-        this.aiService = new ReportAIService(env);
-        this.cacheService = new ReportCacheService(env);
+        this.env = env;
         this.messagesService = new MessagesService(env);
         this.channelsService = new ChannelsService(env);
         this.instagramService = new InstagramService(env);
@@ -28,7 +26,7 @@ export class ReportGeneratorService {
 
     async createReportAndGetMessages(channelId: string, timeframe: TimeframeKey): Promise<{ report: Report | null; messages: DiscordMessage[] }> {
         // Get the current most recent report for this timeframe
-        const previousReports = await this.cacheService.getRecentPreviousReports(channelId, timeframe);
+        const previousReports = await ReportCache.getPreviousReports(channelId, timeframe, this.env);
 
         const [messages, channelName] = await Promise.all([
             this.messagesService.getMessagesForTimeframe(channelId, timeframe),
@@ -41,16 +39,18 @@ export class ReportGeneratorService {
         }
 
         try {
-            const report = await this.aiService.generateReport(messages, previousReports, {
+            const context: ReportContext = {
                 channelId,
                 channelName,
                 messageCount: messages.length,
                 timeframe,
-            });
+            };
 
-            const cachedReports = await this.cacheService.getReportsFromCache(channelId, timeframe) || [];
+            const report = await ReportAI.generate(messages, previousReports, context, this.env);
+
+            const cachedReports = await ReportCache.get(channelId, timeframe, this.env) || [];
             const updatedReports = [report, ...cachedReports.filter(r => r.reportId !== report.reportId)];
-            await this.cacheService.cacheReport(channelId, timeframe, updatedReports);
+            await ReportCache.store(channelId, timeframe, updatedReports, this.env);
 
             // Ping search engines immediately after caching
             const newUrls = [
@@ -67,7 +67,7 @@ export class ReportGeneratorService {
     }
 
     async getLastReportAndMessages(channelId: string, timeframe: TimeframeKey = '2h'): Promise<{ report: Report | null; messages: DiscordMessage[] }> {
-        const cachedReports = await this.cacheService.getReportsFromCache(channelId, timeframe);
+        const cachedReports = await ReportCache.get(channelId, timeframe, this.env);
         const messages = await this.messagesService.getMessagesForTimeframe(channelId, timeframe);
 
         if (cachedReports?.length) {
@@ -86,7 +86,7 @@ export class ReportGeneratorService {
     async getReportAndMessages(channelId: string, reportId: string, timeframe?: TimeframeKey): Promise<{ report: Report | null; messages: DiscordMessage[] }> {
         // If timeframe is provided, use it directly
         if (timeframe) {
-            const cachedReports = await this.cacheService.getReportsFromCache(channelId, timeframe);
+            const cachedReports = await ReportCache.get(channelId, timeframe, this.env);
             if (cachedReports) {
                 const report = cachedReports.find(r => r.reportId === reportId);
                 if (report) {
@@ -103,7 +103,7 @@ export class ReportGeneratorService {
         const timeframes: TimeframeKey[] = [...TIME.TIMEFRAMES];
 
         for (const tf of timeframes) {
-            const cachedReports = await this.cacheService.getReportsFromCache(channelId, tf);
+            const cachedReports = await ReportCache.get(channelId, tf, this.env);
             if (cachedReports) {
                 const report = cachedReports.find(r => r.reportId === reportId);
                 if (report) {
@@ -119,13 +119,21 @@ export class ReportGeneratorService {
     }
 
     async getReport(reportId: string): Promise<Report | null> {
-        const cachedReports = await this.cacheService.getAllReportsFromCache();
+        const cachedReports = await ReportCache.getAllReports(this.env);
         return cachedReports?.find(r => r.reportId === reportId) || null;
     }
 
     async getReportTimeframe(reportId: string): Promise<TimeframeKey | undefined> {
         const report = await this.getReport(reportId);
         return report?.timeframe as TimeframeKey;
+    }
+
+    async getAllReports(limit?: number): Promise<Report[]> {
+        return ReportCache.getAllReports(this.env, limit);
+    }
+
+    async getAllReportsForChannel(channelId: string, timeframe?: TimeframeKey): Promise<Report[]> {
+        return ReportCache.getAllReportsForChannel(channelId, this.env, timeframe);
     }
 
     private async _generateAndCacheReportsForTimeframes(timeframesToProcess: TimeframeKey[]): Promise<Report[]> {
@@ -150,29 +158,31 @@ export class ReportGeneratorService {
                 console.log(`[REPORTS] Processing batch of ${channelBatch.length} channels for timeframe ${timeframe}. Start index: ${i}`);
 
                 const reportCacheKeys = channelBatch.map(channelId => `reports:${channelId}:${timeframe}`);
-                const cachedReportsMap = await this.cacheService.batchGetReports(reportCacheKeys);
+                const cachedReportsMap = await ReportCache.batchGet(reportCacheKeys, this.env);
 
                 const batchPromises = channelBatch.map(async (channelId) => {
                     try {
                         const channelName = channelNameMap.get(channelId) || `Channel_${channelId}`;
-                        const previousReports = await this.cacheService.getRecentPreviousReports(channelId, timeframe);
+                        const previousReports = await ReportCache.getPreviousReports(channelId, timeframe, this.env);
                         const messages = await this.messagesService.getMessagesForTimeframe(channelId, timeframe);
 
                         if (messages.length === 0) {
                             return null;
                         }
 
-                        const report = await this.aiService.generateReport(messages, previousReports, {
+                        const context: ReportContext = {
                             channelId,
                             channelName,
                             messageCount: messages.length,
                             timeframe
-                        });
+                        };
+
+                        const report = await ReportAI.generate(messages, previousReports, context, this.env);
 
                         if (report) {
                             const cachedReports = cachedReportsMap.get(`reports:${channelId}:${timeframe}`) || [];
                             const updatedReports = [report, ...cachedReports.filter(r => r.reportId !== report.reportId)];
-                            await this.cacheService.cacheReport(channelId, timeframe, updatedReports);
+                            await ReportCache.store(channelId, timeframe, updatedReports, this.env);
 
                             // Ping search engines for batch-generated reports
                             const newUrls = [
@@ -205,7 +215,7 @@ export class ReportGeneratorService {
             const topReports = generatedReports
                 .sort((a, b) => (b.messageCount || 0) - (a.messageCount || 0))
                 .slice(0, 10);
-            await this.cacheService.cacheHomepageReports(topReports);
+            await ReportCache.storeHomepageReports(topReports, this.env);
         }
 
         return generatedReports;
@@ -283,4 +293,4 @@ export class ReportGeneratorService {
         await this._postTopReportToSocialMedia(generatedReports);
         console.log('[REPORTS] Manual run finished.');
     }
-} 
+}

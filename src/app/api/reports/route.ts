@@ -1,6 +1,6 @@
 import { withErrorHandling } from '@/lib/api-utils';
 import { TimeframeKey } from '@/lib/config';
-import { ReportGeneratorService } from '@/lib/data/report-generator-service';
+import { ReportService } from '@/lib/data/report-service';
 
 export async function GET(request: Request) {
     return withErrorHandling(async env => {
@@ -12,8 +12,8 @@ export async function GET(request: Request) {
         // Handle specific report requests (no caching for these)
         if (reportId) {
             if (!channelId) throw new Error('Missing channelId');
-            const reportGeneratorService = new ReportGeneratorService(env);
-            const { report, messages } = await reportGeneratorService.getReportAndMessages(channelId, reportId);
+            const reportService = new ReportService(env);
+            const { report, messages } = await reportService.getReportAndMessages(channelId, reportId);
             if (!report) throw new Error('Report not found');
             return { report, messages };
         }
@@ -40,10 +40,10 @@ export async function GET(request: Request) {
             return cached;
         }
 
-        const reportGeneratorService = new ReportGeneratorService(env);
+        const reportService = new ReportService(env);
         const reports = channelId
-            ? await reportGeneratorService.cacheService.getAllReportsForChannelFromCache(channelId)
-            : await reportGeneratorService.cacheService.getAllReportsFromCache(limit);
+            ? await reportService.getAllReportsForChannel(channelId)
+            : await reportService.getAllReports(limit);
 
         // Cache the response for 5 minutes (longer for larger requests)
         const ttl = limit && limit > 20 ? 600 : 300; // 10 minutes for large requests, 5 for small
@@ -62,7 +62,7 @@ export async function POST(request: Request) {
             throw new Error('Missing channelId');
         }
 
-        const reportGeneratorService = new ReportGeneratorService(env);
+        const reportService = new ReportService(env);
 
         // If model is specified, we need to temporarily override the AI config
         if (model) {
@@ -72,7 +72,7 @@ export async function POST(request: Request) {
         }
 
         try {
-            const { report, messages } = await reportGeneratorService.createReportAndGetMessages(
+            const { report, messages } = await reportService.createReportAndGetMessages(
                 channelId,
                 timeframe as TimeframeKey
             );

@@ -1,13 +1,13 @@
 import { TIME, TimeframeKey } from '@/lib/config'
 import { getChannels } from '@/lib/data/channels-service'
-import { ReportGeneratorService } from '@/lib/data/report-generator-service'
+import { ReportService } from '@/lib/data/report-service'
 import { getCacheContext } from '@/lib/utils'
 import { NextResponse } from 'next/server'
 
 export async function GET() {
   try {
     const { env } = await getCacheContext()
-    const reportGeneratorService = new ReportGeneratorService(env)
+    const reportService = new ReportService(env)
     const channels = await getChannels(env)
 
     // Get recent reports from all channels
@@ -19,7 +19,7 @@ export async function GET() {
       try {
         // Fetch reports for each timeframe
         for (const timeframe of timeframes) {
-          const reports = await reportGeneratorService.cacheService.getReportsFromCache(channel.id, timeframe)
+          const reports = await reportService.getAllReportsForChannel(channel.id, timeframe)
           if (reports) {
             const recentReports = reports
               .filter(report => new Date(report.generatedAt) >= oneDayAgo)

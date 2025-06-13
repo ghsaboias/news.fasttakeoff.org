@@ -1,5 +1,5 @@
 import { getChannels } from '@/lib/data/channels-service';
-import { ReportGeneratorService } from '@/lib/data/report-generator-service';
+import { ReportService } from '@/lib/data/report-service';
 import { getCacheContext } from '@/lib/utils';
 import ReportClient from './ReportClient';
 
@@ -12,13 +12,13 @@ export async function generateStaticParams() {
         const { env } = await getCacheContext();
         if (!env) return [];
 
-        const reportGeneratorService = new ReportGeneratorService(env);
+        const reportService = new ReportService(env);
         const channels = await getChannels(env);
 
         // Get recent reports from top 5 channels
         const params: Array<{ channelId: string; reportId: string }> = [];
         for (const channel of channels.slice(0, 5)) {
-            const reports = await reportGeneratorService.cacheService.getAllReportsForChannelFromCache(channel.id);
+            const reports = await reportService.getAllReportsForChannel(channel.id);
             if (reports) {
                 // Get 3 most recent reports per channel
                 reports.slice(0, 3).forEach(report => {
@@ -53,10 +53,10 @@ export async function generateMetadata({ params }: { params: Promise<{ channelId
             };
         }
 
-        const reportGeneratorService = new ReportGeneratorService(env);
+        const reportService = new ReportService(env);
 
         // Get the specific report for SEO optimization
-        const reports = await reportGeneratorService.cacheService.getAllReportsForChannelFromCache(channelId) || [];
+        const reports = await reportService.getAllReportsForChannel(channelId) || [];
         const report = reports.find(r => r.reportId === reportId);
         const channels = await getChannels(env);
         const channel = channels.find(c => c.id === channelId);
@@ -135,10 +135,10 @@ export default async function ReportDetailPage({ params }: { params: Promise<{ c
             );
         }
 
-        const reportGeneratorService = new ReportGeneratorService(env);
+        const reportService = new ReportService(env);
 
         // Get the specific report for structured data
-        const reports = await reportGeneratorService.cacheService.getAllReportsForChannelFromCache(channelId) || [];
+        const reports = await reportService.getAllReportsForChannel(channelId) || [];
         const report = reports.find(r => r.reportId === reportId);
         const channels = await getChannels(env);
         const channel = channels.find(c => c.id === channelId);

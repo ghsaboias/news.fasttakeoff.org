@@ -3,7 +3,7 @@ import { AI } from '@/lib/config';
 import { DiscordMessage, Report } from '@/lib/types/core';
 import { v4 as uuidv4 } from 'uuid';
 import { Cloudflare } from '../../../worker-configuration';
-import { createPrompt, isReportTruncated } from '../utils/report-utils';
+import { createPrompt, isReportTruncated } from './report-utils';
 
 export interface ReportContext {
     channelId: string;
@@ -12,17 +12,12 @@ export interface ReportContext {
     timeframe: string;
 }
 
-export class ReportAIService {
-    private env: Cloudflare.Env;
-
-    constructor(env: Cloudflare.Env) {
-        this.env = env;
-    }
-
-    async generateReport(
+export class ReportAI {
+    static async generate(
         messages: DiscordMessage[],
         previousReports: Report[],
-        context: ReportContext
+        context: ReportContext,
+        env: Cloudflare.Env
     ): Promise<Report> {
         const promptData = createPrompt(messages, previousReports);
         let attempts = 0;
@@ -30,7 +25,7 @@ export class ReportAIService {
 
         while (attempts < maxAttempts) {
             try {
-                const report = await this.makeAIRequest(promptData.prompt, messages, context);
+                const report = await this.makeAIRequest(promptData.prompt, messages, context, env);
                 console.log(`[REPORTS] Generated ${context.timeframe} report for channel ${context.channelName} - ${context.messageCount} messages and ${promptData.tokenCount} tokens.`);
                 return report;
             } catch (error) {
@@ -43,17 +38,18 @@ export class ReportAIService {
         throw new Error('Unreachable code');
     }
 
-    private async makeAIRequest(
+    private static async makeAIRequest(
         prompt: string,
         messages: DiscordMessage[],
-        context: ReportContext
+        context: ReportContext,
+        env: Cloudflare.Env
     ): Promise<Report> {
         const aiConfig = getAIProviderConfig();
-        const apiKey = getAIAPIKey(this.env as unknown as { [key: string]: string | undefined });
+        const apiKey = getAIAPIKey(env as unknown as { [key: string]: string | undefined });
         const apiUrl = aiConfig.endpoint;
 
         // Check for model override in environment (for testing)
-        const modelOverride = (this.env as unknown as { [key: string]: string | undefined }).AI_MODEL_OVERRIDE;
+        const modelOverride = (env as unknown as { [key: string]: string | undefined }).AI_MODEL_OVERRIDE;
         const modelToUse = modelOverride || aiConfig.model;
 
         const response = await fetch(apiUrl, {
@@ -155,4 +151,4 @@ export class ReportAIService {
             messageIds: messages.map(msg => msg.id),
         };
     }
-} 
+}

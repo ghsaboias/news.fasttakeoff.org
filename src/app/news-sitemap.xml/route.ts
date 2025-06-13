@@ -1,5 +1,5 @@
 import { getChannels } from '@/lib/data/channels-service';
-import { ReportGeneratorService } from '@/lib/data/report-generator-service';
+import { ReportService } from '@/lib/data/report-service';
 import { getCacheContext } from '@/lib/utils';
 import { NextResponse } from 'next/server';
 
@@ -54,7 +54,7 @@ async function generateNewsSitemap(): Promise<string> {
             throw new Error('Cloudflare environment not available');
         }
 
-        const reportGeneratorService = new ReportGeneratorService(env);
+        const reportService = new ReportService(env);
         const channels = await getChannels(env);
 
         // Get reports from last 48 hours only (Google News requirement)
@@ -69,7 +69,7 @@ async function generateNewsSitemap(): Promise<string> {
         // Process only first 10 channels to keep sitemap manageable
         for (const channel of channels.slice(0, 10)) {
             try {
-                const reports = await reportGeneratorService.cacheService.getAllReportsForChannelFromCache(channel.id);
+                const reports = await reportService.getAllReportsForChannel(channel.id);
 
                 if (reports) {
                     // Filter for recent reports only

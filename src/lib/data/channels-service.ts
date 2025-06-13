@@ -17,16 +17,12 @@ export class ChannelsService {
 
     filterChannels(channels: DiscordChannel[]): DiscordChannel[] {
         const guildId = this.env.DISCORD_GUILD_ID || '';
-        console.log(`[Discord] Filtering ${channels.length} channels with criteria:`);
-        console.log(`[Discord] - Allowed emojis: ${DISCORD.CHANNELS.ALLOWED_EMOJIS.join(', ')}`);
 
         const filtered = channels
             .filter(c => {
                 const isValidType = c.type === 0;
                 const firstChar = Array.from(c.name)[0] || '';
                 const hasAllowedEmoji = DISCORD.CHANNELS.ALLOWED_EMOJIS.includes(firstChar);
-
-                console.log(`[Discord] Channel "${c.name}" (type: ${c.type}): validType=${isValidType}, firstChar="${firstChar}", hasEmoji=${hasAllowedEmoji}`);
 
                 if (!isValidType || !hasAllowedEmoji) return false;
 
@@ -46,20 +42,12 @@ export class ChannelsService {
         const guildId = this.env.DISCORD_GUILD_ID;
         const token = this.env.DISCORD_TOKEN;
         const url = `${API.DISCORD.BASE_URL}/guilds/${guildId}/channels`;
-        
-        console.log(`[Discord] === DEBUGGING DISCORD API ===`);
-        console.log(`[Discord] Guild ID: ${guildId} (length: ${guildId?.length})`);
-        console.log(`[Discord] Token present: ${!!token}`);
-        console.log(`[Discord] Token length: ${token?.length}`);
-        console.log(`[Discord] Token first 20 chars: ${token?.substring(0, 20)}...`);
-        console.log(`[Discord] API URL: ${url}`);
-        
         try {
             console.log(`[Discord] Fetching channels for guild: ${guildId}`);
-            
+
             const controller = new AbortController();
             const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout
-            
+
             const response = await fetch(url, {
                 headers: {
                     Authorization: this.env.DISCORD_TOKEN || '',
@@ -68,7 +56,7 @@ export class ChannelsService {
                 },
                 signal: controller.signal
             });
-            
+
             clearTimeout(timeoutId);
             console.log(`[Discord] Response status: ${response.status}`);
             console.log(`[Discord] Response ok: ${response.ok}`);
@@ -83,17 +71,8 @@ export class ChannelsService {
                 console.log(`[Discord] Error Body: ${errorBody}`);
                 throw new Error(`Discord API error: ${response.status} - ${errorBody}`);
             }
-            
-            console.log(`[Discord] About to parse JSON...`);
+
             const channels = await response.json();
-            console.log(`[Discord] JSON parsed successfully`);
-            console.log(`[Discord] Raw API returned ${channels.length} channels`);
-            console.log(`[Discord] Raw response type: ${typeof channels}`);
-            console.log(`[Discord] Is array: ${Array.isArray(channels)}`);
-            console.log(`[Discord] Raw response:`, JSON.stringify(channels).substring(0, 500));
-            if (channels.length > 0) {
-                console.log(`[Discord] First channel sample:`, JSON.stringify(channels[0]));
-            }
             return channels;
         } catch (error) {
             console.error(`[Discord] FETCH ERROR:`, error);

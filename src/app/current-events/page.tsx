@@ -1,4 +1,4 @@
-import { ReportGeneratorService } from '@/lib/data/report-generator-service';
+import { ReportService } from '@/lib/data/report-service';
 import { getCacheContext } from '@/lib/utils';
 import CurrentEventsClient from './CurrentEventsClient';
 
@@ -24,8 +24,8 @@ async function getServerSideData() {
             return [];
         }
 
-        const reportGeneratorService = new ReportGeneratorService(env);
-        const reports = await reportGeneratorService.cacheService.getAllReportsFromCache(200);
+        const reportService = new ReportService(env);
+        const reports = await reportService.getAllReports(200);
         return reports || [];
     } catch (error) {
         console.error('Error fetching reports on server:', error);

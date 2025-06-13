@@ -57,7 +57,7 @@ async function updateCacheInBackground() {
     try {
         // Import expensive operations only when updating cache
         const { getChannels } = await import('@/lib/data/channels-service')
-        const { ReportGeneratorService } = await import('@/lib/data/report-generator-service')
+        const { ReportService } = await import('@/lib/data/report-service')
         const { getCacheContext } = await import('@/lib/utils')
 
         const urls: SitemapUrl[] = []
@@ -98,8 +98,8 @@ async function updateCacheInBackground() {
             const { env } = await getCacheContext()
             console.log('Cloudflare context obtained:', !!env)
             if (env && env.REPORTS_CACHE && env.CHANNELS_CACHE) {
-                console.log('Creating ReportGeneratorService...')
-                const reportGeneratorService = new ReportGeneratorService(env)
+                console.log('Creating ReportService...')
+                const reportService = new ReportService(env)
                 console.log('Getting channels...')
 
                 // Add timeout to prevent hanging
@@ -117,7 +117,7 @@ async function updateCacheInBackground() {
                     for (const channel of channels.slice(0, 5)) {
                         try {
                             console.log(`Processing channel ${channel.id} (${channel.name})...`)
-                            const reports = await reportGeneratorService.cacheService.getAllReportsForChannelFromCache(channel.id)
+                            const reports = await reportService.getAllReportsForChannel(channel.id)
                             console.log(`Found ${reports?.length || 0} reports for channel ${channel.id}`)
                             if (reports) {
                                 // Add channel page
