@@ -1,4 +1,5 @@
 import { withErrorHandling } from '@/lib/api-utils';
+import { CacheManager } from '@/lib/cache-utils';
 import { TimeframeKey } from '@/lib/config';
 import { ReportService } from '@/lib/data/report-service';
 
@@ -31,10 +32,11 @@ export async function GET(request: Request) {
         }
 
         // Add response caching for general reports requests
+        const cacheManager = new CacheManager(env);
         const cacheKey = channelId
             ? `api-reports-${channelId}${limit ? `-${limit}` : ''}`
             : `api-reports-homepage${limit ? `-${limit}` : ''}`;
-        const cached = await env.REPORTS_CACHE.get(cacheKey, { type: 'json' });
+        const cached = await cacheManager.get('REPORTS_CACHE', cacheKey);
 
         if (cached) {
             return cached;
@@ -47,7 +49,7 @@ export async function GET(request: Request) {
 
         // Cache the response for 5 minutes (longer for larger requests)
         const ttl = limit && limit > 20 ? 600 : 300; // 10 minutes for large requests, 5 for small
-        await env.REPORTS_CACHE.put(cacheKey, JSON.stringify(reports), { expirationTtl: ttl });
+        await cacheManager.put('REPORTS_CACHE', cacheKey, reports, ttl);
 
         return reports;
     }, 'Failed to fetch report(s)');

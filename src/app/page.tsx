@@ -40,12 +40,13 @@ async function getServerSideData() {
     }
 
     // Add response-level caching check
+    const cacheManager = new CacheManager(env);
     const cacheKey = 'homepage:full-response';
-    const cachedResponse = await env.REPORTS_CACHE.get(cacheKey, { type: 'json' });
+    const cachedResponse = await cacheManager.get<{ reports: Report[], executiveOrders: ExecutiveOrder[] }>('REPORTS_CACHE', cacheKey);
 
     if (cachedResponse) {
       console.log(`[PERF] Using cached homepage response (${Date.now() - startTime}ms)`);
-      return cachedResponse as { reports: Report[], executiveOrders: ExecutiveOrder[] };
+      return cachedResponse;
     }
 
     const fetchStartTime = Date.now();
@@ -69,9 +70,9 @@ async function getServerSideData() {
       (async (): Promise<ExecutiveOrder[]> => {
         try {
           const eoStartTime = Date.now();
-          const cached = await env.EXECUTIVE_ORDERS_CACHE.get('latest', { type: 'json' });
+          const cached = await cacheManager.get<ExecutiveOrder[]>('EXECUTIVE_ORDERS_CACHE', 'latest');
           console.log(`[PERF] Executive orders fetch took ${Date.now() - eoStartTime}ms`);
-          return (cached as ExecutiveOrder[]) || [];
+          return cached || [];
         } catch (error) {
           console.error('Error fetching executive orders server-side:', error);
           return [];
@@ -87,7 +88,7 @@ async function getServerSideData() {
     };
 
     // Cache the full response for 2 minutes
-    await env.REPORTS_CACHE.put(cacheKey, JSON.stringify(response), { expirationTtl: 120 });
+    await cacheManager.put('REPORTS_CACHE', cacheKey, response, 120);
     console.log(`[PERF] Total homepage data fetch took ${Date.now() - startTime}ms`);
 
     return response;

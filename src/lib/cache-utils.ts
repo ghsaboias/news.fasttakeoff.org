@@ -129,6 +129,42 @@ export class CacheManager {
         }
     }
 
+    async list(namespace: keyof Cloudflare.Env, options: { prefix?: string; limit?: number } = {}, timeoutMs: number = 5000): Promise<{ keys: Array<{ name: string; expiration?: number; metadata?: unknown }> }> {
+        const cache = this.env[namespace] as KVNamespace;
+        if (!cache) return { keys: [] };
+
+        const operation = cache.list(options);
+        const result = await this.withTimeout(
+            operation,
+            timeoutMs,
+            { list_complete: true, keys: [], cacheStatus: null }
+        );
+        return result;
+    }
+
+    async delete(namespace: keyof Cloudflare.Env, key: string, timeoutMs: number = 5000): Promise<void> {
+        const cache = this.env[namespace] as KVNamespace;
+        if (!cache) return;
+
+        const operation = cache.delete(key);
+        await this.withTimeout(operation, timeoutMs, undefined);
+
+        // Remove from request cache if present
+        const requestCacheKey = this.getRequestCacheKey(namespace as string, key);
+        requestCache.delete(requestCacheKey);
+    }
+
+    async putRaw(namespace: keyof Cloudflare.Env, key: string, value: string, options: { expirationTtl?: number } = {}): Promise<void> {
+        const cache = this.env[namespace] as KVNamespace;
+        if (cache) {
+            await cache.put(key, value, options);
+
+            // Update request cache with the raw string
+            const requestCacheKey = this.getRequestCacheKey(namespace as string, key);
+            requestCache.set(requestCacheKey, value);
+        }
+    }
+
     getKVNamespace(namespace: keyof Cloudflare.Env): KVNamespace | null {
         return this.env[namespace] as KVNamespace || null;
     }

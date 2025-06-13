@@ -199,7 +199,7 @@ export class FeedsService {
     }
 
     async listAvailableSummaries(): Promise<{ key: string; createdAt: string }[]> {
-        const keys = await this.env.FEEDS_CACHE.list({ prefix: 'feeds_summary:' });
+        const keys = await this.cacheManager.list('FEEDS_CACHE', { prefix: 'feeds_summary:' });
         const summaries: { key: string; createdAt: string }[] = [];
 
         for (const key of keys.keys) {

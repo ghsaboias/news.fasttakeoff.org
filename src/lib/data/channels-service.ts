@@ -40,7 +40,6 @@ export class ChannelsService {
 
     async fetchAllChannelsFromAPI(): Promise<DiscordChannel[]> {
         const guildId = this.env.DISCORD_GUILD_ID;
-        const token = this.env.DISCORD_TOKEN;
         const url = `${API.DISCORD.BASE_URL}/guilds/${guildId}/channels`;
         try {
             console.log(`[Discord] Fetching channels for guild: ${guildId}`);

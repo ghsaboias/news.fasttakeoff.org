@@ -1,6 +1,7 @@
 import { ApiResponse, FederalRegisterOrder, FederalRegisterResponse } from '@/lib/types/api';
 import { ExecutiveOrder } from '@/lib/types/core';
 import { Cloudflare } from '../../../worker-configuration';
+import { CacheManager } from '../cache-utils';
 import { transformFederalRegisterOrder, transformFederalRegisterOrders } from '../transformers/executive-orders';
 
 const FEDERAL_REGISTER_API = 'https://www.federalregister.gov/api/v1';
@@ -71,10 +72,10 @@ export async function fetchExecutiveOrders(
 
 export async function fetchExecutiveOrderById(id: string, env?: Cloudflare.Env): Promise<ExecutiveOrder | null> {
     if (!env) return null;
-    const kv = env.EXECUTIVE_ORDERS_CACHE;
+    const cacheManager = new CacheManager(env);
     const cacheKey = `order:${id}`;
 
-    const cached = await kv.get(cacheKey, { type: 'json' }) as ExecutiveOrder | null;
+    const cached = await cacheManager.get<ExecutiveOrder>('EXECUTIVE_ORDERS_CACHE', cacheKey);
     if (cached) {
         const age = (Date.now() - new Date(cached.publication?.publicationDate || cached.date).getTime()) / 1000;
         const refreshThreshold = 60 * 60; // 1 hour
@@ -95,20 +96,21 @@ export async function fetchExecutiveOrderById(id: string, env?: Cloudflare.Env):
 
     const data = await response.json() as FederalRegisterOrder;
     const orderData = transformFederalRegisterOrder(data);
-    if (orderData && kv) {
-        await kv.put(cacheKey, JSON.stringify(orderData), { expirationTtl: 86400 });
+    if (orderData) {
+        await cacheManager.put('EXECUTIVE_ORDERS_CACHE', cacheKey, orderData, 86400);
     }
     return orderData;
 }
 
 async function refreshOrderInBackground(id: string, env: Cloudflare.Env, cacheKey: string): Promise<void> {
+    const cacheManager = new CacheManager(env);
     const apiUrl = `${FEDERAL_REGISTER_API}/documents/${id}.json`;
     const response = await fetch(apiUrl, { cache: 'no-store' });
     if (response.ok) {
         const data = await response.json() as FederalRegisterOrder;
         const orderData = transformFederalRegisterOrder(data);
         if (orderData) {
-            await env.EXECUTIVE_ORDERS_CACHE.put(cacheKey, JSON.stringify(orderData), { expirationTtl: 86400 });
+            await cacheManager.put('EXECUTIVE_ORDERS_CACHE', cacheKey, orderData, 86400);
         }
     }
 }
@@ -129,20 +131,18 @@ export async function findExecutiveOrderByNumber(
         return null;
     }
 
-    const kv = env.EXECUTIVE_ORDERS_CACHE;
+    const cacheManager = new CacheManager(env);
     const cacheKey = `eo:${eoNumber}:${date || 'no-date'}`;
 
-    if (kv) {
-        const cachedId = await kv.get(cacheKey);
-        if (cachedId) return cachedId;
-    }
+    const cachedId = await cacheManager.get<string>('EXECUTIVE_ORDERS_CACHE', cacheKey);
+    if (cachedId) return cachedId;
 
     const startDate = date ? new Date(date).toISOString().split('T')[0] : '2025-01-20';
     for (let page = 1; page <= 3; page++) {
         const response = await fetchExecutiveOrders(page, startDate);
         const match = response.orders.find(o => o.metadata.presidentialDocumentNumber?.toString() === eoNumber);
         if (match) {
-            if (kv) await kv.put(cacheKey, match.id, { expirationTtl: 86400 });
+            await cacheManager.putRaw('EXECUTIVE_ORDERS_CACHE', cacheKey, match.id, { expirationTtl: 86400 });
             return match.id;
         }
         if (response.orders.length === 0) break;
