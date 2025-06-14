@@ -1,13 +1,35 @@
 import { AI } from '@/lib/config';
 import { DiscordMessage, Report } from '@/lib/types/core';
 
-export function formatSingleMessage(message: DiscordMessage): string {
-    const timestamp = new Date(message.timestamp).toLocaleTimeString('en-US', {
-        hour: '2-digit',
+/**
+ * Formats a date into human-readable format: "Jun 14th, 2025, 3:45 PM UTC"
+ */
+function formatHumanReadableTimestamp(date: Date): string {
+    const day = date.getUTCDate();
+    const ordinalSuffix = (day: number) => {
+        if (day > 3 && day < 21) return 'th';
+        switch (day % 10) {
+            case 1: return 'st';
+            case 2: return 'nd';
+            case 3: return 'rd';
+            default: return 'th';
+        }
+    };
+    
+    return date.toLocaleDateString('en-US', {
+        month: 'short',
+        year: 'numeric',
+        timeZone: 'UTC'
+    }).replace(/\d+/, `${day}${ordinalSuffix(day)}`) + ', ' + date.toLocaleTimeString('en-US', {
+        hour: 'numeric',
         minute: '2-digit',
-        hour12: false,
-        timeZone: 'UTC' // Force UTC to prevent hydration mismatches
-    });
+        hour12: true,
+        timeZone: 'UTC'
+    }) + ' UTC';
+}
+
+export function formatSingleMessage(message: DiscordMessage): string {
+    const timestamp = formatHumanReadableTimestamp(new Date(message.timestamp));
     const parts = message.content.includes("https") ? [] : [`[${timestamp}] Message: ${message.content}`];
 
     if (message.embeds?.length) {
@@ -72,27 +94,7 @@ export function createPrompt(messages: DiscordMessage[], previousReports: Report
     }
 
     const formattedText = formattedMessages.join('\n\n');
-    const now = new Date();
-    const day = now.getUTCDate();
-    const ordinalSuffix = (day: number) => {
-        if (day > 3 && day < 21) return 'th';
-        switch (day % 10) {
-            case 1: return 'st';
-            case 2: return 'nd';
-            case 3: return 'rd';
-            default: return 'th';
-        }
-    };
-    const currentDate = now.toLocaleDateString('en-US', {
-        month: 'short',
-        year: 'numeric',
-        timeZone: 'UTC'
-    }).replace(/\d+/, `${day}${ordinalSuffix(day)}`) + ', ' + now.toLocaleTimeString('en-US', {
-        hour: 'numeric',
-        minute: '2-digit',
-        hour12: true,
-        timeZone: 'UTC'
-    }) + ' UTC'; // Format: Jun 14th, 2025, 3:45 PM UTC
+    const currentDate = formatHumanReadableTimestamp(new Date());
     const prompt = AI.REPORT_GENERATION.PROMPT_TEMPLATE
         .replace('{currentDate}', currentDate)
         .replace('{sources}', formattedText)
