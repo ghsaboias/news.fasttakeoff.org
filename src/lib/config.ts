@@ -138,9 +138,12 @@ export const AI = {
         PROMPT_TEMPLATE: `
 Generate a comprehensive news report based on the provided sources and a previous report (if provided).
 
+CURRENT DATE: {currentDate}
+
 CORE REQUIREMENTS:
 - Write a cohesive narrative summarizing the most important verified developments
 - Include key names, numbers, locations, dates in your narrative
+- Reference timing relative to current date when relevant (e.g., "yesterday", "this morning", "last week")
 - Use only verified facts and direct quotes from official statements
 - Maintain strictly neutral tone - NO analysis, commentary, or speculation
 - Do NOT use uncertain terms like "likely", "appears to", or "is seen as"
