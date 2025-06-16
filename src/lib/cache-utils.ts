@@ -3,6 +3,9 @@ import { Cloudflare, KVNamespace } from '../../worker-configuration';
 // Request-level cache to prevent duplicate KV operations
 const requestCache = new Map<string, unknown>();
 
+// Maximum number of entries allowed in the in-memory request cache before we clear it.
+const MAX_REQUEST_CACHE_ENTRIES = 1000;
+
 export class CacheManager {
     private readonly env: Cloudflare.Env;
 
@@ -13,6 +16,14 @@ export class CacheManager {
     // Clear request cache (call this at the start of each request)
     static clearRequestCache(): void {
         requestCache.clear();
+    }
+
+    // Ensure the request-scoped cache does not grow without bound
+    private static enforceSizeLimit(): void {
+        if (requestCache.size > MAX_REQUEST_CACHE_ENTRIES) {
+            console.warn(`[CACHE] Request cache exceeded ${MAX_REQUEST_CACHE_ENTRIES} entries — clearing to prevent memory bloat`);
+            requestCache.clear();
+        }
     }
 
     // Generate cache key for request-level memoization
@@ -35,21 +46,36 @@ export class CacheManager {
     }
 
     async get<T>(namespace: keyof Cloudflare.Env, key: string, timeoutMs: number = 5000): Promise<T | null> {
-        // Check request-level cache first
         const requestCacheKey = this.getRequestCacheKey(namespace as string, key);
+
+        // 1️⃣ Fast path: value (or inflight promise) already cached
         if (requestCache.has(requestCacheKey)) {
+            const cached = requestCache.get(requestCacheKey);
             console.log(`[CACHE] Request cache hit for ${requestCacheKey}`);
-            return requestCache.get(requestCacheKey) as T | null;
+            const value = cached instanceof Promise ? await cached : cached;
+            return value as T | null;
         }
 
+        // 2️⃣ Otherwise, fetch from KV — but publish the inflight Promise immediately so
+        //    concurrent callers deduplicate the request.
         const cache = this.env[namespace] as KVNamespace;
         if (!cache) return null;
 
-        const operation = cache.get<T>(key, { type: 'json' });
-        const result = await this.withTimeout(operation, timeoutMs, null);
+        const operationPromise = this.withTimeout(
+            cache.get<T>(key, { type: 'json' }),
+            timeoutMs,
+            null as T | null
+        );
 
-        // Cache the result for this request
+        // Store promise right away for deduplication
+        requestCache.set(requestCacheKey, operationPromise);
+        CacheManager.enforceSizeLimit();
+
+        const result = await operationPromise;
+
+        // Replace the promise with the resolved value for quicker hits later in the same request
         requestCache.set(requestCacheKey, result);
+        CacheManager.enforceSizeLimit();
 
         return result;
     }
@@ -63,6 +89,7 @@ export class CacheManager {
             // Update request cache
             const requestCacheKey = this.getRequestCacheKey(namespace as string, key);
             requestCache.set(requestCacheKey, value);
+            CacheManager.enforceSizeLimit();
         }
     }
 
@@ -118,6 +145,7 @@ export class CacheManager {
                 // Cache in request cache
                 const requestCacheKey = this.getRequestCacheKey(namespace as string, key);
                 requestCache.set(requestCacheKey, result);
+                CacheManager.enforceSizeLimit();
             });
 
             return results;
@@ -152,6 +180,7 @@ export class CacheManager {
         // Remove from request cache if present
         const requestCacheKey = this.getRequestCacheKey(namespace as string, key);
         requestCache.delete(requestCacheKey);
+        CacheManager.enforceSizeLimit();
     }
 
     async putRaw(namespace: keyof Cloudflare.Env, key: string, value: string, options: { expirationTtl?: number } = {}): Promise<void> {
@@ -162,6 +191,7 @@ export class CacheManager {
             // Update request cache with the raw string
             const requestCacheKey = this.getRequestCacheKey(namespace as string, key);
             requestCache.set(requestCacheKey, value);
+            CacheManager.enforceSizeLimit();
         }
     }
 
