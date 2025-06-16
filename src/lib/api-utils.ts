@@ -12,6 +12,11 @@ export async function withErrorHandling<T>(
     const { env } = await getCacheContext();
     try {
         const result = await handler(env);
+        // If handler already produced a full Response/NextResponse (e.g. custom 404)
+        // just forward it. Otherwise wrap plain data in JSON.
+        if (result instanceof NextResponse) {
+            return result;
+        }
         return NextResponse.json(result, { headers: API_CACHE_HEADERS });
     } catch (error) {
         console.error(`[API] ${errorMessage}:`, error);

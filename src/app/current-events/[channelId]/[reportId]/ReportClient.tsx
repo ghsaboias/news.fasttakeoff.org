@@ -1,5 +1,6 @@
 "use client"
 
+import NotFound from '@/app/not-found';
 import MessageItem from "@/components/current-events/MessageItem";
 import { Button } from "@/components/ui/button";
 import {
@@ -48,6 +49,7 @@ export default function ReportClient() {
     const [selectedLanguage, setSelectedLanguage] = useState<LanguageCode>('en');
     const [translatedContent, setTranslatedContent] = useState<TranslatedContent | null>(null);
     const [isTranslating, setIsTranslating] = useState(false);
+    const [notFound, setNotFound] = useState(false);
 
     const SOURCES_PER_PAGE = 20;
 
@@ -55,7 +57,14 @@ export default function ReportClient() {
         const fetchReportAndMessages = async () => {
             setIsLoading(true);
             const reportResponse = await fetch(`/api/reports?channelId=${channelId}&reportId=${reportId}`);
-            if (!reportResponse.ok) throw new Error('Failed to fetch report');
+            if (!reportResponse.ok) {
+                if (reportResponse.status === 404) {
+                    setNotFound(true);
+                    setIsLoading(false);
+                    return;
+                }
+                throw new Error('Failed to fetch report');
+            }
             const data = await reportResponse.json();
             setReport(data.report);
             setAllMessages(data.messages);
@@ -121,6 +130,10 @@ export default function ReportClient() {
     };
 
     const hasMore = displayedMessages.length < messageCount;
+
+    if (notFound) {
+        return <NotFound />;
+    }
 
     return (
         <>

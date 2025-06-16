@@ -2,6 +2,7 @@ import { getChannels } from '@/lib/data/channels-service';
 import { ReportService } from '@/lib/data/report-service';
 import { DiscordChannel, Report } from '@/lib/types/core';
 import { getCacheContext } from '@/lib/utils';
+import { notFound } from 'next/navigation';
 import ChannelDetailClient from './ChannelDetailClient';
 
 // ISR: Revalidate every 10 minutes for channel pages
@@ -97,25 +98,24 @@ export async function generateMetadata({ params }: { params: Promise<{ channelId
 export default async function ChannelDetailPage({ params }: { params: Promise<{ channelId: string }> }) {
     const { channelId } = await params;
 
-    try {
-        const { env } = await getCacheContext();
+    const { env } = await getCacheContext();
 
-        // Check if we have a valid Cloudflare environment
-        if (!env || !env.CHANNELS_CACHE || !env.REPORTS_CACHE) {
-            console.log('[SERVER] Cloudflare environment not available, using empty data');
-            return <ChannelDetailClient reports={[]} channel={null} />;
-        }
-
-        const reportService = new ReportService(env);
-
-        const channels: DiscordChannel[] = await getChannels(env);
-        const currentChannel = channels.find((c) => c.id === channelId) || null;
-
-        const reports: Report[] = await reportService.getAllReportsForChannel(channelId) || [];
-
-        return <ChannelDetailClient reports={reports} channel={currentChannel} />;
-    } catch (error) {
-        console.error('Error in ChannelDetailPage:', error);
+    // Local dev fallback when KV isn't available
+    if (!env || !env.CHANNELS_CACHE || !env.REPORTS_CACHE) {
+        console.log('[SERVER] Cloudflare environment not available, using empty data');
         return <ChannelDetailClient reports={[]} channel={null} />;
     }
+
+    const reportService = new ReportService(env);
+
+    const channels: DiscordChannel[] = await getChannels(env);
+    const currentChannel = channels.find((c) => c.id === channelId) || null;
+
+    if (!currentChannel) {
+        notFound();
+    }
+
+    const reports: Report[] = await reportService.getAllReportsForChannel(channelId) || [];
+
+    return <ChannelDetailClient reports={reports} channel={currentChannel} />;
 }

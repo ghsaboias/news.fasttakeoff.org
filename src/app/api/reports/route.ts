@@ -2,6 +2,7 @@ import { withErrorHandling } from '@/lib/api-utils';
 import { CacheManager } from '@/lib/cache-utils';
 import { TimeframeKey } from '@/lib/config';
 import { ReportService } from '@/lib/data/report-service';
+import { NextResponse } from 'next/server';
 
 export async function GET(request: Request) {
     return withErrorHandling(async env => {
@@ -12,10 +13,24 @@ export async function GET(request: Request) {
 
         // Handle specific report requests (no caching for these)
         if (reportId) {
-            if (!channelId) throw new Error('Missing channelId');
+            if (!channelId) {
+                return new NextResponse(JSON.stringify({ error: 'Missing channelId' }), {
+                    status: 400,
+                    headers: { 'Content-Type': 'application/json' }
+                });
+            }
+
             const reportService = new ReportService(env);
             const { report, messages } = await reportService.getReportAndMessages(channelId, reportId);
-            if (!report) throw new Error('Report not found');
+
+            if (!report) {
+                // 404 for invalid reportId or channelId
+                return new NextResponse(JSON.stringify({ error: 'Report not found' }), {
+                    status: 404,
+                    headers: { 'Content-Type': 'application/json' }
+                });
+            }
+
             return { report, messages };
         }
 

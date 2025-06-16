@@ -15,7 +15,7 @@ export default function NotFound() {
                 </CardHeader>
                 <Separator className="my-4" />
                 <CardContent className="flex flex-col items-center space-y-4">
-                    <p className="text-muted-foreground text-center">
+                    <p className="text-foreground text-center">
                         Sorry, we couldn&apos;t find the page you&apos;re looking for. It might have been moved or deleted.
                     </p>
                     <Button asChild className="w-full sm:w-auto">
