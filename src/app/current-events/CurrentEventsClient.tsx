@@ -194,10 +194,11 @@ export default function CurrentEventsClient({ reports, isLoading = false }: Prop
                         <p className="text-lg text-muted-foreground">Loading reports...</p>
                     </div>
                 ) : channelsWithLatest.length > 0 ? (
-                    channelsWithLatest.map(({ channel, latestReport }) => (
+                    channelsWithLatest.map(({ latestReport }) => (
                         <ReportCard
                             report={latestReport}
                             clickableChannel={false}
+                            key={latestReport.reportId}
                         />
                     ))
                 ) : (
