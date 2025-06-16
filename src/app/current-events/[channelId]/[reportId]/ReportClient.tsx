@@ -1,7 +1,6 @@
 "use client"
 
-import LinkBadge from "@/components/current-events/LinkBadge";
-import MessagesAccordion from "@/components/current-events/MessagesAccordion";
+import MessageItem from "@/components/current-events/MessageItem";
 import { Button } from "@/components/ui/button";
 import {
     DropdownMenu,
@@ -41,11 +40,16 @@ export default function ReportClient() {
     console.log(channelId, reportId);
 
     const [report, setReport] = useState<Report | null>(null);
-    const [messages, setMessages] = useState<DiscordMessage[]>([]);
+    const [allMessages, setAllMessages] = useState<DiscordMessage[]>([]);
+    const [displayedMessages, setDisplayedMessages] = useState<DiscordMessage[]>([]);
+    const [messageCount, setMessageCount] = useState(0);
+    const [currentPage, setCurrentPage] = useState(1);
     const [isLoading, setIsLoading] = useState(true);
     const [selectedLanguage, setSelectedLanguage] = useState<LanguageCode>('en');
     const [translatedContent, setTranslatedContent] = useState<TranslatedContent | null>(null);
     const [isTranslating, setIsTranslating] = useState(false);
+
+    const SOURCES_PER_PAGE = 20;
 
     useEffect(() => {
         const fetchReportAndMessages = async () => {
@@ -54,7 +58,10 @@ export default function ReportClient() {
             if (!reportResponse.ok) throw new Error('Failed to fetch report');
             const data = await reportResponse.json();
             setReport(data.report);
-            setMessages(data.messages);
+            setAllMessages(data.messages);
+            setDisplayedMessages(data.messages.slice(0, SOURCES_PER_PAGE));
+            setMessageCount(data.messages.length);
+            setCurrentPage(1);
             setIsLoading(false);
         };
         fetchReportAndMessages();
@@ -106,9 +113,18 @@ export default function ReportClient() {
 
     const paragraphs = report?.body.split('\n\n').filter(Boolean);
 
+    const loadMore = () => {
+        const nextPage = currentPage + 1;
+        const end = nextPage * SOURCES_PER_PAGE;
+        setDisplayedMessages(allMessages.slice(0, end));
+        setCurrentPage(nextPage);
+    };
+
+    const hasMore = displayedMessages.length < messageCount;
+
     return (
         <>
-            <div className="p-6 mx-auto gap-4 flex flex-col w-[95vw]">
+            <div className="p-6 mx-autoflex flex-col w-[95vw]">
                 {isLoading ? (
                     <div className="flex items-center justify-center h-full">
                         <Loader size="xl" />
@@ -117,50 +133,46 @@ export default function ReportClient() {
                     <div className="flex flex-col gap-6">
                         <div className="flex items-center gap-2 justify-between">
                             <div className="flex flex-col gap-2 sm:flex-row sm:justify-between sm:space-y-0 sm:gap-4 sm:w-full">
-                                <LinkBadge href={`/current-events/${report?.channelId}`} variant="outline" className="hover:bg-accent text-md">
-                                    {report?.channelName}
-                                </LinkBadge>
                                 <div className="flex items-center gap-3">
-                                    <div className="flex items-center">
-                                        <Button asChild variant="outline" className="min-w-[40px] flex justify-center">
-                                            <Link href={`/current-events/${channelId}`}>
-                                                <ArrowLeft className="h-4 w-4" />
-                                            </Link>
-                                        </Button>
-                                    </div>
-                                    <div className="flex items-center">
-                                        <Button asChild variant="outline" className="min-w-[40px] flex justify-center">
-                                            <Link href={`/current-events/${channelId}/messages`}>
-                                                <MessageSquare className="h-4 w-4" />
-                                            </Link>
-                                        </Button>
-                                    </div>
-                                    <div className="flex items-center">
-                                        <DropdownMenu>
-                                            <DropdownMenuTrigger asChild>
-                                                <Button variant="outline" size="icon" className="p-2 hover:bg-muted min-w-[64px] flex justify-center">
-                                                    <div className="flex items-center gap-2">
-                                                        <Globe className="h-5 w-5" />
-                                                        <span className="text-xs font-medium">{selectedLanguage.toUpperCase()}</span>
-                                                    </div>
-                                                </Button>
-                                            </DropdownMenuTrigger>
-                                            <DropdownMenuContent align="end">
-                                                {(Object.entries(LANGUAGES) as [LanguageCode, string][]).map(([code, name]) => (
-                                                    <DropdownMenuItem
-                                                        key={code}
-                                                        onClick={() => setSelectedLanguage(code)}
-                                                        className="flex items-center justify-between"
-                                                    >
-                                                        <span>{name}</span>
-                                                        {selectedLanguage === code && (
-                                                            <Check className="h-4 w-4 text-primary" />
-                                                        )}
-                                                    </DropdownMenuItem>
-                                                ))}
-                                            </DropdownMenuContent>
-                                        </DropdownMenu>
-                                    </div>
+                                    <Button asChild variant="outline" className="min-w-[40px] flex justify-center">
+                                        <Link href={`/current-events/${channelId}`}>
+                                            <ArrowLeft className="h-4 w-4" />
+                                        </Link>
+                                    </Button>
+                                    <Button asChild variant="outline" className="hover:bg-accent text-md">
+                                        <Link href={`/current-events/${report?.channelId}`}>
+                                            {report?.channelName}
+                                        </Link>
+                                    </Button>
+                                    <Button asChild variant="outline" className="min-w-[40px] flex justify-center">
+                                        <Link href={`/current-events/${channelId}/messages`}>
+                                            <MessageSquare className="h-4 w-4" />
+                                        </Link>
+                                    </Button>
+                                    <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                            <Button variant="outline" size="icon" className="p-2 hover:bg-muted min-w-[64px] flex justify-center">
+                                                <div className="flex items-center gap-2">
+                                                    <Globe className="h-5 w-5" />
+                                                    <span className="text-xs font-medium">{selectedLanguage.toUpperCase()}</span>
+                                                </div>
+                                            </Button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent align="end">
+                                            {(Object.entries(LANGUAGES) as [LanguageCode, string][]).map(([code, name]) => (
+                                                <DropdownMenuItem
+                                                    key={code}
+                                                    onClick={() => setSelectedLanguage(code)}
+                                                    className="flex items-center justify-between"
+                                                >
+                                                    <span>{name}</span>
+                                                    {selectedLanguage === code && (
+                                                        <Check className="h-4 w-4 text-primary" />
+                                                    )}
+                                                </DropdownMenuItem>
+                                            ))}
+                                        </DropdownMenuContent>
+                                    </DropdownMenu>
                                 </div>
                             </div>
                         </div>
@@ -189,14 +201,23 @@ export default function ReportClient() {
                                 )}
                             </div>
                         </div>
-                        <MessagesAccordion
-                            channelData={{
-                                count: messages.length,
-                                messages,
-                                loading: isLoading
-                            }}
-                            isLoading={isLoading}
-                        />
+                        {allMessages.length > 0 && (
+                            <div className="flex flex-col gap-0">
+                                <div className="border-b border-border" />
+                                <div className="flex flex-col">
+                                    {displayedMessages.map((message, index) => (
+                                        <MessageItem key={message.id} message={message} index={index} />
+                                    ))}
+                                </div>
+                                {hasMore && (
+                                    <div className="flex justify-center py-6">
+                                        <Button variant="outline" onClick={loadMore}>
+                                            Load More
+                                        </Button>
+                                    </div>
+                                )}
+                            </div>
+                        )}
                     </div>
                 )}
             </div>

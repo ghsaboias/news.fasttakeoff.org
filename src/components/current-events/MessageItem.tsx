@@ -1,9 +1,9 @@
 "use client";
 
-import { AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { LocalDateTimeFull } from "@/components/utils/LocalDateTime";
 import { DiscordMessage } from "@/lib/types/core";
 import Image from "next/image";
+import Link from "next/link";
 import MediaPreview from "./MediaPreview";
 
 interface MessageItemProps {
@@ -14,49 +14,42 @@ interface MessageItemProps {
 
 export default function MessageItem({ message, index, noAccordion = false }: MessageItemProps) {
     const MessageContent = () => (
-        <div className="space-y-4 bg-secondary-light rounded-lg">
+        <div className={`px-2 py-6 ${index !== 0 && 'border-t border-soft-border-foreground'}`}>
             {/* Content Section */}
-            {message.content && (
-                <div className="flex flex-col justify-between gap-2">
-                    <time dateTime={message.timestamp}>
-                        <LocalDateTimeFull
-                            dateString={message.timestamp}
-                            options={{
-                                dateStyle: 'medium',
-                                timeStyle: 'short'
-                            }}
-                        />
-                    </time>
-                    <div>
-                        <h4 className="font-semibold text-sm">Source:</h4>
-                        <a
-                            href={message.content}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-sm text-blue-500 hover:underline break-all"
-                        >
-                            {message.content}
-                        </a>
-                    </div>
-                </div>
-            )}
+            <div className="flex flex-col pb-2">
+                {message.content && (
+                    <LocalDateTimeFull
+                        dateString={message.timestamp}
+                        options={{
+                            dateStyle: 'medium',
+                            timeStyle: 'short'
+                        }}
+                        className="text-sm"
+                    />
+                )}
+
+                <Link
+                    href={message.content}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-sm text-blue-500 hover:underline break-all"
+                >
+                    {message.content}
+                </Link>
+            </div>
 
             {/* Embeds Section */}
             {message.embeds?.map((embed, embedIndex) => (
                 <div key={embedIndex} className="space-y-2">
                     {embed.title && (
                         <div>
-                            <h4 className="font-semibold text-sm">Title:</h4>
                             <p className="text-sm">{embed.title}</p>
                         </div>
                     )}
                     {embed.description && (
-                        <div>
-                            <h4 className="font-semibold text-sm">Description:</h4>
-                            <p className="text-sm">{embed.description}</p>
-                        </div>
+                        <p className="text-sm">{embed.description}</p>
                     )}
-                    {embed.fields?.length && embed.fields.length > 0 && (
+                    {embed.fields?.length && embed.fields.length > 0 && embed.fields.every(field => !field.value.toLowerCase().includes(message.content?.toLowerCase() || '')) && (
                         <div>
                             <h4 className="font-semibold text-sm">Additional Information:</h4>
                             {embed.fields.map((field, fieldIndex) => (
@@ -79,7 +72,7 @@ export default function MessageItem({ message, index, noAccordion = false }: Mes
                                     unoptimized
                                 />
                             )}
-                            <span className="text-sm text-muted-foreground">
+                            <span className="text-sm text-foreground">
                                 {embed.author.name}
                             </span>
                         </div>
@@ -89,7 +82,7 @@ export default function MessageItem({ message, index, noAccordion = false }: Mes
 
             {/* Media Section */}
             {message.attachments?.length && message.attachments.length > 0 ? (
-                <div className="space-y-2">
+                <div className="space-y-2 mt-2">
                     <h4 className="font-semibold text-sm">Media:</h4>
                     <div className="grid grid-cols-2 gap-4">
                         {message.attachments.map((attachment) => {
@@ -127,16 +120,6 @@ export default function MessageItem({ message, index, noAccordion = false }: Mes
     }
 
     return (
-        <AccordionItem
-            value={`message-${index}`}
-            className="border-b border-border last:border-0"
-        >
-            <AccordionTrigger className="text-sm">
-                {message.embeds?.[0]?.title || message.embeds?.[0]?.description?.slice(0, 100) || message.content || 'No content'}...
-            </AccordionTrigger>
-            <AccordionContent>
-                <MessageContent />
-            </AccordionContent>
-        </AccordionItem>
+        <MessageContent />
     );
 } 

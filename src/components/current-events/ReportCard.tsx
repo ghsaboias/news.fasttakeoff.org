@@ -41,13 +41,13 @@ export default function ReportCard({
     return (
         <Card className="flex flex-col gap-4">
             <CardHeader>
-                <CardTitle className="text-lg font-semibold line-clamp-2 leading-tight hover:text-accent">
+                <CardTitle className="text-2xl font-semibold line-clamp-4 leading-tight hover:text-accent">
                     <Link href={`/current-events/${report.channelId}/${report.reportId}`}>
                         {report.headline}
                     </Link>
                 </CardTitle>
                 <div className="flex justify-between items-center">
-                    <p className="text-sm font-medium line-clamp-1">
+                    <p className="text-md font-medium line-clamp-1">
                         {report.city} - {report.generatedAt && report.timeframe ? (
                             (() => {
                                 const end = new Date(report.generatedAt);
@@ -56,9 +56,9 @@ export default function ReportCard({
                                 const start = new Date(end.getTime() - ms);
                                 return (
                                     <>
-                                        <LocalDateTime dateString={start.toISOString()} className="text-sm" options={{ dateStyle: 'medium', timeStyle: 'short' }} />
+                                        <LocalDateTime dateString={start.toISOString()} options={{ dateStyle: 'medium', timeStyle: 'short' }} />
                                         {" - "}
-                                        <LocalDateTime dateString={end.toISOString()} className="text-sm" options={{ timeStyle: 'short' }} />
+                                        <LocalDateTime dateString={end.toISOString()} options={{ timeStyle: 'short' }} />
                                     </>
                                 );
                             })()
@@ -70,7 +70,7 @@ export default function ReportCard({
             </CardHeader>
 
             <CardContent className="flex flex-col pt-0">
-                <div className="text-sm">
+                <div className="text-md">
                     {paragraphs.length > 0 && (
                         <p className="text-justify">
                             {paragraphs[0]}
