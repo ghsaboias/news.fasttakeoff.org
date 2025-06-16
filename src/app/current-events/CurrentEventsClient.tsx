@@ -14,7 +14,6 @@ import {
 } from "@/components/ui/select";
 import { Report } from "@/lib/types/core";
 import { FilterX, Search } from "lucide-react";
-import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
 export interface Props {
@@ -196,14 +195,10 @@ export default function CurrentEventsClient({ reports, isLoading = false }: Prop
                     </div>
                 ) : channelsWithLatest.length > 0 ? (
                     channelsWithLatest.map(({ channel, latestReport }) => (
-                        <Link key={channel} href={`/current-events/${latestReport?.channelId}`} className="rounded-lg">
-                            {latestReport && (
-                                <ReportCard
-                                    report={latestReport}
-                                    clickableChannel={false}
-                                />
-                            )}
-                        </Link>
+                        <ReportCard
+                            report={latestReport}
+                            clickableChannel={false}
+                        />
                     ))
                 ) : (
                     <div className="col-span-full text-center py-8">
