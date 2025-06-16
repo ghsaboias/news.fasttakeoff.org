@@ -57,7 +57,29 @@ export async function generateMetadata({ params }: { params: Promise<{ channelId
             openGraph: {
                 title: `${currentChannel?.name || 'Channel'} Reports - Fast Takeoff News`,
                 description: `Latest breaking news and reports from ${currentChannel?.name || 'this channel'}`,
-                type: 'article'
+                type: 'article',
+                images: [
+                    {
+                        url: 'https://news.fasttakeoff.org/images/og-screenshot.webp',
+                        width: 1200,
+                        height: 630,
+                        alt: 'Fast Takeoff News - AI-powered news for everyone',
+                    },
+                ],
+            },
+            twitter: {
+                card: 'summary_large_image',
+                title: `${currentChannel?.name || 'Channel'} Reports - Fast Takeoff News`,
+                description: `Latest breaking news and reports from ${currentChannel?.name || 'this channel'}`,
+                images: [
+                    {
+                        url: 'https://news.fasttakeoff.org/images/og-screenshot.webp',
+                        width: 1200,
+                        height: 630,
+                        alt: 'Fast Takeoff News - AI-powered news for everyone',
+                        type: 'image/webp',
+                    },
+                ],
             }
         };
     } catch (error) {
@@ -88,7 +110,6 @@ export default async function ChannelDetailPage({ params }: { params: Promise<{ 
 
         const channels: DiscordChannel[] = await getChannels(env);
         const currentChannel = channels.find((c) => c.id === channelId) || null;
-        console.log('[ChannelDetailPage] currentChannel', currentChannel);
 
         const reports: Report[] = await reportService.getAllReportsForChannel(channelId) || [];
 

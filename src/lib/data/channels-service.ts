@@ -34,7 +34,6 @@ export class ChannelsService {
             })
             .sort((a, b) => a.position - b.position);
 
-        console.log(`[Discord] Filtered result: ${filtered.length} channels passed filters`);
         return filtered;
     }
 

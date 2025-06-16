@@ -92,12 +92,29 @@ export async function generateMetadata({ params }: { params: Promise<{ channelId
                 description: contentPreview,
                 type: 'article',
                 publishedTime: report.generatedAt,
-                section: 'Breaking News'
+                section: 'Breaking News',
+                images: [
+                    {
+                        url: 'https://news.fasttakeoff.org/images/og-screenshot.webp',
+                        width: 1200,
+                        height: 630,
+                        alt: 'Fast Takeoff News - AI-powered news for everyone',
+                    },
+                ],
             },
             twitter: {
                 card: 'summary_large_image',
                 title: seoTitle,
-                description: contentPreview
+                description: contentPreview,
+                images: [
+                    {
+                        url: 'https://news.fasttakeoff.org/images/og-screenshot.webp',
+                        width: 1200,
+                        height: 630,
+                        alt: 'Fast Takeoff News - AI-powered news for everyone',
+                        type: 'image/webp',
+                    },
+                ],
             },
             keywords: [
                 'breaking news',
@@ -174,6 +191,7 @@ export default async function ReportDetailPage({ params }: { params: Promise<{ c
                     '@id': `https://news.fasttakeoff.org/current-events/${channelId}/${reportId}`
                 },
                 articleSection: 'Breaking News',
+                image: 'https://news.fasttakeoff.org/images/og-screenshot.webp',
                 keywords: [
                     'breaking news',
                     'real-time news',

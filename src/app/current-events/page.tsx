@@ -10,7 +10,34 @@ export async function generateMetadata() {
         description: 'Latest updates from Discord channels.',
         alternates: {
             canonical: 'https://news.fasttakeoff.org/current-events'
-        }
+        },
+        openGraph: {
+            title: 'Current Events - Fast Takeoff News',
+            description: 'Latest updates from Discord channels.',
+            type: 'website',
+            images: [
+                {
+                    url: 'https://news.fasttakeoff.org/images/og-screenshot.webp',
+                    width: 1200,
+                    height: 630,
+                    alt: 'Fast Takeoff News - AI-powered news for everyone',
+                },
+            ],
+        },
+        twitter: {
+            card: 'summary_large_image',
+            title: 'Current Events - Fast Takeoff News',
+            description: 'Latest updates from Discord channels.',
+            images: [
+                {
+                    url: 'https://news.fasttakeoff.org/images/og-screenshot.webp',
+                    width: 1200,
+                    height: 630,
+                    alt: 'Fast Takeoff News - AI-powered news for everyone',
+                    type: 'image/webp',
+                },
+            ],
+        },
     };
 }
 
