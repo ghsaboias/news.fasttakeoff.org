@@ -32,6 +32,28 @@ export class MessagesService {
         byIds: (messages: DiscordMessage[], ids: string[]): DiscordMessage[] => {
             const messagesMap = new Map(messages.map(msg => [msg.id, msg]));
             return ids.map(id => messagesMap.get(id)).filter((msg): msg is DiscordMessage => msg !== undefined);
+        },
+
+        uniqueByContent: (messages: DiscordMessage[]): DiscordMessage[] => {
+            const seen = new Set<string>();
+            const keyFor = (msg: DiscordMessage): string => {
+                const contentKey = msg.content?.trim();
+                if (contentKey) return contentKey;
+                if (msg.embeds && msg.embeds.length > 0) {
+                    return JSON.stringify(msg.embeds);
+                }
+                return JSON.stringify({}); // fallback key for messages with no content/embeds
+            };
+
+            const deduped: DiscordMessage[] = [];
+            for (const msg of messages) {
+                const key = keyFor(msg);
+                if (!seen.has(key)) {
+                    seen.add(key);
+                    deduped.push(msg);
+                }
+            }
+            return deduped;
         }
     };
 
@@ -180,12 +202,13 @@ export class MessagesService {
             console.warn('[MESSAGES_CACHE] KV namespace not available');
             return;
         }
+        const uniqueMessages = this.messageFilter.uniqueByContent(messages);
         const name = channelName || await getChannelName(this.env, channelId);
         const data: CachedMessages = {
-            messages,
+            messages: uniqueMessages,
             cachedAt: new Date().toISOString(),
-            messageCount: messages.length,
-            lastMessageTimestamp: messages[0]?.timestamp || new Date().toISOString(),
+            messageCount: uniqueMessages.length,
+            lastMessageTimestamp: uniqueMessages[0]?.timestamp || new Date().toISOString(),
             channelName: name,
         };
         const cacheKey = `messages:${channelId}`;
