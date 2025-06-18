@@ -62,26 +62,26 @@ export default function ProfilePage() {
                 </CardHeader>
                 <CardContent className="space-y-4">
                     <div className="space-y-2">
-                        <p className="text-sm text-muted-foreground">Email</p>
+                        <p className="text-sm text-foreground">Email</p>
                         <p className="text-base">{user.primaryEmailAddress?.emailAddress}</p>
                     </div>
                     <div className="space-y-2">
-                        <p className="text-sm text-muted-foreground">Name</p>
+                        <p className="text-sm text-foreground">Name</p>
                         <p className="text-base">{user.fullName || 'Not set'}</p>
                     </div>
                     <div className="space-y-2">
-                        <p className="text-sm text-muted-foreground">Subscription Status</p>
+                        <p className="text-sm text-foreground">Subscription Status</p>
                         <p className="text-base">
                             {isSubscribed ? (
                                 <span className="text-primary font-medium">Subscribed 🎉</span>
                             ) : (
-                                <span className="text-muted-foreground">Not subscribed</span>
+                                <span className="text-foreground">Not subscribed</span>
                             )}
                         </p>
                     </div>
                     {!isSubscribed && (
                         <div className="pt-4">
-                            <p className="text-sm text-muted-foreground mb-2">
+                            <p className="text-sm text-foreground mb-2">
                                 Join our premium plan for exclusive benefits at $2/month!
                             </p>
                             <Button
