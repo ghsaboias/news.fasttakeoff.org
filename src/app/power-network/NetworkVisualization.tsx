@@ -36,6 +36,7 @@ export default function NetworkVisualization() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [selectedNode, setSelectedNode] = useState<Node | null>(null);
+    const [isMobile, setIsMobile] = useState(false);
 
     // Network state
     const nodesRef = useRef<Node[]>([]);
@@ -45,6 +46,15 @@ export default function NetworkVisualization() {
     const dragOffsetRef = useRef({ x: 0, y: 0 });
     const isPanningRef = useRef(false);
     const panStartRef = useRef({ x: 0, y: 0 });
+
+    // Touch state for pinch zoom
+    const lastTouchDistanceRef = useRef<number | null>(null);
+    const touchCenterRef = useRef<{ x: number, y: number } | null>(null);
+
+    // Detect mobile on mount
+    useEffect(() => {
+        setIsMobile(window.innerWidth < 768);
+    }, []);
 
     // Load graph data
     useEffect(() => {
@@ -82,6 +92,9 @@ export default function NetworkVisualization() {
         // Generate nodes from entities
         const nodes: Node[] = Object.keys(graphData.entities).map((id) => {
             const entity = graphData.entities[id];
+            const baseRadius = entity.type === 'person' ? 25 : 20;
+            const mobileRadius = isMobile ? baseRadius + 15 : baseRadius;
+
             return {
                 id,
                 ...entity,
@@ -89,7 +102,7 @@ export default function NetworkVisualization() {
                 y: Math.random() * (canvas.height - 200) + 100,
                 vx: 0,
                 vy: 0,
-                radius: entity.type === 'person' ? 25 : 20,
+                radius: mobileRadius,
             };
         });
         nodesRef.current = nodes;
@@ -103,7 +116,7 @@ export default function NetworkVisualization() {
                 cancelAnimationFrame(animationRef.current);
             }
         };
-    }, [graphData]);
+    }, [graphData, isMobile]);
 
     // Animation loop
     useEffect(() => {
@@ -300,17 +313,28 @@ export default function NetworkVisualization() {
         };
     }, [graphData, selectedNode]);
 
-    // Mouse event handlers
-    const getMousePosition = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    // Helper functions for touch/mouse position
+    const getEventPosition = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
         const canvas = canvasRef.current;
         if (!canvas) return { x: 0, y: 0 };
 
         const rect = canvas.getBoundingClientRect();
         const camera = cameraRef.current;
 
+        let clientX, clientY;
+        if ('touches' in e && e.touches.length > 0) {
+            clientX = e.touches[0].clientX;
+            clientY = e.touches[0].clientY;
+        } else if ('clientX' in e) {
+            clientX = e.clientX;
+            clientY = e.clientY;
+        } else {
+            return { x: 0, y: 0 };
+        }
+
         return {
-            x: (e.clientX - rect.left - camera.x) / camera.zoom,
-            y: (e.clientY - rect.top - camera.y) / camera.zoom,
+            x: (clientX - rect.left - camera.x) / camera.zoom,
+            y: (clientY - rect.top - camera.y) / camera.zoom,
         };
     };
 
@@ -322,8 +346,25 @@ export default function NetworkVisualization() {
         }) || null;
     };
 
+    // Touch distance calculation for pinch zoom
+    const getTouchDistance = (touches: React.TouchList) => {
+        if (touches.length < 2) return null;
+        const dx = touches[0].clientX - touches[1].clientX;
+        const dy = touches[0].clientY - touches[1].clientY;
+        return Math.sqrt(dx * dx + dy * dy);
+    };
+
+    const getTouchCenter = (touches: React.TouchList) => {
+        if (touches.length < 2) return null;
+        return {
+            x: (touches[0].clientX + touches[1].clientX) / 2,
+            y: (touches[0].clientY + touches[1].clientY) / 2,
+        };
+    };
+
+    // Mouse event handlers
     const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
-        const pos = getMousePosition(e);
+        const pos = getEventPosition(e);
         const node = getNodeAt(pos.x, pos.y);
 
         if (node) {
@@ -334,9 +375,7 @@ export default function NetworkVisualization() {
                 y: pos.y - node.y,
             };
         } else {
-            // Unselect node when clicking on background
             setSelectedNode(null);
-            // Begin panning
             isPanningRef.current = true;
             panStartRef.current = { x: e.clientX, y: e.clientY };
         }
@@ -344,7 +383,7 @@ export default function NetworkVisualization() {
 
     const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
         if (isDraggingRef.current && selectedNode) {
-            const pos = getMousePosition(e);
+            const pos = getEventPosition(e);
             selectedNode.x = pos.x - dragOffsetRef.current.x;
             selectedNode.y = pos.y - dragOffsetRef.current.y;
             selectedNode.vx = 0;
@@ -361,6 +400,86 @@ export default function NetworkVisualization() {
     const handleMouseUp = () => {
         isDraggingRef.current = false;
         isPanningRef.current = false;
+    };
+
+    // Touch event handlers
+    const handleTouchStart = (e: React.TouchEvent<HTMLCanvasElement>) => {
+        e.preventDefault();
+
+        if (e.touches.length === 1) {
+            // Single touch - same as mouse down
+            const pos = getEventPosition(e);
+            const node = getNodeAt(pos.x, pos.y);
+
+            if (node) {
+                setSelectedNode(node);
+                isDraggingRef.current = true;
+                dragOffsetRef.current = {
+                    x: pos.x - node.x,
+                    y: pos.y - node.y,
+                };
+            } else {
+                setSelectedNode(null);
+                isPanningRef.current = true;
+                panStartRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+            }
+        } else if (e.touches.length === 2) {
+            // Two touches - prepare for pinch zoom
+            isDraggingRef.current = false;
+            isPanningRef.current = false;
+            lastTouchDistanceRef.current = getTouchDistance(e.touches);
+            touchCenterRef.current = getTouchCenter(e.touches);
+        }
+    };
+
+    const handleTouchMove = (e: React.TouchEvent<HTMLCanvasElement>) => {
+        e.preventDefault();
+
+        if (e.touches.length === 1) {
+            // Single touch - same as mouse move
+            if (isDraggingRef.current && selectedNode) {
+                const pos = getEventPosition(e);
+                selectedNode.x = pos.x - dragOffsetRef.current.x;
+                selectedNode.y = pos.y - dragOffsetRef.current.y;
+                selectedNode.vx = 0;
+                selectedNode.vy = 0;
+            } else if (isPanningRef.current) {
+                const dx = e.touches[0].clientX - panStartRef.current.x;
+                const dy = e.touches[0].clientY - panStartRef.current.y;
+                cameraRef.current.x += dx;
+                cameraRef.current.y += dy;
+                panStartRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+            }
+        } else if (e.touches.length === 2 && lastTouchDistanceRef.current && touchCenterRef.current) {
+            // Two touches - pinch zoom
+            const currentDistance = getTouchDistance(e.touches);
+            const currentCenter = getTouchCenter(e.touches);
+
+            if (currentDistance && currentCenter) {
+                const zoomFactor = currentDistance / lastTouchDistanceRef.current;
+                const camera = cameraRef.current;
+                camera.zoom = Math.max(0.1, Math.min(3, camera.zoom * zoomFactor));
+
+                lastTouchDistanceRef.current = currentDistance;
+                touchCenterRef.current = currentCenter;
+            }
+        }
+    };
+
+    const handleTouchEnd = (e: React.TouchEvent<HTMLCanvasElement>) => {
+        e.preventDefault();
+
+        if (e.touches.length === 0) {
+            // All touches ended
+            isDraggingRef.current = false;
+            isPanningRef.current = false;
+            lastTouchDistanceRef.current = null;
+            touchCenterRef.current = null;
+        } else if (e.touches.length === 1) {
+            // One touch remaining after pinch
+            lastTouchDistanceRef.current = null;
+            touchCenterRef.current = null;
+        }
     };
 
     const handleWheel = (e: React.WheelEvent<HTMLCanvasElement>) => {
@@ -399,9 +518,13 @@ export default function NetworkVisualization() {
             <canvas
                 ref={canvasRef}
                 className="w-full h-full bg-gray-900 cursor-grab active:cursor-grabbing"
+                style={{ touchAction: 'none' }}
                 onMouseDown={handleMouseDown}
                 onMouseMove={handleMouseMove}
                 onMouseUp={handleMouseUp}
+                onTouchStart={handleTouchStart}
+                onTouchMove={handleTouchMove}
+                onTouchEnd={handleTouchEnd}
                 onWheel={handleWheel}
                 width={window.innerWidth}
                 height={window.innerHeight}
