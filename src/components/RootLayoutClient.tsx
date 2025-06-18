@@ -12,7 +12,7 @@ interface RootLayoutClientProps {
 
 export default function RootLayoutClient({ children }: RootLayoutClientProps) {
     const pathname = usePathname();
-    const showHeaderAndFooter = pathname !== '/news-globe';
+    const showHeaderAndFooter = pathname !== '/news-globe' && pathname !== '/power-network';
 
     return (
         <AuthProvider>

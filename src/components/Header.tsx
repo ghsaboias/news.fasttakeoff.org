@@ -41,6 +41,9 @@ export default function Header() {
                 <Link href="/brazil-news" className="text-sm font-medium hover:underline">
                     Brazil News
                 </Link>
+                <Link href="/power-network" className="text-sm font-medium hover:underline">
+                    Power Network
+                </Link>
             </div>
             {
                 user ? (
@@ -134,6 +137,9 @@ export default function Header() {
                                     </Link>
                                     <Link href="/brazil-news" className="text-sm font-medium hover:underline">
                                         Brazil News
+                                    </Link>
+                                    <Link href="/power-network" className="text-sm font-medium hover:underline">
+                                        Power Network
                                     </Link>
                                 </div>
                             </SheetContent>
