@@ -219,6 +219,9 @@ export class MessagesService {
         const channels = await this.channelsService.getChannels();
         const last24Hours = new Date(Date.now() - (24 * 60 * 60 * 1000)); // 24 hours ago in milliseconds
         let fetchedAny = false;
+        let totalRawMessages = 0;
+        let totalBotMessages = 0;
+        const channelResults: Array<{ name: string, raw: number, bot: number, since: string }> = [];
 
         for (const channel of channels) {
             const cached = await this.getAllCachedMessagesForChannel(channel.id);
@@ -228,6 +231,7 @@ export class MessagesService {
             const urlBase = `${API.DISCORD.BASE_URL}/channels/${channel.id}/messages?limit=${DISCORD.MESSAGES.BATCH_SIZE}`;
             let after = snowflake.toString();
             const allMessages: DiscordMessage[] = [];
+            let channelRawCount = 0;
 
             while (true) {
                 const url = `${urlBase}&after=${after}`;
@@ -247,12 +251,22 @@ export class MessagesService {
                 const messages = await response.json();
                 if (!messages.length) break; // No more messages to fetch
 
+                channelRawCount += messages.length;
                 const botMessages = this.messageFilter.byBot(messages);
                 allMessages.push(...botMessages);
                 console.log(`[MESSAGES] Channel ${channel.name}: ${botMessages.length} bot messages, total ${allMessages.length}`);
 
                 after = messages[0].id; // Use the newest message ID for the next batch
             }
+
+            totalRawMessages += channelRawCount;
+            totalBotMessages += allMessages.length;
+            channelResults.push({
+                name: channel.name,
+                raw: channelRawCount,
+                bot: allMessages.length,
+                since: since.toISOString()
+            });
 
             if (allMessages.length > 0) {
                 fetchedAny = true;
@@ -264,6 +278,8 @@ export class MessagesService {
         }
 
         if (!fetchedAny) {
+            console.error(`[MESSAGES] FAILURE CONTEXT: Processed ${channels.length} channels, total raw: ${totalRawMessages}, total bot: ${totalBotMessages}`);
+            console.error(`[MESSAGES] Channel breakdown:`, channelResults);
             throw new Error('[MESSAGES] No messages fetched across all channels—possible API failure');
         }
         console.log('[MESSAGES] Update completed');
