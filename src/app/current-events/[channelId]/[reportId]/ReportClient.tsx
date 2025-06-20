@@ -146,7 +146,7 @@ export default function ReportClient() {
                     <div className="flex flex-col gap-6">
                         <div className="flex items-center gap-2 justify-between">
                             <div className="flex flex-col gap-2 sm:flex-row sm:justify-between sm:space-y-0 sm:gap-4 sm:w-full">
-                                <div className="flex items-center gap-3">
+                                <div className="flex items-center gap-3 flex-wrap">
                                     <Button asChild variant="outline" className="min-w-[40px] flex justify-center">
                                         <Link href={`/current-events/${channelId}`}>
                                             <ArrowLeft className="h-4 w-4" />
