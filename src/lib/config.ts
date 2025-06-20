@@ -89,7 +89,7 @@ export const CACHE = {
         // Channel cache TTL
         CHANNELS: 12 * 60 * 60, // 12 hours
         // Messages cache TTL
-        MESSAGES: 259200, // 3 days
+        MESSAGES: 2592000, // 30 days
         // Feeds summary cache TTL
         FEEDS: 30 * 24 * 60 * 60, // 30 days
     },
