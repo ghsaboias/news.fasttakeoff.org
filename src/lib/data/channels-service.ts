@@ -66,11 +66,21 @@ export class ChannelsService {
             }
             if (!response.ok) {
                 const errorBody = await response.text();
-                console.log(`[Discord] Error Body: ${errorBody}`);
+                console.error(`[CHANNELS] Discord API Error Details:`);
+                console.error(`  Guild ID: ${guildId}`);
+                console.error(`  Status: ${response.status}`);
+                console.error(`  Status Text: ${response.statusText}`);
+                console.error(`  Headers: ${JSON.stringify(Object.fromEntries(response.headers.entries()))}`);
+                console.error(`  Error Body: ${errorBody}`);
+                console.error(`  Request URL: ${url}`);
+                console.error(`  Token present: ${!!this.env.DISCORD_TOKEN}`);
+                console.error(`  Token prefix: ${this.env.DISCORD_TOKEN ? this.env.DISCORD_TOKEN.substring(0, 10) + '...' : 'NONE'}`);
                 throw new Error(`Discord API error: ${response.status} - ${errorBody}`);
             }
 
             const channels = await response.json();
+            console.log(`[CHANNELS] Raw channels fetched: ${channels.length}`);
+            console.log(`[CHANNELS] Raw channel names: ${channels.map((c: DiscordChannel) => c.name).join(', ')}`);
             return channels;
         } catch (error) {
             console.error(`[Discord] FETCH ERROR:`, error);
@@ -92,7 +102,10 @@ export class ChannelsService {
             return this.filterChannels(cached.channels);
         }
 
-        const filteredChannels = this.filterChannels(await this.fetchAllChannelsFromAPI());
+        const rawChannels = await this.fetchAllChannelsFromAPI();
+        const filteredChannels = this.filterChannels(rawChannels);
+        console.log(`[CHANNELS] After filtering: ${filteredChannels.length} channels (from ${rawChannels.length} raw)`);
+        console.log(`[CHANNELS] Filtered channel names: ${filteredChannels.map(c => c.name).join(', ')}`);
         await this.cache.put('CHANNELS_CACHE', key, { channels: filteredChannels, fetchedAt: new Date().toISOString() }, CACHE.TTL.CHANNELS);
         return filteredChannels;
     }
