@@ -254,7 +254,11 @@ export class MessagesService {
     }
 
     async updateMessages(): Promise<void> {
+        console.log(`[MESSAGES] Starting updateMessages...`);
         const channels = await this.channelsService.getChannels();
+        console.log(`[MESSAGES] Retrieved ${channels.length} channels from service`);
+        console.log(`[MESSAGES] Channel IDs: ${channels.map(c => `${c.name}(${c.id})`).join(', ')}`);
+
         const last24Hours = new Date(Date.now() - (24 * 60 * 60 * 1000)); // 24 hours ago in milliseconds
         let fetchedAny = false;
         let totalRawMessages = 0;
@@ -283,6 +287,13 @@ export class MessagesService {
 
                 if (!response.ok) {
                     const errorBody = await response.text();
+                    console.error(`[MESSAGES] Discord API Error Details:`);
+                    console.error(`  Channel: ${channel.name} (${channel.id})`);
+                    console.error(`  Status: ${response.status}`);
+                    console.error(`  Status Text: ${response.statusText}`);
+                    console.error(`  Headers: ${JSON.stringify(Object.fromEntries(response.headers.entries()))}`);
+                    console.error(`  Error Body: ${errorBody}`);
+                    console.error(`  Request URL: ${url}`);
                     throw new Error(`[MESSAGES] Discord API error for ${channel.id}: ${response.status} - ${errorBody}`);
                 }
 
