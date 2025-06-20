@@ -211,8 +211,46 @@ export class MessagesService {
             lastMessageTimestamp: uniqueMessages[0]?.timestamp || new Date().toISOString(),
             channelName: name,
         };
+
+        // -------------------------------------------------------------
+        // Hard guard against Cloudflare KV 25 MiB value limit
+        // -------------------------------------------------------------
+        const MAX_KV_VALUE_BYTES = 24 * 1024 * 1024; // 24 MiB – leave safety margin
+        const encoder = new TextEncoder();
+
+        let safeData = data;
+        let bytes = encoder.encode(JSON.stringify(safeData)).length;
+
+        if (bytes > MAX_KV_VALUE_BYTES) {
+            console.warn(`[MESSAGES_CACHE] ${channelId} exceeds safe KV size (${(bytes / 1_048_576).toFixed(2)} MiB). Trimming old messages…`);
+
+            // Binary search to find the largest prefix of newest messages that fits
+            let low = 0;
+            let high = uniqueMessages.length - 1;
+            let best = 0;
+
+            while (low <= high) {
+                const mid = Math.floor((low + high) / 2);
+                const candidate = { ...data, messages: uniqueMessages.slice(0, mid + 1) };
+                const size = encoder.encode(JSON.stringify(candidate)).length;
+
+                if (size <= MAX_KV_VALUE_BYTES) {
+                    best = mid + 1; // this many messages fit, try more
+                    low = mid + 1;
+                } else {
+                    high = mid - 1; // too big, reduce
+                }
+            }
+
+            const trimmed = uniqueMessages.slice(0, best);
+            safeData = { ...data, messages: trimmed, messageCount: trimmed.length };
+            bytes = encoder.encode(JSON.stringify(safeData)).length;
+
+            console.warn(`[MESSAGES_CACHE] Trimmed to ${trimmed.length} messages (${(bytes / 1_048_576).toFixed(2)} MiB) to stay within limit.`);
+        }
+
         const cacheKey = `messages:${channelId}`;
-        await this.cacheManager.put('MESSAGES_CACHE', cacheKey, data, CACHE.TTL.MESSAGES);
+        await this.cacheManager.put('MESSAGES_CACHE', cacheKey, safeData, CACHE.TTL.MESSAGES);
     }
 
     async updateMessages(): Promise<void> {
