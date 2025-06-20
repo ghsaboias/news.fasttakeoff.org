@@ -26,7 +26,7 @@ export const AI_PROVIDERS: Record<string, AIProviderConfig> = {
     },
     openrouter: {
         endpoint: 'https://openrouter.ai/api/v1/chat/completions',
-        model: 'google/gemini-2.5-flash-preview-05-20',
+        model: 'google/gemini-2.5-flash',
         apiKeyEnvVar: 'OPENROUTER_API_KEY',
         displayName: 'Gemini 2.5 Flash (OpenRouter)',
     },
