@@ -66,7 +66,7 @@ export const DISCORD = {
     },
     CHANNELS: {
         // Emojis used to filter channels
-        ALLOWED_EMOJIS: ['🔵', '🟡', '🔴', '🟠', '⚠️', '💔'],
+        ALLOWED_EMOJIS: ['🔵', '🟡', '🔴', '🟠', '⚠️', '⚫'],
         // Permission constants
         PERMISSIONS: {
             VIEW_CHANNEL: '1024',
