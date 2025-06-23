@@ -5,6 +5,7 @@ import { AccordionContent, AccordionItem, AccordionTrigger } from "@/components/
 import { LocalDateTimeFull } from "@/components/utils/LocalDateTime";
 import { DiscordMessage } from "@/lib/types/core";
 import Image from "next/image";
+import React from "react";
 
 interface MessageItemProps {
     message: DiscordMessage;
@@ -12,14 +13,49 @@ interface MessageItemProps {
     noAccordion?: boolean;
 }
 
+// Regex to match URLs (http or https)
+const urlRegex = /(https?:\/\/[^\s]+)/g;
+
+/**
+ * Splits the given text into parts and wraps any URL part in an <a> tag.
+ */
+function renderWithLinks(text: string) {
+    const parts = text.split(urlRegex);
+    return parts.map((part, index) => {
+        if (urlRegex.test(part)) {
+            return (
+                <a
+                    key={index}
+                    href={part}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-500 hover:underline break-words"
+                >
+                    {part}
+                </a>
+            );
+        }
+        return <React.Fragment key={index}>{part}</React.Fragment>;
+    });
+}
+
 export default function MessageItemTimeline({ message, index, noAccordion = false }: MessageItemProps) {
+    console.log(message)
     const MessageContent = () => (
-        <div className="space-y-4 bg-secondary-light rounded-lg">
+        <div className="bg-secondary-light rounded-lg">
             {/* Content Section */}
+            <time dateTime={message.timestamp} className="text-sm text-foreground">
+                <LocalDateTimeFull
+                    dateString={message.timestamp}
+                    options={{
+                        dateStyle: 'medium',
+                        timeStyle: 'short'
+                    }}
+                />
+            </time>
             {message.content && (
-                <div className="flex flex-col space-y-2 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
                     <div className="w-full">
-                        <h4 className="font-semibold text-sm">Source:</h4>
                         <a
                             href={message.content}
                             target="_blank"
@@ -29,34 +65,23 @@ export default function MessageItemTimeline({ message, index, noAccordion = fals
                             {message.content}
                         </a>
                     </div>
-                    <time dateTime={message.timestamp} className="text-sm text-foreground whitespace-nowrap">
-                        <LocalDateTimeFull
-                            dateString={message.timestamp}
-                            options={{
-                                dateStyle: 'medium',
-                                timeStyle: 'short'
-                            }}
-                        />
-                    </time>
                 </div>
             )}
 
             {/* Embeds Section */}
             {message.embeds?.map((embed, embedIndex) => (
-                <div key={embedIndex} className="space-y-2">
+                <div key={embedIndex} className="py-2 flex flex-col gap-2">
                     {embed.title && (
                         <div>
-                            <h4 className="font-semibold text-sm">Title:</h4>
-                            <p className="text-sm">{embed.title}</p>
+                            <p className="text-sm break-words">{renderWithLinks(embed.title)}</p>
                         </div>
                     )}
                     {embed.description && (
                         <div>
-                            <h4 className="font-semibold text-sm">Description:</h4>
-                            <p className="text-sm">{embed.description}</p>
+                            <p className="text-sm break-words">{renderWithLinks(embed.description)}</p>
                         </div>
                     )}
-                    {embed.fields && embed.fields.length > 0 && (
+                    {embed.fields && embed.fields.length > 1 && (
                         <div className="space-y-2">
                             {/* Only show Additional Information header if we have non-redundant fields */}
                             {embed.fields.some(field =>
@@ -78,14 +103,14 @@ export default function MessageItemTimeline({ message, index, noAccordion = fals
                                 return (
                                     <div key={fieldIndex} className="ml-2 mt-3">
                                         <p className="text-sm font-medium">{field.name}:</p>
-                                        <p className="text-sm break-words">{field.value}</p>
+                                        <p className="text-sm break-words">{renderWithLinks(field.value)}</p>
                                     </div>
                                 );
                             })}
                         </div>
                     )}
                     {embed.author && (
-                        <div className="flex items-center gap-2 mt-2">
+                        <div className="flex items-center gap-2">
                             {embed.author.icon_url && (
                                 <Image
                                     src={embed.author.icon_url}
@@ -106,8 +131,7 @@ export default function MessageItemTimeline({ message, index, noAccordion = fals
 
             {/* Media Section */}
             {message.attachments?.length && message.attachments.length > 0 ? (
-                <div className="space-y-2">
-                    <h4 className="font-semibold text-sm">Media:</h4>
+                <div>
                     <div className="grid grid-cols-2 gap-4">
                         {message.attachments.map((attachment) => {
                             if (attachment.content_type?.startsWith('image/')) {

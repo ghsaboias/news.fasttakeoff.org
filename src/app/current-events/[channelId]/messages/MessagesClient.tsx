@@ -83,7 +83,7 @@ export default function MessagesClient({
                     <h1 className="text-2xl font-bold flex items-center gap-2">
                         {channel.name}
                     </h1>
-                    <span className="text-sm text-muted-foreground font-normal">
+                    <span className="text-sm text-foreground font-normal">
                         (Showing {displayedMessages.length} of {messageCount} messages)
                     </span>
                 </div>
