@@ -256,8 +256,6 @@ export class MessagesService {
     async updateMessages(): Promise<void> {
         console.log(`[MESSAGES] Starting updateMessages...`);
         const channels = await this.channelsService.getChannels();
-        console.log(`[MESSAGES] Retrieved ${channels.length} channels from service`);
-        console.log(`[MESSAGES] Channel IDs: ${channels.map(c => `${c.name}(${c.id})`).join(', ')}`);
 
         const last24Hours = new Date(Date.now() - (24 * 60 * 60 * 1000)); // 24 hours ago in milliseconds
         let fetchedAny = false;
