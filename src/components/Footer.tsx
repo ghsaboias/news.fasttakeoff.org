@@ -52,6 +52,11 @@ export default function Footer() {
                                     Brazil News
                                 </Link>
                             </li>
+                            <li>
+                                <Link href="/power-network" className="hover:underline">
+                                    Power Network
+                                </Link>
+                            </li>
                         </ul>
                     </div>
                     <div className="space-y-4 text-center">
