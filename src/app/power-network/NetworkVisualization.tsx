@@ -28,6 +28,7 @@ interface Node extends Entity {
     vx: number;
     vy: number;
     radius: number;
+    connectionCount: number;
 }
 
 export default function NetworkVisualization() {
@@ -37,6 +38,9 @@ export default function NetworkVisualization() {
     const [error, setError] = useState<string | null>(null);
     const [selectedNode, setSelectedNode] = useState<Node | null>(null);
     const [isMobile, setIsMobile] = useState(false);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [filters, setFilters] = useState<Record<'person' | 'company' | 'fund', boolean>>({ person: true, company: true, fund: true });
+    const [showTopConnected, setShowTopConnected] = useState(false);
 
     // Network state
     const nodesRef = useRef<Node[]>([]);
@@ -89,10 +93,23 @@ export default function NetworkVisualization() {
         resizeCanvas();
         window.addEventListener('resize', resizeCanvas);
 
+        // Calculate connection counts for each entity
+        const connectionCounts: Record<string, number> = {};
+        graphData.relationships.forEach(rel => {
+            connectionCounts[rel.from] = (connectionCounts[rel.from] || 0) + 1;
+            connectionCounts[rel.to] = (connectionCounts[rel.to] || 0) + 1;
+        });
+
         // Generate nodes from entities
         const nodes: Node[] = Object.keys(graphData.entities).map((id) => {
             const entity = graphData.entities[id];
-            const baseRadius = entity.type === 'person' ? 25 : 20;
+            const connectionCount = connectionCounts[id] || 0;
+
+            // Scale radius based on connections (min 15, max 40 for desktop)
+            const minRadius = entity.type === 'person' ? 20 : 15;
+            const maxRadius = entity.type === 'person' ? 40 : 35;
+            const connectionScale = Math.min(connectionCount / 20, 1); // Cap at 20 connections
+            const baseRadius = minRadius + (maxRadius - minRadius) * connectionScale;
             const mobileRadius = isMobile ? baseRadius + 15 : baseRadius;
 
             return {
@@ -103,6 +120,7 @@ export default function NetworkVisualization() {
                 vx: 0,
                 vy: 0,
                 radius: mobileRadius,
+                connectionCount,
             };
         });
         nodesRef.current = nodes;
@@ -202,10 +220,13 @@ export default function NetworkVisualization() {
             ctx.translate(camera.x, camera.y);
             ctx.scale(camera.zoom, camera.zoom);
 
+            const visibleNodeIds = new Set(nodes.filter(isNodeVisible).map(n => n.id));
+
             // Get connected relationships for selected node
             const connectedRelationships = selectedNode ?
                 graphData.relationships.filter(rel =>
-                    rel.from === selectedNode.id || rel.to === selectedNode.id
+                    (rel.from === selectedNode.id || rel.to === selectedNode.id) &&
+                    visibleNodeIds.has(rel.from) && visibleNodeIds.has(rel.to)
                 ) : [];
 
             const connectedNodeIds = selectedNode ?
@@ -216,7 +237,7 @@ export default function NetworkVisualization() {
                 const nodeA = nodes.find((n) => n.id === rel.from);
                 const nodeB = nodes.find((n) => n.id === rel.to);
 
-                if (nodeA && nodeB) {
+                if (nodeA && nodeB && visibleNodeIds.has(nodeA.id) && visibleNodeIds.has(nodeB.id)) {
                     const isConnectedToSelected = selectedNode &&
                         (rel.from === selectedNode.id || rel.to === selectedNode.id);
 
@@ -253,8 +274,24 @@ export default function NetworkVisualization() {
 
             // Draw nodes
             nodes.forEach((node) => {
+                if (!visibleNodeIds.has(node.id)) return;
+
                 const isSelected = selectedNode && selectedNode.id === node.id;
                 const isConnectedToSelected = selectedNode && connectedNodeIds.includes(node.id);
+
+                // Add glow effect for highly connected nodes
+                if (node.connectionCount > 10) {
+                    const gradient = ctx.createRadialGradient(node.x, node.y, 0, node.x, node.y, node.radius * 1.5);
+                    const baseColor = node.type === 'person' ? '#4a90e2' : (node.type === 'company' ? '#7ed321' : '#e67e22');
+                    gradient.addColorStop(0, baseColor + 'FF');
+                    gradient.addColorStop(0.5, baseColor + '40');
+                    gradient.addColorStop(1, baseColor + '00');
+
+                    ctx.beginPath();
+                    ctx.arc(node.x, node.y, node.radius * 1.5, 0, Math.PI * 2);
+                    ctx.fillStyle = gradient;
+                    ctx.fill();
+                }
 
                 ctx.beginPath();
                 ctx.arc(node.x, node.y, node.radius, 0, Math.PI * 2);
@@ -279,20 +316,33 @@ export default function NetworkVisualization() {
                 ctx.fillStyle = fillColor;
                 ctx.fill();
 
-                // Node outline
-                ctx.strokeStyle = '#fff';
-                ctx.lineWidth = isSelected ? 4 : (isConnectedToSelected ? 3 : 2);
+                // Node outline - thicker for highly connected nodes
+                const outlineWidth = isSelected ? 5 : (isConnectedToSelected ? 4 : Math.min(2 + node.connectionCount / 10, 4));
+                ctx.strokeStyle = node.connectionCount > 10 ? '#ffd700' : '#fff'; // Gold outline for highly connected
+                ctx.lineWidth = outlineWidth;
                 ctx.stroke();
 
                 // Reset opacity
                 ctx.globalAlpha = 1;
 
-                // Draw labels (always visible for selected and connected nodes)
-                if (!selectedNode || isSelected || isConnectedToSelected) {
-                    ctx.fillStyle = '#fff';
-                    ctx.font = '12px sans-serif';
+                // Draw labels (always visible for selected, connected, and highly connected nodes)
+                if (!selectedNode || isSelected || isConnectedToSelected || node.connectionCount > 8) {
+                    // Larger font for highly connected nodes
+                    const fontSize = node.connectionCount > 15 ? 14 : (node.connectionCount > 8 ? 13 : 12);
+                    const fontWeight = node.connectionCount > 10 ? 'bold ' : '';
+                    ctx.font = `${fontWeight}${fontSize}px sans-serif`;
+
+                    // Brighter text for highly connected nodes
+                    ctx.fillStyle = node.connectionCount > 10 ? '#ffff00' : '#fff';
                     ctx.textAlign = 'center';
                     ctx.fillText(node.name, node.x, node.y + node.radius + 15);
+
+                    // Show connection count for highly connected nodes
+                    if (node.connectionCount > 10) {
+                        ctx.font = '10px sans-serif';
+                        ctx.fillStyle = '#ffd700';
+                        ctx.fillText(`(${node.connectionCount})`, node.x, node.y + node.radius + 28);
+                    }
                 }
             });
 
@@ -311,7 +361,7 @@ export default function NetworkVisualization() {
                 cancelAnimationFrame(animationRef.current);
             }
         };
-    }, [graphData, selectedNode]);
+    }, [graphData, selectedNode, searchTerm, filters]);
 
     // Helper functions for touch/mouse position
     const getEventPosition = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
@@ -339,7 +389,7 @@ export default function NetworkVisualization() {
     };
 
     const getNodeAt = (x: number, y: number): Node | null => {
-        return nodesRef.current.find((node) => {
+        return nodesRef.current.filter(isNodeVisible).find((node) => {
             const dx = node.x - x;
             const dy = node.y - y;
             return Math.sqrt(dx * dx + dy * dy) <= node.radius;
@@ -489,6 +539,36 @@ export default function NetworkVisualization() {
         camera.zoom = Math.max(0.1, Math.min(3, camera.zoom * zoomFactor));
     };
 
+    // Helper to determine if a node should be visible given current search/filter (selected node is always visible)
+    const isNodeVisible = (node: Node): boolean => {
+        if (selectedNode && graphData) {
+            // Always show the selected node itself
+            if (node.id === selectedNode.id) return true;
+
+            // Show nodes directly connected to the selected node (ignore search term)
+            const isConnected = graphData.relationships.some((rel) =>
+                (rel.from === selectedNode.id && rel.to === node.id) ||
+                (rel.to === selectedNode.id && rel.from === node.id)
+            );
+            if (isConnected) {
+                // Respect type filters so user can still hide entire categories
+                return filters[node.type as 'person' | 'company' | 'fund'];
+            }
+        }
+
+        // Regular filtering when nothing selected (or not connected)
+        if (!filters[node.type as 'person' | 'company' | 'fund']) return false;
+        if (searchTerm.trim()) {
+            return node.name.toLowerCase().includes(searchTerm.toLowerCase());
+        }
+        return true;
+    };
+
+    // Toggle helper for filters
+    const toggleFilter = (type: 'person' | 'company' | 'fund') => {
+        setFilters(prev => ({ ...prev, [type]: !prev[type] }));
+    };
+
     if (loading) {
         return (
             <div className="flex items-center justify-center h-full w-full bg-gray-900">
@@ -514,6 +594,29 @@ export default function NetworkVisualization() {
             >
                 <Image src="/images/brain_transparent.webp" alt="Return to homepage" width={32} height={32} />
             </Link>
+
+            <div className="absolute top-4 left-20 bg-gray-800 p-2 rounded-lg flex flex-col sm:flex-row sm:items-center gap-2 z-20">
+                <input
+                    type="text"
+                    placeholder="Search..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="bg-gray-700 text-white text-xs px-2 py-1 rounded focus:outline-none"
+                />
+                <div className="flex items-center gap-2 text-xs text-gray-300">
+                    {(['person', 'company', 'fund'] as const).map((type) => (
+                        <label key={type} className="flex items-center gap-1 cursor-pointer select-none">
+                            <input
+                                type="checkbox"
+                                checked={filters[type]}
+                                onChange={() => toggleFilter(type)}
+                                className="accent-cyan-400 h-3 w-3"
+                            />
+                            <span className="capitalize">{type}</span>
+                        </label>
+                    ))}
+                </div>
+            </div>
 
             <canvas
                 ref={canvasRef}
@@ -579,6 +682,66 @@ export default function NetworkVisualization() {
                     >
                         Close
                     </button>
+                </div>
+            )}
+
+            {/* Legend for prominence indicators */}
+            <div className="absolute bottom-4 left-4 bg-gray-800 p-3 rounded-lg border border-gray-600 text-xs">
+                <h4 className="text-white font-medium mb-2">Network Prominence</h4>
+                <div className="space-y-1 text-gray-300">
+                    <div className="flex items-center gap-2">
+                        <div className="w-4 h-4 rounded-full bg-white border-2 border-yellow-400"></div>
+                        <span>Highly connected (10+ links)</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <div className="w-3 h-3 rounded-full bg-white"></div>
+                        <span>Standard connections</span>
+                    </div>
+                    <div className="text-yellow-400">Larger nodes = more connections</div>
+                </div>
+                <button
+                    onClick={() => setShowTopConnected(!showTopConnected)}
+                    className="mt-2 text-cyan-400 hover:text-cyan-300 text-xs"
+                >
+                    {showTopConnected ? 'Hide' : 'Show'} Top Connected
+                </button>
+            </div>
+
+            {/* Top Connected Panel */}
+            {showTopConnected && graphData && (
+                <div className="absolute bottom-4 right-4 bg-gray-800 p-3 rounded-lg border border-gray-600 max-w-xs">
+                    <h4 className="text-white font-medium mb-2 text-sm">Most Connected Entities</h4>
+                    <div className="space-y-1 max-h-64 overflow-y-auto">
+                        {nodesRef.current
+                            .sort((a, b) => b.connectionCount - a.connectionCount)
+                            .slice(0, 15)
+                            .map((node, index) => (
+                                <div
+                                    key={node.id}
+                                    className="flex items-center justify-between text-xs cursor-pointer hover:bg-gray-700 p-1 rounded"
+                                    onClick={() => {
+                                        setSelectedNode(node);
+                                        // Center camera on node
+                                        const camera = cameraRef.current;
+                                        camera.x = window.innerWidth / 2 - node.x * camera.zoom;
+                                        camera.y = window.innerHeight / 2 - node.y * camera.zoom;
+                                    }}
+                                >
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-gray-400">#{index + 1}</span>
+                                        <span className={`
+                                            ${node.type === 'person' ? 'text-blue-400' : ''}
+                                            ${node.type === 'company' ? 'text-green-400' : ''}
+                                            ${node.type === 'fund' ? 'text-orange-400' : ''}
+                                        `}>
+                                            {node.name}
+                                        </span>
+                                    </div>
+                                    <span className="text-yellow-400 font-medium">{node.connectionCount}</span>
+                                </div>
+                            ))
+                        }
+                    </div>
                 </div>
             )}
         </div>
