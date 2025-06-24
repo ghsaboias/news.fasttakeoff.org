@@ -18,11 +18,20 @@ if (!clerkSecretKey && !isBuildTime) {
     throw new Error('CLERK_SECRET_KEY environment variable is not set');
 }
 
-// Initialize Stripe with fetch-based client
-const stripe = new Stripe(stripeSecretKey || '', {
-    apiVersion: '2025-05-28.basil',
-    httpClient: Stripe.createFetchHttpClient(),
-});
+// Initialize Stripe lazily at runtime
+let stripe: Stripe | null = null;
+function getStripe(): Stripe {
+    if (!stripe) {
+        if (!stripeSecretKey) {
+            throw new Error('STRIPE_SECRET_KEY environment variable is not set');
+        }
+        stripe = new Stripe(stripeSecretKey, {
+            apiVersion: '2025-05-28.basil',
+            httpClient: Stripe.createFetchHttpClient(),
+        });
+    }
+    return stripe;
+}
 
 // Helper to read raw body from ReadableStream
 async function getRawBody(req: Request) {
@@ -65,7 +74,8 @@ export async function POST(req: Request) {
     // Verify webhook signature using Stripe SDK
     let event: Stripe.Event;
     try {
-        event = stripe.webhooks.constructEvent(rawBody, sig, webhookSecret || '');
+        const stripeInstance = getStripe();
+        event = stripeInstance.webhooks.constructEvent(rawBody, sig, webhookSecret || '');
     } catch (err) {
         console.error('Webhook signature verification failed:', err);
         return NextResponse.json({ error: 'Invalid webhook signature' }, { status: 400 });
