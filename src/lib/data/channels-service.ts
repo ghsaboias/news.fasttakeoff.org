@@ -40,53 +40,75 @@ export class ChannelsService {
     async fetchAllChannelsFromAPI(): Promise<DiscordChannel[]> {
         const guildId = this.env.DISCORD_GUILD_ID;
         const url = `${API.DISCORD.BASE_URL}/guilds/${guildId}/channels`;
-        try {
-            console.log(`[Discord] Fetching channels for guild: ${guildId}`);
 
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout
+        let attempts = 0;
+        const maxAttempts = 3;
 
-            const response = await fetch(url, {
-                headers: {
-                    Authorization: this.env.DISCORD_TOKEN || '',
-                    'User-Agent': API.DISCORD.USER_AGENT,
-                    'Content-Type': 'application/json',
-                },
-                signal: controller.signal
-            });
+        while (attempts < maxAttempts) {
+            try {
+                console.log(`[Discord] Fetching channels for guild: ${guildId} (attempt ${attempts + 1}/${maxAttempts})`);
 
-            clearTimeout(timeoutId);
-            console.log(`[Discord] Response status: ${response.status}`);
-            console.log(`[Discord] Response ok: ${response.ok}`);
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout
 
-            if (response.status === 429) {
-                const retryAfter = parseFloat(response.headers.get('retry-after') || '1') * 1000;
-                console.log(`[Discord] Rate limited, retrying after ${retryAfter}ms`);
-                return [];
+                const response = await fetch(url, {
+                    headers: {
+                        Authorization: this.env.DISCORD_TOKEN || '',
+                        'User-Agent': API.DISCORD.USER_AGENT,
+                        'Content-Type': 'application/json',
+                    },
+                    signal: controller.signal
+                });
+
+                clearTimeout(timeoutId);
+                console.log(`[Discord] Response status: ${response.status}`);
+                console.log(`[Discord] Response ok: ${response.ok}`);
+
+                if (response.status === 429) {
+                    const retryAfter = parseFloat(response.headers.get('retry-after') || '1') * 1000;
+                    console.log(`[Discord] Rate limited, retrying after ${retryAfter}ms`);
+                    return []; // Return empty for rate limiting - don't retry immediately
+                }
+
+                if (!response.ok) {
+                    const errorBody = await response.text();
+                    console.error(`[CHANNELS] Discord API Error Details (attempt ${attempts + 1}/${maxAttempts}):`);
+                    console.error(`  Guild ID: ${guildId}`);
+                    console.error(`  Status: ${response.status}`);
+                    console.error(`  Status Text: ${response.statusText}`);
+                    console.error(`  Headers: ${JSON.stringify(Object.fromEntries(response.headers.entries()))}`);
+                    console.error(`  Error Body: ${errorBody}`);
+                    console.error(`  Request URL: ${url}`);
+                    console.error(`  Token present: ${!!this.env.DISCORD_TOKEN}`);
+                    console.error(`  Token prefix: ${this.env.DISCORD_TOKEN ? this.env.DISCORD_TOKEN.substring(0, 10) + '...' : 'NONE'}`);
+
+                    // Throw error to trigger retry logic
+                    throw new Error(`Discord API error: ${response.status} - ${errorBody}`);
+                }
+
+                const channels = await response.json();
+                console.log(`[CHANNELS] Raw channels fetched: ${channels.length}`);
+                return channels;
+
+            } catch (error) {
+                attempts++;
+                console.error(`[Discord] FETCH ERROR (attempt ${attempts}/${maxAttempts}):`, error);
+                console.error(`[Discord] Error type:`, typeof error);
+                console.error(`[Discord] Error message:`, error instanceof Error ? error.message : 'Unknown error');
+
+                if (attempts === maxAttempts) {
+                    console.error(`[Discord] Max retry attempts reached, throwing error`);
+                    throw error;
+                }
+
+                // Wait before retrying (exponential backoff)
+                const delay = Math.min(1000 * Math.pow(2, attempts - 1), 5000);
+                console.log(`[Discord] Retrying channels fetch after ${delay}ms...`);
+                await new Promise(resolve => setTimeout(resolve, delay));
             }
-            if (!response.ok) {
-                const errorBody = await response.text();
-                console.error(`[CHANNELS] Discord API Error Details:`);
-                console.error(`  Guild ID: ${guildId}`);
-                console.error(`  Status: ${response.status}`);
-                console.error(`  Status Text: ${response.statusText}`);
-                console.error(`  Headers: ${JSON.stringify(Object.fromEntries(response.headers.entries()))}`);
-                console.error(`  Error Body: ${errorBody}`);
-                console.error(`  Request URL: ${url}`);
-                console.error(`  Token present: ${!!this.env.DISCORD_TOKEN}`);
-                console.error(`  Token prefix: ${this.env.DISCORD_TOKEN ? this.env.DISCORD_TOKEN.substring(0, 10) + '...' : 'NONE'}`);
-                throw new Error(`Discord API error: ${response.status} - ${errorBody}`);
-            }
-
-            const channels = await response.json();
-            console.log(`[CHANNELS] Raw channels fetched: ${channels.length}`);
-            return channels;
-        } catch (error) {
-            console.error(`[Discord] FETCH ERROR:`, error);
-            console.error(`[Discord] Error type:`, typeof error);
-            console.error(`[Discord] Error message:`, error instanceof Error ? error.message : 'Unknown error');
-            return [];
         }
+
+        throw new Error('Unreachable code');
     }
 
     async getChannels(): Promise<DiscordChannel[]> {
