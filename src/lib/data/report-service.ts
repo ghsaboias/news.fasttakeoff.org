@@ -1,6 +1,7 @@
 import { TIME, TimeframeKey } from '@/lib/config';
 import { DiscordMessage, Report } from '@/lib/types/core';
 import { Cloudflare } from '../../../worker-configuration';
+import { FacebookService } from '../facebook-service';
 import { InstagramService } from '../instagram-service';
 import { pingSearchEngines } from '../seo/ping-search-engines';
 import { TwitterService } from '../twitter-service';
@@ -13,6 +14,7 @@ export class ReportService {
     private messagesService: MessagesService;
     private channelsService: ChannelsService;
     private instagramService: InstagramService;
+    private facebookService: FacebookService;
     private twitterService: TwitterService;
     private env: Cloudflare.Env;
 
@@ -21,6 +23,7 @@ export class ReportService {
         this.messagesService = new MessagesService(env);
         this.channelsService = new ChannelsService(env);
         this.instagramService = new InstagramService(env);
+        this.facebookService = new FacebookService(env);
         this.twitterService = new TwitterService(env);
     }
 
@@ -226,6 +229,7 @@ export class ReportService {
             const topReport = generatedReports.sort((a, b) => (b.messageCount || 0) - (a.messageCount || 0))[0];
             console.log(`[REPORTS] Posting top report: ${topReport.channelName} with ${topReport.messageCount} sources.`);
 
+            // Post to Instagram
             try {
                 await this.instagramService.postNews(topReport);
                 console.log(`[REPORTS] Successfully posted report ${topReport.reportId} to Instagram.`);
@@ -233,6 +237,15 @@ export class ReportService {
                 console.error(`[REPORTS] Failed to post report ${topReport.reportId} to Instagram:`, err);
             }
 
+            // Post to Facebook
+            try {
+                await this.facebookService.postNews(topReport);
+                console.log(`[REPORTS] Successfully posted report ${topReport.reportId} to Facebook.`);
+            } catch (err: unknown) {
+                console.error(`[REPORTS] Failed to post report ${topReport.reportId} to Facebook:`, err);
+            }
+
+            // Post to Twitter
             try {
                 // Use threaded tweet for better engagement
                 await this.twitterService.postThreadedTweet(topReport);
