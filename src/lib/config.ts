@@ -119,6 +119,22 @@ export const TIME = {
     },
 };
 
+// Retry configuration for external API calls
+export const RETRY = {
+    MESSAGES: {
+        // Maximum attempts for updateMessages operation
+        MAX_ATTEMPTS: 3,
+        // Maximum attempts per individual channel
+        MAX_ATTEMPTS_PER_CHANNEL: 2,
+        // Base delay for exponential backoff (ms)
+        BASE_DELAY: 1000,
+        // Maximum delay cap (ms)
+        MAX_DELAY: 30000,
+        // Jitter range for randomization (ms)
+        JITTER_RANGE: 1000,
+    },
+};
+
 // AI/LLM configuration
 export const AI = {
     REPORT_GENERATION: {

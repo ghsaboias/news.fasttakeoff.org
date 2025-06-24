@@ -1,4 +1,4 @@
-import { API, CACHE, DISCORD, TIME, TimeframeKey } from '@/lib/config';
+import { API, CACHE, DISCORD, RETRY, TIME, TimeframeKey } from '@/lib/config';
 import { CachedMessages, DiscordMessage } from '@/lib/types/core';
 import { Cloudflare } from '../../../worker-configuration';
 import { CacheManager } from '../cache-utils';
@@ -253,83 +253,159 @@ export class MessagesService {
         await this.cacheManager.put('MESSAGES_CACHE', cacheKey, safeData, CACHE.TTL.MESSAGES);
     }
 
-    async updateMessages(): Promise<void> {
-        console.log(`[MESSAGES] Starting updateMessages...`);
-        const channels = await this.channelsService.getChannels();
+    /**
+     * Retry wrapper with exponential backoff for updateMessages operations
+     */
+    private async withRetry<T>(
+        operation: () => Promise<T>,
+        context: string,
+        maxAttempts: number = RETRY.MESSAGES.MAX_ATTEMPTS
+    ): Promise<T> {
+        let attempts = 0;
+        let lastError: Error;
 
-        const last24Hours = new Date(Date.now() - (24 * 60 * 60 * 1000)); // 24 hours ago in milliseconds
-        let fetchedAny = false;
-        let totalRawMessages = 0;
-        let totalBotMessages = 0;
-        const channelResults: Array<{ name: string, raw: number, bot: number, since: string }> = [];
+        while (attempts < maxAttempts) {
+            try {
+                return await operation();
+            } catch (error) {
+                attempts++;
+                lastError = error as Error;
 
-        for (const channel of channels) {
-            const cached = await this.getAllCachedMessagesForChannel(channel.id);
-            const since = cached?.lastMessageTimestamp ? new Date(cached.lastMessageTimestamp) : last24Hours;
-            const discordEpoch = 1420070400000; // 2015-01-01T00:00:00.000Z
-            const snowflake = BigInt(Math.floor(since.getTime() - discordEpoch)) << BigInt(22); // Shift 22 bits for worker/thread IDs
-            const urlBase = `${API.DISCORD.BASE_URL}/channels/${channel.id}/messages?limit=${DISCORD.MESSAGES.BATCH_SIZE}`;
-            let after = snowflake.toString();
-            const allMessages: DiscordMessage[] = [];
-            let channelRawCount = 0;
+                console.error(`[MESSAGES] ${context} failed (attempt ${attempts}/${maxAttempts}):`, error);
 
-            while (true) {
-                const url = `${urlBase}&after=${after}`;
-                const response = await fetch(url, {
-                    headers: {
-                        Authorization: this.env.DISCORD_TOKEN || '',
-                        'User-Agent': API.DISCORD.USER_AGENT,
-                        'Content-Type': 'application/json',
-                    }
-                });
-
-                if (!response.ok) {
-                    const errorBody = await response.text();
-                    console.error(`[MESSAGES] Discord API Error Details:`);
-                    console.error(`  Channel: ${channel.name} (${channel.id})`);
-                    console.error(`  Status: ${response.status}`);
-                    console.error(`  Status Text: ${response.statusText}`);
-                    console.error(`  Headers: ${JSON.stringify(Object.fromEntries(response.headers.entries()))}`);
-                    console.error(`  Error Body: ${errorBody}`);
-                    console.error(`  Request URL: ${url}`);
-                    throw new Error(`[MESSAGES] Discord API error for ${channel.id}: ${response.status} - ${errorBody}`);
+                if (attempts === maxAttempts) {
+                    throw lastError;
                 }
 
-                const messages = await response.json();
-                if (!messages.length) break; // No more messages to fetch
+                // Calculate delay with exponential backoff + jitter
+                const baseDelay = Math.min(
+                    Math.pow(2, attempts - 1) * RETRY.MESSAGES.BASE_DELAY,
+                    RETRY.MESSAGES.MAX_DELAY
+                );
+                const jitter = Math.random() * RETRY.MESSAGES.JITTER_RANGE;
+                const delay = baseDelay + jitter;
 
-                channelRawCount += messages.length;
-                const botMessages = this.messageFilter.byBot(messages);
-                allMessages.push(...botMessages);
-                console.log(`[MESSAGES] Channel ${channel.name}: ${botMessages.length} bot messages, total ${allMessages.length}`);
-
-                after = messages[0].id; // Use the newest message ID for the next batch
-            }
-
-            totalRawMessages += channelRawCount;
-            totalBotMessages += allMessages.length;
-            channelResults.push({
-                name: channel.name,
-                raw: channelRawCount,
-                bot: allMessages.length,
-                since: since.toISOString()
-            });
-
-            if (allMessages.length > 0) {
-                fetchedAny = true;
-                const cachedMessages = cached?.messages || [];
-                const updated = [...new Map([...cachedMessages, ...allMessages].map(m => [m.id, m])).values()]
-                    .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
-                await this.cacheMessages(channel.id, updated, channel.name);
+                // Special handling for Discord rate limits
+                if (error instanceof Error && error.message.includes('Rate limited')) {
+                    const retryAfter = this.extractRetryAfter(error.message) || delay;
+                    console.log(`[MESSAGES] Rate limited, waiting ${retryAfter}ms before retry ${attempts + 1}/${maxAttempts}`);
+                    await new Promise(resolve => setTimeout(resolve, retryAfter));
+                } else {
+                    console.log(`[MESSAGES] Retrying ${context} in ${Math.round(delay)}ms (attempt ${attempts + 1}/${maxAttempts})`);
+                    await new Promise(resolve => setTimeout(resolve, delay));
+                }
             }
         }
 
-        if (!fetchedAny) {
-            console.error(`[MESSAGES] FAILURE CONTEXT: Processed ${channels.length} channels, total raw: ${totalRawMessages}, total bot: ${totalBotMessages}`);
-            console.error(`[MESSAGES] Channel breakdown:`, channelResults);
-            throw new Error('[MESSAGES] No messages fetched across all channels—possible API failure');
-        }
-        console.log('[MESSAGES] Update completed');
+        throw lastError!;
+    }
+
+    /**
+     * Extract retry-after value from error message if available
+     */
+    private extractRetryAfter(errorMessage: string): number | null {
+        const match = errorMessage.match(/retry[_\s]after[:\s]*(\d+(?:\.\d+)?)/i);
+        return match ? parseFloat(match[1]) * 1000 : null;
+    }
+
+    async updateMessages(): Promise<void> {
+        return this.withRetry(async () => {
+            console.log(`[MESSAGES] Starting updateMessages...`);
+            const channels = await this.channelsService.getChannels();
+
+            const last24Hours = new Date(Date.now() - (24 * 60 * 60 * 1000)); // 24 hours ago in milliseconds
+            let fetchedAny = false;
+            let totalRawMessages = 0;
+            let totalBotMessages = 0;
+            const channelResults: Array<{ name: string, raw: number, bot: number, since: string, error?: string }> = [];
+
+            for (const channel of channels) {
+                try {
+                    await this.withRetry(async () => {
+                        const cached = await this.getAllCachedMessagesForChannel(channel.id);
+                        const since = cached?.lastMessageTimestamp ? new Date(cached.lastMessageTimestamp) : last24Hours;
+                        const discordEpoch = 1420070400000; // 2015-01-01T00:00:00.000Z
+                        const snowflake = BigInt(Math.floor(since.getTime() - discordEpoch)) << BigInt(22); // Shift 22 bits for worker/thread IDs
+                        const urlBase = `${API.DISCORD.BASE_URL}/channels/${channel.id}/messages?limit=${DISCORD.MESSAGES.BATCH_SIZE}`;
+                        let after = snowflake.toString();
+                        const allMessages: DiscordMessage[] = [];
+                        let channelRawCount = 0;
+
+                        while (true) {
+                            const url = `${urlBase}&after=${after}`;
+                            const response = await fetch(url, {
+                                headers: {
+                                    Authorization: this.env.DISCORD_TOKEN || '',
+                                    'User-Agent': API.DISCORD.USER_AGENT,
+                                    'Content-Type': 'application/json',
+                                }
+                            });
+
+                            if (response.status === 429) {
+                                const retryAfter = parseFloat(response.headers.get('retry-after') || '1') * 1000;
+                                throw new Error(`Rate limited, retry after ${retryAfter}ms`);
+                            }
+
+                            if (!response.ok) {
+                                const errorBody = await response.text();
+                                console.error(`[MESSAGES] Discord API Error Details:`);
+                                console.error(`  Channel: ${channel.name} (${channel.id})`);
+                                console.error(`  Status: ${response.status}`);
+                                console.error(`  Status Text: ${response.statusText}`);
+                                console.error(`  Headers: ${JSON.stringify(Object.fromEntries(response.headers.entries()))}`);
+                                console.error(`  Error Body: ${errorBody}`);
+                                console.error(`  Request URL: ${url}`);
+                                throw new Error(`Discord API error for ${channel.id}: ${response.status} - ${errorBody}`);
+                            }
+
+                            const messages = await response.json();
+                            if (!messages.length) break; // No more messages to fetch
+
+                            channelRawCount += messages.length;
+                            const botMessages = this.messageFilter.byBot(messages);
+                            allMessages.push(...botMessages);
+                            console.log(`[MESSAGES] Channel ${channel.name}: ${botMessages.length} bot messages, total ${allMessages.length}`);
+
+                            after = messages[0].id; // Use the newest message ID for the next batch
+                        }
+
+                        totalRawMessages += channelRawCount;
+                        totalBotMessages += allMessages.length;
+                        channelResults.push({
+                            name: channel.name,
+                            raw: channelRawCount,
+                            bot: allMessages.length,
+                            since: since.toISOString()
+                        });
+
+                        if (allMessages.length > 0) {
+                            fetchedAny = true;
+                            const cachedMessages = cached?.messages || [];
+                            const updated = [...new Map([...cachedMessages, ...allMessages].map(m => [m.id, m])).values()]
+                                .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+                            await this.cacheMessages(channel.id, updated, channel.name);
+                        }
+                    }, `Channel ${channel.name} processing`, RETRY.MESSAGES.MAX_ATTEMPTS_PER_CHANNEL); // 2 retries per channel
+                } catch (error) {
+                    console.error(`[MESSAGES] Failed to process channel ${channel.name} after all retries:`, error);
+                    channelResults.push({
+                        name: channel.name,
+                        raw: 0,
+                        bot: 0,
+                        since: last24Hours.toISOString(),
+                        error: error instanceof Error ? error.message : String(error)
+                    });
+                    // Continue with other channels rather than failing entirely
+                }
+            }
+
+            if (!fetchedAny) {
+                console.error(`[MESSAGES] FAILURE CONTEXT: Processed ${channels.length} channels, total raw: ${totalRawMessages}, total bot: ${totalBotMessages}`);
+                console.error(`[MESSAGES] Channel breakdown:`, channelResults);
+                throw new Error('[MESSAGES] No messages fetched across all channels—possible API failure');
+            }
+            console.log('[MESSAGES] Update completed');
+        }, 'updateMessages operation', RETRY.MESSAGES.MAX_ATTEMPTS);
     }
 
     async listMessageKeys(): Promise<{ name: string }[]> {
