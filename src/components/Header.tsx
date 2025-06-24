@@ -35,6 +35,9 @@ export default function Header() {
                 <Link href="/current-events" className="text-sm font-medium hover:underline">
                     Current Events
                 </Link>
+                <Link href="/message-activity" className="text-sm font-medium hover:underline">
+                    Heatmap
+                </Link>
                 <Link href="/news-globe" className="text-sm font-medium hover:underline">
                     News Globe
                 </Link>
@@ -79,6 +82,9 @@ export default function Header() {
                                     }
                                     <Link href="/current-events" className="text-sm font-medium hover:underline">
                                         Current Events
+                                    </Link>
+                                    <Link href="/message-activity" className="text-sm font-medium hover:underline">
+                                        Heatmap
                                     </Link>
                                     <Link href="/news-globe" className="text-sm font-medium hover:underline">
                                         News Globe
@@ -134,6 +140,9 @@ export default function Header() {
                                     }
                                     <Link href="/current-events" className="text-sm font-medium hover:underline">
                                         Current Events
+                                    </Link>
+                                    <Link href="/message-activity" className="text-sm font-medium hover:underline">
+                                        Heatmap
                                     </Link>
                                     <Link href="/news-globe" className="text-sm font-medium hover:underline">
                                         News Globe
