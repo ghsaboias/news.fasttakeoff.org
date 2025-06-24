@@ -1,6 +1,7 @@
 import { Report } from '@/lib/types/core';
 import { Cloudflare, KVNamespace } from '../../worker-configuration';
-import { formatTime } from './utils';
+import { URLs } from './config';
+import { countTwitterCharacters, truncateForTwitter } from './utils/twitter-utils';
 
 const TWITTER_API_URL = 'https://api.twitter.com/2/tweets';
 const TOKEN_URL = 'https://api.twitter.com/2/oauth2/token'; // Twitter token endpoint
@@ -24,6 +25,13 @@ interface TwitterTokenSuccessResponse {
 interface TwitterTokenErrorResponse {
     error: string;
     error_description?: string;
+}
+
+interface TwitterApiResponse {
+    data: {
+        id: string;
+        text: string;
+    };
 }
 
 export class TwitterService {
@@ -147,43 +155,132 @@ export class TwitterService {
     }
 
     /**
-     * Posts a tweet using a valid access token obtained from KV (refreshes if needed).
+     * Extracts content for the second tweet (simplified like Instagram but with Twitter limits)
      */
-    async postTweet(report: Report): Promise<void> {
+    private extractFirstParagraph(body: string, reportUrl: string): string {
+        // Simple approach: take the first paragraph, just like Instagram does
+        const paragraphs = body.split('\n\n').filter(p => p.trim().length > 0);
+
+        if (paragraphs.length === 0) return '';
+
+        const firstParagraph = paragraphs[0].trim();
+
+        // Calculate space available for content (280 - url - separators)
+        const urlSpace = countTwitterCharacters(`\n\n${reportUrl}`);
+        const availableSpace = 280 - urlSpace;
+
+        // If paragraph fits, return it as is
+        if (countTwitterCharacters(firstParagraph) <= availableSpace) {
+            return firstParagraph;
+        }
+
+        // If too long, truncate intelligently
+        return truncateForTwitter(firstParagraph, urlSpace + 4); // +4 for \n\n separators
+    }
+
+    /**
+     * Formats the second tweet with content and link
+     */
+    private formatSecondTweet(content: string, reportUrl: string): string {
+        const baseText = `${content}\n\n${reportUrl}`;
+
+        // Check if it fits within Twitter's limit
+        if (countTwitterCharacters(baseText) <= 280) {
+            return baseText;
+        }
+
+        // If too long, truncate content
+        const urlLength = countTwitterCharacters(`\n\n${reportUrl}`);
+        const availableLength = 280 - urlLength;
+
+        if (availableLength > 50) { // Only truncate if we have reasonable space
+            const truncatedContent = truncateForTwitter(content, urlLength);
+            return `${truncatedContent}\n\n${reportUrl}`;
+        }
+
+        // If content is too short after truncation, just post the link
+        return `Read the full report:\n\n${reportUrl}`;
+    }
+
+    /**
+     * Posts a single tweet
+     */
+    private async postSingleTweet(
+        text: string,
+        accessToken: string,
+        replyToId?: string
+    ): Promise<TwitterApiResponse> {
+        const body: { text: string; reply?: { in_reply_to_tweet_id: string } } = { text };
+        if (replyToId) {
+            body.reply = { in_reply_to_tweet_id: replyToId };
+        }
+
+        const response = await fetch(TWITTER_API_URL, {
+            method: 'POST',
+            headers: {
+                Authorization: `Bearer ${accessToken}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(body),
+        });
+
+        if (!response.ok) {
+            const errorBody = await response.text();
+            throw new Error(`Twitter API error: ${response.status} - ${errorBody}`);
+        }
+
+        return await response.json() as TwitterApiResponse;
+    }
+
+    /**
+     * Posts a threaded tweet for a report
+     */
+    async postThreadedTweet(report: Report): Promise<void> {
         const accessToken = await this.getValidAccessToken();
 
         if (!accessToken) {
-            console.error('[TWITTER] Failed to post tweet: Could not obtain a valid access token after checking/refreshing.');
-            return; // Stop if no valid token
+            console.error('[TWITTER] Failed to post threaded tweet: Could not obtain a valid access token after checking/refreshing.');
+            return;
         }
-
-        const tweetText = `${report.headline}\n\n${formatTime(report?.generatedAt, true)} - ${report?.city}`;
-
 
         try {
-            const response = await fetch(TWITTER_API_URL, {
-                method: 'POST',
-                headers: {
-                    Authorization: `Bearer ${accessToken}`, // Use the obtained valid token
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ text: tweetText }),
-            });
+            const reportUrl = `${URLs.WEBSITE_URL}/current-events/${report.channelId}/${report.reportId}`;
 
-            if (!response.ok) {
-                // General API error handling (refresh is handled by getValidAccessToken)
-                const errorBody = await response.text();
-                console.error(`[TWITTER] API error during post: ${response.status} - ${errorBody}`);
-                return; // Stop execution for this attempt if posting failed
+            // Tweet 1: Headline + context
+            const tweet1Text = report.headline;
+
+            console.log(`[TWITTER] Posting first tweet (${countTwitterCharacters(tweet1Text)} chars): "${tweet1Text.substring(0, 50)}..."`);
+            const tweet1Response = await this.postSingleTweet(tweet1Text, accessToken);
+            const tweet1Id = tweet1Response.data.id;
+
+            console.log(`[TWITTER] First tweet posted successfully: ${tweet1Id}`);
+
+            // Tweet 2: First paragraph + link
+            const firstParagraph = this.extractFirstParagraph(report.body, reportUrl);
+
+            if (firstParagraph) {
+                const tweet2Text = this.formatSecondTweet(firstParagraph, reportUrl);
+
+                console.log(`[TWITTER] Posting second tweet (${countTwitterCharacters(tweet2Text)} chars) as reply to ${tweet1Id}`);
+                const tweet2Response = await this.postSingleTweet(tweet2Text, accessToken, tweet1Id);
+
+                console.log(`[TWITTER] Successfully posted threaded tweet for report ${report.reportId}. Thread: ${tweet1Id} -> ${tweet2Response.data.id}`);
+            } else {
+                console.log(`[TWITTER] No content for second tweet, posted single tweet for report ${report.reportId}: ${tweet1Id}`);
             }
 
-            const responseData = await response.json();
-            console.log('[TWITTER] Successfully posted tweet:', responseData?.data?.id);
-
         } catch (error: unknown) {
-            console.error('[TWITTER] Failed to post tweet (exception): ', error instanceof Error ? error.message : String(error));
-            // Rethrow or handle as needed
-            // throw error;
+            console.error('[TWITTER] Failed to post threaded tweet:', error instanceof Error ? error.message : String(error));
+            throw error;
         }
+    }
+
+    /**
+     * Posts a tweet using a valid access token obtained from KV (refreshes if needed).
+     * @deprecated Use postThreadedTweet instead for better engagement
+     */
+    async postTweet(report: Report): Promise<void> {
+        // For backward compatibility, delegate to threaded tweet
+        await this.postThreadedTweet(report);
     }
 }

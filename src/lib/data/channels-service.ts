@@ -80,7 +80,6 @@ export class ChannelsService {
 
             const channels = await response.json();
             console.log(`[CHANNELS] Raw channels fetched: ${channels.length}`);
-            console.log(`[CHANNELS] Raw channel names: ${channels.map((c: DiscordChannel) => c.name).join(', ')}`);
             return channels;
         } catch (error) {
             console.error(`[Discord] FETCH ERROR:`, error);
