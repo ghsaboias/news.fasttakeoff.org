@@ -107,7 +107,7 @@ export default function MessageHeatmap() {
     // CSS tooltips are much faster - no need for JavaScript handlers
 
     // Memoize expensive calculations (must be before conditional returns)
-    const { filteredChannels, timeLabels } = useMemo(() => {
+    const { filteredChannels, timeLabels, maxCountForScale } = useMemo(() => {
         if (!data?.channels) {
             return {
                 filteredChannels: [],
@@ -115,7 +115,8 @@ export default function MessageHeatmap() {
                     hour,
                     label: `${formatUTCTime(hour)} UTC`,
                     x: (hour / 24) * 100
-                }))
+                })),
+                maxCountForScale: 1
             }
         }
 
@@ -135,6 +136,13 @@ export default function MessageHeatmap() {
         const channelsSorted = channelsFiltered.sort((a, b) => b.totalMessages - a.totalMessages)
         const channelsLimited = channelsSorted.slice(0, channelsToShow)
 
+        // Calculate global maximum for color scaling across all channels
+        const allHourlyCounts = channelsLimited.flatMap(channel =>
+            channel.hourlyData.map(h => h.count)
+        )
+
+        const maxCountForScale = Math.max(...allHourlyCounts, 1) // Use global max, minimum of 1
+
         // Generate time labels (show every 4 hours)
         const timeLabels = CONSTANTS.TIME_LABELS.map(hour => ({
             hour,
@@ -142,7 +150,7 @@ export default function MessageHeatmap() {
             x: (hour / 24) * 100
         }))
 
-        return { filteredChannels: channelsLimited, timeLabels }
+        return { filteredChannels: channelsLimited, timeLabels, maxCountForScale }
     }, [data?.channels, channelFilter, showInactiveChannels, channelsToShow, CONSTANTS.TIME_LABELS])
     const rowHeight = CONSTANTS.CELL_HEIGHT
     const labelHeight = CONSTANTS.LABEL_HEIGHT
@@ -246,9 +254,6 @@ export default function MessageHeatmap() {
                                         const cellX = leftMargin + (hourIndex / 24) * (CONSTANTS.CHART_WIDTH - leftMargin);
                                         const cellWidth = (CONSTANTS.CHART_WIDTH - leftMargin) / 24;
 
-                                        // Use per-channel scale instead of global scale
-                                        const channelMaxCount = Math.max(...channel.hourlyData.map(h => h.count));
-
                                         const utcTime = formatUTCTime(hourData.hour)
 
                                         return (
@@ -258,7 +263,7 @@ export default function MessageHeatmap() {
                                                 y={labelHeight + channelIndex * rowHeight + 4}
                                                 width={cellWidth - 1}
                                                 height={rowHeight - 8}
-                                                fill={getColorIntensity(hourData.count, channelMaxCount)}
+                                                fill={getColorIntensity(hourData.count, maxCountForScale)}
                                                 stroke="#e5e7eb"
                                                 strokeWidth="0.5"
                                                 className="cursor-pointer hover:stroke-gray-400"
