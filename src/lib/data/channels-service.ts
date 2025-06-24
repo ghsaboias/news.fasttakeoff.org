@@ -67,7 +67,9 @@ export class ChannelsService {
                 if (response.status === 429) {
                     const retryAfter = parseFloat(response.headers.get('retry-after') || '1') * 1000;
                     console.log(`[Discord] Rate limited, retrying after ${retryAfter}ms`);
-                    return []; // Return empty for rate limiting - don't retry immediately
+                    await new Promise(resolve => setTimeout(resolve, retryAfter));
+                    attempts++; // Continue the retry loop instead of returning empty
+                    continue;
                 }
 
                 if (!response.ok) {
