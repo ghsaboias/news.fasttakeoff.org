@@ -2,9 +2,11 @@
 
 import { LocalDateTimeFull } from "@/components/utils/LocalDateTime";
 import { DiscordMessage } from "@/lib/types/core";
+import { detectTelegramUrls } from "@/lib/utils";
 import { detectTweetUrls } from "@/lib/utils/twitter-utils";
 import Link from "next/link";
 import MediaPreview from "./MediaPreview";
+import TelegramEmbed from "./TelegramEmbed";
 import TranslationBadge from "./TranslationBadge";
 import TweetEmbed from "./TweetEmbed";
 
@@ -16,14 +18,15 @@ interface MessageItemProps {
 }
 
 export default function MessageItem({ message, index, noAccordion = false, channelId }: MessageItemProps) {
-    // Check if this message contains X/Twitter URLs
+    // Check if this message contains X/Twitter or Telegram URLs
     const isTwitterPost = message.content ? detectTweetUrls(message.content).length > 0 : false;
-    console.log(message)
+    const isTelegramPost = message.content ? detectTelegramUrls(message.content).length > 0 : false;
+    const hasEmbeddableContent = isTwitterPost || isTelegramPost;
 
     const MessageContent = () => (
-        <div className={`px-2 py-6 ${index !== 0 && 'border-t border-soft-border-foreground'}`}>
+        <div className="px-2 py-6 border-b border-soft-border-foreground">
             {/* Content Section */}
-            {!isTwitterPost && <div className="flex flex-col pb-2">
+            {!hasEmbeddableContent && <div className="flex flex-col pb-2">
                 {message.content && (
                     <LocalDateTimeFull
                         dateString={message.timestamp}
@@ -46,14 +49,21 @@ export default function MessageItem({ message, index, noAccordion = false, chann
             </div>}
 
             {/* Tweet Embeds Section */}
-            {message.content && (
+            {message.content && isTwitterPost && (
                 <TweetEmbed
                     content={message.content}
                     channelId={channelId}
                 />
             )}
 
-            {message.embeds?.length && message.embeds.length > 0 && <div className="flex flex-col gap-4 mt-4">
+            {/* Telegram Embeds Section */}
+            {message.content && isTelegramPost && (
+                <TelegramEmbed
+                    content={message.content}
+                />
+            )}
+
+            {message.embeds?.length && message.embeds.length > 0 && <div className="flex flex-col gap-4 mt-4 px-4">
                 {/* Embeds Section */}
                 {message.embeds?.map((embed, embedIndex) => (
                     <div key={embedIndex} className="space-y-2 flex-col gap-4">
@@ -75,7 +85,6 @@ export default function MessageItem({ message, index, noAccordion = false, chann
                         {embed.fields?.length && embed.fields.length > 0 && embed.fields.every(field => !field.value.toLowerCase().includes(message.content?.toLowerCase() || '')) && (
                             <div>
                                 {embed.fields.map((field, fieldIndex) => {
-                                    console.log(field)
                                     if (field.name.includes('Source')) return null;
 
                                     return (
@@ -91,8 +100,8 @@ export default function MessageItem({ message, index, noAccordion = false, chann
                 ))}
             </div>
             }
-            {/* Media Section - Hide if this is a Twitter post (TweetEmbed will handle the media) */}
-            {!isTwitterPost && message.attachments?.length && message.attachments.length > 0 ? (
+            {/* Media Section - Hide if this is a Twitter/Telegram post (embeds will handle the media) */}
+            {!hasEmbeddableContent && message.attachments?.length && message.attachments.length > 0 ? (
                 <div className="space-y-2 mt-2">
                     <h4 className="font-semibold text-sm">Media:</h4>
                     <div className="grid grid-cols-2 gap-4">
