@@ -59,4 +59,56 @@ export function formatThreadPreview(tweets: string[]): string {
         const preview = tweet.length > 50 ? tweet.substring(0, 50) + '...' : tweet;
         return `Tweet ${index + 1} (${charCount} chars): ${preview}`;
     }).join('\n');
+}
+
+/**
+ * Detects X/Twitter URLs in text content
+ */
+export function detectTweetUrls(content: string): string[] {
+    const tweetRegex = /https?:\/\/(?:www\.)?(twitter\.com|x\.com)\/[^/]+\/status\/\d+(?:\S+)?/gi;
+    return content.match(tweetRegex) || [];
+}
+
+/**
+ * Extracts tweet ID from X/Twitter URL
+ */
+export function extractTweetId(url: string): string | null {
+    const match = url.match(/\/status\/(\d+)/);
+    return match ? match[1] : null;
+}
+
+/**
+ * Validates if a URL is a valid X/Twitter status URL
+ */
+export function isValidTweetUrl(url: string): boolean {
+    const tweetRegex = /^https?:\/\/(?:www\.)?(twitter\.com|x\.com)\/[^/]+\/status\/\d+/i;
+    return tweetRegex.test(url);
+}
+
+/**
+ * Normalizes X/Twitter URL to use x.com domain
+ */
+export function normalizeTweetUrl(url: string): string {
+    return url.replace(/https?:\/\/(?:www\.)?twitter\.com/i, 'https://x.com');
+}
+
+/**
+ * Extracts the source language from a Discord embed footer text
+ * @param footerText - The footer text (e.g., "Translated from: Arabic")
+ * @returns The source language or null if not a translation
+ */
+export function extractSourceLanguage(footerText?: string): string | null {
+    if (!footerText) return null;
+
+    const match = footerText.match(/^Translated from:\s*(.+)$/i);
+    return match ? match[1].trim() : null;
+}
+
+/**
+ * Checks if content is translated based on embed footer
+ * @param footerText - The footer text from Discord embed
+ * @returns boolean indicating if content is translated
+ */
+export function isTranslatedContent(footerText?: string): boolean {
+    return extractSourceLanguage(footerText) !== null;
 } 
