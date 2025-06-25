@@ -80,3 +80,15 @@ h5,
 h6 {
   @apply font-medium tracking-tight;
 }
+
+/* Masonry Grid Styles */
+.masonry-grid {
+  display: flex;
+  margin-left: -1rem; /* Offset for column gap */
+  width: auto;
+}
+
+.masonry-column {
+  padding-left: 1rem; /* Column gap */
+  background-clip: padding-box;
+}
