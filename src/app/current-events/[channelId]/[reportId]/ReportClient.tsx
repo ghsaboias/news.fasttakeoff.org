@@ -219,7 +219,7 @@ export default function ReportClient() {
                                 <div className="border-b border-border" />
                                 <div className="flex flex-col">
                                     {displayedMessages.map((message, index) => (
-                                        <MessageItem key={message.id} message={message} index={index} />
+                                        <MessageItem key={message.id} message={message} index={index} channelId={channelId} />
                                     ))}
                                 </div>
                                 {hasMore && (

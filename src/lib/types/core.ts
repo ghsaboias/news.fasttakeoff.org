@@ -89,6 +89,9 @@ export interface DiscordMessage {
             name: string;
             icon_url?: string;
         };
+        footer?: {
+            text: string;
+        };
     }[];
     referenced_message?: {
         author: {
@@ -252,4 +255,22 @@ export interface SummaryResult {
     selectedStories: SelectedStory[];
     unselectedStories: UnselectedStory[];
     summary: string; // The formatted summary text
+}
+
+export interface TweetEmbed {
+    tweetId: string;
+    url: string;
+    html: string;
+    author_name: string;
+    author_url: string;
+    provider_name: string;
+    provider_url: string;
+    cache_age?: number;
+    width?: number;
+    height?: number;
+    cachedAt: string;
+}
+
+export interface TweetEmbedCache {
+    [tweetId: string]: TweetEmbed;
 } 
