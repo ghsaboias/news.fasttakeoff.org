@@ -6,7 +6,7 @@ A Next.js application aggregating executive orders from the Federal Register API
 
 - **Purpose**: Fetch and display executive orders, monitor Discord channels for bot activity and generate structured reports using a configurable AI provider (currently Gemini 2.5 Flash via OpenRouter).
 - **Deployment**: Hosted at news.fasttakeoff.org via Cloudflare Workers.
-- **Key Integrations**: Federal Register API, Discord API, configurable AI Provider (e.g., Groq, OpenRouter), Clerk for authentication, Stripe for subscriptions, Twitter API, Instagram Graph API.
+- **Key Integrations**: Federal Register API, Discord API, configurable AI Provider (e.g., Groq, OpenRouter), Clerk for authentication, Stripe for subscriptions, Twitter API, Instagram Graph API, Facebook Graph API.
 
 ## Technical Details
 
@@ -25,8 +25,9 @@ A Next.js application aggregating executive orders from the Federal Register API
     - OpenRouter: https://openrouter.ai/api/v1
   - Twitter API: https://api.twitter.com/2/
   - Instagram Graph API: https://graph.instagram.com/
-  - SVG Generator: https://svg-generator.gsaboia.workers.dev (for Instagram post images)
-  - Browser Worker: https://browser-worker.gsaboia.workers.dev (for Instagram post image rendering)
+  - Facebook Graph API: https://graph.facebook.com/
+  - Cloudflare Browser Rendering API: https://api.cloudflare.com/client/v4/accounts (for Instagram post image generation)
+  - Cloudflare R2 Storage: https://images.fasttakeoff.org (for image hosting)
 - **Dependencies**: groq-sdk, lucide-react, class-variance-authority, full list in package.json
 - **Configuration**: ESLint (eslint.config.mjs), PostCSS (postcss.config.mjs), TypeScript (tsconfig.json)
 
@@ -119,9 +120,30 @@ Automated aggregation and AI-powered summarization of Brazilian news.
 ```bash
 # Social Media Integration
 INSTAGRAM_ACCESS_TOKEN=<your-instagram-long-lived-access-token>
-INSTAGRAM_ACCOUNT_ID=<your-instagram-account-id>
 TWITTER_CLIENT_ID=<your-twitter-app-client-id>
 TWITTER_CLIENT_SECRET=<your-twitter-client-secret>
+FACEBOOK_APP_ID=<your-facebook-app-id>
+FACEBOOK_APP_SECRET=<your-facebook-app-secret>
+FACEBOOK_PAGE_ID=<your-facebook-page-id>
+FACEBOOK_PAGE_ACCESS_TOKEN=<your-facebook-page-access-token>
+
+# Discord Integration
+DISCORD_TOKEN=<your-discord-bot-token>
+DISCORD_GUILD_ID=<your-guild-id>
+
+# Authentication & Payments
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=<your-clerk-publishable-key>
+CLERK_SECRET_KEY=<your-clerk-secret-key>
+STRIPE_SECRET_KEY=<your-stripe-secret-key>
+STRIPE_PRICE_ID=<your-stripe-price-id>
+STRIPE_WEBHOOK_SECRET=<your-stripe-webhook-secret>
+
+# API Configuration
+SERVER_API_URL=https://news.fasttakeoff.org  # Production URL
+# Use http://localhost:8787 for local development
+
+# Optional Services
+GOOGLE_GEOCODING_API_KEY=<your-google-geocoding-api-key>  # For News Globe
 ```
 
 #### Troubleshooting
@@ -194,6 +216,10 @@ npm run deploy             # Deploy to production
   - `MESSAGES_CACHE`
   - `FEEDS_CACHE`
   - `AUTH_TOKENS`
+  - `GEOCODE_CACHE`
+  - `SUBSCRIPTIONS_CACHE`
+- R2 buckets:
+  - `INSTAGRAM_IMAGES` - Stores generated Instagram post images with 7-day retention
 
 ## License
 
@@ -366,7 +392,16 @@ OPENROUTER_API_KEY=<your-openrouter-api-key>  # If using OpenRouter
 
 # Social Media Integration
 INSTAGRAM_ACCESS_TOKEN=<your-instagram-long-lived-access-token>
-INSTAGRAM_ACCOUNT_ID=<your-instagram-account-id>
+TWITTER_CLIENT_ID=<your-twitter-app-client-id>
+TWITTER_CLIENT_SECRET=<your-twitter-client-secret>
+FACEBOOK_APP_ID=<your-facebook-app-id>
+FACEBOOK_APP_SECRET=<your-facebook-app-secret>
+FACEBOOK_PAGE_ID=<your-facebook-page-id>
+FACEBOOK_PAGE_ACCESS_TOKEN=<your-facebook-page-access-token>
+
+# Cloudflare Services
+CLOUDFLARE_API_TOKEN=<your-cloudflare-api-token>  # For Browser Rendering API
+CLOUDFLARE_ACCOUNT_ID=<your-cloudflare-account-id>  # For Browser Rendering API
 
 # Discord Integration
 DISCORD_TOKEN=<your-discord-bot-token>
@@ -383,9 +418,8 @@ STRIPE_WEBHOOK_SECRET=<your-stripe-webhook-secret>
 SERVER_API_URL=https://news.fasttakeoff.org  # Production URL
 # Use http://localhost:8787 for local development
 
-# Twitter Integration
-TWITTER_CLIENT_ID=<your-twitter-app-client-id>
-TWITTER_CLIENT_SECRET=<your-twitter-client-secret>
+# Optional Services
+GOOGLE_GEOCODING_API_KEY=<your-google-geocoding-api-key>  # For News Globe
 ```
 
 ### Testing and Development
@@ -500,8 +534,18 @@ A new interactive feature that displays news reports as markers on a 3D globe. I
 
 The application can automatically post generated reports to social media platforms:
 
-- **Twitter**: Uses `TwitterService` (`src/lib/twitter-service.ts`) to post reports as tweets. It handles OAuth 2.0 for authentication, storing tokens in a Cloudflare KV namespace (`AUTH_TOKENS`).
-- **Instagram**: Uses `InstagramService` (`src/lib/instagram-service.ts`) to post reports to an Instagram Business account. This includes an image with the report headline overlaid and a caption with the full report details.
+- **Twitter**: Uses `TwitterService` (`src/lib/twitter-service.ts`) to post reports as threaded tweets. It handles OAuth 2.0 for authentication, storing tokens in a Cloudflare KV namespace (`AUTH_TOKENS`).
+- **Instagram**: Uses `InstagramService` (`src/lib/instagram-service.ts`) to post reports to an Instagram Business account. This includes dynamically generated images with the report headline overlaid and a caption with the full report details.
+- **Facebook**: Uses `FacebookService` (`src/lib/facebook-service.ts`) to post reports to a Facebook Page. Posts include the full report content with hashtags and links.
+
+#### Instagram Image Generation Process
+
+The Instagram service uses a modern, integrated approach for image generation:
+
+1. **HTML Generation**: Creates styled HTML directly in the service with the report headline
+2. **Screenshot Generation**: Uses Cloudflare's Browser Rendering API to capture a 1080x1080 JPEG screenshot
+3. **R2 Storage**: Stores the generated image in Cloudflare R2 bucket with 7-day retention
+4. **Instagram Posting**: Uses the R2 public URL to post the image with caption to Instagram
 
 **Automation Note**: Social media posting is automatically triggered as part of the report generation process, which runs on a schedule (see Scheduled Tasks below) and can also be manually triggered.
 
@@ -525,3 +569,9 @@ Key KV namespaces used (defined in `wrangler.toml`):
 - `MESSAGES_CACHE`: Caches messages fetched from Discord channels.
 - `SUBSCRIPTIONS_CACHE`: Caches Stripe subscription data.
 - `AUTH_TOKENS`: Stores OAuth tokens for Twitter API access.
+- `GEOCODE_CACHE`: Caches geocoding results for News Globe.
+- `FEEDS_CACHE`: Caches RSS feed data for Brazil News.
+
+Key R2 buckets used (defined in `wrangler.toml`):
+
+- `INSTAGRAM_IMAGES`: Stores generated Instagram post images with automatic 7-day cleanup.
