@@ -43,6 +43,11 @@ export default function Footer() {
                                 </Link>
                             </li>
                             <li>
+                                <Link href="/message-activity" className="hover:underline">
+                                    Heatmap
+                                </Link>
+                            </li>
+                            <li>
                                 <Link href="/news-globe" className="hover:underline">
                                     News Globe
                                 </Link>
@@ -70,6 +75,11 @@ export default function Footer() {
                             <li>
                                 <a href="https://www.instagram.com/fast.takeoff.news/" className="hover:underline">
                                     Instagram
+                                </a>
+                            </li>
+                            <li>
+                                <a href="https://www.facebook.com/profile.php?id=61577293156084" className="hover:underline">
+                                    Facebook
                                 </a>
                             </li>
                         </ul>
