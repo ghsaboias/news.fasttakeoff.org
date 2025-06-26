@@ -143,12 +143,33 @@ export default function MessageHeatmap() {
 
         const maxCountForScale = Math.max(...allHourlyCounts, 1) // Use global max, minimum of 1
 
-        // Generate time labels (show every 4 hours)
-        const timeLabels = CONSTANTS.TIME_LABELS.map(hour => ({
-            hour,
-            label: `${formatUTCTime(hour)} UTC`,
-            x: (hour / 24) * 100
-        }))
+        // Generate time labels based on the actual data chronology
+        // Show labels every 4 hours in the chronological sequence
+        const timeLabels: Array<{ hour: number; label: string; x: number }> = [];
+
+        if (channelsLimited.length > 0) {
+            // Use the first channel's hourly data as reference for chronological order
+            const referenceHourlyData = channelsLimited[0].hourlyData;
+
+            // Show every 4th hour (positions 0, 4, 8, 12, 16, 20)
+            for (let i = 0; i < 24; i += 4) {
+                if (i < referenceHourlyData.length) {
+                    const hour = referenceHourlyData[i].hour;
+                    timeLabels.push({
+                        hour,
+                        label: `${formatUTCTime(hour)} UTC`,
+                        x: (i / 24) * 100  // Position based on chronological index, not hour number
+                    });
+                }
+            }
+        } else {
+            // Fallback to original behavior if no data
+            timeLabels.push(...CONSTANTS.TIME_LABELS.map(hour => ({
+                hour,
+                label: `${formatUTCTime(hour)} UTC`,
+                x: (hour / 24) * 100
+            })));
+        }
 
         return { filteredChannels: channelsLimited, timeLabels, maxCountForScale }
     }, [data?.channels, channelFilter, showInactiveChannels, channelsToShow, CONSTANTS.TIME_LABELS])
@@ -251,6 +272,7 @@ export default function MessageHeatmap() {
 
                                     {/* Hour cells */}
                                     {channel.hourlyData.map((hourData: HourlyData, hourIndex: number) => {
+                                        // Use hourIndex for positioning (chronological order)
                                         const cellX = leftMargin + (hourIndex / 24) * (CONSTANTS.CHART_WIDTH - leftMargin);
                                         const cellWidth = (CONSTANTS.CHART_WIDTH - leftMargin) / 24;
 
