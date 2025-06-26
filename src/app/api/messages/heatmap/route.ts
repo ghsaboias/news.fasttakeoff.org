@@ -68,10 +68,19 @@ function processMessagesIntoHourlyBuckets(
             hourlyBuckets[hourOfDay]++;
         }
 
-        const hourlyData: HourlyData[] = hourlyBuckets.map((count, hour) => ({
-            hour,
-            count
-        }));
+        // Create hourly data in chronological order for the last 24 hours
+        // Start from current hour - 23 and go to current hour
+        const currentHour = now.getUTCHours();
+        const hourlyData: HourlyData[] = [];
+
+        for (let i = 0; i < 24; i++) {
+            // Calculate the hour, going backwards from current hour
+            const hour = (currentHour - 23 + i + 24) % 24;
+            hourlyData.push({
+                hour,
+                count: hourlyBuckets[hour]
+            });
+        }
 
         result.push({
             channelId: channel.id,
