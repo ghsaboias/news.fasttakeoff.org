@@ -209,15 +209,15 @@ export default function TweetEmbed({ content, channelId, className = '', onEmbed
         return (
             <div
                 ref={containerRef}
-                className={`bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg h-32 ${className}`}
+                className={`border border-soft-border-foreground rounded-lg h-32 ${className}`}
             >
                 {loading ? (
                     <div className="animate-pulse p-4">
-                        <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/4 mb-2"></div>
-                        <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/2"></div>
+                        <div className="h-4 bg-soft-border-foreground rounded w-3/4 mb-2"></div>
+                        <div className="h-4 bg-soft-border-foreground rounded w-1/2"></div>
                     </div>
                 ) : (
-                    <div className="p-4 text-gray-500 dark:text-gray-400 text-sm">
+                    <div className="p-4 text-sm">
                         Tweet will load when visible...
                     </div>
                 )}
