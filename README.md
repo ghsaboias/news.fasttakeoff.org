@@ -4,15 +4,15 @@ A Next.js application aggregating executive orders from the Federal Register API
 
 ## Overview
 
-- **Purpose**: Fetch and display executive orders, monitor Discord channels for bot activity and generate structured reports using a configurable AI provider (currently Gemini 2.5 Flash via OpenRouter).
+- **Purpose**: Fetch and display executive orders, monitor Discord channels for bot activity and generate structured reports using a configurable AI provider (currently Gemini 2.5 Flash via OpenRouter, with Groq/Llama 4 Maverick as alternative).
 - **Deployment**: Hosted at news.fasttakeoff.org via Cloudflare Workers.
 - **Key Integrations**: Federal Register API, Discord API, configurable AI Provider (e.g., Groq, OpenRouter), Clerk for authentication, Stripe for subscriptions, Twitter API, Instagram Graph API, Facebook Graph API.
 
 ## Technical Details
 
-- **Framework**: Next.js 15.2.2 (React 19.0.0)
+- **Framework**: Next.js 15.2.4 (React 19.0.0)
 - **Language**: TypeScript 5.x
-- **Styling**: Tailwind CSS 4.x with custom theming (src/app/globals.css), shadcn/ui components
+- **Styling**: Tailwind CSS 3.4.14 with custom theming (src/app/globals.css), shadcn/ui components
 - **UI Primitives**: Radix UI (@radix-ui/react-\*) for accordion, dialog, select, etc. (often via shadcn/ui)
 - **Deployment**: Cloudflare Workers (wrangler.toml), built with OpenNextJS (@opennextjs/cloudflare)
 - **Authentication**: Clerk (@clerk/nextjs)
@@ -38,7 +38,9 @@ The application's core data handling is managed by services and transformers wit
 - **`src/lib/data/channels-service.ts` (`ChannelsService`)**: Fetches Discord channels from the API, filters them based on criteria (type, emoji prefix, permissions), and caches the results. Essential for identifying relevant channels for news monitoring.
 - **`src/lib/data/messages-service.ts` (`MessagesService`)**: Responsible for fetching messages from specified Discord channels, handling pagination, and caching them. Provides the raw source material for report generation.
 - **`src/lib/data/executive-orders.ts`**: Fetches lists of executive orders and individual order details from the Federal Register API. Implements caching for individual orders and mechanisms to look up orders by number.
-- **`src/lib/data/report-generator-service.ts` (`ReportGeneratorService`)**: Core service that orchestrates the generation of news reports. It retrieves messages, prepares prompts for the AI, calls the AI provider, processes the response, and caches the generated reports. It also handles social media posting through integration with Twitter and Instagram services.
+- **`src/lib/data/report-service.ts` (`ReportService`)**: Core service that orchestrates the generation of news reports. It retrieves messages, prepares prompts for the AI, calls the AI provider, processes the response, and caches the generated reports. It also handles social media posting through integration with Twitter, Instagram, and Facebook services.
+- **`src/lib/utils/report-ai.ts` (`ReportAI`)**: Handles AI interactions for report generation, including prompt preparation, API calls, and response processing.
+- **`src/lib/utils/report-cache.ts` (`ReportCache`)**: Manages report caching operations using Cloudflare KV storage, including storage, retrieval, and cleanup of generated reports.
 - **`src/lib/transformers/executive-orders.ts`**: Transforms raw executive order data fetched from the Federal Register API into a structured `ExecutiveOrder` type used throughout the application, simplifying data handling in the frontend and other services.
 
 ### Common Utilities & API Helpers
@@ -254,14 +256,22 @@ src/
 │   ├── data/             # Core services
 │   │   ├── channels-service.ts      # Discord channel management
 │   │   ├── messages-service.ts      # Discord message handling
-│   │   ├── report-generator-service.ts  # Report generation orchestration
-│   │   ├── report-ai-service.ts     # AI integration for reports
-│   │   ├── report-cache-service.ts  # Report caching logic
+│   │   ├── report-service.ts        # Report generation orchestration
 │   │   ├── executive-orders.ts      # Executive order data handling
 │   │   ├── feeds-service.ts         # RSS feed processing
 │   │   └── rss-service.ts           # RSS feed fetching
+│   ├── utils/            # Utility services
+│   │   ├── report-ai.ts             # AI integration for reports
+│   │   ├── report-cache.ts          # Report caching logic
+│   │   ├── report-utils.ts          # Report-related utilities
+│   │   └── twitter-utils.ts         # Twitter-specific utilities
 │   ├── transformers/     # Data transformation (e.g., executive-orders.ts)
-│   └── types/            # TypeScript interfaces (e.g., core.ts)
+│   ├── types/            # TypeScript interfaces (e.g., core.ts)
+│   ├── instagram-service.ts         # Instagram API integration
+│   ├── twitter-service.ts           # Twitter API integration
+│   ├── facebook-service.ts          # Facebook API integration
+│   ├── ai-config.ts                 # AI provider configuration
+│   └── config.ts                    # Main application configuration
 .gitignore              # Excludes node_modules, .next/, etc.
 cloudflare-env.d.ts     # Cloudflare Workers env typings
 package.json            # Dependencies and scripts
@@ -353,11 +363,25 @@ Generates .open-next/ artifacts and deploys via wrangler.
 
 ### API Routes:
 
-- **/api/reports**: Generates reports from Discord messages via Groq API; GET fetches cached summaries.
+- **/api/reports**: Generates reports from Discord messages via configurable AI provider; GET fetches cached summaries.
 - **/api/channels**: Retrieves guild channels.
 - **/api/geocode**: Geocodes a city name (used by News Globe).
 - **/api/stripe/checkout**: Initiates a Stripe checkout session for subscriptions.
 - **/api/stripe/webhook**: Handles incoming Stripe webhook events (e.g., `checkout.session.completed`).
+- **/api/oembed/twitter**: Provides Twitter OEmbed data for embedded tweets.
+- **/api/linkedin/auth**: LinkedIn OAuth authentication.
+- **/api/linkedin/callback**: LinkedIn OAuth callback handler.
+- **/api/linkedin/test**: LinkedIn API testing endpoint.
+- **/api/messages/heatmap**: Generates message activity heatmap data.
+- **/api/emails**: Email handling and management.
+- **/api/prompt-test**: AI prompt testing and validation.
+
+#### SEO & Content Syndication
+
+- **/api/rss/[feedId]**: RSS feed for specific content categories.
+- **/sitemap.xml**: Main sitemap for SEO.
+- **/sitemap-index.xml**: Sitemap index for large sites.
+- **/news-sitemap.xml**: News-specific sitemap for search engines.
 
 ### Frontend:
 
@@ -365,10 +389,13 @@ Generates .open-next/ artifacts and deploys via wrangler.
 - **/executive-orders**: Lists and details executive orders with pagination and search.
 - **/news-globe**: Shows an interactive 3D globe with geolocated news reports.
 - **/brazil-news**: Displays AI-generated summaries of Brazilian news, with historical archive access.
+- **/message-activity**: Displays message activity heatmap for Discord channels.
+- **/power-network**: Interactive network visualization of political and business relationships.
 - **/profile**: User profile page, shows subscription status and allows users to subscribe.
 - **/sign-in**: User sign-in page (Clerk).
 - **/sign-up**: User sign-up page (Clerk).
 - **/privacy-policy**: Application's privacy policy.
+- **/rss**: RSS feed endpoint for syndication.
 - **/**: Home page featuring an animated hero section, and previews of the latest news reports and executive orders. This page is client-rendered and fetches its data on the client side.
 
 #### Brazil News Display
@@ -420,6 +447,10 @@ SERVER_API_URL=https://news.fasttakeoff.org  # Production URL
 
 # Optional Services
 GOOGLE_GEOCODING_API_KEY=<your-google-geocoding-api-key>  # For News Globe
+
+# LinkedIn Integration (placeholder for future implementation)
+# LINKEDIN_CLIENT_ID=<your-linkedin-client-id>
+# LINKEDIN_CLIENT_SECRET=<your-linkedin-client-secret>
 ```
 
 ### Testing and Development
@@ -521,7 +552,7 @@ The "Current Events" section provides insights into real-time information aggreg
 The application uses [Clerk](https://clerk.com/) for user authentication. Users can sign up, sign in, and manage their profile.
 The profile page also integrates with [Stripe](https://stripe.com/) to allow users to subscribe to a premium plan.
 
-The AI provider for report generation is configurable via `src/lib/config.ts` (defaulting to OpenRouter with Gemini 2.5 Flash).
+The AI provider for report generation is configurable via `src/lib/config.ts` (currently using Gemini 2.5 Flash via OpenRouter as the active provider, with Groq/Llama 4 Maverick as an alternative).
 
 ### News Globe
 
@@ -554,7 +585,7 @@ The Instagram service uses a modern, integrated approach for image generation:
 The application utilizes Cloudflare Workers' scheduled events (cron jobs) for background tasks, managed in `src/lib/cron.ts`. The `wrangler.toml` file defines the specific cron patterns:
 
 - **Hourly Message Updates**: Fetches new messages from Discord channels. Triggered by the cron pattern `"0 * * * *"` (at the start of every hour).
-- **Hourly Report Generation & Social Media Posting**: Generates fresh news reports from collected messages and subsequently posts the top report to Twitter and Instagram. Triggered by the cron pattern `"2 * * * *"` (at 2 minutes past every hour).
+- **Hourly Report Generation & Social Media Posting**: Generates fresh news reports from collected messages and subsequently posts the top report to Twitter, Instagram, and Facebook. Triggered by the cron pattern `"2 * * * *"` (at 2 minutes past every hour).
 - **Manual Triggers**: The cron handler also supports specific string identifiers (e.g., `MESSAGES`, `REPORTS_2H`) for on-demand triggering of these tasks, likely via direct Worker invocation or other scheduled configurations.
 
 ### Caching
