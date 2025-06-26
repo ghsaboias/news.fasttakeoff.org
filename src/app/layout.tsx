@@ -27,6 +27,21 @@ export default function RootLayout({
       <head>
         <link rel='manifest' href='/manifest.json' />
         <link rel='alternate' type='application/rss+xml' title='Fast Takeoff News RSS' href='/rss' />
+
+        {/* Resource Hints for Twitter Embeds Performance */}
+        <link rel='preconnect' href='https://platform.twitter.com' />
+        <link rel='preconnect' href='https://cdn.syndication.twimg.com' />
+        <link rel='preconnect' href='https://abs.twimg.com' />
+        <link rel='preconnect' href='https://pbs.twimg.com' />
+        <link rel='dns-prefetch' href='https://syndication.twitter.com' />
+        <link rel='dns-prefetch' href='https://analytics.twitter.com' />
+
+        {/* Twitter Widget Performance Optimizations */}
+        <meta name="twitter:widgets:autoload" content="off" />
+        <meta name="twitter:widgets:theme" content="light" />
+        <meta name="twitter:dnt" content="on" />
+        <meta name="twitter:widgets:csp" content="on" />
+
         {/* Structured Data */}
         <script type="application/ld+json">
           {JSON.stringify({

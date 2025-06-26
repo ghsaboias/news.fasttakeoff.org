@@ -226,8 +226,8 @@ export default function ReportClient() {
                                     className="masonry-grid"
                                     columnClassName="masonry-column"
                                 >
-                                    {displayedMessages.map((message, index) => (
-                                        <MessageItem key={message.id} message={message} index={index} channelId={channelId} />
+                                    {displayedMessages.map((message) => (
+                                        <MessageItem key={message.id} message={message} channelId={channelId} />
                                     ))}
                                 </Masonry>
                                 {hasMore && (
