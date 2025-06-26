@@ -34,7 +34,6 @@ export default function TweetEmbed({ content, channelId, className = '', onEmbed
     const [isVisible, setIsVisible] = useState(false);
     const [embedFailed, setEmbedFailed] = useState(false);
     const containerRef = useRef<HTMLDivElement>(null);
-    const startTimeRef = useRef<number>(0);
 
     // Intersection Observer for lazy loading
     useEffect(() => {
@@ -87,16 +86,12 @@ export default function TweetEmbed({ content, channelId, className = '', onEmbed
         const tweetUrls = detectTweetUrls(content);
         if (tweetUrls.length === 0) return;
 
-        startTimeRef.current = performance.now();
-
         const fetchEmbeds = async () => {
             setLoading(true);
             setError(null);
             setEmbedFailed(false);
 
             try {
-                const cacheStartTime = performance.now();
-
                 // Check cache first for all URLs
                 const cachedEmbeds: TweetEmbedType[] = [];
                 const urlsToFetch: string[] = [];
@@ -135,7 +130,6 @@ export default function TweetEmbed({ content, channelId, className = '', onEmbed
                 }
 
                 // Fetch only uncached embeds
-                const fetchStartTime = performance.now();
                 const embedPromises = urlsToFetch.map(async (url) => {
                     const params = new URLSearchParams({
                         url,
