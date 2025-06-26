@@ -51,6 +51,7 @@ export async function GET(request: Request) {
         const { searchParams } = new URL(request.url);
         const url = searchParams.get('url');
         const channelId = searchParams.get('channelId');
+        const omitScript = searchParams.get('omit_script') === 'true';
 
         if (!url) {
             throw new Error('Missing url parameter');
@@ -79,7 +80,11 @@ export async function GET(request: Request) {
 
         // Fetch from Twitter's oEmbed API with retry logic
         const normalizedUrl = normalizeTweetUrl(url);
-        const oembedUrl = `https://publish.twitter.com/oembed?url=${encodeURIComponent(normalizedUrl)}`;
+        const oembedParams = new URLSearchParams({ url: normalizedUrl });
+        if (omitScript) {
+            oembedParams.set('omit_script', 'true');
+        }
+        const oembedUrl = `https://publish.twitter.com/oembed?${oembedParams}`;
 
         const response = await fetchWithRetry(oembedUrl, 3);
 

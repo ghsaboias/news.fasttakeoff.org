@@ -82,16 +82,31 @@ export interface DiscordMessage {
         id: string;
     };
     embeds?: {
+        type?: string;
+        url?: string;
         title?: string;
         description?: string;
-        fields?: { name: string; value: string }[];
+        timestamp?: string;
+        fields?: { name: string; value: string; inline?: boolean }[];
         author?: {
             name: string;
             icon_url?: string;
+            proxy_icon_url?: string;
         };
         footer?: {
             text: string;
         };
+        thumbnail?: {
+            url: string;
+            proxy_url?: string;
+            width?: number;
+            height?: number;
+            content_type?: string;
+            placeholder?: string;
+            placeholder_version?: number;
+            flags?: number;
+        };
+        content_scan_version?: number;
     }[];
     referenced_message?: {
         author: {

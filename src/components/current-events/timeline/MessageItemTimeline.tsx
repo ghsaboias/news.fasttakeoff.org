@@ -42,7 +42,6 @@ function renderWithLinks(text: string) {
 }
 
 export default function MessageItemTimeline({ message, index, noAccordion = false, channelId }: MessageItemProps) {
-    console.log(message)
     const MessageContent = () => (
         <div className="bg-secondary-light rounded-lg">
             {/* Content Section */}

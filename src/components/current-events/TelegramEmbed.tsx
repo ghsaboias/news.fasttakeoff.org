@@ -15,9 +15,6 @@ interface TelegramEmbedProps {
     className?: string;
 }
 
-// Global flag to track if Telegram script is loaded
-let telegramScriptLoaded = false;
-
 export default function TelegramEmbed({ content, className = '' }: TelegramEmbedProps) {
     const telegramUrls = detectTelegramUrls(content);
     const containerRef = useRef<HTMLDivElement>(null);
