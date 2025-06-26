@@ -16,6 +16,7 @@ import { ArrowLeft, Check, Globe, MessageSquare } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
+import Masonry from 'react-masonry-css';
 import { Toaster, toast } from 'sonner';
 
 interface TranslatedContent {
@@ -217,11 +218,18 @@ export default function ReportClient() {
                         {allMessages.length > 0 && (
                             <div className="flex flex-col gap-0">
                                 <div className="border-b border-border" />
-                                <div className="flex flex-col">
-                                    {displayedMessages.map((message, index) => (
-                                        <MessageItem key={message.id} message={message} index={index} />
+                                <Masonry
+                                    breakpointCols={{
+                                        default: 2,
+                                        768: 1
+                                    }}
+                                    className="masonry-grid"
+                                    columnClassName="masonry-column"
+                                >
+                                    {displayedMessages.map((message) => (
+                                        <MessageItem key={message.id} message={message} channelId={channelId} />
                                     ))}
-                                </div>
+                                </Masonry>
                                 {hasMore && (
                                     <div className="flex justify-center py-6">
                                         <Button variant="outline" onClick={loadMore}>

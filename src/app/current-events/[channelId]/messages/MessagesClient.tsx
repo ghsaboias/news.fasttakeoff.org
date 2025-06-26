@@ -94,7 +94,7 @@ export default function MessagesClient({
                 </Button>
             </div>
 
-            <MessageTimeline messages={displayedMessages} />
+            <MessageTimeline messages={displayedMessages} channelId={channelId} />
 
             {hasMore && (
                 <div className="flex justify-center pt-8">

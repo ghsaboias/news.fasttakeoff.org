@@ -28,6 +28,24 @@ export function getStartDate(yearsAgo: number = 5): string {
 }
 
 /**
+ * Detects Telegram URLs in text content
+ */
+export function detectTelegramUrls(content: string): string[] {
+  const telegramRegex = /https?:\/\/t\.me\/[^/\s]+\/\d+/gi;
+  return content.match(telegramRegex) || [];
+}
+
+/**
+ * Extracts channel and message ID from Telegram URL
+ * @param url - Telegram URL (e.g., "https://t.me/nayaforiraq/33511")
+ * @returns Channel/messageId string (e.g., "nayaforiraq/33511") or null if invalid
+ */
+export function extractTelegramPost(url: string): string | null {
+  const match = url.match(/t\.me\/([^/\s]+)\/(\d+)/);
+  return match ? `${match[1]}/${match[2]}` : null;
+}
+
+/**
  * Formats a date string into a human-readable format
  * Uses UTC to ensure consistency between server and client
  * @param dateString Date string to format
