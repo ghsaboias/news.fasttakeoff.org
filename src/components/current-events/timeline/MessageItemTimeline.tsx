@@ -1,6 +1,7 @@
 "use client";
 
 import MediaPreview from "@/components/current-events/MediaPreview";
+import TweetEmbed from "@/components/current-events/TweetEmbed";
 import { AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { LocalDateTimeFull } from "@/components/utils/LocalDateTime";
 import { DiscordMessage } from "@/lib/types/core";
@@ -11,6 +12,7 @@ interface MessageItemProps {
     message: DiscordMessage;
     index: number;
     noAccordion?: boolean;
+    channelId?: string;
 }
 
 // Regex to match URLs (http or https)
@@ -39,8 +41,7 @@ function renderWithLinks(text: string) {
     });
 }
 
-export default function MessageItemTimeline({ message, index, noAccordion = false }: MessageItemProps) {
-    console.log(message)
+export default function MessageItemTimeline({ message, index, noAccordion = false, channelId }: MessageItemProps) {
     const MessageContent = () => (
         <div className="bg-secondary-light rounded-lg">
             {/* Content Section */}
@@ -66,6 +67,15 @@ export default function MessageItemTimeline({ message, index, noAccordion = fals
                         </a>
                     </div>
                 </div>
+            )}
+
+            {/* Tweet Embeds Section */}
+            {message.content && (
+                <TweetEmbed
+                    content={message.content}
+                    channelId={channelId}
+                    className="mt-4"
+                />
             )}
 
             {/* Embeds Section */}

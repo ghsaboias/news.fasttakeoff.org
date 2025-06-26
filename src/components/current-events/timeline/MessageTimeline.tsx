@@ -5,6 +5,7 @@ import MessageItem from "./MessageItemTimeline";
 
 interface MessageTimelineProps {
     messages: DiscordMessage[];
+    channelId?: string;
 }
 
 function groupMessagesByDate(messages: DiscordMessage[]) {
@@ -26,7 +27,7 @@ function groupMessagesByDate(messages: DiscordMessage[]) {
     );
 }
 
-export default function MessageTimeline({ messages }: MessageTimelineProps) {
+export default function MessageTimeline({ messages, channelId }: MessageTimelineProps) {
     const timelineGroups = groupMessagesByDate(messages);
 
     if (!messages.length) {
@@ -55,6 +56,7 @@ export default function MessageTimeline({ messages }: MessageTimelineProps) {
                                         message={message}
                                         index={index}
                                         noAccordion={true}
+                                        channelId={channelId}
                                     />
                                 </div>
                             </div>
