@@ -52,7 +52,7 @@ async function getServerSideData() {
         }
 
         const reportService = new ReportService(env);
-        const reports = await reportService.getAllReports(200);
+        const reports = await reportService.getLatestReportPerChannel();
         return reports || [];
     } catch (error) {
         console.error('Error fetching reports on server:', error);
