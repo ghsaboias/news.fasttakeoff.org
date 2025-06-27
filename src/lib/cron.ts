@@ -20,12 +20,15 @@ export async function scheduled(event: ScheduledEvent, env: Cloudflare.Env): Pro
 
         switch (event.cron) {
             case '0 * * * *':
-            case 'MESSAGES':
                 await Promise.all([
                     messagesService.updateMessages(),
                     feedsService.createFreshSummary()
                 ]);
                 taskResult = 'Updated messages and feed summary';
+                break;
+            case 'MESSAGES':
+                await messagesService.updateMessages();
+                taskResult = 'Updated messages';
                 break;
             case '2 * * * *':
                 await reportService.createFreshReports();
