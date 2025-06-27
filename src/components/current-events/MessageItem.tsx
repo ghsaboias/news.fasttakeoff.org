@@ -156,10 +156,10 @@ export default function MessageItem({ message, noAccordion = false, channelId }:
 
                                     return (
                                         <div key={fieldIndex} className="border-l-2 border-gray-300 dark:border-gray-600 pl-3">
-                                            <p className="text-sm font-medium text-gray-800 dark:text-gray-200">
+                                            <p className="text-md">
                                                 {field.name}:
                                             </p>
-                                            <p className="text-sm text-gray-600 dark:text-gray-400">
+                                            <p className="text-sm">
                                                 {field.value.replace(/Translated from: \w+/, '')}
                                             </p>
                                         </div>
