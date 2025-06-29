@@ -2,6 +2,7 @@
 
 import ReportCard from "@/components/current-events/ReportCard"
 import OrderCard from "@/components/executive-orders/OrderCard"
+import ReportsChart from "@/components/ReportsChart"
 import ReportCardSkeleton from "@/components/skeletons/ReportCardSkeleton"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -87,6 +88,11 @@ export default function HomeContent({ initialReports, initialExecutiveOrders }: 
                         </div>
                     )}
                 </div>
+            </section>
+
+            {/* Reports Chart Section */}
+            <section className="mx-auto sm:px-4 w-[95%] mt-12">
+                <ReportsChart />
             </section>
 
             <div className="my-8">
