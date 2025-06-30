@@ -92,16 +92,21 @@ export const CACHE = {
         MESSAGES: 2592000, // 30 days
         // Feeds summary cache TTL
         FEEDS: 30 * 24 * 60 * 60, // 30 days
+        // Entity extraction cache TTL
+        ENTITIES: 24 * 60 * 60, // 24 hours
     },
     RETENTION: {
         // How long to keep reports in the KV store before manual cleanup (in seconds)
         REPORTS: 30 * 24 * 60 * 60, // 30 days
+        // How long to keep extracted entities
+        ENTITIES: 7 * 24 * 60 * 60, // 7 days
     },
     REFRESH: {
         // Thresholds for background refresh (in seconds)
         MESSAGES: 5 * 60, // 5 minutes
         CHANNELS: 60 * 60, // 1 hour
         FEEDS: 2 * 60 * 60, // 2 hours
+        ENTITIES: 12 * 60 * 60, // 12 hours
     },
 };
 
@@ -171,6 +176,65 @@ FORMAT:
 </new_sources>
 
 Generate your complete JSON response now:
+`,
+    },
+    ENTITY_EXTRACTION: {
+        // Token estimation for entity extraction prompts
+        TOKEN_PER_CHAR: 1 / 4,
+        // Tokens reserved for model instructions
+        OVERHEAD_TOKENS: 500,
+        // Tokens reserved for output
+        OUTPUT_BUFFER: 4096,
+        // Maximum context window for entity extraction
+        MAX_CONTEXT_TOKENS: 32000,
+        // Maximum retries for entity extraction API calls
+        MAX_ATTEMPTS: 2,
+        // System prompt for entity extraction
+        SYSTEM_PROMPT: 'You are an expert entity extraction system. Extract entities from news text with high precision. Respond in valid JSON format with entity types, values, positions, and confidence scores.',
+
+        PROMPT_TEMPLATE: `
+Extract named entities from the following news text. Focus on entities that are relevant to news reporting and analysis.
+
+ENTITY TYPES TO EXTRACT:
+- PERSON: Names of individuals (politicians, officials, public figures, etc.)
+- ORGANIZATION: Companies, institutions, government agencies, political parties
+- LOCATION: Countries, cities, states, regions, specific places
+- EVENT: Named events, conferences, elections, operations
+- PRODUCT: Specific products, technologies, systems
+- MONEY: Monetary amounts, financial figures
+- DATE: Specific dates, time periods
+- MISC: Other significant entities not covered above
+
+EXTRACTION REQUIREMENTS:
+- Extract entities that appear in the text exactly as written
+- Provide confidence scores (0.0-1.0) based on contextual clarity
+- Calculate relevance scores (0.0-1.0) based on importance to the story
+- Include all mentions of each entity with precise text positions
+- Normalize similar entities (e.g., "Trump" and "Donald Trump" as same PERSON)
+- Focus on entities central to the news narrative
+
+TEXT TO ANALYZE:
+{text}
+
+Extract entities and respond with the following JSON structure:
+{
+  "entities": [
+    {
+      "type": "PERSON|ORGANIZATION|LOCATION|EVENT|PRODUCT|MONEY|DATE|MISC",
+      "value": "normalized entity name",
+      "mentions": [
+        {
+          "text": "exact text as it appears",
+          "startIndex": number,
+          "endIndex": number,
+          "confidence": number
+        }
+      ],
+      "relevanceScore": number,
+      "category": "optional subcategory"
+    }
+  ]
+}
 `,
     },
     BRAZIL_NEWS: {
@@ -297,4 +361,30 @@ export const RSS_FEEDS: Record<string, string> = {
     'UOL': 'https://rss.uol.com.br/feed/noticias.xml',
     'G1 - Política': 'https://g1.globo.com/rss/g1/politica/',
     'G1 - Economia': 'https://g1.globo.com/rss/g1/economia/',
+};
+
+export const ERROR_NO_OPENAI_KEY = 'Missing OPENAI_API_KEY';
+export const ERROR_NO_DISCORD_TOKEN = 'Missing DISCORD_BOT_TOKEN';
+
+export const ENTITY_COLORS: { [key: string]: string } = {
+    PERSON: '#4a90e2',
+    ORGANIZATION: '#7ed321',
+    LOCATION: '#e67e22',
+    EVENT: '#f5a623',
+    PRODUCT: '#4a4a4a',
+    MONEY: '#f8e71c',
+    DATE: '#bd10e0',
+    MISC: '#9b9b9b',
+    DEFAULT: '#888888'
+};
+
+export const ENTITY_LABELS: { [key: string]: string } = {
+    PERSON: 'People',
+    ORGANIZATION: 'Organizations',
+    LOCATION: 'Locations',
+    EVENT: 'Events',
+    PRODUCT: 'Products',
+    MONEY: 'Financial',
+    DATE: 'Dates',
+    MISC: 'Other',
 };

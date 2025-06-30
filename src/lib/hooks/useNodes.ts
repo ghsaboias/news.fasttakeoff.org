@@ -1,58 +1,61 @@
 import { useEffect, useRef } from 'react';
-import { GraphData } from './useGraphData';
+import { GraphNode, TransformedGraphData } from '../types/core';
 
-interface Entity {
-    type: string;
-    name: string;
+type GenericGraphData = TransformedGraphData | { entities: Record<string, Omit<GraphNode, 'id' | 'relevance' | 'connectionCount'>>; relationships: { from: string, to: string }[] } | null;
+
+export interface Node extends GraphNode {
     country?: string;
-}
-
-export interface Node extends Entity {
-    id: string;
     x: number;
     y: number;
     vx: number;
     vy: number;
     radius: number;
-    connectionCount: number;
 }
 
-export function useNodes(graphData: GraphData | null, isMobile: boolean) {
+export function useNodes(graphData: GenericGraphData, isMobile: boolean) {
     const nodesRef = useRef<Node[]>([]);
 
     useEffect(() => {
-        if (!graphData) {
+        if (!graphData?.entities || !graphData?.relationships) {
             nodesRef.current = [];
             return;
         }
 
-        // Calculate connection counts for each entity
+        const { entities, relationships } = graphData;
+        const entityList = Object.entries(entities);
+
+        // Check if connection count is pre-calculated
+        const hasPrecalculatedConnections = entityList.length > 0 && 'connectionCount' in entityList[0][1];
+
         const connectionCounts: Record<string, number> = {};
-        graphData.relationships.forEach(rel => {
-            connectionCounts[rel.from] = (connectionCounts[rel.from] || 0) + 1;
-            connectionCounts[rel.to] = (connectionCounts[rel.to] || 0) + 1;
-        });
+        if (!hasPrecalculatedConnections) {
+            relationships.forEach(rel => {
+                connectionCounts[rel.from] = (connectionCounts[rel.from] || 0) + 1;
+                connectionCounts[rel.to] = (connectionCounts[rel.to] || 0) + 1;
+            });
+        }
 
         // Generate nodes from entities
-        const nodes: Node[] = Object.keys(graphData.entities).map((id) => {
-            const entity = graphData.entities[id];
-            const connectionCount = connectionCounts[id] || 0;
+        const nodes: Node[] = entityList.map(([id, entity]) => {
+            const connectionCount = hasPrecalculatedConnections
+                ? (entity as GraphNode).connectionCount
+                : connectionCounts[id] || 0;
 
-            // Scale radius based on connections (min 15, max 40 for desktop)
-            const minRadius = entity.type === 'person' ? 20 : 15;
-            const maxRadius = entity.type === 'person' ? 40 : 35;
-            const connectionScale = Math.min(connectionCount / 20, 1); // Cap at 20 connections
-            const baseRadius = minRadius + (maxRadius - minRadius) * connectionScale;
-            const mobileRadius = isMobile ? baseRadius + 15 : baseRadius;
+            // Scale radius based on connections
+            const minRadius = 5;
+            const maxRadius = 30;
+            const connectionScale = Math.min(connectionCount / 15, 1);
+            const radius = minRadius + (maxRadius - minRadius) * connectionScale;
 
             return {
                 id,
                 ...entity,
-                x: Math.random() * 800 + 100, // Default canvas size assumption
-                y: Math.random() * 600 + 100,
+                relevance: (entity as GraphNode).relevance ?? 0,
+                x: Math.random() * 800,
+                y: Math.random() * 600,
                 vx: 0,
                 vy: 0,
-                radius: mobileRadius,
+                radius: isMobile ? radius * 1.2 : radius,
                 connectionCount,
             };
         });
@@ -60,12 +63,5 @@ export function useNodes(graphData: GraphData | null, isMobile: boolean) {
         nodesRef.current = nodes;
     }, [graphData, isMobile]);
 
-    const rebuildNodes = (canvasWidth: number, canvasHeight: number) => {
-        nodesRef.current.forEach(node => {
-            node.x = Math.random() * (canvasWidth - 200) + 100;
-            node.y = Math.random() * (canvasHeight - 200) + 100;
-        });
-    };
-
-    return { nodesRef, rebuildNodes };
+    return { nodesRef };
 } 

@@ -13,16 +13,20 @@ interface Relationship {
     type: string;
 }
 
-export function useFilters() {
-    const [searchTerm, setSearchTerm] = useState('');
-    const [filters, setFilters] = useState<Record<'person' | 'company' | 'fund', boolean>>({
-        person: true,
-        company: true,
-        fund: true
-    });
+const DEFAULT_TYPES = ['person', 'company', 'fund'];
 
-    const toggleFilter = (type: 'person' | 'company' | 'fund') => {
-        setFilters(prev => ({ ...prev, [type]: !prev[type] }));
+export function useFilters(entityTypes: string[] = DEFAULT_TYPES) {
+    const [searchTerm, setSearchTerm] = useState('');
+
+    const initialFilters = entityTypes.reduce((acc, type) => {
+        acc[type.toLowerCase()] = true;
+        return acc;
+    }, {} as Record<string, boolean>);
+
+    const [filters, setFilters] = useState<Record<string, boolean>>(initialFilters);
+
+    const toggleFilter = (type: string) => {
+        setFilters(prev => ({ ...prev, [type.toLowerCase()]: !prev[type.toLowerCase()] }));
     };
 
     const isNodeVisible = (
@@ -41,12 +45,12 @@ export function useFilters() {
             );
             if (isConnected) {
                 // Respect type filters so user can still hide entire categories
-                return filters[node.type as 'person' | 'company' | 'fund'];
+                return filters[node.type.toLowerCase()];
             }
         }
 
         // Regular filtering when nothing selected (or not connected)
-        if (!filters[node.type as 'person' | 'company' | 'fund']) return false;
+        if (!filters[node.type.toLowerCase()]) return false;
         if (searchTerm.trim()) {
             return node.name.toLowerCase().includes(searchTerm.toLowerCase());
         }

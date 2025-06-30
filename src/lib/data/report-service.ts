@@ -1,10 +1,11 @@
 import { TIME, TimeframeKey } from '@/lib/config';
-import { DiscordMessage, Report } from '@/lib/types/core';
+import { DiscordMessage, EntityExtractionResult, Report } from '@/lib/types/core';
 import { Cloudflare } from '../../../worker-configuration';
 import { FacebookService } from '../facebook-service';
 import { InstagramService } from '../instagram-service';
 import { pingSearchEngines } from '../seo/ping-search-engines';
 import { TwitterService } from '../twitter-service';
+import { EntityExtractor } from '../utils/entity-extraction';
 import { ReportAI, ReportContext } from '../utils/report-ai';
 import { ReportCache } from '../utils/report-cache';
 import { ChannelsService } from './channels-service';
@@ -55,6 +56,9 @@ export class ReportService {
             const updatedReports = [report, ...cachedReports.filter(r => r.reportId !== report.reportId)];
             await ReportCache.store(channelId, timeframe, updatedReports, this.env);
 
+            // Extract entities in parallel (fire and forget)
+            this._extractEntitiesInBackground(report).catch(() => { });
+
             // Ping search engines immediately after caching
             const newUrls = [
                 `https://news.fasttakeoff.org/current-events/${channelId}/${report.reportId}`,
@@ -67,6 +71,81 @@ export class ReportService {
             console.error(`[REPORTS] Error generating ${timeframe} report for channel ${channelName}:`, error);
             throw error;
         }
+    }
+
+    /**
+     * Extract entities for a report in the background without blocking
+     */
+    private async _extractEntitiesInBackground(report: Report): Promise<void> {
+        try {
+            if (!report.channelId) {
+                console.warn(`[ENTITIES] Skipping entity extraction for report ${report.reportId}: no channelId`);
+                return;
+            }
+
+            console.log(`[ENTITIES] Starting background entity extraction for report ${report.reportId}`);
+            await EntityExtractor.extractFromReport(
+                report.headline,
+                report.body,
+                report.reportId,
+                report.channelId,
+                this.env
+            );
+            console.log(`[ENTITIES] Completed background entity extraction for report ${report.reportId}`);
+        } catch (error) {
+            console.warn(`[ENTITIES] Background entity extraction failed for report ${report.reportId}:`, error);
+        }
+    }
+
+    /**
+     * Extract entities for multiple reports in parallel
+     */
+    private async _extractEntitiesForReports(reports: Report[]): Promise<void> {
+        if (reports.length === 0) return;
+
+        console.log(`[ENTITIES] Starting parallel entity extraction for ${reports.length} reports`);
+
+        // Process entity extraction in parallel without blocking
+        const entityPromises = reports.map(report => this._extractEntitiesInBackground(report));
+
+        // Don't await - let them run in background
+        Promise.allSettled(entityPromises).then(results => {
+            const successful = results.filter(r => r.status === 'fulfilled').length;
+            const failed = results.filter(r => r.status === 'rejected').length;
+            console.log(`[ENTITIES] Entity extraction completed: ${successful} successful, ${failed} failed`);
+        });
+    }
+
+    /**
+     * Get reports with their cached entities for UI display
+     */
+    async getReportsWithEntities(limit?: number): Promise<Array<Report & { entities?: EntityExtractionResult | null }>> {
+        const reports = await this.getAllReports(limit);
+        if (reports.length === 0) return [];
+
+        const reportIds = reports.map(r => r.reportId);
+        const entitiesMap = await EntityExtractor.getEntitiesForReports(reportIds, this.env);
+
+        return reports.map(report => ({
+            ...report,
+            entities: entitiesMap[report.reportId] || null
+        }));
+    }
+
+    /**
+     * Get latest reports per channel with their entities
+     */
+    async getLatestReportPerChannelWithEntities(): Promise<Array<Report & { entities?: EntityExtractionResult | null }>> {
+        const reports = await this.getLatestReportPerChannel();
+        if (reports.length === 0) return [];
+
+        const reportIds = reports.map(r => r.reportId);
+        const entitiesMap = await EntityExtractor.getEntitiesForReports(reportIds, this.env);
+
+        return reports.map(report => ({
+            ...report,
+            entities: entitiesMap[report.reportId] || null
+        }));
     }
 
     async getLastReportAndMessages(channelId: string, timeframe: TimeframeKey = '2h'): Promise<{ report: Report | null; messages: DiscordMessage[] }> {
@@ -235,6 +314,9 @@ export class ReportService {
                             const updatedReports = [report, ...cachedReports.filter(r => r.reportId !== report.reportId)];
                             await ReportCache.store(channelId, timeframe, updatedReports, this.env);
 
+                            // Extract entities in parallel (fire and forget)
+                            this._extractEntitiesInBackground(report).catch(() => { });
+
                             // Ping search engines for batch-generated reports
                             const newUrls = [
                                 `https://news.fasttakeoff.org/current-events/${channelId}/${report.reportId}`,
@@ -268,6 +350,9 @@ export class ReportService {
                 .slice(0, 10);
             await ReportCache.storeHomepageReports(topReports, this.env);
         }
+
+        // Extract entities for all generated reports in parallel (don't block completion)
+        this._extractEntitiesForReports(generatedReports);
 
         return generatedReports;
     }
@@ -354,5 +439,28 @@ export class ReportService {
         const generatedReports = await this._generateAndCacheReportsForTimeframes(timeframesToProcess);
         await this._postTopReportToSocialMedia(generatedReports);
         console.log('[REPORTS] Manual run finished.');
+    }
+
+    /**
+     * Manual trigger method: Generates reports without social media posting.
+     * Useful for testing or when social media posting is not desired.
+     */
+    async generateReportsWithoutSocialMedia(manualTimeframes: TimeframeKey[] | 'ALL'): Promise<void> {
+        let timeframesToProcess: TimeframeKey[];
+
+        if (manualTimeframes === 'ALL') {
+            timeframesToProcess = [...TIME.TIMEFRAMES];
+        } else {
+            timeframesToProcess = Array.isArray(manualTimeframes) ? manualTimeframes : [];
+        }
+
+        if (timeframesToProcess.length === 0) {
+            console.warn('[REPORTS] No timeframes specified or resolved for manual run. Exiting.');
+            return;
+        }
+
+        const generatedReports = await this._generateAndCacheReportsForTimeframes(timeframesToProcess);
+        console.log(`[REPORTS] Generated ${generatedReports.length} reports without social media posting.`);
+        console.log('[REPORTS] Manual run (no social media) finished.');
     }
 }
