@@ -288,4 +288,60 @@ export interface TweetEmbed {
 
 export interface TweetEmbedCache {
     [tweetId: string]: TweetEmbed;
+}
+
+export interface EntityMention {
+    text: string;
+    startIndex: number;
+    endIndex: number;
+    confidence: number;
+}
+
+export interface ExtractedEntity {
+    type: 'PERSON' | 'ORGANIZATION' | 'LOCATION' | 'EVENT' | 'PRODUCT' | 'MONEY' | 'DATE' | 'MISC';
+    value: string;
+    mentions: EntityMention[];
+    relevanceScore: number;
+    category?: string;
+}
+
+export interface EntityExtractionResult {
+    entities: ExtractedEntity[];
+    extractedAt: string;
+    processingTimeMs: number;
+    sourceLength: number;
+}
+
+export interface EnhancedReport extends Report {
+    entities?: EntityExtractionResult;
+}
+
+export interface GraphNode {
+    id: string;
+    name: string;
+    type: string;
+    relevance: number;
+    connectionCount: number;
+}
+
+export interface GraphLink {
+    source: string;
+    target: string;
+    strength: number;
+}
+
+export interface GraphData {
+    nodes: GraphNode[];
+    links: GraphLink[];
+}
+
+export interface TransformedGraphData {
+    entities: { [key: string]: GraphNode };
+    relationships: { from: string; to: string; type: string; strength: number }[];
+}
+
+export interface Session {
+    user?: {
+        id: string;
+    };
 } 
