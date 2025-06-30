@@ -120,7 +120,7 @@ export class EntityExtractor {
                                         properties: {
                                             type: {
                                                 type: "string",
-                                                enum: ["PERSON", "ORGANIZATION", "LOCATION", "EVENT", "PRODUCT", "MONEY", "DATE", "MISC"]
+                                                enum: ["PERSON", "ORGANIZATION", "LOCATION"]
                                             },
                                             value: {
                                                 type: "string",
