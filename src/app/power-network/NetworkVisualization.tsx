@@ -145,7 +145,7 @@ export default function NetworkVisualization() {
                 <div className="absolute top-4 right-4 bg-gray-800 p-4 rounded-lg border border-gray-600 min-w-48 max-w-80">
                     <h3 className="text-white font-bold text-lg">{selectedNode.name}</h3>
                     <p className="text-gray-300 capitalize">{selectedNode.type}</p>
-                    {selectedNode.country && (
+                    {selectedNode?.country && (
                         <p className="text-gray-400 text-sm">{selectedNode.country}</p>
                     )}
 
