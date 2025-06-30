@@ -134,9 +134,9 @@ export function useNetworkRenderer({
 
                 // 3. Draw labels
                 const labelThreshold = camera.zoom > 0.4;
-                const isImportant = node.connectionCount > 5 || isSelected || isConnected;
+                const isImportant = node.connectionCount >= 3;
 
-                if (labelThreshold && isImportant) {
+                if (isSelected || isConnected || (labelThreshold && isImportant)) {
                     ctx.globalAlpha = alpha;
                     const fontSize = 10 + Math.min(node.radius, 10);
                     ctx.font = `${fontSize}px sans-serif`;

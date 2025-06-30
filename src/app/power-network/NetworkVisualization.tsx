@@ -6,7 +6,6 @@ import { useRef, useState } from 'react';
 import {
     useCanvasCamera,
     useFilters,
-    useForceSimulation,
     useGraphData,
     useMobileBreakpoint,
     useNetworkRenderer,
@@ -14,6 +13,7 @@ import {
     useNodeSelection,
     type Node
 } from '../../lib/hooks';
+import { useBasicForceSimulation } from '../../lib/hooks/useBasicForceSimulation';
 
 export default function NetworkVisualization() {
     const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -26,7 +26,7 @@ export default function NetworkVisualization() {
 
     // Nodes & physics
     const { nodesRef } = useNodes(graphData, isMobile);
-    const tick = useForceSimulation(nodesRef, graphData?.relationships);
+    const tick = useBasicForceSimulation(nodesRef, graphData?.relationships);
 
     // Camera & interaction
     const { cameraRef, onWheel, onPanStart, onPanMove, onPanEnd, onTouchStart, onTouchMove, onTouchEnd, centerOnNode } = useCanvasCamera();

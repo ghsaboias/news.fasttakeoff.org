@@ -29,7 +29,13 @@ export function useNodes(graphData: GenericGraphData, isMobile: boolean) {
 
         const connectionCounts: Record<string, number> = {};
         if (!hasPrecalculatedConnections) {
+            const seenPairs = new Set<string>();
             relationships.forEach(rel => {
+                // Deduplicate by unordered pair so multiple edges count once
+                const pairKey = [rel.from, rel.to].sort().join('|');
+                if (seenPairs.has(pairKey)) return;
+                seenPairs.add(pairKey);
+
                 connectionCounts[rel.from] = (connectionCounts[rel.from] || 0) + 1;
                 connectionCounts[rel.to] = (connectionCounts[rel.to] || 0) + 1;
             });

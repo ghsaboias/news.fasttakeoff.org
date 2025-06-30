@@ -367,6 +367,11 @@ export const ERROR_NO_OPENAI_KEY = 'Missing OPENAI_API_KEY';
 export const ERROR_NO_DISCORD_TOKEN = 'Missing DISCORD_BOT_TOKEN';
 
 export const ENTITY_COLORS: { [key: string]: string } = {
+    // Power network types (lowercase)
+    person: '#4a90e2',   // Blue
+    company: '#7ed321',  // Green
+    fund: '#e67e22',     // Orange
+
     PERSON: '#4a90e2',
     ORGANIZATION: '#7ed321',
     LOCATION: '#e67e22',
