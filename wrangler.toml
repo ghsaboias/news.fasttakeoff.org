@@ -50,6 +50,11 @@ binding = "FEEDS_CACHE"
 id = "570aca506a0c42a3bbae031791885844"
 preview_id = "4bc7359368524a13a666e1bfbb177802"
 
+[[kv_namespaces]]
+binding = "ENTITIES_CACHE"
+id = "60c184aac065460db20c1a6d07355cba"
+preview_id = "206f66b9c1b44d5d8b2904bf22b3b006"
+
 # R2 bucket binding for Instagram images
 [[r2_buckets]]
 binding = "INSTAGRAM_IMAGES"

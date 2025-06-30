@@ -42,9 +42,21 @@ export async function scheduled(event: ScheduledEvent, env: Cloudflare.Env): Pro
                 await reportService.generateReportsForManualTrigger(['6h'] as TimeframeKey[]);
                 taskResult = 'Generated 6h reports';
                 break;
+            case 'REPORTS_2H_NO_SOCIAL':
+                await reportService.generateReportsWithoutSocialMedia(['2h'] as TimeframeKey[]);
+                taskResult = 'Generated 2h reports without social media posting';
+                break;
+            case 'REPORTS_6H_NO_SOCIAL':
+                await reportService.generateReportsWithoutSocialMedia(['6h'] as TimeframeKey[]);
+                taskResult = 'Generated 6h reports without social media posting';
+                break;
             case 'REPORTS':
                 await reportService.generateReportsForManualTrigger('ALL');
                 taskResult = 'Generated all reports';
+                break;
+            case 'REPORTS_NO_SOCIAL':
+                await reportService.generateReportsWithoutSocialMedia('ALL');
+                taskResult = 'Generated all reports without social media posting';
                 break;
             case 'FEEDS':
                 await feedsService.createFreshSummary();
