@@ -14,22 +14,12 @@ const ENTITY_COLORS = {
     PERSON: 'bg-blue-100 text-blue-800 border-blue-200',
     ORGANIZATION: 'bg-green-100 text-green-800 border-green-200',
     LOCATION: 'bg-purple-100 text-purple-800 border-purple-200',
-    EVENT: 'bg-orange-100 text-orange-800 border-orange-200',
-    PRODUCT: 'bg-cyan-100 text-cyan-800 border-cyan-200',
-    MONEY: 'bg-yellow-100 text-yellow-800 border-yellow-200',
-    DATE: 'bg-pink-100 text-pink-800 border-pink-200',
-    MISC: 'bg-gray-100 text-gray-800 border-gray-200',
 };
 
 const ENTITY_LABELS = {
     PERSON: 'People',
     ORGANIZATION: 'Organizations',
     LOCATION: 'Locations',
-    EVENT: 'Events',
-    PRODUCT: 'Products',
-    MONEY: 'Financial',
-    DATE: 'Dates',
-    MISC: 'Other',
 };
 
 export function EntityDisplay({ entities, showMentions = false, maxPerType = 5 }: EntityDisplayProps) {
@@ -97,7 +87,7 @@ interface EntityBadgeProps {
 }
 
 function EntityBadge({ entity, showMentions }: EntityBadgeProps) {
-    const colorClass = ENTITY_COLORS[entity.type] || ENTITY_COLORS.MISC;
+    const colorClass = ENTITY_COLORS[entity.type as keyof typeof ENTITY_COLORS] || 'bg-gray-100 text-gray-800 border-gray-200';
     const confidenceScore = entity.mentions.reduce((sum, m) => sum + m.confidence, 0) / entity.mentions.length;
 
     return (

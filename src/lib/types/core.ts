@@ -298,7 +298,7 @@ export interface EntityMention {
 }
 
 export interface ExtractedEntity {
-    type: 'PERSON' | 'ORGANIZATION' | 'LOCATION' | 'EVENT' | 'PRODUCT' | 'MONEY' | 'DATE' | 'MISC';
+    type: 'PERSON' | 'ORGANIZATION' | 'LOCATION';
     value: string;
     mentions: EntityMention[];
     relevanceScore: number;
