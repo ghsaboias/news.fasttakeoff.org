@@ -26,6 +26,7 @@ export class ReportAI {
         while (attempts < maxAttempts) {
             try {
                 const report = await this.makeAIRequest(promptData.prompt, messages, context, env);
+
                 console.log(`[REPORTS] Generated ${context.timeframe} report for channel ${context.channelName} - ${context.messageCount} messages and ${promptData.tokenCount} tokens.`);
                 return report;
             } catch (error) {
