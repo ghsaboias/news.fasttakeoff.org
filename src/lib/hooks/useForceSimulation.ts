@@ -5,6 +5,7 @@ interface Relationship {
     from: string;
     to: string;
     type: string;
+    strength?: number;
 }
 
 export function useForceSimulation(
@@ -22,39 +23,18 @@ export function useForceSimulation(
             node.vy *= 0.9;
         });
 
-        // Repulsion between all nodes
+        // Repulsion and Collision
         for (let i = 0; i < nodes.length; i++) {
             for (let j = i + 1; j < nodes.length; j++) {
-                const dx = nodes[j].x - nodes[i].x;
-                const dy = nodes[j].y - nodes[i].y;
-                const distance = Math.sqrt(dx * dx + dy * dy);
-
-                if (distance > 0) {
-                    const force = 1000 / (distance * distance);
-                    const fx = (dx / distance) * force;
-                    const fy = (dy / distance) * force;
-
-                    nodes[i].vx -= fx;
-                    nodes[i].vy -= fy;
-                    nodes[j].vx += fx;
-                    nodes[j].vy += fy;
-                }
-            }
-        }
-
-        // Attraction for connected nodes
-        relationships.forEach((rel) => {
-            const nodeA = nodes.find((n) => n.id === rel.from);
-            const nodeB = nodes.find((n) => n.id === rel.to);
-
-            if (nodeA && nodeB) {
+                const nodeA = nodes[i];
+                const nodeB = nodes[j];
                 const dx = nodeB.x - nodeA.x;
                 const dy = nodeB.y - nodeA.y;
-                const distance = Math.sqrt(dx * dx + dy * dy);
-                const targetDistance = 150;
+                let distance = Math.sqrt(dx * dx + dy * dy);
 
+                // Repulsion force
                 if (distance > 0) {
-                    const force = (distance - targetDistance) * 0.01;
+                    const force = -200 / distance; // Increased base repulsion
                     const fx = (dx / distance) * force;
                     const fy = (dy / distance) * force;
 
@@ -63,6 +43,44 @@ export function useForceSimulation(
                     nodeB.vx -= fx;
                     nodeB.vy -= fy;
                 }
+
+                // Collision detection
+                const minDistance = (nodeA.radius || 10) + (nodeB.radius || 10);
+                if (distance < minDistance) {
+                    distance = distance === 0 ? 0.1 : distance; // Prevent division by zero
+                    const overlap = minDistance - distance;
+                    const fx = (dx / distance) * overlap * 0.5;
+                    const fy = (dy / distance) * overlap * 0.5;
+
+                    nodeA.vx -= fx;
+                    nodeA.vy -= fy;
+                    nodeB.vx += fx;
+                    nodeB.vy += fy;
+                }
+            }
+        }
+
+        // Attraction for connected nodes (Link force)
+        relationships.forEach((rel) => {
+            const nodeA = nodes.find((n) => n.id === rel.from);
+            const nodeB = nodes.find((n) => n.id === rel.to);
+
+            if (nodeA && nodeB) {
+                const dx = nodeB.x - nodeA.x;
+                const dy = nodeB.y - nodeA.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+
+                // Use link strength to influence the force
+                const linkStrength = rel.strength ? 0.005 + (rel.strength * 0.002) : 0.005;
+                const force = linkStrength * distance;
+
+                const fx = (dx / distance) * force;
+                const fy = (dy / distance) * force;
+
+                nodeA.vx += fx;
+                nodeA.vy += fy;
+                nodeB.vx -= fx;
+                nodeB.vy -= fy;
             }
         });
 

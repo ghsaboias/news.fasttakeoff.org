@@ -1,3 +1,4 @@
+import { ENTITY_COLORS } from '@/lib/config';
 import { useEffect, useRef } from 'react';
 import { Node } from './useNodes';
 
@@ -11,6 +12,7 @@ interface Relationship {
     from: string;
     to: string;
     type: string;
+    strength?: number;
 }
 
 interface UseNetworkRendererProps {
@@ -22,6 +24,8 @@ interface UseNetworkRendererProps {
     isNodeVisible: (node: Node) => boolean;
     tick: () => void;
 }
+
+const getEntityColor = (type: string) => ENTITY_COLORS[type] || ENTITY_COLORS.DEFAULT;
 
 export function useNetworkRenderer({
     canvasRef,
@@ -63,127 +67,83 @@ export function useNetworkRenderer({
 
             const visibleNodeIds = new Set(nodes.filter(isNodeVisible).map(n => n.id));
 
-            // Get connected relationships for selected node
-            const connectedRelationships = selectedNode ?
-                relationships.filter(rel =>
-                    (rel.from === selectedNode.id || rel.to === selectedNode.id) &&
-                    visibleNodeIds.has(rel.from) && visibleNodeIds.has(rel.to)
-                ) : [];
+            const connectedNodeIds = selectedNode
+                ? new Set(
+                    relationships
+                        .filter(rel => rel.from === selectedNode.id || rel.to === selectedNode.id)
+                        .flatMap(rel => [rel.from, rel.to])
+                )
+                : null;
 
-            const connectedNodeIds = selectedNode ?
-                connectedRelationships.flatMap(rel => [rel.from, rel.to]).filter(id => id !== selectedNode.id) : [];
-
-            // Draw relationships
+            // 1. Draw relationships
             relationships.forEach((rel) => {
                 const nodeA = nodes.find((n) => n.id === rel.from);
                 const nodeB = nodes.find((n) => n.id === rel.to);
 
                 if (nodeA && nodeB && visibleNodeIds.has(nodeA.id) && visibleNodeIds.has(nodeB.id)) {
-                    const isConnectedToSelected = selectedNode &&
-                        (rel.from === selectedNode.id || rel.to === selectedNode.id);
+                    const isConnectedToSelected = selectedNode && (rel.from === selectedNode.id || rel.to === selectedNode.id);
 
-                    // Set line style based on selection
-                    if (selectedNode) {
-                        if (isConnectedToSelected) {
-                            ctx.strokeStyle = '#00ffff'; // Bright cyan for connected
-                            ctx.lineWidth = 3;
-                        } else {
-                            ctx.strokeStyle = '#222'; // Dimmed for unconnected
-                            ctx.lineWidth = 1;
-                        }
+                    if (selectedNode && !isConnectedToSelected) {
+                        ctx.globalAlpha = 0.1;
+                        ctx.strokeStyle = '#555';
+                        ctx.lineWidth = 0.5;
                     } else {
-                        ctx.strokeStyle = '#444'; // Default
-                        ctx.lineWidth = 2;
+                        ctx.globalAlpha = 0.4;
+                        const minWidth = 0.5;
+                        const maxWidth = 5;
+                        const strengthScale = Math.min((rel.strength || 1) / 10, 1);
+                        ctx.lineWidth = minWidth + (maxWidth - minWidth) * strengthScale;
+                        ctx.strokeStyle = isConnectedToSelected ? '#00ffff' : '#999';
                     }
 
                     ctx.beginPath();
                     ctx.moveTo(nodeA.x, nodeA.y);
                     ctx.lineTo(nodeB.x, nodeB.y);
                     ctx.stroke();
-
-                    // Draw relationship label (only for connected ones when selected)
-                    if (!selectedNode || isConnectedToSelected) {
-                        const midX = (nodeA.x + nodeB.x) / 2;
-                        const midY = (nodeA.y + nodeB.y) / 2;
-                        ctx.fillStyle = isConnectedToSelected ? '#00ffff' : '#666';
-                        ctx.font = '10px sans-serif';
-                        ctx.textAlign = 'center';
-                        ctx.fillText(rel.type, midX, midY - 5);
-                    }
+                    ctx.globalAlpha = 1.0;
                 }
             });
 
-            // Draw nodes
+            // 2. Draw nodes
             nodes.forEach((node) => {
                 if (!visibleNodeIds.has(node.id)) return;
 
-                const isSelected = selectedNode && selectedNode.id === node.id;
-                const isConnectedToSelected = selectedNode && connectedNodeIds.includes(node.id);
+                const isSelected = selectedNode?.id === node.id;
+                const isConnected = connectedNodeIds?.has(node.id);
 
-                // Add glow effect for highly connected nodes
-                if (node.connectionCount > 10) {
-                    const gradient = ctx.createRadialGradient(node.x, node.y, 0, node.x, node.y, node.radius * 1.5);
-                    const baseColor = node.type === 'person' ? '#4a90e2' : (node.type === 'company' ? '#7ed321' : '#e67e22');
-                    gradient.addColorStop(0, baseColor + 'FF');
-                    gradient.addColorStop(0.5, baseColor + '40');
-                    gradient.addColorStop(1, baseColor + '00');
-
-                    ctx.beginPath();
-                    ctx.arc(node.x, node.y, node.radius * 1.5, 0, Math.PI * 2);
-                    ctx.fillStyle = gradient;
-                    ctx.fill();
+                let alpha = 1.0;
+                if (selectedNode && !isSelected && !isConnected) {
+                    alpha = 0.2;
                 }
+                ctx.globalAlpha = alpha;
 
+                // Main node fill
                 ctx.beginPath();
                 ctx.arc(node.x, node.y, node.radius, 0, Math.PI * 2);
-
-                // Color by type with selection highlighting
-                let fillColor;
-                if (node.type === 'person') {
-                    fillColor = isSelected ? '#00ffff' : (isConnectedToSelected ? '#6bb6ff' : '#4a90e2');
-                } else if (node.type === 'company') {
-                    fillColor = isSelected ? '#00ffff' : (isConnectedToSelected ? '#a4ed5c' : '#7ed321');
-                } else if (node.type === 'fund') {
-                    fillColor = isSelected ? '#00ffff' : (isConnectedToSelected ? '#ffb366' : '#e67e22');
-                } else {
-                    fillColor = isSelected ? '#00ffff' : (isConnectedToSelected ? '#aaa' : '#888');
-                }
-
-                // Dim unconnected nodes when something is selected
-                if (selectedNode && !isSelected && !isConnectedToSelected) {
-                    ctx.globalAlpha = 0.3;
-                }
-
-                ctx.fillStyle = fillColor;
+                ctx.fillStyle = getEntityColor(node.type);
                 ctx.fill();
 
-                // Node outline - thicker for highly connected nodes
-                const outlineWidth = isSelected ? 5 : (isConnectedToSelected ? 4 : Math.min(2 + node.connectionCount / 10, 4));
-                ctx.strokeStyle = node.connectionCount > 10 ? '#ffd700' : '#fff'; // Gold outline for highly connected
-                ctx.lineWidth = outlineWidth;
-                ctx.stroke();
+                // Outline for selected/connected
+                if (isSelected || isConnected) {
+                    ctx.lineWidth = isSelected ? 4 : 2;
+                    ctx.strokeStyle = '#00ffff'; // Cyan for highlight
+                    ctx.stroke();
+                }
 
-                // Reset opacity
-                ctx.globalAlpha = 1;
+                ctx.globalAlpha = 1.0;
 
-                // Draw labels (always visible for selected, connected, and highly connected nodes)
-                if (!selectedNode || isSelected || isConnectedToSelected || node.connectionCount > 8) {
-                    // Larger font for highly connected nodes
-                    const fontSize = node.connectionCount > 15 ? 14 : (node.connectionCount > 8 ? 13 : 12);
-                    const fontWeight = node.connectionCount > 10 ? 'bold ' : '';
-                    ctx.font = `${fontWeight}${fontSize}px sans-serif`;
+                // 3. Draw labels
+                const labelThreshold = camera.zoom > 0.4;
+                const isImportant = node.connectionCount > 5 || isSelected || isConnected;
 
-                    // Brighter text for highly connected nodes
-                    ctx.fillStyle = node.connectionCount > 10 ? '#ffff00' : '#fff';
+                if (labelThreshold && isImportant) {
+                    ctx.globalAlpha = alpha;
+                    const fontSize = 10 + Math.min(node.radius, 10);
+                    ctx.font = `${fontSize}px sans-serif`;
+                    ctx.fillStyle = '#fff';
                     ctx.textAlign = 'center';
-                    ctx.fillText(node.name, node.x, node.y + node.radius + 15);
-
-                    // Show connection count for highly connected nodes
-                    if (node.connectionCount > 10) {
-                        ctx.font = '10px sans-serif';
-                        ctx.fillStyle = '#ffd700';
-                        ctx.fillText(`(${node.connectionCount})`, node.x, node.y + node.radius + 28);
-                    }
+                    ctx.fillText(node.name, node.x, node.y + node.radius + fontSize);
+                    ctx.globalAlpha = 1.0;
                 }
             });
 
