@@ -35,6 +35,9 @@ export default function Header() {
                 <Link href="/current-events" className="text-sm font-medium hover:underline">
                     Current Events
                 </Link>
+                <Link href="/entities" className="text-sm font-medium hover:underline">
+                    Entities
+                </Link>
                 <Link href="/message-activity" className="text-sm font-medium hover:underline">
                     Heatmap
                 </Link>
@@ -82,6 +85,9 @@ export default function Header() {
                                     }
                                     <Link href="/current-events" className="text-sm font-medium hover:underline">
                                         Current Events
+                                    </Link>
+                                    <Link href="/entities" className="text-sm font-medium hover:underline">
+                                        Entities
                                     </Link>
                                     <Link href="/message-activity" className="text-sm font-medium hover:underline">
                                         Heatmap
@@ -140,6 +146,9 @@ export default function Header() {
                                     }
                                     <Link href="/current-events" className="text-sm font-medium hover:underline">
                                         Current Events
+                                    </Link>
+                                    <Link href="/entities" className="text-sm font-medium hover:underline">
+                                        Entities
                                     </Link>
                                     <Link href="/message-activity" className="text-sm font-medium hover:underline">
                                         Heatmap
