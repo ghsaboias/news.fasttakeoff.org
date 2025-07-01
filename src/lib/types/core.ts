@@ -298,11 +298,12 @@ export interface EntityMention {
 }
 
 export interface ExtractedEntity {
-    type: 'PERSON' | 'ORGANIZATION' | 'LOCATION';
+    type: 'PERSON' | 'ORGANIZATION' | 'LOCATION' | 'EVENTS' | 'DATES' | 'FINANCIAL' | 'PRODUCTS' | 'OTHER';
     value: string;
     mentions: EntityMention[];
     relevanceScore: number;
     category?: string;
+    reportId?: string;
 }
 
 export interface EntityExtractionResult {

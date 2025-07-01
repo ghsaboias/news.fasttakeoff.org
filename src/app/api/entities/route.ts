@@ -176,25 +176,44 @@ export async function GET(request: Request) {
 
         // Otherwise, get aggregated entities from all reports
         const allEntities: ExtractedEntity[] = [];
+        const entityReportMap = new Map<string, Set<string>>();
+
         reportsWithEntities.forEach(report => {
             if (report.entities?.entities) {
-                allEntities.push(...report.entities.entities);
+                report.entities.entities.forEach(entity => {
+                    // Track which reports each entity appears in
+                    const key = `${entity.type}:${entity.value.toLowerCase()}`;
+                    if (!entityReportMap.has(key)) {
+                        entityReportMap.set(key, new Set());
+                    }
+                    entityReportMap.get(key)!.add(report.reportId);
+
+                    // Add report ID to the entity
+                    allEntities.push({
+                        ...entity,
+                        reportId: report.reportId
+                    });
+                });
             }
         });
 
         // Filter and deduplicate entities by value and type
-        const entityMap = new Map<string, ExtractedEntity>();
+        const entityMap = new Map<string, ExtractedEntity & { reportIds: string[] }>();
         allEntities.forEach(entity => {
             const key = `${entity.type}:${entity.value.toLowerCase()}`;
             const existing = entityMap.get(key);
+            const reportIds = Array.from(entityReportMap.get(key) || []);
 
             if (!existing || entity.relevanceScore > existing.relevanceScore) {
-                entityMap.set(key, entity);
+                entityMap.set(key, {
+                    ...entity,
+                    reportIds,
+                });
             }
         });
 
         const uniqueEntities = Array.from(entityMap.values())
-            .sort((a, b) => b.relevanceScore - a.relevanceScore);
+            .sort((a, b) => b.reportIds.length - a.reportIds.length || b.relevanceScore - a.relevanceScore);
 
         return {
             entities: uniqueEntities,
@@ -205,7 +224,8 @@ export async function GET(request: Request) {
                 topEntities: uniqueEntities.slice(0, 10).map(e => ({
                     type: e.type,
                     value: e.value,
-                    relevanceScore: e.relevanceScore
+                    relevanceScore: e.relevanceScore,
+                    reportCount: e.reportIds.length
                 }))
             }
         };
