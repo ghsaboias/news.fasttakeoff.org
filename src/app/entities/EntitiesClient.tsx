@@ -16,26 +16,26 @@ interface EntityWithReports extends ExtractedEntity {
     reportCount: number;
 }
 
-const ENTITY_COLORS = {
-    PERSON: 'bg-blue-100 text-blue-800 border-blue-200',
-    ORGANIZATION: 'bg-green-100 text-green-800 border-green-200',
-    LOCATION: 'bg-purple-100 text-purple-800 border-purple-200',
-    EVENT: 'bg-orange-100 text-orange-800 border-orange-200',
-    PRODUCT: 'bg-cyan-100 text-cyan-800 border-cyan-200',
-    MONEY: 'bg-yellow-100 text-yellow-800 border-yellow-200',
-    DATE: 'bg-pink-100 text-pink-800 border-pink-200',
-    MISC: 'bg-gray-100 text-gray-800 border-gray-200',
+const ENTITY_COLORS: Record<string, string> = {
+    PERSON: 'bg-blue-100 text-blue-800',
+    ORGANIZATION: 'bg-purple-100 text-purple-800',
+    LOCATION: 'bg-green-100 text-green-800',
+    EVENTS: 'bg-yellow-100 text-yellow-800',
+    DATES: 'bg-orange-100 text-orange-800',
+    FINANCIAL: 'bg-emerald-100 text-emerald-800',
+    PRODUCTS: 'bg-pink-100 text-pink-800',
+    OTHER: 'bg-gray-100 text-gray-800'
 };
 
-const ENTITY_LABELS = {
+const ENTITY_TYPE_LABELS: Record<string, string> = {
     PERSON: 'People',
     ORGANIZATION: 'Organizations',
     LOCATION: 'Locations',
-    EVENT: 'Events',
-    PRODUCT: 'Products',
-    MONEY: 'Financial',
-    DATE: 'Dates',
-    MISC: 'Other',
+    EVENTS: 'Events',
+    DATES: 'Dates',
+    FINANCIAL: 'Financial',
+    PRODUCTS: 'Products',
+    OTHER: 'Other'
 };
 
 export default function EntitiesClient() {
@@ -55,27 +55,11 @@ export default function EntitiesClient() {
 
             const data = await response.json();
 
-            // Aggregate entities across all reports
-            const entityMap = new Map<string, EntityWithReports>();
-
-            data.entities?.forEach((entity: ExtractedEntity) => {
-                const key = `${entity.type}:${entity.value}`;
-                if (entityMap.has(key)) {
-                    const existing = entityMap.get(key)!;
-                    existing.reportCount++;
-                    existing.mentions.push(...entity.mentions);
-                    existing.relevanceScore = Math.max(existing.relevanceScore, entity.relevanceScore);
-                } else {
-                    entityMap.set(key, {
-                        ...entity,
-                        reportIds: [], // We'd need to track this in the API
-                        reportCount: 1,
-                    });
-                }
-            });
-
-            const aggregatedEntities = Array.from(entityMap.values())
-                .sort((a, b) => b.reportCount - a.reportCount || b.relevanceScore - a.relevanceScore);
+            // Entities now come with reportIds from the API
+            const aggregatedEntities = data.entities.map((entity: EntityWithReports) => ({
+                ...entity,
+                reportCount: entity.reportIds.length
+            }));
 
             setEntities(aggregatedEntities);
         } catch (error) {
@@ -149,7 +133,7 @@ export default function EntitiesClient() {
                         <SelectItem value="all">All Types</SelectItem>
                         {entityTypes.map(type => (
                             <SelectItem key={type} value={type}>
-                                {ENTITY_LABELS[type as keyof typeof ENTITY_LABELS]}
+                                {ENTITY_TYPE_LABELS[type as keyof typeof ENTITY_TYPE_LABELS]}
                             </SelectItem>
                         ))}
                     </SelectContent>
@@ -157,7 +141,7 @@ export default function EntitiesClient() {
             </div>
 
             {/* Stats */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-8">
                 <Card>
                     <CardContent className="p-4 text-center">
                         <div className="text-2xl font-bold text-gray-900">{entities.length}</div>
@@ -168,14 +152,6 @@ export default function EntitiesClient() {
                     <CardContent className="p-4 text-center">
                         <div className="text-2xl font-bold text-gray-900">{entityTypes.length}</div>
                         <div className="text-sm text-gray-600">Entity Types</div>
-                    </CardContent>
-                </Card>
-                <Card>
-                    <CardContent className="p-4 text-center">
-                        <div className="text-2xl font-bold text-gray-900">
-                            {entities.reduce((sum, e) => sum + e.reportCount, 0)}
-                        </div>
-                        <div className="text-sm text-gray-600">Total Mentions</div>
                     </CardContent>
                 </Card>
                 <Card>
@@ -199,7 +175,7 @@ export default function EntitiesClient() {
                                     variant="outline"
                                     className={`${ENTITY_COLORS[entity.type]} text-xs shrink-0 ml-2`}
                                 >
-                                    {ENTITY_LABELS[entity.type as keyof typeof ENTITY_LABELS]}
+                                    {ENTITY_TYPE_LABELS[entity.type as keyof typeof ENTITY_TYPE_LABELS]}
                                 </Badge>
                             </div>
                         </CardHeader>
@@ -208,10 +184,6 @@ export default function EntitiesClient() {
                                 <div className="flex justify-between text-sm">
                                     <span className="text-gray-600">Reports:</span>
                                     <span className="font-medium text-gray-900">{entity.reportCount}</span>
-                                </div>
-                                <div className="flex justify-between text-sm">
-                                    <span className="text-gray-600">Mentions:</span>
-                                    <span className="font-medium text-gray-900">{entity.mentions.length}</span>
                                 </div>
                                 <div className="flex justify-between text-sm">
                                     <span className="text-gray-600">Relevance:</span>
