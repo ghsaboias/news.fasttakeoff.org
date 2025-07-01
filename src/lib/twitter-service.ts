@@ -84,8 +84,23 @@ export class TwitterService {
                 })
             });
 
-            // Use a union type for the expected response structure
-            const data = await response.json() as TwitterTokenSuccessResponse | TwitterTokenErrorResponse;
+            // Check if response is actually JSON before parsing
+            const contentType = response.headers.get('content-type');
+            if (!contentType || !contentType.includes('application/json')) {
+                const responseText = await response.text();
+                console.error(`[TWITTER] Non-JSON response from token endpoint. Content-Type: ${contentType}, Body: ${responseText.substring(0, 200)}`);
+                throw new Error(`Twitter API returned non-JSON response: ${response.status}`);
+            }
+
+            // Get response text first, then try to parse as JSON
+            const responseText = await response.text();
+            let data: TwitterTokenSuccessResponse | TwitterTokenErrorResponse;
+            try {
+                data = JSON.parse(responseText) as TwitterTokenSuccessResponse | TwitterTokenErrorResponse;
+            } catch (jsonError) {
+                console.error(`[TWITTER] Failed to parse JSON response. Error: ${jsonError instanceof Error ? jsonError.message : String(jsonError)}, Body: ${responseText.substring(0, 200)}`);
+                throw new Error(`Failed to parse Twitter API response as JSON: ${jsonError instanceof Error ? jsonError.message : String(jsonError)}`);
+            }
 
             console.log('[TWITTER] Response from Twitter:', data);
 
