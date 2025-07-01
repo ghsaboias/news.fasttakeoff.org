@@ -63,26 +63,17 @@ export class TwitterService {
         console.log('[TWITTER] Attempting to refresh token...');
         try {
             const storedTokens = await this.kv.get<TwitterTokens>(this.kvKey, 'json');
-            console.log('[TWITTER] Stored tokens from KV - has access_token:', !!storedTokens?.access_token);
-            console.log('[TWITTER] Stored tokens from KV - has refresh_token:', !!storedTokens?.refresh_token);
-            console.log('[TWITTER] Stored tokens from KV - expires_at:', storedTokens?.expires_at);
-            console.log('[TWITTER] Current timestamp:', Math.floor(Date.now() / 1000));
-
             if (!storedTokens?.refresh_token) {
                 console.error('[TWITTER] Refresh failed: No refresh token found in KV.');
                 return null;
             }
 
-            const credentials = btoa(`${this.clientId}:${this.clientSecret}`); // Base64 encode client ID and secret
-            console.log('[TWITTER] Credentials length:', credentials.length);
-            console.log('[TWITTER] Making request to:', TOKEN_URL);
-
+            const credentials = btoa(`${this.clientId}:${this.clientSecret}`);
             const requestBody = new URLSearchParams({
                 refresh_token: storedTokens.refresh_token,
                 grant_type: 'refresh_token',
                 client_id: this.clientId
             });
-            console.log('[TWITTER] Request body params:', Object.fromEntries(requestBody.entries()));
 
             // Add retry logic for network issues
             let response: Response | null = null;
@@ -97,7 +88,7 @@ export class TwitterService {
                             'Content-Type': 'application/x-www-form-urlencoded',
                             'Authorization': `Basic ${credentials}`,
                             'User-Agent': 'news.fasttakeoff.org-worker/1.0',
-                            'Accept': 'application/json'  // Explicitly request JSON response
+                            'Accept': 'application/json'
                         },
                         body: requestBody
                     });
@@ -108,7 +99,6 @@ export class TwitterService {
                     if (retryCount === maxRetries) {
                         throw new Error(`Failed to refresh token after ${maxRetries} attempts: ${fetchError}`);
                     }
-                    // Wait before retrying (exponential backoff)
                     await new Promise(resolve => setTimeout(resolve, Math.pow(2, retryCount) * 1000));
                 }
             }
@@ -117,72 +107,26 @@ export class TwitterService {
                 throw new Error('Failed to get response from Twitter API');
             }
 
-            console.log('[TWITTER] Response received - status:', response.status);
-            console.log('[TWITTER] Response received - statusText:', response.statusText);
-            console.log('[TWITTER] Response received - ok:', response.ok);
-            console.log('[TWITTER] Response headers:', JSON.stringify(Object.fromEntries(response.headers.entries()), null, 2));
-
-            // Get response text first for detailed logging
             const responseText = await response.text();
-            console.log('[TWITTER] Response body length:', responseText.length);
-            console.log('[TWITTER] Response body preview:', responseText.substring(0, 500));
-
-            // Check if response is actually JSON before parsing
             const contentType = response.headers.get('content-type');
-            console.log('[TWITTER] Response content-type:', contentType);
 
             if (!contentType || !contentType.includes('application/json')) {
-                console.error(`[TWITTER] Non-JSON response from token endpoint. Content-Type: ${contentType}`);
-                console.error(`[TWITTER] Full response body: ${responseText}`);
-
-                // If we got an IPv6 or other plain text response, log more details
                 if (responseText.toLowerCase().includes('ipv6')) {
-                    console.error('[TWITTER] Received IPv6-related response. This might be a Cloudflare Workers networking issue.');
-                    console.error('[TWITTER] Full request details:', {
-                        url: TOKEN_URL,
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/x-www-form-urlencoded',
-                            'User-Agent': 'news.fasttakeoff.org-worker/1.0',
-                            'Accept': 'application/json'
-                        }
-                    });
+                    console.error('[TWITTER] Received IPv6-related response from Cloudflare Workers.');
                 }
-
                 throw new Error(`Twitter API returned non-JSON response: ${response.status} - ${responseText}`);
             }
 
             let data: TwitterTokenSuccessResponse | TwitterTokenErrorResponse;
             try {
-                data = JSON.parse(responseText) as TwitterTokenSuccessResponse | TwitterTokenErrorResponse;
-                console.log('[TWITTER] Successfully parsed JSON response');
-                console.log('[TWITTER] Response data keys:', Object.keys(data));
+                data = JSON.parse(responseText);
             } catch (jsonError) {
-                console.error(`[TWITTER] Failed to parse JSON response. Error: ${jsonError instanceof Error ? jsonError.message : String(jsonError)}`);
-                console.error(`[TWITTER] Full response that failed to parse: ${responseText}`);
                 throw new Error(`Failed to parse Twitter API response as JSON: ${jsonError instanceof Error ? jsonError.message : String(jsonError)}`);
             }
 
-            console.log('[TWITTER] Response data type:', typeof data);
-            console.log('[TWITTER] Response data preview:', JSON.stringify(data, null, 2));
-
             if (!response.ok) {
-                // Type guard: If response is not ok, data must be an error response
                 const errorData = data as TwitterTokenErrorResponse;
                 console.error(`[TWITTER] Token refresh API error: ${response.status} - ${JSON.stringify(errorData)}`);
-                console.error('[TWITTER] Error response details:', {
-                    error: errorData.error,
-                    error_description: errorData.error_description,
-                    status: response.status,
-                    statusText: response.statusText
-                });
-
-                // Check the specific error from the response
-                if (errorData.error === 'invalid_grant' || errorData.error === 'invalid_request') {
-                    console.error('[TWITTER] Refresh token may be invalid or revoked. Manual re-authorization required.');
-                    // Consider deleting the invalid token from KV to prevent loops
-                    // await this.kv.delete(this.kvKey);
-                }
                 return null;
             }
 
@@ -192,17 +136,8 @@ export class TwitterService {
             // Successfully refreshed
             const newAccessToken = successData.access_token;
             const newRefreshToken = successData.refresh_token || storedTokens.refresh_token;
-            const expiresIn = successData.expires_in; // Typically 7200 seconds (2 hours)
-            const expiresAt = Math.floor(Date.now() / 1000) + expiresIn - 60; // Calculate expiry timestamp (Unix seconds), minus 60s buffer
-
-            console.log('[TWITTER] Token refresh success details:', {
-                hasNewAccessToken: !!newAccessToken,
-                hasNewRefreshToken: !!successData.refresh_token,
-                usingStoredRefreshToken: !successData.refresh_token,
-                expiresIn: expiresIn,
-                expiresAt: expiresAt,
-                expiryDate: new Date(expiresAt * 1000).toISOString()
-            });
+            const expiresIn = successData.expires_in;
+            const expiresAt = Math.floor(Date.now() / 1000) + expiresIn - 60;
 
             const newTokens: TwitterTokens = {
                 access_token: newAccessToken,
@@ -210,9 +145,8 @@ export class TwitterService {
                 expires_at: expiresAt
             };
 
-            console.log('[TWITTER] Storing new tokens in KV...');
             await this.kv.put(this.kvKey, JSON.stringify(newTokens));
-            console.log(`[TWITTER] Token refreshed successfully. New expiry: ${new Date(expiresAt * 1000).toISOString()}`);
+            console.log(`[TWITTER] Token refreshed successfully. Expires: ${new Date(expiresAt * 1000).toISOString()}`);
 
             return newAccessToken;
 
