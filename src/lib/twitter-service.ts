@@ -96,7 +96,7 @@ export class TwitterService {
                         headers: {
                             'Content-Type': 'application/x-www-form-urlencoded',
                             'Authorization': `Basic ${credentials}`,
-                            'User-Agent': 'CloudflareWorker/1.0',
+                            'User-Agent': 'news.fasttakeoff.org-worker/1.0',
                             'Accept': 'application/json'  // Explicitly request JSON response
                         },
                         body: requestBody
@@ -143,7 +143,7 @@ export class TwitterService {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/x-www-form-urlencoded',
-                            'User-Agent': 'CloudflareWorker/1.0',
+                            'User-Agent': 'news.fasttakeoff.org-worker/1.0',
                             'Accept': 'application/json'
                         }
                     });
