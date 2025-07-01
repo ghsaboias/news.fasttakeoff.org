@@ -1,7 +1,12 @@
 main = ".open-next/worker.js"
 name = "news-fasttakeoff-org"
 compatibility_date = "2025-03-11"
-compatibility_flags = ["nodejs_compat"]
+compatibility_flags = [
+    "nodejs_compat",
+    "http2_disable_push",  # Disable HTTP/2 server push which can cause issues
+    "tcp_connection_reuse",  # Enable TCP connection reuse
+    "global_fetch_strictly_public"  # Ensure fetch only accesses public endpoints
+]
 
 [triggers]
 crons = ["0 * * * *", "2 * * * *"]

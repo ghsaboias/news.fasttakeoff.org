@@ -84,15 +84,38 @@ export class TwitterService {
             });
             console.log('[TWITTER] Request body params:', Object.fromEntries(requestBody.entries()));
 
-            const response = await fetch(TOKEN_URL, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                    'Authorization': `Basic ${credentials}`,
-                    'User-Agent': 'CloudflareWorker/1.0'
-                },
-                body: requestBody
-            });
+            // Add retry logic for network issues
+            let response: Response | null = null;
+            let retryCount = 0;
+            const maxRetries = 3;
+
+            while (retryCount < maxRetries) {
+                try {
+                    response = await fetch(TOKEN_URL, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded',
+                            'Authorization': `Basic ${credentials}`,
+                            'User-Agent': 'CloudflareWorker/1.0',
+                            'Accept': 'application/json'  // Explicitly request JSON response
+                        },
+                        body: requestBody
+                    });
+                    break; // If fetch succeeds, break the retry loop
+                } catch (fetchError) {
+                    retryCount++;
+                    console.error(`[TWITTER] Network error on attempt ${retryCount}/${maxRetries}:`, fetchError);
+                    if (retryCount === maxRetries) {
+                        throw new Error(`Failed to refresh token after ${maxRetries} attempts: ${fetchError}`);
+                    }
+                    // Wait before retrying (exponential backoff)
+                    await new Promise(resolve => setTimeout(resolve, Math.pow(2, retryCount) * 1000));
+                }
+            }
+
+            if (!response) {
+                throw new Error('Failed to get response from Twitter API');
+            }
 
             console.log('[TWITTER] Response received - status:', response.status);
             console.log('[TWITTER] Response received - statusText:', response.statusText);
@@ -111,7 +134,22 @@ export class TwitterService {
             if (!contentType || !contentType.includes('application/json')) {
                 console.error(`[TWITTER] Non-JSON response from token endpoint. Content-Type: ${contentType}`);
                 console.error(`[TWITTER] Full response body: ${responseText}`);
-                throw new Error(`Twitter API returned non-JSON response: ${response.status}`);
+
+                // If we got an IPv6 or other plain text response, log more details
+                if (responseText.toLowerCase().includes('ipv6')) {
+                    console.error('[TWITTER] Received IPv6-related response. This might be a Cloudflare Workers networking issue.');
+                    console.error('[TWITTER] Full request details:', {
+                        url: TOKEN_URL,
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded',
+                            'User-Agent': 'CloudflareWorker/1.0',
+                            'Accept': 'application/json'
+                        }
+                    });
+                }
+
+                throw new Error(`Twitter API returned non-JSON response: ${response.status} - ${responseText}`);
             }
 
             let data: TwitterTokenSuccessResponse | TwitterTokenErrorResponse;
