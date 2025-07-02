@@ -21,7 +21,7 @@ export function AttributedReportViewer({
     showAttributions = true
 }: AttributedReportViewerProps) {
     const [attributions, setAttributions] = useState<ReportSourceAttribution | null>(null);
-    const [isLoading, setIsLoading] = useState(true);
+    const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
@@ -49,10 +49,24 @@ export function AttributedReportViewer({
             }
         }
 
-        if (reportId) {
+        // Only fetch attributions when showAttributions is true and we don't have them yet
+        if (reportId && showAttributions && !attributions && !isLoading) {
             fetchAttributions();
         }
-    }, [reportId]);
+    }, [reportId, showAttributions, attributions, isLoading]);
+
+    // If attributions are not needed, just render the interactive body without them
+    if (!showAttributions) {
+        return (
+            <div className={className}>
+                <InteractiveReportBody
+                    reportBody={reportBody}
+                    sourceMessages={sourceMessages}
+                    showAttributions={false}
+                />
+            </div>
+        );
+    }
 
     if (isLoading) {
         return (
