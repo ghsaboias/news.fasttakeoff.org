@@ -20,6 +20,7 @@ export class SourceAttributionAI {
 
         let attempts = 0;
         const maxAttempts = AI.SOURCE_ATTRIBUTION.MAX_ATTEMPTS;
+        let lastError: Error | null = null;
 
         while (attempts < maxAttempts) {
             try {
@@ -28,6 +29,14 @@ export class SourceAttributionAI {
                 // Find positions and validate attributions
                 const validatedAttributions = this.findAndValidateAttributions(attributions, report.body);
 
+                // If we got no valid attributions and this isn't our last attempt, retry
+                if (validatedAttributions.length === 0 && attempts < maxAttempts - 1) {
+                    console.log(`[SOURCE_ATTRIBUTION] No valid attributions found for report ${report.reportId}, retrying (${attempts + 1}/${maxAttempts})`);
+                    attempts++;
+                    await new Promise(resolve => setTimeout(resolve, Math.pow(2, attempts) * 1000)); // Exponential backoff
+                    continue;
+                }
+
                 return {
                     reportId: report.reportId,
                     attributions: validatedAttributions,
@@ -35,13 +44,29 @@ export class SourceAttributionAI {
                     version: '3.0'
                 };
             } catch (error) {
+                lastError = error as Error;
                 attempts++;
-                if (attempts === maxAttempts) throw error;
-                console.log(`[SOURCE_ATTRIBUTION] Retrying AI request for report ${report.reportId} (${attempts}/${maxAttempts})`);
-                await new Promise(resolve => setTimeout(resolve, 1000));
+
+                // Check if error is retryable
+                const isRetryable = this.isRetryableError(error);
+                if (!isRetryable && attempts < maxAttempts) {
+                    console.error(`[SOURCE_ATTRIBUTION] Non-retryable error for report ${report.reportId}, failing fast:`, error);
+                    break;
+                }
+
+                if (attempts < maxAttempts) {
+                    const backoffMs = Math.pow(2, attempts) * 1000;
+                    console.log(`[SOURCE_ATTRIBUTION] Retrying AI request for report ${report.reportId} (${attempts}/${maxAttempts}) in ${backoffMs}ms`);
+                    await new Promise(resolve => setTimeout(resolve, backoffMs));
+                }
             }
         }
-        throw new Error('Unreachable code');
+
+        // If we got here, we failed all attempts
+        const errorMessage = lastError ?
+            `Failed after ${attempts} attempts. Last error: ${lastError.message}` :
+            `Failed after ${attempts} attempts with no valid attributions`;
+        throw new Error(`[SOURCE_ATTRIBUTION] ${errorMessage}`);
     }
 
     private static createPrompt(report: Report, sourceMessages: DiscordMessage[]): string {
@@ -320,5 +345,27 @@ ${formatted}
         }
 
         return length;
+    }
+
+    private static isRetryableError(error: unknown): boolean {
+        if (error instanceof Error) {
+            // Network errors are usually retryable
+            if (error.message.includes('Network connection lost') ||
+                error.message.includes('timeout') ||
+                error.message.includes('rate limit') ||
+                error.message.includes('429') ||
+                error.message.includes('503')) {
+                return true;
+            }
+
+            // API errors that might be temporary
+            if (error.message.includes('server error') ||
+                error.message.includes('500') ||
+                error.message.includes('502') ||
+                error.message.includes('504')) {
+                return true;
+            }
+        }
+        return false;
     }
 }

@@ -4,6 +4,8 @@ import { DiscordMessage, Report, ReportSourceAttribution } from '@/lib/types/cor
 import { Cloudflare } from '../../../../worker-configuration';
 import { SourceAttributionAI } from './source-attribution-ai';
 
+const GENERATION_LOCKS = new Map<string, Promise<ReportSourceAttribution>>();
+
 /**
  * Service for managing source attributions with caching
  */
@@ -32,6 +34,31 @@ export class SourceAttributionService {
             return cached;
         }
 
+        // Check if there's already a generation in progress
+        let existingLock = GENERATION_LOCKS.get(report.reportId);
+        if (existingLock) {
+            console.log(`[SOURCE_ATTRIBUTION] Using existing generation lock for report ${report.reportId}`);
+            return existingLock;
+        }
+
+        // Create new generation lock
+        const generationPromise = this.generateAndCacheAttributions(report, sourceMessages, cacheKey);
+        GENERATION_LOCKS.set(report.reportId, generationPromise);
+
+        try {
+            const result = await generationPromise;
+            return result;
+        } finally {
+            // Clean up lock after generation completes or fails
+            GENERATION_LOCKS.delete(report.reportId);
+        }
+    }
+
+    private async generateAndCacheAttributions(
+        report: Report,
+        sourceMessages: DiscordMessage[],
+        cacheKey: string
+    ): Promise<ReportSourceAttribution> {
         console.log(`[SOURCE_ATTRIBUTION] Generating attributions for report ${report.reportId}`);
 
         try {
@@ -42,7 +69,13 @@ export class SourceAttributionService {
                 this.env
             );
 
-            // Cache the result
+            // Validate attributions before caching
+            if (attributions.attributions.length === 0) {
+                console.warn(`[SOURCE_ATTRIBUTION] Generated empty attributions for report ${report.reportId}, not caching`);
+                return attributions;
+            }
+
+            // Cache successful result
             await this.cache.put(
                 'REPORTS_CACHE',
                 cacheKey,
@@ -52,23 +85,22 @@ export class SourceAttributionService {
 
             return attributions;
         } catch (error) {
-            console.warn(`[SOURCE_ATTRIBUTION] Failed to generate attributions for report ${report.reportId}, returning empty attribution:`, error);
+            console.error(`[SOURCE_ATTRIBUTION] Failed to generate attributions for report ${report.reportId}:`, error);
 
-            // Return empty attribution as fallback
+            // Check if we have a previous cached version before falling back to empty
+            const previousCached = await this.cache.get<ReportSourceAttribution>('REPORTS_CACHE', cacheKey);
+            if (previousCached) {
+                console.log(`[SOURCE_ATTRIBUTION] Using previous cached version for report ${report.reportId}`);
+                return previousCached;
+            }
+
+            // Return empty attribution as last resort, but don't cache it
             const fallbackAttribution: ReportSourceAttribution = {
                 reportId: report.reportId,
                 attributions: [],
                 generatedAt: new Date().toISOString(),
                 version: '3.0'
             };
-
-            // Cache the empty result to avoid repeated failures
-            await this.cache.put(
-                'REPORTS_CACHE',
-                cacheKey,
-                fallbackAttribution,
-                CACHE.TTL.REPORTS
-            );
 
             return fallbackAttribution;
         }
@@ -131,6 +163,7 @@ export class SourceAttributionService {
     async clearAttributionCache(reportId: string): Promise<void> {
         const cacheKey = `attribution:${reportId}`;
         await this.cache.delete('REPORTS_CACHE', cacheKey);
+        GENERATION_LOCKS.delete(reportId); // Also clear any existing lock
         console.log(`[SOURCE_ATTRIBUTION] Cleared cache for report ${reportId}`);
     }
 
