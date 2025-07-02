@@ -10,6 +10,26 @@ interface ScheduledEvent {
     waitUntil: (promise: Promise<unknown>) => void;
 }
 
+/**
+ * Helper to run a task with structured logging and optional fail-fast behaviour.
+ */
+async function logRun(
+    task: string,
+    fn: () => Promise<unknown>,
+    options: { failFast?: boolean } = {}
+): Promise<void> {
+    const { failFast = true } = options;
+    console.log(`[task=${task}] START`);
+    const start = Date.now();
+    try {
+        await fn();
+        console.log(`[task=${task}] OK (${Date.now() - start}ms)`);
+    } catch (err) {
+        console.error(`[task=${task}] ERROR`, err);
+        if (failFast) throw err;
+    }
+}
+
 export async function scheduled(event: ScheduledEvent, env: Cloudflare.Env): Promise<void> {
     console.log(`[CRON] Triggered. event.cron: "${event.cron}", scheduledTime: ${new Date(event.scheduledTime).toISOString()}`);
     try {
@@ -20,33 +40,23 @@ export async function scheduled(event: ScheduledEvent, env: Cloudflare.Env): Pro
 
         switch (event.cron) {
             case '0 * * * *': {
-                // Run both tasks in parallel but allow feed summary failures to be non-blocking
-                const [messagesResult, feedsResult] = await Promise.allSettled([
-                    messagesService.updateMessages(),
-                    feedsService.createFreshSummary()
-                ]);
+                // Top of the hour: update messages → create reports → generate feeds
+                await logRun('MESSAGES', () => messagesService.updateMessages());
+                await logRun('REPORTS', () => reportService.createFreshReports());
+                await logRun('FEEDS', () => feedsService.createFreshSummary(), { failFast: false });
 
-                if (messagesResult.status === 'rejected') {
-                    // Messages update is critical – bubble up the error so the cron run is marked as failed
-                    console.error('[CRON] Messages update failed:', messagesResult.reason);
-                    throw messagesResult.reason;
-                }
-
-                if (feedsResult.status === 'rejected') {
-                    // Feed summary failure should not block the rest of the operations; just log it.
-                    console.error('[CRON] Feed summary generation failed:', feedsResult.reason);
-                }
-
-                taskResult = 'Updated messages (feed summary attempted)';
+                taskResult = 'Hourly tasks completed';
+                break;
+            }
+            case '5/5 * * * *': {
+                // Every five minutes: update Discord messages cache
+                await messagesService.updateMessages();
+                taskResult = 'Updated messages (5-min schedule)';
                 break;
             }
             case 'MESSAGES':
                 await messagesService.updateMessages();
                 taskResult = 'Updated messages';
-                break;
-            case '2 * * * *':
-                await reportService.createFreshReports();
-                taskResult = 'Created fresh reports';
                 break;
             case 'REPORTS_2H':
                 await reportService.generateReportsForManualTrigger(['2h'] as TimeframeKey[]);
@@ -73,8 +83,8 @@ export async function scheduled(event: ScheduledEvent, env: Cloudflare.Env): Pro
                 taskResult = 'Generated all reports without social media posting';
                 break;
             case 'FEEDS':
-                await feedsService.createFreshSummary();
-                taskResult = 'Generated fresh feed summary';
+                await logRun('FEEDS', () => feedsService.createFreshSummary(), { failFast: false });
+                taskResult = 'Generated fresh feed summary (manual)';
                 break;
             default:
                 console.warn(`[CRON] Unknown or unhandled cron pattern: "${event.cron}", skipping task.`);
