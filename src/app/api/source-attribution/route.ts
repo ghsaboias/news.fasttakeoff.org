@@ -15,21 +15,27 @@ export async function GET(request: Request) {
         }
 
         // Get the report
+        console.log(`[SOURCE_ATTRIBUTION] Starting attribution fetch for reportId: ${reportId}`);
         const reportService = new ReportService(env);
         const reports = await reportService.getAllReports();
         const report = reports.find(r => r.reportId === reportId);
 
         if (!report) {
+            console.log(`[SOURCE_ATTRIBUTION] Report not found: ${reportId}`);
             return new Response(JSON.stringify({ error: 'Report not found' }), {
                 status: 404,
                 headers: { 'Content-Type': 'application/json' }
             });
         }
 
+        console.log(`[SOURCE_ATTRIBUTION] Found report. ChannelId: ${report.channelId}`);
+
         // Get source messages for the report
         const messagesService = new MessagesService(env);
+        console.log(`[SOURCE_ATTRIBUTION] Fetching messages for channel: ${report.channelId}`);
         const cachedMessages = await messagesService.getAllCachedMessagesForChannel(report.channelId || '');
         const allMessages = cachedMessages?.messages || [];
+        console.log(`[SOURCE_ATTRIBUTION] Messages service returned:`, cachedMessages ? 'data' : 'null');
 
         console.log(`[SOURCE_ATTRIBUTION] Report messageIds:`, report.messageIds);
         console.log(`[SOURCE_ATTRIBUTION] All cached messages count:`, allMessages.length);
