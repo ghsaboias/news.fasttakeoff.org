@@ -19,13 +19,27 @@ export async function scheduled(event: ScheduledEvent, env: Cloudflare.Env): Pro
         let taskResult: string | undefined;
 
         switch (event.cron) {
-            case '0 * * * *':
-                await Promise.all([
+            case '0 * * * *': {
+                // Run both tasks in parallel but allow feed summary failures to be non-blocking
+                const [messagesResult, feedsResult] = await Promise.allSettled([
                     messagesService.updateMessages(),
                     feedsService.createFreshSummary()
                 ]);
-                taskResult = 'Updated messages and feed summary';
+
+                if (messagesResult.status === 'rejected') {
+                    // Messages update is critical – bubble up the error so the cron run is marked as failed
+                    console.error('[CRON] Messages update failed:', messagesResult.reason);
+                    throw messagesResult.reason;
+                }
+
+                if (feedsResult.status === 'rejected') {
+                    // Feed summary failure should not block the rest of the operations; just log it.
+                    console.error('[CRON] Feed summary generation failed:', feedsResult.reason);
+                }
+
+                taskResult = 'Updated messages (feed summary attempted)';
                 break;
+            }
             case 'MESSAGES':
                 await messagesService.updateMessages();
                 taskResult = 'Updated messages';
