@@ -92,11 +92,6 @@ ${formatted}
 ---`;
         }).join('\n');
 
-        console.log(`[SOURCE_ATTRIBUTION] Report body to match against:`, report.body);
-        console.log(`[SOURCE_ATTRIBUTION] Full prompt being sent to AI:`, AI.SOURCE_ATTRIBUTION.PROMPT_TEMPLATE
-            .replace('{reportBody}', report.body)
-            .replace('{sourceMessages}', formattedMessages));
-
         return AI.SOURCE_ATTRIBUTION.PROMPT_TEMPLATE
             .replace('{reportBody}', report.body)
             .replace('{sourceMessages}', formattedMessages);

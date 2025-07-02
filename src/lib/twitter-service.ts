@@ -41,6 +41,18 @@ export class TwitterService {
     private clientSecret: string;
 
     constructor(env: Cloudflare.Env) {
+        // Detect build environment
+        const isBuildTime = process.env.NODE_ENV === 'production' && process.env.NEXT_PHASE === 'phase-production-build';
+
+        if (isBuildTime) {
+            console.log('[TWITTER] Build environment detected, skipping validation');
+            // Set dummy values for build time
+            this.kv = {} as KVNamespace;
+            this.clientId = '';
+            this.clientSecret = '';
+            return;
+        }
+
         // Ensure required KV binding and secrets are present
         // Type checking is now more robust thanks to the interface
         if (!env.AUTH_TOKENS) {

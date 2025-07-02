@@ -32,6 +32,17 @@ export class FacebookService {
     private readonly env: Cloudflare.Env;
 
     constructor(env: Cloudflare.Env) {
+        // Detect build environment
+        const isBuildTime = process.env.NODE_ENV === 'production' && process.env.NEXT_PHASE === 'phase-production-build';
+
+        if (isBuildTime) {
+            console.log('[FACEBOOK] Build environment detected, skipping validation');
+            this.pageAccessToken = '';
+            this.pageId = '';
+            this.env = env;
+            return;
+        }
+
         this.pageAccessToken = env.FACEBOOK_PAGE_ACCESS_TOKEN || '';
         this.pageId = env.FACEBOOK_PAGE_ID || '';
         this.env = env;
