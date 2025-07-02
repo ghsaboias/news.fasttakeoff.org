@@ -424,5 +424,5 @@ export const ENTITY_LABELS: { [key: string]: string } = {
 // UI configuration
 export const UI = {
     // Pages that should not display header and footer (full-screen experience)
-    FULL_SCREEN_PAGES: ['/news-globe', '/power-network', '/entities'],
+    FULL_SCREEN_PAGES: ['/news-globe', '/power-network', '/entities/graph'],
 };
