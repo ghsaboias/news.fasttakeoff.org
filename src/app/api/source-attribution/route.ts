@@ -37,6 +37,7 @@ export async function GET(request: Request) {
         // Generate or retrieve source attributions
         const attributionService = new SourceAttributionService(env);
         const attributions = await attributionService.getAttributions(report, sourceMessages);
+        console.log('[SOURCE_ATTRIBUTION] Attributions:', attributions);
 
         return attributions;
     }, 'Failed to fetch source attributions');
