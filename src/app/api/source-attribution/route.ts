@@ -30,9 +30,26 @@ export async function GET(request: Request) {
         const messagesService = new MessagesService(env);
         const cachedMessages = await messagesService.getAllCachedMessagesForChannel(report.channelId || '');
         const allMessages = cachedMessages?.messages || [];
+
+        console.log(`[SOURCE_ATTRIBUTION] Report messageIds:`, report.messageIds);
+        console.log(`[SOURCE_ATTRIBUTION] All cached messages count:`, allMessages.length);
+
         const sourceMessages = allMessages.filter((msg: DiscordMessage) =>
             report.messageIds?.includes(msg.id)
         );
+
+        console.log(`[SOURCE_ATTRIBUTION] Filtered source messages count:`, sourceMessages.length);
+
+        if (sourceMessages.length === 0) {
+            console.warn(`[SOURCE_ATTRIBUTION] No source messages found for report ${reportId}. Report messageIds:`, report.messageIds);
+            // Return empty attribution structure
+            return {
+                reportId: report.reportId,
+                attributions: [],
+                generatedAt: new Date().toISOString(),
+                version: '1.0'
+            };
+        }
 
         // Generate or retrieve source attributions
         const attributionService = new SourceAttributionService(env);
