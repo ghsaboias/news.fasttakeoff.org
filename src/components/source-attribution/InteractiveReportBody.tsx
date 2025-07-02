@@ -43,18 +43,18 @@ export function InteractiveReportBody({
 
     // Process a single paragraph with attributions
     const processParagraph = (paragraph: string, paragraphStartIndex: number) => {
-        if (!showAttributions || !attributions?.attributions.length) {
+        if (!showAttributions || !attributions?.attributions?.length) {
             return paragraph;
         }
 
-        const paragraphEndIndex = paragraphStartIndex + paragraph.length;
+        const paragraphEndIndex = paragraphStartIndex + paragraph?.length;
 
         // Find attributions that overlap with this paragraph
-        const relevantAttributions = attributions.attributions.filter(attr =>
+        const relevantAttributions = attributions?.attributions?.filter(attr =>
             attr.startIndex < paragraphEndIndex && attr.endIndex > paragraphStartIndex
         ).sort((a, b) => a.startIndex - b.startIndex);
 
-        if (relevantAttributions.length === 0) {
+        if (relevantAttributions?.length === 0) {
             return paragraph;
         }
 
@@ -115,7 +115,7 @@ export function InteractiveReportBody({
             const processedContent = processParagraph(paragraph, paragraphStartIndex);
 
             // Update text index for next paragraph (add 2 for \n\n)
-            textIndex = paragraphStartIndex + paragraph.length + 2;
+            textIndex = paragraphStartIndex + paragraph?.length + 2;
 
             return (
                 <p key={paragraphIndex} className="text-justify mb-4 last:mb-0">
