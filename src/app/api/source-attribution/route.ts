@@ -1,5 +1,4 @@
 import { withErrorHandling } from '@/lib/api-utils';
-import { TimeframeKey } from '@/lib/config';
 import { ReportService } from '@/lib/data/report-service';
 import { SourceAttributionService } from '@/lib/utils/source-attribution';
 import { Cloudflare } from '../../../../worker-configuration';
@@ -8,36 +7,34 @@ export async function GET(request: Request) {
     return withErrorHandling(async (env: Cloudflare.Env) => {
         const { searchParams } = new URL(request.url);
         const reportId = searchParams.get('reportId');
+        const channelId = searchParams.get('channelId');
 
         if (!reportId) {
             throw new Error('Missing reportId parameter');
         }
 
-        // Get the report using the same method as the regular reports API
-        console.log(`[SOURCE_ATTRIBUTION] Starting attribution fetch for reportId: ${reportId}`);
+        if (!channelId) {
+            throw new Error('Missing channelId parameter');
+        }
+
+        // Get the report using the same efficient method as the regular reports API
+        console.log(`[SOURCE_ATTRIBUTION] Starting attribution fetch for reportId: ${reportId}, channelId: ${channelId}`);
         const reportService = new ReportService(env);
 
-        // First try to find the report using the targeted getReport method
-        const report = await reportService.getReport(reportId);
+        const { report, messages: sourceMessages } = await reportService.getReportAndMessages(
+            channelId,
+            reportId
+        );
 
         if (!report) {
-            console.log(`[SOURCE_ATTRIBUTION] Report not found: ${reportId}`);
+            console.log(`[SOURCE_ATTRIBUTION] Report not found: ${reportId} in channel ${channelId}`);
             return new Response(JSON.stringify({ error: 'Report not found' }), {
                 status: 404,
                 headers: { 'Content-Type': 'application/json' }
             });
         }
 
-        console.log(`[SOURCE_ATTRIBUTION] Found report. ChannelId: ${report.channelId}`);
-
-        // Now get the messages using the same method as the regular reports API
-        const { messages: sourceMessages } = await reportService.getReportAndMessages(
-            report.channelId || '',
-            reportId,
-            report.timeframe as TimeframeKey
-        );
-
-        console.log(`[SOURCE_ATTRIBUTION] Found ${sourceMessages?.length || 0} source messages`);
+        console.log(`[SOURCE_ATTRIBUTION] Found report. Messages: ${sourceMessages?.length || 0}`);
 
         if (!sourceMessages || sourceMessages.length === 0) {
             console.warn(`[SOURCE_ATTRIBUTION] No source messages found for report ${reportId}`);

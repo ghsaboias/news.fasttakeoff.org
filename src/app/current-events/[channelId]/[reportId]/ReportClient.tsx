@@ -218,11 +218,12 @@ export default function ReportClient() {
                                 {report?.generatedAt ? ' - ' : ''}{translatedContent?.city || report?.city}
                             </p>
                             {/* Enhanced Interactive Report Body with Source Attribution */}
-                            {report && (
+                            {report && channelId && (
                                 <AttributedReportViewer
                                     reportId={report.reportId}
                                     reportBody={translatedContent?.body || report.body}
                                     sourceMessages={allMessages}
+                                    channelId={channelId}
                                     className="prose prose-zinc max-w-none overflow-y-auto"
                                     showAttributions={showAttributions}
                                 />
