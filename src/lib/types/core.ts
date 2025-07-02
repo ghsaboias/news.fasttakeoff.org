@@ -341,6 +341,38 @@ export interface TransformedGraphData {
     relationships: { from: string; to: string; type: string; strength: number }[];
 }
 
+/**
+ * Represents a segment of text in a report with its corresponding source attribution
+ */
+export interface SourceAttribution {
+    /** Unique identifier for this attribution */
+    id: string;
+    /** Start position of the text segment in the report body */
+    startIndex: number;
+    /** End position of the text segment in the report body */
+    endIndex: number;
+    /** The actual text content being attributed */
+    text: string;
+    /** Source message ID that this text segment is based on */
+    sourceMessageId: string;
+    /** Confidence score from 0-1 indicating how certain the attribution is */
+    confidence: number;
+}
+
+/**
+ * Complete source attribution data for a report
+ */
+export interface ReportSourceAttribution {
+    /** The report ID this attribution belongs to */
+    reportId: string;
+    /** Array of all source attributions for the report */
+    attributions: SourceAttribution[];
+    /** Timestamp when attribution was generated */
+    generatedAt: string;
+    /** Version of attribution system used */
+    version: string;
+}
+
 export interface Session {
     user?: {
         id: string;

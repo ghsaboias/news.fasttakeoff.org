@@ -1,4 +1,6 @@
 import { TimeframeKey } from '@/lib/config';
+import { DiscordMessage } from '@/lib/types/core';
+import { SourceAttributionService } from '@/lib/utils/source-attribution';
 import { Cloudflare } from '../../worker-configuration';
 import { FeedsService } from './data/feeds-service';
 import { MessagesService } from './data/messages-service';
@@ -36,16 +38,34 @@ export async function scheduled(event: ScheduledEvent, env: Cloudflare.Env): Pro
         const messagesService = new MessagesService(env);
         const reportService = new ReportService(env);
         const feedsService = new FeedsService(env);
+        const attributionService = new SourceAttributionService(env);
         let taskResult: string | undefined;
 
         switch (event.cron) {
             case '0 * * * *': {
-                // Top of the hour: update messages → create reports → generate feeds
+                // Top of the hour: update messages → create reports → generate feeds → source attributions
                 await logRun('MESSAGES', () => messagesService.updateMessages());
                 await logRun('REPORTS', () => reportService.createFreshReports());
                 await logRun('FEEDS', () => feedsService.createFreshSummary(), { failFast: false });
 
-                taskResult = 'Hourly tasks completed';
+                // Generate source attributions for new reports in background
+                await logRun('ATTRIBUTIONS', async () => {
+                    const reports = await reportService.getAllReports(10); // Get latest reports
+                    const messagesByReportId = new Map<string, DiscordMessage[]>();
+
+                    for (const report of reports) {
+                        if (report.messageIds?.length && report.channelId) {
+                            const cachedMessages = await messagesService.getAllCachedMessagesForChannel(report.channelId);
+                            const allMessages = cachedMessages?.messages || [];
+                            const sourceMessages = allMessages.filter((msg: DiscordMessage) => report.messageIds!.includes(msg.id));
+                            messagesByReportId.set(report.reportId, sourceMessages);
+                        }
+                    }
+
+                    await attributionService.preGenerateAttributions(reports, messagesByReportId);
+                }, { failFast: false });
+
+                taskResult = 'Hourly tasks completed with attributions';
                 break;
             }
             case '5/5 * * * *': {

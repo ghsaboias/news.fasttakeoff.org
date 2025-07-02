@@ -94,7 +94,7 @@ export default function MessageItemTimeline({ message, index, noAccordion = fals
                     {embed.fields && embed.fields.length > 1 && (
                         <div className="space-y-2">
                             {/* Only show Additional Information header if we have non-redundant fields */}
-                            {embed.fields.some(field =>
+                            {embed.fields?.some(field =>
                                 field.value !== message.content &&
                                 !field.value.includes(message.content || '') &&
                                 field.value !== embed.description

@@ -2,6 +2,7 @@
 
 import NotFound from '@/app/not-found';
 import MessageItem from "@/components/current-events/MessageItem";
+import { AttributedReportViewer } from '@/components/source-attribution';
 import { Button } from "@/components/ui/button";
 import {
     DropdownMenu,
@@ -12,7 +13,7 @@ import {
 import { Loader } from "@/components/ui/loader";
 import { LocalDateTimeFull } from "@/components/utils/LocalDateTime";
 import { DiscordMessage, Report } from "@/lib/types/core";
-import { ArrowLeft, Check, Globe, MessageSquare } from "lucide-react";
+import { ArrowLeft, Check, Eye, EyeOff, Globe, MessageSquare } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -39,7 +40,6 @@ export default function ReportClient() {
     const params = useParams();
     const channelId = Array.isArray(params.channelId) ? params.channelId[0] : params.channelId;
     const reportId = Array.isArray(params.reportId) ? params.reportId[0] : params.reportId;
-    console.log(channelId, reportId);
 
     const [report, setReport] = useState<Report | null>(null);
     const [allMessages, setAllMessages] = useState<DiscordMessage[]>([]);
@@ -51,6 +51,7 @@ export default function ReportClient() {
     const [translatedContent, setTranslatedContent] = useState<TranslatedContent | null>(null);
     const [isTranslating, setIsTranslating] = useState(false);
     const [notFound, setNotFound] = useState(false);
+    const [showAttributions, setShowAttributions] = useState(true);
 
     const SOURCES_PER_PAGE = 20;
 
@@ -121,8 +122,6 @@ export default function ReportClient() {
         translateReport();
     }, [report, selectedLanguage]);
 
-    const paragraphs = report?.body.split('\n\n').filter(Boolean);
-
     const loadMore = () => {
         const nextPage = currentPage + 1;
         const end = nextPage * SOURCES_PER_PAGE;
@@ -187,6 +186,21 @@ export default function ReportClient() {
                                             ))}
                                         </DropdownMenuContent>
                                     </DropdownMenu>
+                                    <Button
+                                        variant="outline"
+                                        size="icon"
+                                        onClick={() => setShowAttributions(!showAttributions)}
+                                        className="p-2 hover:bg-muted min-w-[64px] flex justify-center"
+                                        title={showAttributions ? "Hide Sources" : "Show Sources"}
+                                    >
+                                        <div className="flex items-center gap-2">
+                                            {showAttributions ? (
+                                                <EyeOff className="h-5 w-5" />
+                                            ) : (
+                                                <Eye className="h-5 w-5" />
+                                            )}
+                                        </div>
+                                    </Button>
                                 </div>
                             </div>
                         </div>
@@ -203,17 +217,16 @@ export default function ReportClient() {
                                 )}
                                 {report?.generatedAt ? ' - ' : ''}{translatedContent?.city || report?.city}
                             </p>
-                            <div className="prose prose-zinc max-w-none overflow-y-auto text-justify">
-                                {translatedContent ? (
-                                    translatedContent.body.split('\n\n').filter(Boolean).map((paragraph, index) => (
-                                        <p key={index} className="mb-2 last:mb-0">{paragraph}</p>
-                                    ))
-                                ) : (
-                                    paragraphs?.map((paragraph, index) => (
-                                        <p key={index} className="mb-2 last:mb-0">{paragraph}</p>
-                                    ))
-                                )}
-                            </div>
+                            {/* Enhanced Interactive Report Body with Source Attribution */}
+                            {report && (
+                                <AttributedReportViewer
+                                    reportId={report.reportId}
+                                    reportBody={translatedContent?.body || report.body}
+                                    sourceMessages={allMessages}
+                                    className="prose prose-zinc max-w-none overflow-y-auto"
+                                    showAttributions={showAttributions}
+                                />
+                            )}
                         </div>
                         {allMessages.length > 0 && (
                             <div className="flex flex-col gap-0">

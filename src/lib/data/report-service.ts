@@ -267,22 +267,22 @@ export class ReportService {
     }
 
     private async _generateAndCacheReportsForTimeframes(timeframesToProcess: TimeframeKey[]): Promise<Report[]> {
-        const messageKeys = await this.messagesService.listMessageKeys();
-        const allChannelIds = messageKeys.map(key => key.name.replace('messages:', ''));
         const generatedReports: Report[] = [];
-        const batchSize = 5;
 
-        console.log(`[REPORTS] Processing for timeframes: ${timeframesToProcess.join(', ')}`);
-
-        // Pre-fetch all channel names to avoid repeated API calls
-        const allDiscordChannels = await this.channelsService.getChannels();
-        const channelNameMap = new Map<string, string>();
-        for (const channel of allDiscordChannels) {
-            channelNameMap.set(channel.id, channel.name);
-        }
-
+        // Process each timeframe sequentially
         for (const timeframe of timeframesToProcess) {
             console.log(`[REPORTS] Processing timeframe: ${timeframe}`);
+            const messageKeys = await this.messagesService.listMessageKeys();
+            const allChannelIds = messageKeys.map(key => key.name.replace('messages:', ''));
+            const batchSize = 5;
+
+            // Pre-fetch all channel names to avoid repeated API calls
+            const allDiscordChannels = await this.channelsService.getChannels();
+            const channelNameMap = new Map<string, string>();
+            for (const channel of allDiscordChannels) {
+                channelNameMap.set(channel.id, channel.name);
+            }
+
             for (let i = 0; i < allChannelIds.length; i += batchSize) {
                 const channelBatch = allChannelIds.slice(i, i + batchSize);
                 console.log(`[REPORTS] Processing batch of ${channelBatch.length} channels for timeframe ${timeframe}. Start index: ${i}`);
@@ -393,28 +393,33 @@ export class ReportService {
 
     /**
      * Production method: Generates reports for timeframes active based on the current UTC hour.
+     * Smart scheduling: 2h reports every 2 hours (2am, 4am, 8am, 10am, 2pm, 4pm, 8pm, 10pm)
+     * 6h reports every 6 hours (12am, 6am, 12pm, 6pm)
      */
     async createFreshReports(): Promise<void> {
         console.log('[REPORTS] Production run starting.');
-        const allConfiguredTimeframes: TimeframeKey[] = [...TIME.TIMEFRAMES];
         const now = new Date();
         const hour = now.getUTCHours();
 
-        const activeTimeframes = allConfiguredTimeframes.filter(tf => {
-            const cronConfig = TIME.CRON as Record<TimeframeKey, number>;
-            const cron2h = cronConfig['2h'];
-            const cron6h = cronConfig['6h'];
-            if (tf === '2h' && hour % cron2h === 0 && hour % cron6h !== 0) return true;
-            if (tf === '6h' && hour % cron6h === 0) return true;
-            return false;
-        });
+        const timeframesToProcess: TimeframeKey[] = [];
 
-        if (activeTimeframes.length === 0) {
-            console.log('[REPORTS] No timeframes are active based on the current hour. Exiting.');
+        // 6h reports: 12am (0), 6am (6), 12pm (12), 6pm (18)
+        if (hour === 0 || hour === 6 || hour === 12 || hour === 18) {
+            timeframesToProcess.push('6h');
+            console.log(`[REPORTS] Hour ${hour}: Processing 6h timeframe`);
+        }
+        // 2h reports: every 2 hours except 6h hours
+        else if (hour % 2 === 0) {
+            timeframesToProcess.push('2h');
+            console.log(`[REPORTS] Hour ${hour}: Processing 2h timeframe`);
+        }
+
+        if (timeframesToProcess.length === 0) {
+            console.log(`[REPORTS] Hour ${hour}: No timeframes scheduled. Exiting.`);
             return;
         }
 
-        const generatedReports = await this._generateAndCacheReportsForTimeframes(activeTimeframes);
+        const generatedReports = await this._generateAndCacheReportsForTimeframes(timeframesToProcess);
         await this._postTopReportToSocialMedia(generatedReports);
         console.log('[REPORTS] Production run finished.');
     }
@@ -423,13 +428,9 @@ export class ReportService {
      * Manual trigger method: Generates reports for specified timeframes or all configured timeframes.
      */
     async generateReportsForManualTrigger(manualTimeframes: TimeframeKey[] | 'ALL'): Promise<void> {
-        let timeframesToProcess: TimeframeKey[];
-
-        if (manualTimeframes === 'ALL') {
-            timeframesToProcess = [...TIME.TIMEFRAMES];
-        } else {
-            timeframesToProcess = Array.isArray(manualTimeframes) ? manualTimeframes : [];
-        }
+        const timeframesToProcess: TimeframeKey[] = manualTimeframes === 'ALL'
+            ? [...TIME.TIMEFRAMES]
+            : Array.isArray(manualTimeframes) ? manualTimeframes : [];
 
         if (timeframesToProcess.length === 0) {
             console.warn('[REPORTS] No timeframes specified or resolved for manual run. Exiting.');
@@ -446,13 +447,9 @@ export class ReportService {
      * Useful for testing or when social media posting is not desired.
      */
     async generateReportsWithoutSocialMedia(manualTimeframes: TimeframeKey[] | 'ALL'): Promise<void> {
-        let timeframesToProcess: TimeframeKey[];
-
-        if (manualTimeframes === 'ALL') {
-            timeframesToProcess = [...TIME.TIMEFRAMES];
-        } else {
-            timeframesToProcess = Array.isArray(manualTimeframes) ? manualTimeframes : [];
-        }
+        const timeframesToProcess: TimeframeKey[] = manualTimeframes === 'ALL'
+            ? [...TIME.TIMEFRAMES]
+            : Array.isArray(manualTimeframes) ? manualTimeframes : [];
 
         if (timeframesToProcess.length === 0) {
             console.warn('[REPORTS] No timeframes specified or resolved for manual run. Exiting.');
