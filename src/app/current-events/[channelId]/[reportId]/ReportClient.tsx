@@ -51,7 +51,7 @@ export default function ReportClient() {
     const [translatedContent, setTranslatedContent] = useState<TranslatedContent | null>(null);
     const [isTranslating, setIsTranslating] = useState(false);
     const [notFound, setNotFound] = useState(false);
-    const [showAttributions, setShowAttributions] = useState(true);
+    const [showAttributions, setShowAttributions] = useState(false);
 
     const SOURCES_PER_PAGE = 20;
 
