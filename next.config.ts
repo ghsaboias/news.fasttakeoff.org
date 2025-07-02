@@ -16,6 +16,22 @@ const nextConfig: NextConfig = {
         protocol: 'https',
         hostname: 'news.fasttakeoff.org',
       },
+      {
+        protocol: 'https',
+        hostname: 'cdn.discordapp.com',
+      },
+      {
+        protocol: 'https',
+        hostname: 'media.discordapp.net',
+      },
+      {
+        protocol: 'https',
+        hostname: 'images-ext-1.discordapp.net',
+      },
+      {
+        protocol: 'https',
+        hostname: 'images-ext-2.discordapp.net',
+      },
     ],
     formats: ['image/webp', 'image/avif'],
     minimumCacheTTL: 86400, // 24 hours
