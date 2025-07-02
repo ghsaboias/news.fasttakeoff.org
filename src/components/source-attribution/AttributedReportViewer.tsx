@@ -9,6 +9,7 @@ interface AttributedReportViewerProps {
     reportId: string;
     reportBody: string;
     sourceMessages: DiscordMessage[];
+    channelId: string;
     className?: string;
     showAttributions?: boolean;
 }
@@ -17,6 +18,7 @@ export function AttributedReportViewer({
     reportId,
     reportBody,
     sourceMessages,
+    channelId,
     className = '',
     showAttributions = true
 }: AttributedReportViewerProps) {
@@ -25,13 +27,13 @@ export function AttributedReportViewer({
     const [error, setError] = useState<string | null>(null);
     const [fetchAttempted, setFetchAttempted] = useState(false);
 
-    // Reset state when reportId changes
+    // Reset state when reportId or channelId changes
     useEffect(() => {
         setAttributions(null);
         setError(null);
         setIsLoading(false);
         setFetchAttempted(false);
-    }, [reportId]);
+    }, [reportId, channelId]);
 
     // Fetch attributions when needed
     useEffect(() => {
@@ -46,7 +48,7 @@ export function AttributedReportViewer({
                 setIsLoading(true);
                 setError(null);
 
-                const response = await fetch(`/api/source-attribution?reportId=${encodeURIComponent(reportId)}`, {
+                const response = await fetch(`/api/source-attribution?reportId=${encodeURIComponent(reportId)}&channelId=${encodeURIComponent(channelId)}`, {
                     // Add cache control to ensure fresh data
                     cache: 'no-cache',
                     headers: {
@@ -80,7 +82,7 @@ export function AttributedReportViewer({
         }
 
         fetchAttributions();
-    }, [reportId, showAttributions, fetchAttempted, isLoading]);
+    }, [reportId, channelId, showAttributions, fetchAttempted, isLoading]);
 
     // Reset fetchAttempted when showAttributions changes from false to true
     useEffect(() => {
