@@ -195,9 +195,9 @@ export default function ReportClient() {
                                     >
                                         <div className="flex items-center gap-2">
                                             {showAttributions ? (
-                                                <EyeOff className="h-5 w-5" />
-                                            ) : (
                                                 <Eye className="h-5 w-5" />
+                                            ) : (
+                                                <EyeOff className="h-5 w-5" />
                                             )}
                                         </div>
                                     </Button>
