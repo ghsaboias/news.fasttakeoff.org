@@ -23,14 +23,37 @@ export function AttributedReportViewer({
     const [attributions, setAttributions] = useState<ReportSourceAttribution | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [fetchAttempted, setFetchAttempted] = useState(false);
 
+    // Reset state when reportId changes
     useEffect(() => {
+        setAttributions(null);
+        setError(null);
+        setIsLoading(false);
+        setFetchAttempted(false);
+    }, [reportId]);
+
+    // Fetch attributions when needed
+    useEffect(() => {
+        if (!reportId || !showAttributions || isLoading || fetchAttempted) {
+            return;
+        }
+
         async function fetchAttributions() {
+            setFetchAttempted(true);
+
             try {
                 setIsLoading(true);
                 setError(null);
 
-                const response = await fetch(`/api/source-attribution?reportId=${encodeURIComponent(reportId)}`);
+                const response = await fetch(`/api/source-attribution?reportId=${encodeURIComponent(reportId)}`, {
+                    // Add cache control to ensure fresh data
+                    cache: 'no-cache',
+                    headers: {
+                        'Cache-Control': 'no-cache, no-store, must-revalidate',
+                        'Pragma': 'no-cache'
+                    }
+                });
 
                 if (!response.ok) {
                     if (response.status === 404) {
@@ -40,7 +63,14 @@ export function AttributedReportViewer({
                 }
 
                 const data = await response.json();
-                setAttributions(data);
+
+                // Ensure data has the expected structure
+                if (data && data.attributions && Array.isArray(data.attributions)) {
+                    setAttributions(data);
+                } else {
+                    // Some reports might not have attributions yet - this is normal
+                    setAttributions({ reportId, attributions: [], generatedAt: new Date().toISOString(), version: '1.0' });
+                }
             } catch (err) {
                 console.error('Error fetching source attributions:', err);
                 setError(err instanceof Error ? err.message : 'Failed to load source attributions');
@@ -49,11 +79,15 @@ export function AttributedReportViewer({
             }
         }
 
-        // Only fetch attributions when showAttributions is true and we don't have them yet
-        if (reportId && showAttributions && !attributions && !isLoading) {
-            fetchAttributions();
+        fetchAttributions();
+    }, [reportId, showAttributions, fetchAttempted, isLoading]);
+
+    // Reset fetchAttempted when showAttributions changes from false to true
+    useEffect(() => {
+        if (showAttributions && fetchAttempted && !attributions && !isLoading) {
+            setFetchAttempted(false);
         }
-    }, [reportId, showAttributions, attributions, isLoading]);
+    }, [showAttributions, fetchAttempted, attributions, isLoading]);
 
     // If attributions are not needed, just render the interactive body without them
     if (!showAttributions) {
@@ -91,7 +125,7 @@ export function AttributedReportViewer({
                 <InteractiveReportBody
                     reportBody={reportBody}
                     sourceMessages={sourceMessages}
-                    showAttributions={showAttributions}
+                    showAttributions={false}
                 />
             </div>
         );
@@ -114,17 +148,21 @@ export function AttributedReportViewer({
                 showAttributions={showAttributions}
             />
 
-            {/* Attribution Stats */}
-            {attributions?.attributions && attributions?.attributions?.length > 0 && (
+            {/* Attribution Stats or Empty State */}
+            {attributions && attributions.attributions && attributions.attributions.length > 0 ? (
                 <div className="mt-4 text-xs text-gray-500">
-                    Generated {attributions?.attributions?.length} source attribution(s) •
+                    Generated {attributions.attributions.length} source attribution(s) •
                     Average confidence: {Math.round(
-                        attributions?.attributions?.reduce((sum, attr) => sum + attr.confidence, 0) /
-                        attributions?.attributions?.length * 100
+                        attributions.attributions.reduce((sum, attr) => sum + attr.confidence, 0) /
+                        attributions.attributions.length * 100
                     )}% •
                     Coverage: {usedSourceMessages?.length}/{sourceMessages?.length} sources
                 </div>
-            )}
+            ) : attributions && attributions.attributions && attributions.attributions.length === 0 ? (
+                <div className="mt-4 text-xs text-gray-500 italic">
+                    No source attributions available for this report yet. They may still be generating in the background.
+                </div>
+            ) : null}
         </div>
     );
 }
