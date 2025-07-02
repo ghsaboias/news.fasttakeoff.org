@@ -95,30 +95,32 @@ function TooltipContentBody({ attribution, sourceMessages }: { attribution: Sour
     const isTelegramPost = sourceMessage.content ? detectTelegramUrls(sourceMessage.content).length > 0 : false;
 
     return (
-        <div className="max-w-lg max-h-96 overflow-y-auto">
+        <div className="w-full max-w-xs sm:max-w-lg max-h-96 overflow-y-auto">
             {/* Header */}
-            <div className="flex justify-between items-start mb-3">
+            <div className="flex flex-col sm:flex-row justify-between items-start mb-3 gap-1 sm:gap-0">
                 <div className="text-sm font-semibold text-white">
                     Source Message
                 </div>
-                <div className={`text-sm font-medium ${getConfidenceColor(attribution.confidence)}`}>
-                    {Math.round(attribution.confidence * 100)}% confident
-                </div>
-                <div className="text-xs text-gray-300">
-                    <LocalDateTimeFull
-                        dateString={sourceMessage.timestamp}
-                        options={{
-                            dateStyle: 'short',
-                            timeStyle: 'short'
-                        }}
-                    />
+                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-1 sm:gap-3">
+                    <div className={`text-xs sm:text-sm font-medium ${getConfidenceColor(attribution.confidence)}`}>
+                        {Math.round(attribution.confidence * 100)}% confident
+                    </div>
+                    <div className="text-xs text-gray-300">
+                        <LocalDateTimeFull
+                            dateString={sourceMessage.timestamp}
+                            options={{
+                                dateStyle: 'short',
+                                timeStyle: 'short'
+                            }}
+                        />
+                    </div>
                 </div>
             </div>
 
             {/* Selected Text */}
             <div className="mb-3 p-2 bg-white/10 rounded border border-white/20">
                 <div className="text-xs text-gray-300 mb-1">Selected Text:</div>
-                <div className="text-sm font-medium text-white">&ldquo;{attribution.text}&rdquo;</div>
+                <div className="text-sm font-medium text-white break-words">&ldquo;{attribution.text}&rdquo;</div>
             </div>
 
             {/* Message Details */}
@@ -127,7 +129,7 @@ function TooltipContentBody({ attribution, sourceMessages }: { attribution: Sour
                 {sourceMessage.content && !sourceMessage.content.includes('https') && (
                     <div className="p-2 bg-white/10 rounded border border-white/20">
                         <div className="text-xs text-gray-300 mb-1">Content:</div>
-                        <div className="text-sm text-gray-100 break-words">
+                        <div className="text-sm text-gray-100 break-words break-all">
                             {isTwitterPost || isTelegramPost ? (
                                 <Link
                                     href={sourceMessage.content}
@@ -248,7 +250,7 @@ function TooltipContentBody({ attribution, sourceMessages }: { attribution: Sour
                 {/* Exact Message Format (as used in AI prompts) */}
                 <div className="mb-3 p-3 bg-blue-900/30 rounded border border-blue-500/30">
                     <div className="text-xs text-blue-300 font-medium mb-2">Exact Source Data:</div>
-                    <div className="text-xs font-mono bg-black/30 p-2 rounded border border-white/20 whitespace-pre-wrap text-gray-200 max-h-32 overflow-y-auto">
+                    <div className="text-xs font-mono bg-black/30 p-2 rounded border border-white/20 whitespace-pre-wrap text-gray-200 max-h-32 overflow-y-auto overflow-x-auto break-all">
                         {formatSingleMessage(sourceMessage)}
                     </div>
                 </div>
@@ -259,7 +261,7 @@ function TooltipContentBody({ attribution, sourceMessages }: { attribution: Sour
                         <div className="text-xs text-gray-300 font-medium">
                             Media ({sourceMessage.attachments.length}):
                         </div>
-                        <div className="grid grid-cols-2 gap-2">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                             {sourceMessage.attachments.slice(0, 4).map((attachment) => {
                                 if (attachment.content_type?.startsWith('image/')) {
                                     return (
@@ -307,7 +309,7 @@ export function SourceTooltip({ attribution, sourceMessages, children }: SourceT
             </PopoverTrigger>
             <PopoverContent
                 side="top"
-                className="bg-gray-900 border-gray-700 text-white p-4 max-w-none w-auto"
+                className="bg-gray-900 border-gray-700 text-white p-3 sm:p-4 w-screen max-w-xs sm:max-w-lg sm:w-auto mx-2 sm:mx-0"
                 sideOffset={8}
             >
                 <PopoverArrow className="fill-gray-900" />
