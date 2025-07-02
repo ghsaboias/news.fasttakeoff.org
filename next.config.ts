@@ -45,7 +45,28 @@ const nextConfig: NextConfig = {
   poweredByHeader: false,
   // Enable experimental optimizations
   experimental: {
-    optimizePackageImports: ['@headlessui/react', 'lucide-react'],
+    optimizePackageImports: [
+      // UI Components
+      '@radix-ui/react-accordion',
+      '@radix-ui/react-dialog',
+      '@radix-ui/react-dropdown-menu',
+      '@radix-ui/react-popover',
+      '@radix-ui/react-select',
+      '@radix-ui/react-separator',
+      '@radix-ui/react-tooltip',
+      '@radix-ui/react-tabs',
+      '@radix-ui/react-collapsible',
+      'lucide-react',
+      // Data display
+      'react-markdown',
+      'react-masonry-css',
+      // 3D/Visualization (large packages)
+      '@react-three/drei',
+      // Utilities
+      'class-variance-authority',
+      'clsx',
+      'tailwind-merge'
+    ],
   },
 };
 

@@ -35,7 +35,7 @@ export class SourceAttributionService {
         }
 
         // Check if there's already a generation in progress
-        let existingLock = GENERATION_LOCKS.get(report.reportId);
+        const existingLock = GENERATION_LOCKS.get(report.reportId);
         if (existingLock) {
             console.log(`[SOURCE_ATTRIBUTION] Using existing generation lock for report ${report.reportId}`);
             return existingLock;
