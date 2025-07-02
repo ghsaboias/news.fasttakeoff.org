@@ -84,7 +84,7 @@ export async function GET(request: Request) {
         if (omitScript) {
             oembedParams.set('omit_script', 'true');
         }
-        const oembedUrl = `https://publish.twitter.com/oembed?${oembedParams}`;
+        const oembedUrl = `https://publish.x.com/oembed?${oembedParams}`;
 
         const response = await fetchWithRetry(oembedUrl, 3);
 
