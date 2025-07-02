@@ -16,6 +16,63 @@ interface SourceTooltipProps {
     children: React.ReactNode;
 }
 
+// Helper function to parse text and render URLs as clickable links
+function parseTextWithLinks(text: string): (string | React.ReactElement)[] {
+    const elements: (string | React.ReactElement)[] = [];
+    let currentIndex = 0;
+    let keyCounter = 0;
+
+    // Combined regex to match either markdown links or plain URLs
+    const combinedRegex = /(\[([^\]]+)\]\((https?:\/\/[^)]+)\))|(https?:\/\/[^\s]+)/g;
+
+    let match;
+    while ((match = combinedRegex.exec(text)) !== null) {
+        const [fullMatch, markdownFull, markdownText, markdownUrl, plainUrl] = match;
+
+        // Add text before the match
+        if (match.index > currentIndex) {
+            elements.push(text.slice(currentIndex, match.index));
+        }
+
+        if (markdownFull) {
+            // It's a markdown link [text](url)
+            elements.push(
+                <Link
+                    key={`link-${keyCounter++}`}
+                    href={markdownUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-300 hover:underline"
+                >
+                    {markdownText}
+                </Link>
+            );
+        } else if (plainUrl) {
+            // It's a plain URL
+            elements.push(
+                <Link
+                    key={`link-${keyCounter++}`}
+                    href={plainUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-300 hover:underline"
+                >
+                    {plainUrl}
+                </Link>
+            );
+        }
+
+        currentIndex = match.index + fullMatch.length;
+    }
+
+    // Add any remaining text
+    if (currentIndex < text.length) {
+        elements.push(text.slice(currentIndex));
+    }
+
+    return elements;
+}
+
 function TooltipContentBody({ attribution, sourceMessages }: { attribution: SourceAttribution; sourceMessages: DiscordMessage[] }) {
     // Get the source message for this attribution
     const sourceMessage = sourceMessages.find(msg => msg.id === attribution.sourceMessageId);
@@ -160,18 +217,7 @@ function TooltipContentBody({ attribution, sourceMessages }: { attribution: Sour
                                                     {field.name}:
                                                 </p>
                                                 <p className="text-gray-300 line-clamp-2">
-                                                    {field.value.includes("https://") ? (
-                                                        <Link
-                                                            href={field.value}
-                                                            target="_blank"
-                                                            rel="noopener noreferrer"
-                                                            className="text-blue-300 hover:underline"
-                                                        >
-                                                            {field.value}
-                                                        </Link>
-                                                    ) : (
-                                                        field.value
-                                                    )}
+                                                    {parseTextWithLinks(field.value)}
                                                 </p>
                                             </div>
                                         ))}
