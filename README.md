@@ -178,6 +178,78 @@ Tracks and displays executive orders from the Federal Register API.
 - `GET /api/executive-orders/[id]` - Get specific order
 - `GET /api/summarize` - Generate AI summary
 
+### 5. Source Attribution
+
+AI-powered transparency system that maps content in generated news reports back to their original Discord source messages.
+
+#### Functionality
+
+- **Interactive Highlighting**: Report text segments are visually highlighted and linked to source messages
+- **Confidence Scoring**: AI provides confidence scores (0-1) for each attribution with visual feedback
+- **Rich Tooltips**: Hover over highlighted text to see original message content, timestamps, and attribution confidence
+- **Multiple Text Matching**: Uses exact, normalized, and fuzzy matching strategies to find text positions
+- **Intelligent Caching**: Attributions are cached using Cloudflare KV with generation locks to prevent duplicate processing
+- **Batch Processing**: Pre-generates attributions for multiple reports with configurable concurrency
+- **Graceful Degradation**: Falls back to plain text display when attributions are unavailable
+
+#### Technical Features
+
+- **AI Integration**: Uses structured JSON schema responses from configurable AI providers (Groq/OpenRouter)
+- **Fuzzy Text Matching**: Implements sophisticated position finding with 80% similarity threshold for sentence-level matching
+- **Error Resilience**: Retry logic with exponential backoff, falls back to previous cached versions on failures
+- **Performance Optimization**: Lazy loading, efficient paragraph processing, and color assignment based on message index
+
+#### API Endpoints
+
+- `GET /api/source-attribution?reportId=X&channelId=Y` - Fetch source attributions for specific report
+
+#### Configuration
+
+Key settings in `src/lib/config.ts`:
+
+```typescript
+SOURCE_ATTRIBUTION: {
+    MAX_ATTEMPTS: 3,              // Retry attempts for AI calls
+    OUTPUT_BUFFER: 4096,          // Tokens reserved for AI output
+    MAX_CONTEXT_TOKENS: 32000,    // Maximum context window
+    SYSTEM_PROMPT: "...",         // AI system instructions
+    PROMPT_TEMPLATE: "..."        // Template for user prompts
+}
+```
+
+#### Data Types
+
+```typescript
+interface SourceAttribution {
+  id: string; // Unique identifier
+  startIndex: number; // Start position in report body
+  endIndex: number; // End position in report body
+  text: string; // Attributed text content
+  sourceMessageId: string; // Source Discord message ID
+  confidence: number; // AI confidence score (0-1)
+}
+
+interface ReportSourceAttribution {
+  reportId: string; // Report identifier
+  attributions: SourceAttribution[]; // Array of attributions
+  generatedAt: string; // Generation timestamp
+  version: string; // Attribution system version
+}
+```
+
+#### Components
+
+- **AttributedReportViewer**: Main container managing attribution state and API calls
+- **InteractiveReportBody**: Renders report text with highlighted attributed segments
+- **SourceTooltip**: Rich tooltips displaying source message details and confidence scores
+
+#### Integration
+
+- Integrated with cron jobs for background attribution generation
+- Uses same caching strategy as main reports (REPORTS_CACHE KV namespace)
+- Cache keys: `attribution:{reportId}`
+- Supports cache invalidation for specific reports
+
 ## Development and Testing
 
 ### Environment Setup
@@ -250,6 +322,10 @@ src/
 ├── components/           # Reusable React components
 │   ├── current-events/   # Channel-specific UI (e.g., ChannelCard.tsx)
 │   ├── executive-orders/ # Executive Orders UI
+│   ├── source-attribution/ # Source attribution components
+│   │   ├── AttributedReportViewer.tsx  # Main attribution container
+│   │   ├── InteractiveReportBody.tsx   # Highlighted report text
+│   │   └── SourceTooltip.tsx           # Rich source tooltips
 │   ├── NewsGlobe.tsx     # 3D interactive news globe component
 │   ├── Header.tsx        # Application header with navigation and user auth
 │   ├── Footer.tsx        # Application footer
@@ -266,7 +342,11 @@ src/
 │   │   ├── report-ai.ts             # AI integration for reports
 │   │   ├── report-cache.ts          # Report caching logic
 │   │   ├── report-utils.ts          # Report-related utilities
-│   │   └── twitter-utils.ts         # Twitter-specific utilities
+│   │   ├── twitter-utils.ts         # Twitter-specific utilities
+│   │   └── source-attribution/      # Source attribution system
+│   │       ├── source-attribution-service.ts  # Attribution orchestration
+│   │       ├── source-attribution-ai.ts       # AI-powered attribution generation
+│   │       └── index.ts                       # Attribution exports
 │   ├── transformers/     # Data transformation (e.g., executive-orders.ts)
 │   ├── types/            # TypeScript interfaces (e.g., core.ts)
 │   ├── instagram-service.ts         # Instagram API integration
@@ -368,6 +448,7 @@ Generates .open-next/ artifacts and deploys via wrangler.
 - **/api/reports**: Generates reports from Discord messages via configurable AI provider; GET fetches cached summaries.
 - **/api/channels**: Retrieves guild channels.
 - **/api/geocode**: Geocodes a city name (used by News Globe).
+- **/api/source-attribution**: Fetches source attributions for specific reports, mapping report content to original Discord messages.
 - **/api/stripe/checkout**: Initiates a Stripe checkout session for subscriptions.
 - **/api/stripe/webhook**: Handles incoming Stripe webhook events (e.g., `checkout.session.completed`).
 - **/api/oembed/twitter**: Provides Twitter OEmbed data for embedded tweets.
