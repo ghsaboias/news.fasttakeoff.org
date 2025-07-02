@@ -234,6 +234,22 @@ Extract entities and respond with the following JSON structure:
 }
 `,
     },
+    MESSAGE_FILTERING: {
+        // Batch size for message classification
+        BATCH_SIZE: 20,
+        // Maximum retries for failed batches
+        MAX_ATTEMPTS: 2,
+        // Delay between batches in milliseconds
+        BATCH_DELAY_MS: 500,
+        // Enable/disable message filtering
+        ENABLED: true,
+        // Default filter mode (lenient = err on side of inclusion)
+        DEFAULT_MODE: 'lenient' as const,
+        // System prompt for message classification
+        SYSTEM_PROMPT: 'You are an expert content relevance classifier. Respond only in valid JSON format with precise classifications.',
+        // Cache TTL for filter results
+        CACHE_TTL: 30 * 60, // 30 minutes
+    },
     BRAZIL_NEWS: {
         CURATE_PROMPT: `Você é um curador especializado em notícias brasileiras de alto impacto, focado em fatos e desenvolvimentos concretos sobre o Brasil. Analise os seguintes artigos e selecione apenas notícias factuais sobre:
 
