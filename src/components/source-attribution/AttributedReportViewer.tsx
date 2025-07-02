@@ -115,14 +115,14 @@ export function AttributedReportViewer({
             />
 
             {/* Attribution Stats */}
-            {attributions?.attributions && attributions.attributions.length > 0 && (
+            {attributions?.attributions && attributions?.attributions?.length > 0 && (
                 <div className="mt-4 text-xs text-gray-500">
-                    Generated {attributions.attributions.length} source attribution(s) •
+                    Generated {attributions?.attributions?.length} source attribution(s) •
                     Average confidence: {Math.round(
-                        attributions.attributions.reduce((sum, attr) => sum + attr.confidence, 0) /
-                        attributions.attributions.length * 100
+                        attributions?.attributions?.reduce((sum, attr) => sum + attr.confidence, 0) /
+                        attributions?.attributions?.length * 100
                     )}% •
-                    Coverage: {usedSourceMessages.length}/{sourceMessages.length} sources
+                    Coverage: {usedSourceMessages?.length}/{sourceMessages?.length} sources
                 </div>
             )}
         </div>
