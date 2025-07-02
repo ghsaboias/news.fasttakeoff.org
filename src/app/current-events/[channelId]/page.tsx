@@ -11,6 +11,13 @@ export const revalidate = 600;
 // Pre-generate channel pages
 export async function generateStaticParams() {
     try {
+        // Detect build environment - skip static generation during build
+        const isBuildTime = process.env.NODE_ENV === 'production' && process.env.NEXT_PHASE === 'phase-production-build';
+        if (isBuildTime) {
+            console.log('[BUILD] Skipping static generation for channel pages during build phase');
+            return [];
+        }
+
         const { env } = await getCacheContext();
         if (!env) return [];
 
