@@ -1,5 +1,4 @@
 import { getAIAPIKey, getAIProviderConfig } from '@/lib/ai-config';
-import { AI } from '@/lib/config';
 import { DiscordMessage } from '@/lib/types/core';
 import { Cloudflare } from '../../../worker-configuration';
 

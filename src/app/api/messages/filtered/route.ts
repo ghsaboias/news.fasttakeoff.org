@@ -62,7 +62,12 @@ export async function POST(request: Request) {
         });
 
         // Convert Map to object for JSON serialization
-        const resultsObject: Record<string, any> = {};
+        const resultsObject: Record<string, {
+            messages: unknown[];
+            source: string;
+            metadata: unknown;
+            filterStats?: unknown;
+        }> = {};
         for (const [channelId, result] of results.entries()) {
             resultsObject[channelId] = {
                 messages: result.messages,
