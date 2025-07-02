@@ -68,7 +68,7 @@ export default function Footer() {
                         <h4 className="text-sm font-semibold text-card">Contact</h4>
                         <ul className="space-y-2 text-sm text-card">
                             <li>
-                                <a href="https://twitter.com/fasttakeoff" className="hover:underline">
+                                <a href="https://x.com/fasttakeoff" className="hover:underline">
                                     Twitter
                                 </a>
                             </li>
