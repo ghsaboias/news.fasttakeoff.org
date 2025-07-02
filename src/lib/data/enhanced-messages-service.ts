@@ -1,6 +1,7 @@
 import { AI } from '@/lib/config';
 import { DiscordMessage } from '@/lib/types/core';
 import { MessageFilter, MessageFilterResult } from '@/lib/utils/message-filter';
+import { CacheManager } from '../cache-utils';
 import { Cloudflare } from '../../../worker-configuration';
 import { MessagesService } from './messages-service';
 
@@ -30,9 +31,11 @@ export interface EnhancedMessageResult {
  * on top of the existing MessagesService
  */
 export class EnhancedMessagesService extends MessagesService {
+    private filterCacheManager: CacheManager;
     
     constructor(env: Cloudflare.Env) {
         super(env);
+        this.filterCacheManager = new CacheManager(env);
     }
 
     /**
@@ -244,7 +247,7 @@ export class EnhancedMessagesService extends MessagesService {
 
     private async getCachedFilterResult(cacheKey: string): Promise<MessageFilterResult | null> {
         try {
-            const cached = await this.cacheManager.get<MessageFilterResult>('MESSAGES_CACHE', cacheKey);
+            const cached = await this.filterCacheManager.get<MessageFilterResult>('MESSAGES_CACHE', cacheKey);
             return cached;
         } catch (error) {
             console.warn(`[ENHANCED_MESSAGES] Failed to get cached filter result:`, error);
@@ -254,7 +257,7 @@ export class EnhancedMessagesService extends MessagesService {
 
     private async cacheFilterResult(cacheKey: string, result: MessageFilterResult): Promise<void> {
         try {
-            await this.cacheManager.put(
+            await this.filterCacheManager.put(
                 'MESSAGES_CACHE', 
                 cacheKey, 
                 result, 
