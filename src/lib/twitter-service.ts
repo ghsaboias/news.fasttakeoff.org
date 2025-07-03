@@ -3,8 +3,8 @@ import { Cloudflare, KVNamespace } from '../../worker-configuration';
 import { URLs } from './config';
 import { countTwitterCharacters, truncateForTwitter } from './utils/twitter-utils';
 
-const TWITTER_API_URL = 'https://api.x.com/2/tweets';
-const TOKEN_URL = 'https://api.x.com/2/oauth2/token'; // X API token endpoint
+const TWITTER_API_URL = 'https://api.twitter.com/2/tweets';
+const TOKEN_URL = 'https://api.twitter.com/2/oauth2/token'; // X API token endpoint
 
 // Interface for the object stored in KV
 interface TwitterTokens {

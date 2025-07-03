@@ -15,7 +15,7 @@ export async function POST(request: Request) {
         const twitterService = new TwitterService(env);
 
         try {
-            await twitterService.postThreadedTweet(report as Report);
+            await twitterService.postSingleTweet(report as Report);
 
             return {
                 success: true,
