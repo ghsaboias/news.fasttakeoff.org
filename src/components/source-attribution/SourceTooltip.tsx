@@ -104,7 +104,7 @@ function TooltipContentBody({ attribution, sourceMessages }: { attribution: Sour
                     <div className={`text-xs sm:text-sm font-medium ${getConfidenceColor(attribution.confidence)}`}>
                         {Math.round(attribution.confidence * 100)}% confident
                     </div>
-                    <div className="text-xs text-gray-300">
+                    <div className="text-xs text-muted-foreground">
                         <LocalDateTimeFull
                             dateString={sourceMessage.timestamp}
                             options={{
@@ -117,24 +117,24 @@ function TooltipContentBody({ attribution, sourceMessages }: { attribution: Sour
             </div>
 
             {/* Selected Text */}
-            <div className="mb-3 p-2 bg-white/10 rounded border border-white/20">
-                <div className="text-xs text-gray-300 mb-1">Selected Text:</div>
-                <div className="text-sm font-medium text-white break-words">&ldquo;{attribution.text}&rdquo;</div>
+            <div className="mb-3 p-2 bg-accent/10 rounded border border-accent/20">
+                <div className="text-xs text-muted-foreground mb-1">Selected Text:</div>
+                <p className="text-sm font-medium text-popover-foreground break-words">&ldquo;{attribution.text}&rdquo;</p>
             </div>
 
             {/* Message Details */}
             <div className="space-y-3">
                 {/* Message Content */}
                 {sourceMessage.content && !sourceMessage.content.includes('https') && (
-                    <div className="p-2 bg-white/10 rounded border border-white/20">
-                        <div className="text-xs text-gray-300 mb-1">Content:</div>
-                        <div className="text-sm text-gray-100 break-words break-all">
+                    <div className="p-2 bg-muted/30 rounded border border-muted/50">
+                        <div className="text-xs text-muted-foreground mb-1">Content:</div>
+                        <div className="text-sm text-popover-foreground break-words break-all">
                             {isTwitterPost || isTelegramPost ? (
                                 <Link
                                     href={sourceMessage.content}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="text-blue-300 hover:underline"
+                                    className="text-accent hover:underline"
                                 >
                                     {sourceMessage.content}
                                 </Link>
@@ -149,7 +149,7 @@ function TooltipContentBody({ attribution, sourceMessages }: { attribution: Sour
                 {sourceMessage.embeds && sourceMessage.embeds.length > 0 && (
                     <div className="space-y-2">
                         {sourceMessage.embeds.slice(0, 2).map((embed, embedIndex) => (
-                            <div key={embedIndex} className="p-2 bg-white/10 rounded border border-white/20 text-xs">
+                            <div key={embedIndex} className="p-2 bg-muted/30 rounded border border-muted/50 text-xs">
                                 {/* Embed Author */}
                                 {embed.author && (
                                     <div className="flex items-center gap-2 mb-2">
@@ -164,11 +164,11 @@ function TooltipContentBody({ attribution, sourceMessages }: { attribution: Sour
                                             />
                                         )}
                                         <div className="flex-1">
-                                            <span className="font-medium text-gray-200">
+                                            <span className="font-medium text-popover-foreground">
                                                 {embed.author.name}
                                             </span>
                                             {embed.timestamp && (
-                                                <div className="text-xs text-gray-400">
+                                                <div className="text-xs text-muted-foreground">
                                                     <LocalDateTimeFull
                                                         dateString={embed.timestamp}
                                                         options={{
@@ -190,12 +190,12 @@ function TooltipContentBody({ attribution, sourceMessages }: { attribution: Sour
                                                 href={embed.url}
                                                 target="_blank"
                                                 rel="noopener noreferrer"
-                                                className="font-medium text-blue-300 hover:underline line-clamp-2"
+                                                className="font-medium text-accent hover:underline line-clamp-2"
                                             >
                                                 {embed.title}
                                             </Link>
                                         ) : (
-                                            <div className="font-medium text-gray-100 line-clamp-2">
+                                            <div className="font-medium text-popover-foreground line-clamp-2">
                                                 {embed.title}
                                             </div>
                                         )}
@@ -205,7 +205,7 @@ function TooltipContentBody({ attribution, sourceMessages }: { attribution: Sour
                                 {/* Embed Description */}
                                 {embed.description && (
                                     <div className="mb-2">
-                                        <p className="text-gray-200 line-clamp-5">
+                                        <p className="text-popover-foreground line-clamp-5">
                                             {embed.description}
                                         </p>
                                     </div>
@@ -226,17 +226,17 @@ function TooltipContentBody({ attribution, sourceMessages }: { attribution: Sour
                                 {embed.fields && embed.fields.length > 0 && (
                                     <div className="space-y-1">
                                         {embed.fields.slice(0, 2).map((field, fieldIndex) => (
-                                            <div key={fieldIndex} className="border-l-2 border-white/30 pl-2">
-                                                <p className="font-medium text-gray-200">
+                                            <div key={fieldIndex} className="border-l-2 border-accent/40 pl-2">
+                                                <p className="font-medium text-popover-foreground">
                                                     {field.name}:
                                                 </p>
-                                                <p className="text-gray-300 line-clamp-2">
+                                                <p className="text-muted-foreground line-clamp-2">
                                                     {parseTextWithLinks(field.value)}
                                                 </p>
                                             </div>
                                         ))}
                                         {embed.fields.length > 2 && (
-                                            <div className="text-gray-400 text-center">
+                                            <div className="text-muted-foreground text-center">
                                                 + {embed.fields.length - 2} more fields
                                             </div>
                                         )}
@@ -245,14 +245,14 @@ function TooltipContentBody({ attribution, sourceMessages }: { attribution: Sour
 
                                 {/* Translation info */}
                                 {embed.footer?.text && embed.footer.text.includes('Translated from:') && (
-                                    <div className="mt-1 text-gray-300 italic">
+                                    <div className="mt-1 text-muted-foreground italic">
                                         {embed.footer.text}
                                     </div>
                                 )}
                             </div>
                         ))}
                         {sourceMessage.embeds.length > 2 && (
-                            <div className="text-xs text-gray-400 text-center">
+                            <div className="text-xs text-muted-foreground text-center">
                                 + {sourceMessage.embeds.length - 2} more embeds
                             </div>
                         )}
@@ -262,7 +262,7 @@ function TooltipContentBody({ attribution, sourceMessages }: { attribution: Sour
                 {/* Attachments */}
                 {sourceMessage.attachments && sourceMessage.attachments.length > 0 && (
                     <div className="space-y-2">
-                        <div className="text-xs text-gray-300 font-medium">
+                        <div className="text-xs text-muted-foreground font-medium">
                             Media ({sourceMessage.attachments.length}):
                         </div>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -287,14 +287,14 @@ function TooltipContentBody({ attribution, sourceMessages }: { attribution: Sour
                                     );
                                 }
                                 return (
-                                    <div key={attachment.id} className="bg-white/10 rounded border border-white/20 p-2 h-12 flex items-center justify-center">
-                                        <span className="text-xs text-gray-300">📎 File</span>
+                                    <div key={attachment.id} className="bg-muted/30 rounded border border-muted/50 p-2 h-12 flex items-center justify-center">
+                                        <span className="text-xs text-muted-foreground">📎 File</span>
                                     </div>
                                 );
                             })}
                         </div>
                         {sourceMessage.attachments.length > 4 && (
-                            <div className="text-xs text-gray-400 text-center">
+                            <div className="text-xs text-muted-foreground text-center">
                                 + {sourceMessage.attachments.length - 4} more files
                             </div>
                         )}
@@ -313,10 +313,10 @@ export function SourceTooltip({ attribution, sourceMessages, children }: SourceT
             </PopoverTrigger>
             <PopoverContent
                 side="top"
-                className="bg-gray-900 border-gray-700 text-white p-3 sm:p-4 w-screen max-w-xs sm:max-w-lg sm:w-auto mx-2 sm:mx-0"
+                className="bg-popover border-border text-popover-foreground p-3 sm:p-4 w-screen max-w-xs sm:max-w-lg sm:w-auto mx-2 sm:mx-0"
                 sideOffset={8}
             >
-                <PopoverArrow className="fill-gray-900" />
+                <PopoverArrow className="fill-popover" />
                 <TooltipContentBody attribution={attribution} sourceMessages={sourceMessages} />
             </PopoverContent>
         </Popover>
