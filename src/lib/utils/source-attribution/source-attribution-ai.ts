@@ -71,12 +71,10 @@ export class SourceAttributionAI {
 
     private static createPrompt(report: Report, sourceMessages: DiscordMessage[]): string {
         // Format source messages for the prompt using the same rich formatting as report generation
-        const formattedMessages = sourceMessages.map((msg, index) => {
+        const formattedMessages = sourceMessages.map((msg) => {
             const formatted = formatSingleMessage(msg);
-            console.log(`[SOURCE_ATTRIBUTION] Message ${index + 1} (ID: ${msg.id}):`);
             console.log(`[SOURCE_ATTRIBUTION] Raw content: "${msg.content}"`);
             console.log(`[SOURCE_ATTRIBUTION] Formatted for AI:`, formatted);
-            console.log(`[SOURCE_ATTRIBUTION] Embeds count:`, msg.embeds?.length || 0);
             if (msg.embeds?.length) {
                 msg.embeds.forEach((embed, embedIndex) => {
                     console.log(`[SOURCE_ATTRIBUTION] Embed ${embedIndex + 1}:`, {
