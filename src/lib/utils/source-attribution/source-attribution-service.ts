@@ -59,8 +59,6 @@ export class SourceAttributionService {
         sourceMessages: DiscordMessage[],
         cacheKey: string
     ): Promise<ReportSourceAttribution> {
-        console.log(`[SOURCE_ATTRIBUTION] Generating attributions for report ${report.reportId}`);
-
         try {
             // Generate new attributions
             const attributions = await SourceAttributionAI.generateAttributions(

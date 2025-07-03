@@ -73,18 +73,6 @@ export class SourceAttributionAI {
         // Format source messages for the prompt using the same rich formatting as report generation
         const formattedMessages = sourceMessages.map((msg) => {
             const formatted = formatSingleMessage(msg);
-            console.log(`[SOURCE_ATTRIBUTION] Raw content: "${msg.content}"`);
-            console.log(`[SOURCE_ATTRIBUTION] Formatted for AI:`, formatted);
-            if (msg.embeds?.length) {
-                msg.embeds.forEach((embed, embedIndex) => {
-                    console.log(`[SOURCE_ATTRIBUTION] Embed ${embedIndex + 1}:`, {
-                        title: embed.title,
-                        description: embed.description?.substring(0, 100) + '...',
-                        fieldsCount: embed.fields?.length || 0
-                    });
-                });
-            }
-            console.log('---');
             return `MESSAGE_ID: ${msg.id}
 ${formatted}
 ---`;
