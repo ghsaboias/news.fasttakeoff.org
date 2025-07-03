@@ -156,14 +156,6 @@ ${formatted}
         let parsedData: { attributions: Partial<SourceAttribution>[] };
         try {
             parsedData = JSON.parse(content);
-            console.log(`[SOURCE_ATTRIBUTION] AI returned ${parsedData.attributions?.length || 0} attributions:`);
-            parsedData.attributions?.forEach((attr, index) => {
-                console.log(`[SOURCE_ATTRIBUTION] Attribution ${index + 1}:`, {
-                    text: attr.text?.substring(0, 80) + '...',
-                    sourceMessageId: attr.sourceMessageId,
-                    confidence: attr.confidence
-                });
-            });
         } catch (parseError) {
             console.error('[SOURCE_ATTRIBUTION] Failed to parse AI JSON response:', parseError);
             console.error('[SOURCE_ATTRIBUTION] Raw AI response:', content);
@@ -195,7 +187,6 @@ ${formatted}
                 // Validate confidence is in valid range
                 const confidence = Math.max(0, Math.min(1, attr.confidence));
 
-                console.log(`[SOURCE_ATTRIBUTION] ✅ Found text position for: "${attr.text?.substring(0, 50)}..." -> positions ${position.start}-${position.end}`);
                 validAttributions.push({
                     id: attr.id,
                     startIndex: position.start,
