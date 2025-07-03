@@ -10,12 +10,7 @@ export const revalidate = 300;
 // Pre-generate some popular report pages
 export async function generateStaticParams() {
     try {
-        // Detect build environment - skip static generation during build
-        const isBuildTime = process.env.NODE_ENV === 'production' && process.env.NEXT_PHASE === 'phase-production-build';
-        if (isBuildTime) {
-            console.log('[BUILD] Skipping static generation for report pages during build phase');
-            return [];
-        }
+        // Generate static params for popular routes
 
         const { env } = await getCacheContext();
         if (!env) return [];
@@ -23,21 +18,32 @@ export async function generateStaticParams() {
         const reportService = new ReportService(env);
         const channels = await getChannels(env);
 
-        // Get recent reports from top 5 channels
-        const params: Array<{ channelId: string; reportId: string }> = [];
-        for (const channel of channels.slice(0, 5)) {
+        // Collect all reports with their timestamps
+        const allReports: Array<{ channelId: string; reportId: string; generatedAt: string }> = [];
+        
+        for (const channel of channels) {
             const reports = await reportService.getAllReportsForChannel(channel.id);
-            if (reports) {
-                // Get 3 most recent reports per channel
-                reports.slice(0, 3).forEach(report => {
-                    params.push({
+            if (reports && reports.length > 0) {
+                reports.forEach(report => {
+                    allReports.push({
                         channelId: channel.id,
-                        reportId: report.reportId
+                        reportId: report.reportId,
+                        generatedAt: report.generatedAt
                     });
                 });
             }
         }
-        return params.slice(0, 20); // Limit to 20 pre-generated pages
+        
+        // Sort by most recent first and take top 10
+        const topReports = allReports
+            .sort((a, b) => new Date(b.generatedAt).getTime() - new Date(a.generatedAt).getTime())
+            .slice(0, 10);
+        
+        // Return params without the timestamp
+        return topReports.map(({ channelId, reportId }) => ({
+            channelId,
+            reportId
+        }));
     } catch (error) {
         console.error('Error generating static params:', error);
         return [];
