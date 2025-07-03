@@ -15,7 +15,7 @@ function formatHumanReadableTimestamp(date: Date): string {
             default: return 'th';
         }
     };
-    
+
     return date.toLocaleDateString('en-US', {
         month: 'short',
         year: 'numeric',
@@ -117,6 +117,10 @@ export function isReportTruncated(report: { body: string }): boolean {
     }
 
     if (/[.]["""]$/.test(trimmedBody)) {
+        return false;
+    }
+
+    if (/[.]["”"]$/.test(trimmedBody)) {
         return false;
     }
 

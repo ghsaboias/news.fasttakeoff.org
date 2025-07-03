@@ -254,9 +254,60 @@ export class TwitterService {
     }
 
     /**
-     * Posts a single tweet
+     * Formats a single tweet with headline and URL
      */
-    private async postSingleTweet(
+    private formatSingleTweet(headline: string, reportUrl: string): string {
+        const baseText = `${headline}\n\n${reportUrl}`;
+
+        // Check if it fits within Twitter's limit
+        if (countTwitterCharacters(baseText) <= 280) {
+            return baseText;
+        }
+
+        // If too long, truncate headline to fit with URL
+        const urlLength = countTwitterCharacters(`\n\n${reportUrl}`);
+        const availableLength = 280 - urlLength;
+
+        if (availableLength > 50) { // Only truncate if we have reasonable space
+            const truncatedHeadline = truncateForTwitter(headline, urlLength + 4); // +4 for \n\n separators
+            return `${truncatedHeadline}\n\n${reportUrl}`;
+        }
+
+        // If headline is too short after truncation, just post the link with minimal text
+        return `Breaking news:\n\n${reportUrl}`;
+    }
+
+    /**
+     * Posts a single tweet with headline and URL
+     */
+    async postSingleTweet(report: Report): Promise<void> {
+        const accessToken = await this.getValidAccessToken();
+
+        if (!accessToken) {
+            console.error('[TWITTER] Failed to post tweet: Could not obtain a valid access token after checking/refreshing.');
+            return;
+        }
+
+        try {
+            const reportUrl = `${URLs.WEBSITE_URL}/current-events/${report.channelId}/${report.reportId}`;
+            const tweetText = this.formatSingleTweet(report.headline, reportUrl);
+
+            console.log(`[TWITTER] Posting single tweet (${countTwitterCharacters(tweetText)} chars): "${tweetText.substring(0, 50)}..."`);
+
+            const response = await this.postSingleTweetInternal(tweetText, accessToken);
+
+            console.log(`[TWITTER] Successfully posted single tweet for report ${report.reportId}. Tweet ID: ${response.data.id}`);
+
+        } catch (error: unknown) {
+            console.error('[TWITTER] Failed to post single tweet:', error instanceof Error ? error.message : String(error));
+            throw error;
+        }
+    }
+
+    /**
+     * Posts a single tweet (internal method)
+     */
+    private async postSingleTweetInternal(
         text: string,
         accessToken: string,
         replyToId?: string
@@ -285,6 +336,7 @@ export class TwitterService {
 
     /**
      * Posts a threaded tweet for a report
+     * @deprecated Use postSingleTweet instead for simpler posting
      */
     async postThreadedTweet(report: Report): Promise<void> {
         const accessToken = await this.getValidAccessToken();
@@ -301,7 +353,7 @@ export class TwitterService {
             const tweet1Text = report.headline;
 
             console.log(`[TWITTER] Posting first tweet (${countTwitterCharacters(tweet1Text)} chars): "${tweet1Text.substring(0, 50)}..."`);
-            const tweet1Response = await this.postSingleTweet(tweet1Text, accessToken);
+            const tweet1Response = await this.postSingleTweetInternal(tweet1Text, accessToken);
             const tweet1Id = tweet1Response.data.id;
 
             console.log(`[TWITTER] First tweet posted successfully: ${tweet1Id}`);
@@ -313,7 +365,7 @@ export class TwitterService {
                 const tweet2Text = this.formatSecondTweet(firstParagraph, reportUrl);
 
                 console.log(`[TWITTER] Posting second tweet (${countTwitterCharacters(tweet2Text)} chars) as reply to ${tweet1Id}`);
-                const tweet2Response = await this.postSingleTweet(tweet2Text, accessToken, tweet1Id);
+                const tweet2Response = await this.postSingleTweetInternal(tweet2Text, accessToken, tweet1Id);
 
                 console.log(`[TWITTER] Successfully posted threaded tweet for report ${report.reportId}. Thread: ${tweet1Id} -> ${tweet2Response.data.id}`);
             } else {
@@ -328,10 +380,10 @@ export class TwitterService {
 
     /**
      * Posts a tweet using a valid access token obtained from KV (refreshes if needed).
-     * @deprecated Use postThreadedTweet instead for better engagement
+     * Now uses single tweet format with headline and URL
      */
     async postTweet(report: Report): Promise<void> {
-        // For backward compatibility, delegate to threaded tweet
-        await this.postThreadedTweet(report);
+        // Use the new single tweet approach
+        await this.postSingleTweet(report);
     }
 }
