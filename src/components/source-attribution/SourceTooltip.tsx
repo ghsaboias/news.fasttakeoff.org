@@ -4,7 +4,6 @@ import { Popover, PopoverArrow, PopoverContent, PopoverTrigger } from '@/compone
 import { LocalDateTimeFull } from '@/components/utils/LocalDateTime';
 import { DiscordMessage, SourceAttribution } from '@/lib/types/core';
 import { detectTelegramUrls } from '@/lib/utils';
-import { formatSingleMessage } from '@/lib/utils/report-utils';
 import { detectTweetUrls } from '@/lib/utils/twitter-utils';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -164,9 +163,22 @@ function TooltipContentBody({ attribution, sourceMessages }: { attribution: Sour
                                                 unoptimized
                                             />
                                         )}
-                                        <span className="font-medium text-gray-200">
-                                            {embed.author.name}
-                                        </span>
+                                        <div className="flex-1">
+                                            <span className="font-medium text-gray-200">
+                                                {embed.author.name}
+                                            </span>
+                                            {embed.timestamp && (
+                                                <div className="text-xs text-gray-400">
+                                                    <LocalDateTimeFull
+                                                        dateString={embed.timestamp}
+                                                        options={{
+                                                            dateStyle: 'short',
+                                                            timeStyle: 'short'
+                                                        }}
+                                                    />
+                                                </div>
+                                            )}
+                                        </div>
                                     </div>
                                 )}
 
@@ -193,7 +205,7 @@ function TooltipContentBody({ attribution, sourceMessages }: { attribution: Sour
                                 {/* Embed Description */}
                                 {embed.description && (
                                     <div className="mb-2">
-                                        <p className="text-gray-200 line-clamp-3">
+                                        <p className="text-gray-200 line-clamp-5">
                                             {embed.description}
                                         </p>
                                     </div>
@@ -205,7 +217,7 @@ function TooltipContentBody({ attribution, sourceMessages }: { attribution: Sour
                                         <MediaPreview
                                             url={embed.thumbnail.proxy_url || embed.thumbnail.url}
                                             type="image"
-                                            alt={embed.title || "Embed image"}
+                                            alt={embed.title || "Embed thumbnail"}
                                         />
                                     </div>
                                 )}
@@ -246,14 +258,6 @@ function TooltipContentBody({ attribution, sourceMessages }: { attribution: Sour
                         )}
                     </div>
                 )}
-
-                {/* Exact Message Format (as used in AI prompts) */}
-                <div className="mb-3 p-3 bg-blue-900/30 rounded border border-blue-500/30">
-                    <div className="text-xs text-blue-300 font-medium mb-2">Exact Source Data:</div>
-                    <div className="text-xs font-mono bg-black/30 p-2 rounded border border-white/20 whitespace-pre-wrap text-gray-200 max-h-32 overflow-y-auto overflow-x-auto break-all">
-                        {formatSingleMessage(sourceMessage)}
-                    </div>
-                </div>
 
                 {/* Attachments */}
                 {sourceMessage.attachments && sourceMessage.attachments.length > 0 && (
