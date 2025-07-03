@@ -4,6 +4,7 @@ import { Cloudflare } from '../../../worker-configuration';
 import { FacebookService } from '../facebook-service';
 import { InstagramService } from '../instagram-service';
 import { pingSearchEngines } from '../seo/ping-search-engines';
+import { TwitterServicePi } from '../twitter-pi-service';
 import { TwitterService } from '../twitter-service';
 import { EntityExtractor } from '../utils/entity-extraction';
 import { ReportAI, ReportContext } from '../utils/report-ai';
@@ -11,21 +12,52 @@ import { ReportCache } from '../utils/report-cache';
 import { ChannelsService } from './channels-service';
 import { MessagesService } from './messages-service';
 
+interface ReportServiceDependencies {
+    messagesService?: MessagesService;
+    channelsService?: ChannelsService;
+    instagramService?: InstagramService;
+    facebookService?: FacebookService;
+    twitterService?: TwitterService | TwitterServicePi;
+    originalTwitterService?: TwitterService;
+}
+
 export class ReportService {
     private messagesService: MessagesService;
     private channelsService: ChannelsService;
     private instagramService: InstagramService;
     private facebookService: FacebookService;
-    private twitterService: TwitterService;
+    private twitterService!: TwitterService | TwitterServicePi;
+    private originalTwitterService: TwitterService;
     private env: Cloudflare.Env;
+    private usePiForTwitter: string = '';
 
-    constructor(env: Cloudflare.Env) {
+    constructor(env: Cloudflare.Env, dependencies: ReportServiceDependencies = {}) {
         this.env = env;
-        this.messagesService = new MessagesService(env);
-        this.channelsService = new ChannelsService(env);
-        this.instagramService = new InstagramService(env);
-        this.facebookService = new FacebookService(env);
-        this.twitterService = new TwitterService(env);
+        this._initializeTwitterService(dependencies);
+
+        this.messagesService = dependencies.messagesService || new MessagesService(env);
+        this.channelsService = dependencies.channelsService || new ChannelsService(env);
+        this.instagramService = dependencies.instagramService || new InstagramService(env);
+        this.facebookService = dependencies.facebookService || new FacebookService(env);
+        this.originalTwitterService = dependencies.originalTwitterService || new TwitterService(env);
+    }
+
+    private _initializeTwitterService(dependencies: ReportServiceDependencies) {
+        if (dependencies.twitterService) {
+            this.twitterService = dependencies.twitterService;
+            return;
+        }
+
+        this.usePiForTwitter = this.env.USE_PI_FOR_TWITTER || 'false';
+        this.originalTwitterService = dependencies.originalTwitterService || new TwitterService(this.env);
+
+        if (this.usePiForTwitter === 'true') {
+            console.log('[REPORTS] Initializing TwitterService with Pi');
+            this.twitterService = new TwitterServicePi(this.env);
+        } else {
+            console.log('[REPORTS] Initializing TwitterService with original');
+            this.twitterService = this.originalTwitterService;
+        }
     }
 
     async createReportAndGetMessages(channelId: string, timeframe: TimeframeKey): Promise<{ report: Report | null; messages: DiscordMessage[] }> {
@@ -358,36 +390,74 @@ export class ReportService {
     }
 
     private async _postTopReportToSocialMedia(generatedReports: Report[]): Promise<void> {
-        if (generatedReports.length > 0) {
-            const topReport = generatedReports.sort((a, b) => (b.messageCount || 0) - (a.messageCount || 0))[0];
-            console.log(`[REPORTS] Posting top report: ${topReport.channelName} with ${topReport.messageCount} sources.`);
+        if (!generatedReports.length) {
+            console.log('[SOCIAL] No reports to post');
+            return;
+        }
 
-            // Post to Instagram
-            try {
-                await this.instagramService.postNews(topReport);
-                console.log(`[REPORTS] Successfully posted report ${topReport.reportId} to Instagram.`);
-            } catch (err: unknown) {
-                console.error(`[REPORTS] Failed to post report ${topReport.reportId} to Instagram:`, err);
-            }
+        // Sort by message count and take the top report
+        const topReport = generatedReports.sort((a, b) => (b.messageCount || 0) - (a.messageCount || 0))[0];
 
-            // Post to Facebook
-            try {
-                await this.facebookService.postNews(topReport);
-                console.log(`[REPORTS] Successfully posted report ${topReport.reportId} to Facebook.`);
-            } catch (err: unknown) {
-                console.error(`[REPORTS] Failed to post report ${topReport.reportId} to Facebook:`, err);
-            }
+        console.log(`[SOCIAL] Posting top report ${topReport.reportId} with ${topReport.messageCount || 0} messages`);
 
-            // Post to Twitter
+        const postingPromises: Promise<void>[] = [];
+
+        // Instagram posting
+        postingPromises.push(
+            this.instagramService.postNews(topReport).catch((error: Error) => {
+                console.error('[SOCIAL] Instagram posting failed:', error);
+            })
+        );
+
+        // Facebook posting
+        postingPromises.push(
+            this.facebookService.postNews(topReport).catch((error: Error) => {
+                console.error('[SOCIAL] Facebook posting failed:', error);
+            })
+        );
+
+        // Twitter posting with Pi fallback
+        postingPromises.push(
+            this._postToTwitterWithFallback(topReport)
+        );
+
+        await Promise.allSettled(postingPromises);
+    }
+
+    /**
+     * Posts to Twitter with automatic fallback to original service if Pi fails
+     */
+    private async _postToTwitterWithFallback(report: Report): Promise<void> {
+        const isPiEnabled = this.usePiForTwitter === 'true';
+
+        if (isPiEnabled) {
+            console.log('[TWITTER] Attempting to post via Pi API...');
             try {
-                // Use threaded tweet for better engagement
-                await this.twitterService.postThreadedTweet(topReport);
-                console.log(`[REPORTS] Successfully posted threaded tweet for report ${topReport.reportId} to Twitter.`);
-            } catch (err: unknown) {
-                console.error(`[REPORTS] Failed to post threaded tweet for report ${topReport.reportId} to Twitter:`, err);
+                await this.twitterService.postThreadedTweet(report);
+                console.log('[TWITTER] ✅ Successfully posted via Pi API');
+                return;
+            } catch (error) {
+                console.error('[TWITTER] ❌ Pi API failed:', error);
+                console.log('[TWITTER] 🔄 Falling back to original Twitter service...');
+
+                try {
+                    await this.originalTwitterService.postThreadedTweet(report);
+                    console.log('[TWITTER] ✅ Successfully posted via fallback (original service)');
+                    return;
+                } catch (fallbackError) {
+                    console.error('[TWITTER] ❌ Fallback also failed:', fallbackError);
+                    throw new Error(`Both Pi and original Twitter services failed. Pi error: ${error}. Fallback error: ${fallbackError}`);
+                }
             }
         } else {
-            console.log('[REPORTS] No reports generated, skipping social media posts.');
+            console.log('[TWITTER] Using original Twitter service (Pi disabled)...');
+            try {
+                await this.originalTwitterService.postThreadedTweet(report);
+                console.log('[TWITTER] ✅ Successfully posted via original service');
+            } catch (error) {
+                console.error('[TWITTER] ❌ Original Twitter service failed:', error);
+                throw error;
+            }
         }
     }
 
