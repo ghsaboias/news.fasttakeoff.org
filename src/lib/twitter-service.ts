@@ -151,18 +151,25 @@ export class TwitterService {
 
             // Successfully refreshed
             const newAccessToken = successData.access_token;
-            const newRefreshToken = successData.refresh_token || storedTokens.refresh_token;
             const expiresIn = successData.expires_in;
-            const expiresAt = Math.floor(Date.now() / 1000) + expiresIn - 60;
+            const expiresAt = Math.floor(Date.now() / 1000) + expiresIn - 60; // 60s buffer
 
             const newTokens: TwitterTokens = {
                 access_token: newAccessToken,
-                refresh_token: newRefreshToken,
+                refresh_token: storedTokens.refresh_token, // Start with the old one
                 expires_at: expiresAt
             };
 
+            // Twitter's new refresh token policy: a new one may be issued
+            if (successData.refresh_token) {
+                console.log('[TWITTER] New refresh token received, updating stored token.');
+                newTokens.refresh_token = successData.refresh_token;
+            } else {
+                console.log('[TWITTER] Existing refresh token remains valid.');
+            }
+
             await this.kv.put(this.kvKey, JSON.stringify(newTokens));
-            console.log(`[TWITTER] Token refreshed successfully. Expires: ${new Date(expiresAt * 1000).toISOString()}`);
+            console.log(`[TWITTER] Token refreshed successfully. New access token expires: ${new Date(expiresAt * 1000).toISOString()}`);
 
             return newAccessToken;
 
