@@ -106,6 +106,33 @@ export async function scheduled(event: ScheduledEvent, env: Cloudflare.Env): Pro
                 await logRun('FEEDS', () => feedsService.createFreshSummary(), { failFast: false });
                 taskResult = 'Generated fresh feed summary (manual)';
                 break;
+            case 'HOURLY_MANUAL_TRIGGER': {
+                // Manually triggered hourly tasks
+                console.log('[CRON] Manually running full hourly task sequence.');
+                await logRun('MESSAGES', () => messagesService.updateMessages());
+                await logRun('REPORTS', () => reportService.createFreshReports());
+                await logRun('FEEDS', () => feedsService.createFreshSummary(), { failFast: false });
+
+                // Generate source attributions for new reports in background
+                await logRun('ATTRIBUTIONS', async () => {
+                    const reports = await reportService.getAllReports(10); // Get latest reports
+                    const messagesByReportId = new Map<string, DiscordMessage[]>();
+
+                    for (const report of reports) {
+                        if (report.messageIds?.length && report.channelId) {
+                            const cachedMessages = await messagesService.getAllCachedMessagesForChannel(report.channelId);
+                            const allMessages = cachedMessages?.messages || [];
+                            const sourceMessages = allMessages.filter((msg: DiscordMessage) => report.messageIds!.includes(msg.id));
+                            messagesByReportId.set(report.reportId, sourceMessages);
+                        }
+                    }
+
+                    await attributionService.preGenerateAttributions(reports, messagesByReportId);
+                }, { failFast: false });
+
+                taskResult = 'Manual hourly tasks completed with attributions';
+                break;
+            }
             default:
                 console.warn(`[CRON] Unknown or unhandled cron pattern: "${event.cron}", skipping task.`);
         }

@@ -59,10 +59,10 @@ export class ReportService {
             this._extractEntitiesInBackground(report).catch(() => { });
 
             // Ping search engines immediately after caching
-            const newUrls = [
-                `https://news.fasttakeoff.org/current-events/${channelId}/${report.reportId}`,
-                `https://news.fasttakeoff.org/current-events/${channelId}`
-            ];
+            // const newUrls = [
+            //     `https://news.fasttakeoff.org/current-events/${channelId}/${report.reportId}`,
+            //     `https://news.fasttakeoff.org/current-events/${channelId}`
+            // ];
             // pingSearchEngines(newUrls).catch(() => { }); // Fire and forget
 
             return { report, messages };
@@ -317,10 +317,10 @@ export class ReportService {
                             this._extractEntitiesInBackground(report).catch(() => { });
 
                             // Ping search engines for batch-generated reports
-                            const newUrls = [
-                                `https://news.fasttakeoff.org/current-events/${channelId}/${report.reportId}`,
-                                `https://news.fasttakeoff.org/current-events/${channelId}`
-                            ];
+                            // const newUrls = [
+                            //     `https://news.fasttakeoff.org/current-events/${channelId}/${report.reportId}`,
+                            //     `https://news.fasttakeoff.org/current-events/${channelId}`
+                            // ];
                             // pingSearchEngines(newUrls).catch(() => { }); // Fire and forget
 
                             return report;
