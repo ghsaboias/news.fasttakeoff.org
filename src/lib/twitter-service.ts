@@ -80,6 +80,10 @@ export class TwitterService {
                 return null;
             }
 
+            // Log the last 4 characters of the refresh token for debugging
+            const refreshTokenSnippet = storedTokens.refresh_token.slice(-4);
+            console.log(`[TWITTER] Using refresh token ending in "...${refreshTokenSnippet}"`);
+
             const credentials = btoa(`${this.clientId}:${this.clientSecret}`);
             const requestBody = new URLSearchParams({
                 refresh_token: storedTokens.refresh_token,
