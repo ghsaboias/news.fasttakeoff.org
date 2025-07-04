@@ -3,7 +3,6 @@ import { DiscordMessage, EntityExtractionResult, Report } from '@/lib/types/core
 import { Cloudflare } from '../../../worker-configuration';
 import { FacebookService } from '../facebook-service';
 import { InstagramService } from '../instagram-service';
-import { pingSearchEngines } from '../seo/ping-search-engines';
 import { TwitterService } from '../twitter-service';
 import { EntityExtractor } from '../utils/entity-extraction';
 import { ReportAI, ReportContext } from '../utils/report-ai';
@@ -64,7 +63,7 @@ export class ReportService {
                 `https://news.fasttakeoff.org/current-events/${channelId}/${report.reportId}`,
                 `https://news.fasttakeoff.org/current-events/${channelId}`
             ];
-            pingSearchEngines(newUrls).catch(() => { }); // Fire and forget
+            // pingSearchEngines(newUrls).catch(() => { }); // Fire and forget
 
             return { report, messages };
         } catch (error) {
@@ -322,7 +321,7 @@ export class ReportService {
                                 `https://news.fasttakeoff.org/current-events/${channelId}/${report.reportId}`,
                                 `https://news.fasttakeoff.org/current-events/${channelId}`
                             ];
-                            pingSearchEngines(newUrls).catch(() => { }); // Fire and forget
+                            // pingSearchEngines(newUrls).catch(() => { }); // Fire and forget
 
                             return report;
                         }
