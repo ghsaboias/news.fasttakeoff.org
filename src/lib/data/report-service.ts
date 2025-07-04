@@ -379,11 +379,11 @@ export class ReportService {
 
             // Post to Twitter
             try {
-                // Use threaded tweet for better engagement
-                await this.twitterService.postThreadedTweet(topReport);
-                console.log(`[REPORTS] Successfully posted threaded tweet for report ${topReport.reportId} to Twitter.`);
+                // Use single tweet for headline and URL
+                await this.twitterService.postTweet(topReport);
+                console.log(`[REPORTS] Successfully posted tweet for report ${topReport.reportId} to Twitter.`);
             } catch (err: unknown) {
-                console.error(`[REPORTS] Failed to post threaded tweet for report ${topReport.reportId} to Twitter:`, err);
+                console.error(`[REPORTS] Failed to post tweet for report ${topReport.reportId} to Twitter:`, err);
             }
         } else {
             console.log('[REPORTS] No reports generated, skipping social media posts.');
