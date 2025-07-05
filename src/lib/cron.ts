@@ -1,5 +1,4 @@
 import { TimeframeKey } from '@/lib/config';
-import { DiscordMessage } from '@/lib/types/core';
 import { SourceAttributionService } from '@/lib/utils/source-attribution';
 import { Cloudflare } from '../../worker-configuration';
 import { FeedsService } from './data/feeds-service';
@@ -43,29 +42,12 @@ export async function scheduled(event: ScheduledEvent, env: Cloudflare.Env): Pro
 
         switch (event.cron) {
             case '0 * * * *': {
-                // Top of the hour: update messages → create reports → generate feeds → source attributions
+                // Top of the hour: update messages → create reports → generate feeds
                 await logRun('MESSAGES', () => messagesService.updateMessages());
                 await logRun('REPORTS', () => reportService.createFreshReports());
                 await logRun('FEEDS', () => feedsService.createFreshSummary(), { failFast: false });
 
-                // Generate source attributions for new reports in background
-                await logRun('ATTRIBUTIONS', async () => {
-                    const reports = await reportService.getAllReports(10); // Get latest reports
-                    const messagesByReportId = new Map<string, DiscordMessage[]>();
-
-                    for (const report of reports) {
-                        if (report.messageIds?.length && report.channelId) {
-                            const cachedMessages = await messagesService.getAllCachedMessagesForChannel(report.channelId);
-                            const allMessages = cachedMessages?.messages || [];
-                            const sourceMessages = allMessages.filter((msg: DiscordMessage) => report.messageIds!.includes(msg.id));
-                            messagesByReportId.set(report.reportId, sourceMessages);
-                        }
-                    }
-
-                    await attributionService.preGenerateAttributions(reports, messagesByReportId);
-                }, { failFast: false });
-
-                taskResult = 'Hourly tasks completed with attributions';
+                taskResult = 'Hourly tasks completed';
                 break;
             }
             case '5/5 * * * *': {
