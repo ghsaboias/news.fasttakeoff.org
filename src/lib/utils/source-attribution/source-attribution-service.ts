@@ -105,57 +105,6 @@ export class SourceAttributionService {
     }
 
     /**
-     * Pre-generate attributions for multiple reports (for background processing)
-     */
-    async preGenerateAttributions(
-        reports: Report[],
-        messagesByReportId: Map<string, DiscordMessage[]>
-    ): Promise<void> {
-        console.log(`[SOURCE_ATTRIBUTION] Pre-generating attributions for ${reports.length} reports`);
-
-        let successCount = 0;
-        let errorCount = 0;
-
-        // Process in parallel but limit concurrency
-        const BATCH_SIZE = 3;
-        for (let i = 0; i < reports.length; i += BATCH_SIZE) {
-            const batch = reports.slice(i, i + BATCH_SIZE);
-
-            const results = await Promise.allSettled(
-                batch.map(async (report) => {
-                    const sourceMessages = messagesByReportId.get(report.reportId) || [];
-                    if (sourceMessages.length > 0) {
-                        await this.getAttributions(report, sourceMessages);
-                        return { success: true, reportId: report.reportId };
-                    } else {
-                        console.warn(`[SOURCE_ATTRIBUTION] No source messages for report ${report.reportId}, skipping`);
-                        return { success: false, reportId: report.reportId, reason: 'no_messages' };
-                    }
-                })
-            );
-
-            // Track results
-            results.forEach((result, index) => {
-                const report = batch[index];
-                if (result.status === 'fulfilled' && result.value.success) {
-                    successCount++;
-                } else {
-                    errorCount++;
-                    const reason = result.status === 'rejected' ? result.reason : (result.value.reason || 'unknown');
-                    console.warn(`[SOURCE_ATTRIBUTION] Failed for report ${report.reportId}:`, reason);
-                }
-            });
-
-            // Small delay between batches to avoid overwhelming the AI API
-            if (i + BATCH_SIZE < reports.length) {
-                await new Promise(resolve => setTimeout(resolve, 1000));
-            }
-        }
-
-        console.log(`[SOURCE_ATTRIBUTION] Completed attribution generation: ${successCount} succeeded, ${errorCount} failed`);
-    }
-
-    /**
      * Clear attribution cache for a specific report
      */
     async clearAttributionCache(reportId: string): Promise<void> {
