@@ -77,6 +77,8 @@ export class TwitterService {
             const storedTokens = await this.kv.get<TwitterTokens>(this.kvKey, 'json');
             if (!storedTokens?.refresh_token) {
                 console.error('[TWITTER] Refresh failed: No refresh token found in KV.');
+                console.error('[TWITTER] This is expected if the application has not been authorized yet.');
+                console.error('[TWITTER] To get the initial tokens, run the `node scripts/get-tokens.js` script and follow its instructions.');
                 return null;
             }
 
