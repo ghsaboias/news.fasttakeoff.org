@@ -381,7 +381,6 @@ export class ReportService {
             try {
                 // Use single tweet for headline and URL
                 await this.twitterService.postTweet(topReport);
-                console.log(`[REPORTS] Successfully posted tweet for report ${topReport.reportId} to Twitter.`);
             } catch (err: unknown) {
                 console.error(`[REPORTS] Failed to post tweet for report ${topReport.reportId} to Twitter:`, err);
             }
