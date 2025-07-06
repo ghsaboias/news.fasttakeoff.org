@@ -1,3 +1,4 @@
+export { useApi } from './useApi';
 export { useCanvasCamera } from './useCanvasCamera';
 export { useFilters } from './useFilters';
 export { useForceSimulation } from './useForceSimulation';
