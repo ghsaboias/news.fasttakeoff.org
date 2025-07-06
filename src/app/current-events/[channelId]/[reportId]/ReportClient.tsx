@@ -12,11 +12,12 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Loader } from "@/components/ui/loader";
 import { LocalDateTimeFull } from "@/components/utils/LocalDateTime";
-import { DiscordMessage, Report } from "@/lib/types/core";
+import { useApi } from "@/lib/hooks";
+import { DiscordMessage, ReportResponse } from "@/lib/types/core";
 import { ArrowLeft, Check, Eye, EyeOff, Globe, MessageSquare } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Masonry from 'react-masonry-css';
 import { Toaster, toast } from 'sonner';
 
@@ -36,47 +37,55 @@ const LANGUAGES = {
 
 type LanguageCode = keyof typeof LANGUAGES;
 
+const fetchReportAndMessages = async (channelId: string, reportId: string): Promise<ReportResponse> => {
+    const response = await fetch(`/api/reports?channelId=${channelId}&reportId=${reportId}`);
+    if (!response.ok) {
+        if (response.status === 404) {
+            // Let the hook handle it, but we can check for this error message
+            throw new Error('Not Found');
+        }
+        throw new Error('Failed to fetch report');
+    }
+    return response.json();
+};
+
 export default function ReportClient() {
     const params = useParams();
     const channelId = Array.isArray(params.channelId) ? params.channelId[0] : params.channelId;
     const reportId = Array.isArray(params.reportId) ? params.reportId[0] : params.reportId;
 
-    const [report, setReport] = useState<Report | null>(null);
-    const [allMessages, setAllMessages] = useState<DiscordMessage[]>([]);
+    const fetcher = useCallback(() => {
+        if (!channelId || !reportId) {
+            return Promise.reject(new Error("Channel ID or Report ID is missing"));
+        }
+        return fetchReportAndMessages(channelId, reportId);
+    }, [channelId, reportId]);
+
+    const { data, loading: isLoading, error } = useApi<ReportResponse>(
+        fetcher,
+        { manual: !channelId || !reportId }
+    );
+
+    const report = useMemo(() => data?.report, [data]);
+    const allMessages = useMemo(() => data?.messages || [], [data]);
+
     const [displayedMessages, setDisplayedMessages] = useState<DiscordMessage[]>([]);
     const [messageCount, setMessageCount] = useState(0);
     const [currentPage, setCurrentPage] = useState(1);
-    const [isLoading, setIsLoading] = useState(true);
     const [selectedLanguage, setSelectedLanguage] = useState<LanguageCode>('en');
     const [translatedContent, setTranslatedContent] = useState<TranslatedContent | null>(null);
     const [isTranslating, setIsTranslating] = useState(false);
-    const [notFound, setNotFound] = useState(false);
     const [showAttributions, setShowAttributions] = useState(false);
 
     const SOURCES_PER_PAGE = 20;
 
     useEffect(() => {
-        const fetchReportAndMessages = async () => {
-            setIsLoading(true);
-            const reportResponse = await fetch(`/api/reports?channelId=${channelId}&reportId=${reportId}`);
-            if (!reportResponse.ok) {
-                if (reportResponse.status === 404) {
-                    setNotFound(true);
-                    setIsLoading(false);
-                    return;
-                }
-                throw new Error('Failed to fetch report');
-            }
-            const data = await reportResponse.json();
-            setReport(data.report);
-            setAllMessages(data.messages);
-            setDisplayedMessages(data.messages.slice(0, SOURCES_PER_PAGE));
-            setMessageCount(data.messages.length);
+        if (allMessages) {
+            setDisplayedMessages(allMessages.slice(0, SOURCES_PER_PAGE));
+            setMessageCount(allMessages.length);
             setCurrentPage(1);
-            setIsLoading(false);
-        };
-        fetchReportAndMessages();
-    }, [channelId, reportId]);
+        }
+    }, [allMessages]);
 
     useEffect(() => {
         const translateReport = async () => {
@@ -131,7 +140,7 @@ export default function ReportClient() {
 
     const hasMore = displayedMessages.length < messageCount;
 
-    if (notFound) {
+    if (error?.message === 'Not Found') {
         return <NotFound />;
     }
 

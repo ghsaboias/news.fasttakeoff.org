@@ -12,45 +12,34 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
+import { useApi } from "@/lib/hooks";
 import { Report } from "@/lib/types/core";
 import { FilterX, Search } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 
 export interface Props {
     reports: Report[];
     isLoading?: boolean;
 }
 
-export default function CurrentEventsClient({ reports, isLoading = false }: Props) {
+const fetchReports = async (): Promise<Report[]> => {
+    const response = await fetch('/api/reports?limit=100');
+    if (!response.ok) {
+        throw new Error('Failed to fetch reports');
+    }
+    return response.json();
+}
+
+export default function CurrentEventsClient({ reports: initialReports, isLoading = false }: Props) {
     const [searchQuery, setSearchQuery] = useState("");
     const [sortBy, setSortBy] = useState<"name" | "recent" | "activity">("recent");
-    const [reportData, setReportData] = useState<Report[]>(reports);
-    const [loading, setLoading] = useState(isLoading);
 
-    useEffect(() => {
-        setReportData(reports);
-        setLoading(false);
-    }, [reports]);
+    const { data: fetchedReports, loading: fallbackLoading } = useApi<Report[]>(fetchReports, {
+        manual: initialReports.length > 0,
+    });
 
-    // Client-side fallback when server-side data is empty
-    useEffect(() => {
-        if (reports.length === 0 && !loading && reportData.length === 0) {
-            setLoading(true);
-
-            fetch('/api/reports?limit=100')
-                .then(res => res.ok ? res.json() : [])
-                .then(data => {
-                    setReportData(data || []);
-                })
-                .catch(error => {
-                    console.error('Error fetching reports client-side:', error);
-                    setReportData([]);
-                })
-                .finally(() => {
-                    setLoading(false);
-                });
-        }
-    }, [reports.length, loading, reportData.length]);
+    const reportData = useMemo(() => fetchedReports || initialReports, [fetchedReports, initialReports]);
+    const loading = fallbackLoading || isLoading;
 
     const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const query = e.target.value;

@@ -1,6 +1,7 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useApi } from '@/lib/hooks';
+import { useMemo, useState } from 'react';
 
 interface HourlyData {
     hour: number
@@ -25,11 +26,15 @@ interface HeatmapResponse {
 
 // Removed TooltipData interface - using CSS tooltips now
 
+const fetchHeatmapData = async () => {
+    const response = await fetch('/api/messages/heatmap');
+    if (!response.ok) {
+        throw new Error('Failed to fetch heatmap data');
+    }
+    return response.json();
+};
+
 export default function MessageHeatmap() {
-    const [data, setData] = useState<HeatmapResponse | null>(null)
-    const [loading, setLoading] = useState(true)
-    const [error, setError] = useState<string | null>(null)
-    // No tooltip state needed for CSS tooltips
     const [channelFilter, setChannelFilter] = useState<string>('')
     const [showInactiveChannels, setShowInactiveChannels] = useState<boolean>(false)
     const [channelsToShow, setChannelsToShow] = useState<number>(20)
@@ -48,30 +53,9 @@ export default function MessageHeatmap() {
         UPDATE_INTERVAL: 300000, // 5 minutes in ms
     }), [])
 
-    useEffect(() => {
-        const fetchHeatmapData = async () => {
-            try {
-                const response = await fetch('/api/messages/heatmap')
-                if (!response.ok) throw new Error('Failed to fetch heatmap data')
-                const heatmapData = await response.json()
-                setData(heatmapData)
-                setError(null) // Clear any previous errors
-            } catch (err) {
-                setError(err instanceof Error ? err.message : 'Unknown error')
-            } finally {
-                setLoading(false)
-            }
-        }
-
-        // Initial fetch
-        fetchHeatmapData()
-
-        // Set up auto-refresh interval
-        const interval = setInterval(fetchHeatmapData, CONSTANTS.UPDATE_INTERVAL)
-
-        // Cleanup interval on unmount
-        return () => clearInterval(interval)
-    }, [CONSTANTS.UPDATE_INTERVAL])
+    const { data, loading, error } = useApi<HeatmapResponse>(fetchHeatmapData, {
+        pollInterval: CONSTANTS.UPDATE_INTERVAL,
+    });
 
     const getColorIntensity = (count: number, maxCount: number): string => {
         if (count === 0) return '#f8fafc' // slate-50 for better contrast

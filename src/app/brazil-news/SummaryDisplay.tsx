@@ -3,6 +3,7 @@
 import { Loader } from '@/components/ui/loader';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { LocalDateTimeFull } from '@/components/utils/LocalDateTime';
+import { useApi } from '@/lib/hooks';
 import { SummaryResult } from '@/lib/types/core';
 import { useEffect, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
@@ -23,58 +24,40 @@ interface SummaryOption {
     createdAt: string;
 }
 
+const fetchSummaryOptions = async (): Promise<SummaryOption[]> => {
+    const response = await fetch('/api/summaries/list');
+    if (!response.ok) {
+        throw new Error('Failed to fetch summary options');
+    }
+    return response.json();
+};
+
+const fetchSummary = async (selectedKey: string): Promise<SummaryResult> => {
+    const endpoint = selectedKey === 'current'
+        ? '/api/summarize?combine=true'
+        : `/api/summaries/${encodeURIComponent(selectedKey)}`;
+
+    const response = await fetch(endpoint);
+    if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to fetch summary');
+    }
+    return response.json();
+};
+
 export function SummaryDisplay() {
-    const [result, setResult] = useState<SummaryResult | null>(null);
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState<string | null>(null);
-    const [summaryOptions, setSummaryOptions] = useState<SummaryOption[]>([]);
     const [selectedKey, setSelectedKey] = useState<string>('current');
 
-    useEffect(() => {
-        async function fetchSummaryOptions() {
-            try {
-                const response = await fetch('/api/summaries/list');
-                if (!response.ok) {
-                    throw new Error('Failed to fetch summary options');
-                }
-                const data = await response.json();
-                console.log('data', data);
-                setSummaryOptions(data);
-            } catch (err) {
-                console.error('Failed to fetch summary options:', err);
-            }
-        }
+    const { data: summaryOptions = [] } = useApi<SummaryOption[]>(fetchSummaryOptions);
 
-        fetchSummaryOptions();
-    }, []);
+    const { data: result, loading, error, request: requestSummary } = useApi<SummaryResult>(
+        () => fetchSummary(selectedKey),
+        { manual: true }
+    );
 
     useEffect(() => {
-        async function fetchSummary() {
-            try {
-                setLoading(true);
-                setError(null);
-
-                const endpoint = selectedKey === 'current'
-                    ? '/api/summarize?combine=true'
-                    : `/api/summaries/${encodeURIComponent(selectedKey)}`;
-
-                const response = await fetch(endpoint);
-                if (!response.ok) {
-                    const errorData = await response.json();
-                    throw new Error(errorData.error || 'Failed to fetch summary');
-                }
-
-                const data = await response.json();
-                setResult(data);
-            } catch (err) {
-                setError(err instanceof Error ? err.message : 'An error occurred');
-            } finally {
-                setLoading(false);
-            }
-        }
-
-        fetchSummary();
-    }, [selectedKey]);
+        requestSummary();
+    }, [selectedKey, requestSummary]);
 
     if (loading) {
         return (
@@ -85,7 +68,8 @@ export function SummaryDisplay() {
     }
 
     if (error) {
-        const isNoCacheError = error.includes('No cached summary available');
+        const errorMessage = error.message || 'An error occurred';
+        const isNoCacheError = errorMessage.includes('No cached summary available');
 
         if (isNoCacheError) {
             return (
@@ -113,7 +97,7 @@ export function SummaryDisplay() {
 
         return (
             <div className="bg-red-900/50 border border-red-500 rounded p-4 mt-4">
-                <p className="text-red-500">{error}</p>
+                <p className="text-red-500">{errorMessage}</p>
             </div>
         );
     }
@@ -133,7 +117,7 @@ export function SummaryDisplay() {
                         <SelectValue placeholder="Select a summary">
                             {selectedKey === 'current' ? 'Current Summary' : (
                                 <LocalDateTimeFull
-                                    dateString={summaryOptions.find(opt => opt.key === selectedKey)?.createdAt || ''}
+                                    dateString={summaryOptions?.find(opt => opt.key === selectedKey)?.createdAt || ''}
                                     options={{
                                         day: '2-digit',
                                         month: '2-digit',
@@ -147,7 +131,7 @@ export function SummaryDisplay() {
                     </SelectTrigger>
                     <SelectContent>
                         <SelectItem value="current">Current Summary</SelectItem>
-                        {summaryOptions.map((option) => (
+                        {summaryOptions && summaryOptions.map((option) => (
                             <SelectItem key={option.key} value={option.key}>
                                 <LocalDateTimeFull
                                     dateString={option.createdAt}

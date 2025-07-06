@@ -2,10 +2,11 @@
 
 import { Loader } from '@/components/ui/loader';
 import { ENTITY_COLORS, ENTITY_LABELS } from '@/lib/config';
+import { useApi } from '@/lib/hooks';
 import { GraphData, GraphLink, GraphNode, TransformedGraphData } from '@/lib/types/core';
 import Image from 'next/image';
 import Link from 'next/link';
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import {
     useCanvasCamera,
     useFilters,
@@ -19,51 +20,34 @@ import {
 
 const ENTITY_TYPES = Object.keys(ENTITY_LABELS);
 
+const fetchGraphData = async (): Promise<TransformedGraphData> => {
+    const response = await fetch('/api/entities?format=graph');
+    if (!response.ok) {
+        throw new Error(`Failed to fetch graph data: ${response.statusText}`);
+    }
+    const data: GraphData = await response.json();
+
+    // The API returns { nodes, links }. We need to transform it for the hooks.
+    return {
+        entities: data.nodes.reduce((acc: { [key: string]: GraphNode }, node: GraphNode) => {
+            acc[node.id] = node;
+            return acc;
+        }, {}),
+        relationships: data.links.map((link: GraphLink) => ({
+            from: link.source,
+            to: link.target,
+            type: 'co-occurrence',
+            strength: link.strength
+        })),
+    };
+};
+
 export default function EntityGraphClient() {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const [showTopConnected, setShowTopConnected] = useState(false);
 
     // Data & layout
-    const [graphData, setGraphData] = useState<TransformedGraphData | null>(null);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
-
-    useEffect(() => {
-        async function fetchData() {
-            try {
-                setLoading(true);
-                const response = await fetch('/api/entities?format=graph');
-                if (!response.ok) {
-                    throw new Error(`Failed to fetch graph data: ${response.statusText}`);
-                }
-                const data: GraphData = await response.json();
-
-                // The API returns { nodes, links }. We need to transform it for the hooks.
-                const transformedData: TransformedGraphData = {
-                    entities: data.nodes.reduce((acc: { [key: string]: GraphNode }, node: GraphNode) => {
-                        acc[node.id] = node;
-                        return acc;
-                    }, {}),
-                    relationships: data.links.map((link: GraphLink) => ({
-                        from: link.source,
-                        to: link.target,
-                        type: 'co-occurrence',
-                        strength: link.strength
-                    })),
-                };
-                setGraphData(transformedData);
-            } catch (err) {
-                if (err instanceof Error) {
-                    setError(err.message);
-                } else {
-                    setError('An unknown error occurred');
-                }
-            } finally {
-                setLoading(false);
-            }
-        }
-        fetchData();
-    }, []);
+    const { data: graphData, loading, error } = useApi<TransformedGraphData>(fetchGraphData);
 
     const isMobile = useMobileBreakpoint(768);
     const { filters, searchTerm, setSearchTerm, toggleFilter, isNodeVisible } = useFilters(ENTITY_TYPES);
@@ -104,7 +88,7 @@ export default function EntityGraphClient() {
     if (error) {
         return (
             <div className="flex items-center justify-center h-full w-full bg-gray-900">
-                <div className="text-red-400 text-lg">Error: {error}</div>
+                <div className="text-red-400 text-lg">Error: {error.message}</div>
             </div>
         );
     }
