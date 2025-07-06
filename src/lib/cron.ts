@@ -1,5 +1,4 @@
 import { TimeframeKey } from '@/lib/config';
-import { SourceAttributionService } from '@/lib/utils/source-attribution';
 import { Cloudflare } from '../../worker-configuration';
 import { FeedsService } from './data/feeds-service';
 import { MessagesService } from './data/messages-service';
@@ -37,7 +36,6 @@ export async function scheduled(event: ScheduledEvent, env: Cloudflare.Env): Pro
         const messagesService = new MessagesService(env);
         const reportService = new ReportService(env);
         const feedsService = new FeedsService(env);
-        const attributionService = new SourceAttributionService(env);
         let taskResult: string | undefined;
 
         switch (event.cron) {
