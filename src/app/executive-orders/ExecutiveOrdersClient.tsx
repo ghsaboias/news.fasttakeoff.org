@@ -6,32 +6,25 @@ import { Input } from "@/components/ui/input";
 import { Loader } from "@/components/ui/loader";
 import { Separator } from "@/components/ui/separator";
 import { fetchExecutiveOrders } from "@/lib/data/executive-orders";
+import { useApi } from "@/lib/hooks";
 import { ExecutiveOrder } from "@/lib/types/core";
 import { getStartDate } from "@/lib/utils";
-import { useEffect, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 
 export default function ClientExecutiveOrders({ initialOrders }: { initialOrders: ExecutiveOrder[] }) {
     const [searchQuery, setSearchQuery] = useState("");
     const [currentPage, setCurrentPage] = useState(1);
-    const [executiveOrders, setExecutiveOrders] = useState(initialOrders);
-    const [loading, setLoading] = useState(false);
     const ordersPerPage = 6;
     const startDate = getStartDate(0.3);
 
-    useEffect(() => {
-        async function loadExecutiveOrders() {
-            setLoading(true);
-            try {
-                const { orders } = await fetchExecutiveOrders(1, startDate);
-                setExecutiveOrders(orders);
-            } catch (error) {
-                console.error("Error fetching executive orders:", error);
-            } finally {
-                setLoading(false);
-            }
-        }
-        if (initialOrders.length === 0) loadExecutiveOrders();
-    }, [startDate, initialOrders]);
+    const fetcher = useCallback(() => fetchExecutiveOrders(1, startDate), [startDate]);
+
+    const { data: fetchedOrders, loading } = useApi<{ orders: ExecutiveOrder[] }>(
+        fetcher,
+        { manual: initialOrders.length > 0 }
+    );
+
+    const executiveOrders = useMemo(() => fetchedOrders?.orders || initialOrders, [fetchedOrders, initialOrders]);
 
     const filteredOrders = executiveOrders.filter((order) =>
         order.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
