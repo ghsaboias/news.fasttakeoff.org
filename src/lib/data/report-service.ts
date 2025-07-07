@@ -313,11 +313,6 @@ export class ReportService {
                             const updatedReports = [report, ...cachedReports.filter(r => r.reportId !== report.reportId)];
                             await ReportCache.store(channelId, timeframe, updatedReports, this.env);
 
-                            if (extractEntities) {
-                                // Extract entities in parallel (fire and forget)
-                                this._extractEntitiesInBackground(report).catch(() => { });
-                            }
-
                             // Ping search engines for batch-generated reports
                             // const newUrls = [
                             //     `https://news.fasttakeoff.org/current-events/${channelId}/${report.reportId}`,
