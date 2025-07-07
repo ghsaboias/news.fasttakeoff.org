@@ -265,7 +265,7 @@ export class ReportService {
         );
     }
 
-    private async _generateAndCacheReportsForTimeframes(timeframesToProcess: TimeframeKey[]): Promise<Report[]> {
+    private async _generateAndCacheReportsForTimeframes(timeframesToProcess: TimeframeKey[], extractEntities: boolean = false): Promise<Report[]> {
         const generatedReports: Report[] = [];
 
         // Process each timeframe sequentially
@@ -308,7 +308,7 @@ export class ReportService {
 
                         const report = await ReportAI.generate(messages, previousReports, context, this.env);
 
-                        if (report) {
+                        if (report && extractEntities) {
                             const cachedReports = cachedReportsMap.get(`reports:${channelId}:${timeframe}`) || [];
                             const updatedReports = [report, ...cachedReports.filter(r => r.reportId !== report.reportId)];
                             await ReportCache.store(channelId, timeframe, updatedReports, this.env);
@@ -351,7 +351,9 @@ export class ReportService {
         }
 
         // Extract entities for all generated reports in parallel (don't block completion)
-        this._extractEntitiesForReports(generatedReports);
+        if (extractEntities) {
+            this._extractEntitiesForReports(generatedReports);
+        }
 
         return generatedReports;
     }
@@ -394,7 +396,7 @@ export class ReportService {
      * Smart scheduling: 2h reports every 2 hours (2am, 4am, 8am, 10am, 2pm, 4pm, 8pm, 10pm)
      * 6h reports every 6 hours (12am, 6am, 12pm, 6pm)
      */
-    async createFreshReports(): Promise<void> {
+    async createFreshReports(extractEntities: boolean = false): Promise<void> {
         console.log('[REPORTS] Production run starting.');
         const now = new Date();
         const hour = now.getUTCHours();
@@ -417,7 +419,7 @@ export class ReportService {
             return;
         }
 
-        const generatedReports = await this._generateAndCacheReportsForTimeframes(timeframesToProcess);
+        const generatedReports = await this._generateAndCacheReportsForTimeframes(timeframesToProcess, extractEntities);
         await this._postTopReportToSocialMedia(generatedReports);
         console.log('[REPORTS] Production run finished.');
     }
@@ -425,7 +427,7 @@ export class ReportService {
     /**
      * Manual trigger method: Generates reports for specified timeframes or all configured timeframes.
      */
-    async generateReportsForManualTrigger(manualTimeframes: TimeframeKey[] | 'ALL'): Promise<void> {
+    async generateReportsForManualTrigger(manualTimeframes: TimeframeKey[] | 'ALL', extractEntities: boolean = false): Promise<void> {
         const timeframesToProcess: TimeframeKey[] = manualTimeframes === 'ALL'
             ? [...TIME.TIMEFRAMES]
             : Array.isArray(manualTimeframes) ? manualTimeframes : [];
@@ -435,7 +437,7 @@ export class ReportService {
             return;
         }
 
-        const generatedReports = await this._generateAndCacheReportsForTimeframes(timeframesToProcess);
+        const generatedReports = await this._generateAndCacheReportsForTimeframes(timeframesToProcess, extractEntities);
         await this._postTopReportToSocialMedia(generatedReports);
         console.log('[REPORTS] Manual run finished.');
     }
@@ -444,7 +446,7 @@ export class ReportService {
      * Manual trigger method: Generates reports without social media posting.
      * Useful for testing or when social media posting is not desired.
      */
-    async generateReportsWithoutSocialMedia(manualTimeframes: TimeframeKey[] | 'ALL'): Promise<void> {
+    async generateReportsWithoutSocialMedia(manualTimeframes: TimeframeKey[] | 'ALL', extractEntities: boolean = false): Promise<void> {
         const timeframesToProcess: TimeframeKey[] = manualTimeframes === 'ALL'
             ? [...TIME.TIMEFRAMES]
             : Array.isArray(manualTimeframes) ? manualTimeframes : [];
@@ -454,7 +456,7 @@ export class ReportService {
             return;
         }
 
-        const generatedReports = await this._generateAndCacheReportsForTimeframes(timeframesToProcess);
+        const generatedReports = await this._generateAndCacheReportsForTimeframes(timeframesToProcess, extractEntities);
         console.log(`[REPORTS] Generated ${generatedReports.length} reports without social media posting.`);
         console.log('[REPORTS] Manual run (no social media) finished.');
     }
