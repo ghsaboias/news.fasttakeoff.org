@@ -308,13 +308,15 @@ export class ReportService {
 
                         const report = await ReportAI.generate(messages, previousReports, context, this.env);
 
-                        if (report && extractEntities) {
+                        if (report) {
                             const cachedReports = cachedReportsMap.get(`reports:${channelId}:${timeframe}`) || [];
                             const updatedReports = [report, ...cachedReports.filter(r => r.reportId !== report.reportId)];
                             await ReportCache.store(channelId, timeframe, updatedReports, this.env);
 
-                            // Extract entities in parallel (fire and forget)
-                            this._extractEntitiesInBackground(report).catch(() => { });
+                            if (extractEntities) {
+                                // Extract entities in parallel (fire and forget)
+                                this._extractEntitiesInBackground(report).catch(() => { });
+                            }
 
                             // Ping search engines for batch-generated reports
                             // const newUrls = [
