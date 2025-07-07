@@ -2,7 +2,6 @@
 
 import { useApi } from '@/lib/hooks';
 import { DiscordMessage, ReportSourceAttribution } from '@/lib/types/core';
-import { Loader2 } from 'lucide-react';
 import { useCallback, useEffect } from 'react';
 import { InteractiveReportBody } from './InteractiveReportBody';
 
@@ -13,6 +12,7 @@ interface AttributedReportViewerProps {
     channelId: string;
     className?: string;
     showAttributions?: boolean;
+    onLoadingChange?: (loading: boolean) => void;
 }
 
 const fetchAttributions = async (reportId: string, channelId: string): Promise<ReportSourceAttribution> => {
@@ -47,7 +47,8 @@ export function AttributedReportViewer({
     sourceMessages,
     channelId,
     className = '',
-    showAttributions = true
+    showAttributions = true,
+    onLoadingChange
 }: AttributedReportViewerProps) {
     // Memoize the fetcher function
     const memoizedFetcher = useCallback(
@@ -66,6 +67,11 @@ export function AttributedReportViewer({
             requestAttributions();
         }
     }, [reportId, channelId, showAttributions, requestAttributions]);
+
+    // Update parent component when loading state changes
+    useEffect(() => {
+        onLoadingChange?.(isLoading);
+    }, [isLoading, onLoadingChange]);
 
     // If attributions are not needed, just render the interactive body without them
     if (!showAttributions) {
@@ -96,14 +102,6 @@ export function AttributedReportViewer({
                 sourceMessages={sourceMessages}
                 showAttributions={showAttributions}
             />
-
-            {/* Loading State */}
-            {isLoading && (
-                <div className="mt-4 flex items-center gap-2 text-gray-600">
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    <span className="text-sm">Loading source attributions...</span>
-                </div>
-            )}
 
             {/* Error State */}
             {error && (
