@@ -14,7 +14,7 @@ import { Loader } from "@/components/ui/loader";
 import { LocalDateTimeFull } from "@/components/utils/LocalDateTime";
 import { useApi } from "@/lib/hooks";
 import { DiscordMessage, ReportResponse } from "@/lib/types/core";
-import { ArrowLeft, Check, Eye, EyeOff, Globe, MessageSquare } from "lucide-react";
+import { ArrowLeft, Check, Eye, EyeOff, Globe, Loader2, MessageSquare } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -76,6 +76,7 @@ export default function ReportClient() {
     const [translatedContent, setTranslatedContent] = useState<TranslatedContent | null>(null);
     const [isTranslating, setIsTranslating] = useState(false);
     const [showAttributions, setShowAttributions] = useState(false);
+    const [isAttributionsLoading, setIsAttributionsLoading] = useState(false);
 
     const SOURCES_PER_PAGE = 20;
 
@@ -204,7 +205,11 @@ export default function ReportClient() {
                                     >
                                         <div className="flex items-center gap-2">
                                             {showAttributions ? (
-                                                <Eye className="h-5 w-5" />
+                                                isAttributionsLoading ? (
+                                                    <Loader2 className="h-5 w-5 animate-spin" />
+                                                ) : (
+                                                    <Eye className="h-5 w-5" />
+                                                )
                                             ) : (
                                                 <EyeOff className="h-5 w-5" />
                                             )}
@@ -235,6 +240,7 @@ export default function ReportClient() {
                                     channelId={channelId}
                                     className="prose prose-zinc max-w-none overflow-y-auto"
                                     showAttributions={showAttributions}
+                                    onLoadingChange={setIsAttributionsLoading}
                                 />
                             )}
                         </div>
