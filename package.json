@@ -9,6 +9,7 @@
     "start": "next start",
     "lint": "next lint",
     "preview": "opennextjs-cloudflare build && wrangler dev",
+    "preview:patch": "opennextjs-cloudflare build && node patch-worker.js",
     "preview:patch:test": "opennextjs-cloudflare build && node patch-worker.js && wrangler dev --test-scheduled",
     "preview:patch:test:clean": "rm -rf .wrangler/state && opennextjs-cloudflare build && node patch-worker.js && wrangler dev --test-scheduled",
     "deploy": "opennextjs-cloudflare build && node patch-worker.js && wrangler deploy",

@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Loader } from '@/components/ui/loader';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ExtractedEntity } from '@/lib/types/core';
-import { ArrowLeft, Search } from 'lucide-react';
+import { ArrowLeft, RefreshCw, Search } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 
@@ -41,6 +41,7 @@ const ENTITY_TYPE_LABELS: Record<string, string> = {
 export default function EntitiesClient() {
     const [entities, setEntities] = useState<EntityWithReports[]>([]);
     const [loading, setLoading] = useState(true);
+    const [extracting, setExtracting] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedType, setSelectedType] = useState<string>('all');
 
@@ -77,6 +78,30 @@ export default function EntitiesClient() {
 
     const entityTypes = Array.from(new Set(entities.map(e => e.type)));
 
+    const triggerExtraction = async () => {
+        try {
+            setExtracting(true);
+            const response = await fetch('/api/entities/extract', {
+                method: 'POST'
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to trigger entity extraction');
+            }
+
+            const result = await response.json();
+            console.log('[ENTITIES] Extraction completed:', result);
+
+            // Refetch entities to get the updated list
+            await fetchEntities();
+
+        } catch (error) {
+            console.error('Error triggering entity extraction:', error);
+        } finally {
+            setExtracting(false);
+        }
+    };
+
     if (loading) {
         return (
             <div className="min-h-screen flex items-center justify-center">
@@ -106,12 +131,20 @@ export default function EntitiesClient() {
                 </p>
             </div>
 
-            <div className="mb-4">
+            <div className="mb-4 flex gap-4">
                 <Link href="/entities/graph">
                     <Button variant="outline">
                         View Entity Graph
                     </Button>
                 </Link>
+                <Button
+                    variant="outline"
+                    onClick={triggerExtraction}
+                    disabled={extracting}
+                >
+                    <RefreshCw className={`h-4 w-4 mr-2 ${extracting ? 'animate-spin' : ''}`} />
+                    {extracting ? 'Extracting...' : 'Extract Missing Entities'}
+                </Button>
             </div>
 
             {/* Filters */}
