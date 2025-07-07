@@ -13,32 +13,39 @@ export async function POST() {
         // Get all reports with their entities
         const reportsWithEntities = await reportService.getReportsWithEntities();
 
-        // Group reports and get only the latest run's reports
+        // Group reports - this puts latest run first, sorted by message count, then older reports
         const groupedReports = groupAndSortReports(reportsWithEntities) as EnhancedReport[];
-        const latestRunReports = groupedReports.filter((report, index) => {
-            // groupAndSortReports puts latest run reports first, followed by older reports
-            // We can find where the latest run ends by checking for a large time gap
-            if (index === 0) return true;
-            const currentTime = new Date(report.generatedAt || '').getTime();
-            const prevTime = new Date(groupedReports[index - 1].generatedAt || '').getTime();
-            return Math.abs(currentTime - prevTime) <= 15 * 60 * 1000; // 15 minutes threshold
-        });
 
-        // Filter reports that don't have entities yet
-        const reportsWithoutEntities = latestRunReports.filter(report => !report.entities);
+        // Find where the latest run ends (first gap > 15 minutes)
+        const FIFTEEN_MINUTES_MS = 15 * 60 * 1000;
+        let latestRunEndIndex = 0;
 
-        if (reportsWithoutEntities.length === 0) {
+        for (let i = 1; i < groupedReports.length; i++) {
+            const currentTime = new Date(groupedReports[i].generatedAt || '').getTime();
+            const prevTime = new Date(groupedReports[i - 1].generatedAt || '').getTime();
+            if (Math.abs(currentTime - prevTime) > FIFTEEN_MINUTES_MS) {
+                latestRunEndIndex = i;
+                break;
+            }
+        }
+
+        // Get only the latest run reports that don't have entities
+        const latestBatchReports = groupedReports
+            .slice(0, latestRunEndIndex || groupedReports.length)
+            .filter(report => !report.entities);
+
+        if (latestBatchReports.length === 0) {
             return NextResponse.json({
-                message: 'No reports from latest run found without entities',
+                message: 'No reports from latest batch found without entities',
                 processed: 0
             });
         }
 
-        console.log(`[ENTITIES] Found ${reportsWithoutEntities.length} reports from latest run without entities. Starting extraction...`);
+        console.log(`[ENTITIES] Found ${latestBatchReports.length} reports from latest batch without entities. Starting extraction...`);
 
         // Process each report
         const results = await Promise.allSettled(
-            reportsWithoutEntities.map(async report => {
+            latestBatchReports.map(async report => {
                 if (!report.channelId) {
                     throw new Error(`Report ${report.reportId} has no channelId`);
                 }
@@ -60,8 +67,8 @@ export async function POST() {
         console.log(`[ENTITIES] Entity extraction completed: ${successful} successful, ${failed} failed`);
 
         return NextResponse.json({
-            message: 'Entity extraction completed for latest run reports',
-            total: reportsWithoutEntities.length,
+            message: 'Entity extraction completed for latest batch reports',
+            total: latestBatchReports.length,
             successful,
             failed
         });
