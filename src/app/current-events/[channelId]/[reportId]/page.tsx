@@ -34,10 +34,10 @@ export async function generateStaticParams() {
             }
         }
         
-        // Sort by most recent first and take top 10
+        // Sort by most recent first and take top 50
         const topReports = allReports
             .sort((a, b) => new Date(b.generatedAt).getTime() - new Date(a.generatedAt).getTime())
-            .slice(0, 10);
+            .slice(0, 50);
         
         // Return params without the timestamp
         return topReports.map(({ channelId, reportId }) => ({
