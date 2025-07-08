@@ -14,7 +14,17 @@ import { Loader } from "@/components/ui/loader";
 import { LocalDateTimeFull } from "@/components/utils/LocalDateTime";
 import { useApi } from "@/lib/hooks";
 import { DiscordMessage, ReportResponse } from "@/lib/types/core";
-import { ArrowLeft, Check, Eye, EyeOff, Globe, Loader2, MessageSquare } from "lucide-react";
+import {
+    ArrowLeft,
+    Check,
+    ChevronLeft,
+    ChevronRight,
+    Eye,
+    EyeOff,
+    Globe,
+    Loader2,
+    MessageSquare,
+} from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -68,6 +78,8 @@ export default function ReportClient() {
 
     const report = useMemo(() => data?.report, [data]);
     const allMessages = useMemo(() => data?.messages || [], [data]);
+    const previousReportId = useMemo(() => data?.previousReportId, [data]);
+    const nextReportId = useMemo(() => data?.nextReportId, [data]);
 
     const [displayedMessages, setDisplayedMessages] = useState<DiscordMessage[]>([]);
     const [messageCount, setMessageCount] = useState(0);
@@ -162,6 +174,23 @@ export default function ReportClient() {
                                             <ArrowLeft className="h-4 w-4" />
                                         </Link>
                                     </Button>
+
+                                    {previousReportId && (
+                                        <Button asChild variant="outline" size="icon" title="Previous Report" className="min-w-fit">
+                                            <Link href={`/current-events/${channelId}/${previousReportId}`}>
+                                                <ChevronLeft className="h-4 w-4" />
+                                            </Link>
+                                        </Button>
+                                    )}
+
+                                    {nextReportId && (
+                                        <Button asChild variant="outline" size="icon" title="Next Report">
+                                            <Link href={`/current-events/${channelId}/${nextReportId}`}>
+                                                <ChevronRight className="h-4 w-4" />
+                                            </Link>
+                                        </Button>
+                                    )}
+
                                     <Button asChild variant="outline" className="hover:bg-accent text-md">
                                         <Link href={`/current-events/${report?.channelId}`}>
                                             {report?.channelName}
