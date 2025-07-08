@@ -60,6 +60,12 @@ binding = "ENTITIES_CACHE"
 id = "60c184aac065460db20c1a6d07355cba"
 preview_id = "206f66b9c1b44d5d8b2904bf22b3b006"
 
+[[kv_namespaces]]
+binding = "SITEMAP_CACHE"
+id = "3833f947b0244c2f9a8aebf2d2fa528f"
+preview_id = "7e534ee4e7b14c588e474b8570e0b48a"
+
+
 # R2 bucket binding for Instagram images
 [[r2_buckets]]
 binding = "INSTAGRAM_IMAGES"

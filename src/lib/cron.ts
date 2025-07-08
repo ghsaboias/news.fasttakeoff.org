@@ -3,6 +3,7 @@ import { Cloudflare } from '../../worker-configuration';
 import { FeedsService } from './data/feeds-service';
 import { MessagesService } from './data/messages-service';
 import { ReportService } from './data/report-service';
+import { SitemapService } from './data/sitemap-service';
 
 interface ScheduledEvent {
     scheduledTime: number;
@@ -36,14 +37,16 @@ export async function scheduled(event: ScheduledEvent, env: Cloudflare.Env): Pro
         const messagesService = new MessagesService(env);
         const reportService = new ReportService(env);
         const feedsService = new FeedsService(env);
+        const sitemapService = new SitemapService(env);
         let taskResult: string | undefined;
 
         switch (event.cron) {
             case '0 * * * *': {
-                // Top of the hour: update messages → create reports → generate feeds
+                // Top of the hour: update messages → create reports → generate feeds → update sitemap
                 await logRun('MESSAGES', () => messagesService.updateMessages());
                 await logRun('REPORTS', () => reportService.createFreshReports());
                 await logRun('FEEDS', () => feedsService.createFreshSummary(), { failFast: false });
+                await logRun('SITEMAP', () => sitemapService.updateSitemapCache(), { failFast: false });
 
                 taskResult = 'Hourly tasks completed';
                 break;
