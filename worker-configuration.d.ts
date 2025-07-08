@@ -11,6 +11,7 @@ export declare namespace Cloudflare {
         GEOCODE_CACHE: KVNamespace;
         FEEDS_CACHE: KVNamespace;
         ENTITIES_CACHE: KVNamespace;
+        SITEMAP_CACHE: KVNamespace;
         R2_PUBLIC_URL: "https://images.fasttakeoff.org";
         DISCORD_TOKEN: string;
         DISCORD_GUILD_ID: string;
