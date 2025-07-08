@@ -56,7 +56,6 @@ async function updateCacheInBackground() {
     console.log('Starting sitemap background update...')
     try {
         // Import expensive operations only when updating cache
-        const { getChannels } = await import('@/lib/data/channels-service')
         const { ReportService } = await import('@/lib/data/report-service')
         const { getCacheContext } = await import('@/lib/utils')
 
