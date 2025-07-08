@@ -1,4 +1,3 @@
-import { DiscordChannel } from '@/lib/types/core'
 import { NextResponse } from 'next/server'
 
 const BASE_URL = 'https://news.fasttakeoff.org'
@@ -55,10 +54,6 @@ ${urls.map(url => `  <url>
 async function updateCacheInBackground() {
     console.log('Starting sitemap background update...')
     try {
-        // Import expensive operations only when updating cache
-        const { ReportService } = await import('@/lib/data/report-service')
-        const { getCacheContext } = await import('@/lib/utils')
-
         const urls: SitemapUrl[] = []
         const now = new Date().toISOString()
 
@@ -93,18 +88,18 @@ async function updateCacheInBackground() {
         // Reports - using API endpoints to get data
         try {
             console.log('Fetching reports from API...')
-            
+
             // Use internal API to get reports (this works regardless of Cloudflare context)
             const reportsResponse = await fetch(`${BASE_URL}/api/reports?limit=1000`)
-            
+
             if (reportsResponse.ok) {
                 const reportsData = await reportsResponse.json()
                 console.log(`Found ${reportsData.length || 0} reports from API`)
-                
+
                 if (Array.isArray(reportsData) && reportsData.length > 0) {
                     // Group reports by channel
                     const channelMap = new Map()
-                    
+
                     reportsData.forEach(report => {
                         if (!channelMap.has(report.channelId)) {
                             channelMap.set(report.channelId, [])
@@ -116,7 +111,7 @@ async function updateCacheInBackground() {
                                 priority: 0.7
                             })
                         }
-                        
+
                         // Add individual report page
                         urls.push({
                             url: `${BASE_URL}/current-events/${report.channelId}/${report.reportId}`,
@@ -125,7 +120,7 @@ async function updateCacheInBackground() {
                             priority: 0.8
                         })
                     })
-                    
+
                     console.log(`Added ${channelMap.size} channels and ${reportsData.length} reports to sitemap`)
                 }
             } else {
