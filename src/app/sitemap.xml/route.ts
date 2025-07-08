@@ -91,26 +91,24 @@ async function updateCacheInBackground() {
             console.error('Error fetching executive orders for sitemap cache:', error)
         }
 
-        // Reports - limit scope significantly
+        // Reports - using direct KV access to avoid Discord API calls
         try {
             console.log('Getting Cloudflare context...')
             // Access Cloudflare context in production runtime
             const { env } = await getCacheContext()
             console.log('Cloudflare context obtained:', !!env)
             if (env && env.REPORTS_CACHE && env.CHANNELS_CACHE) {
-                console.log('Creating ReportService...')
-                const reportService = new ReportService(env)
-                console.log('Getting channels...')
+                console.log('Using direct KV access for sitemap generation...')
 
-                // Add timeout to prevent hanging
-                const channelsPromise = getChannels(env)
-                const timeoutPromise = new Promise((_, reject) =>
-                    setTimeout(() => reject(new Error('Channels timeout after 30s')), 30000)
-                )
+                // Read channels directly from KV cache (bypass Discord API)
+                const channelsKey = `channels:guild:${env.DISCORD_GUILD_ID}`
+                const cachedChannelsData = await env.CHANNELS_CACHE.get(channelsKey, 'json') as { channels: DiscordChannel[] }
 
-                try {
-                    const channels = await Promise.race([channelsPromise, timeoutPromise]) as DiscordChannel[]
-                    console.log(`Found ${channels.length} channels`)
+                if (cachedChannelsData && cachedChannelsData.channels) {
+                    const channels = cachedChannelsData.channels
+                    console.log(`Found ${channels.length} cached channels`)
+
+                    const reportService = new ReportService(env)
                     const oneYearAgo = new Date(Date.now() - 365 * 24 * 60 * 60 * 1000)
 
                     // Process all channels but with reasonable limits
@@ -148,9 +146,8 @@ async function updateCacheInBackground() {
                             console.error(`Error fetching reports for channel ${channel.id}:`, error)
                         }
                     }
-                } catch (channelsError) {
-                    console.error('Channels fetch failed:', channelsError)
-                    // Continue with empty channels if fetch fails
+                } else {
+                    console.log('No cached channels found, skipping dynamic content')
                 }
             } else {
                 console.log('Missing env.REPORTS_CACHE or env.CHANNELS_CACHE')
