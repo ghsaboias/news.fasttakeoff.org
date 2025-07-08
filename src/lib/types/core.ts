@@ -220,6 +220,8 @@ export interface CachedMessages {
 export interface ReportResponse {
     report: Report;
     messages: DiscordMessage[];
+    previousReportId?: string | null;
+    nextReportId?: string | null;
 }
 
 // RSS feed item type

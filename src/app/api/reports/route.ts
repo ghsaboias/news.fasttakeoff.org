@@ -2,36 +2,55 @@ import { withErrorHandling } from '@/lib/api-utils';
 import { CacheManager } from '@/lib/cache-utils';
 import { TimeframeKey } from '@/lib/config';
 import { ReportService } from '@/lib/data/report-service';
-import { NextResponse } from 'next/server';
+import { Report, ReportResponse } from '@/lib/types/core';
+import { NextRequest, NextResponse } from 'next/server';
 
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
     return withErrorHandling(async env => {
         const { searchParams } = new URL(request.url);
         const channelId = searchParams.get('channelId');
         const reportId = searchParams.get('reportId');
         const limitParam = searchParams.get('limit');
 
-        // Handle specific report requests (no caching for these)
-        if (reportId) {
-            if (!channelId) {
-                return new NextResponse(JSON.stringify({ error: 'Missing channelId' }), {
-                    status: 400,
-                    headers: { 'Content-Type': 'application/json' }
-                });
+        const reportService = new ReportService(env);
+
+        if (channelId && reportId) {
+            try {
+                const { report, messages } = await reportService.getReportAndMessages(channelId, reportId);
+
+                if (!report) {
+                    return NextResponse.json({ error: 'Report not found' }, { status: 404 });
+                }
+
+                const allReports = await reportService.getAllReportsForChannel(channelId);
+                const currentIndex = allReports.findIndex((r: Report) => r.reportId === reportId);
+
+                let previousReportId: string | null = null;
+                let nextReportId: string | null = null;
+
+                if (currentIndex !== -1) {
+                    // Reports are sorted descending (newest first)
+                    if (currentIndex > 0) {
+                        nextReportId = allReports[currentIndex - 1].reportId;
+                    }
+                    if (currentIndex < allReports.length - 1) {
+                        previousReportId = allReports[currentIndex + 1].reportId;
+                    }
+                }
+
+                const response: ReportResponse = {
+                    report,
+                    messages,
+                    previousReportId,
+                    nextReportId,
+                };
+
+                return NextResponse.json(response);
+
+            } catch (error) {
+                console.error(`Error fetching report ${channelId}/${reportId}:`, error);
+                return NextResponse.json({ error: 'Failed to fetch report' }, { status: 500 });
             }
-
-            const reportService = new ReportService(env);
-            const { report, messages } = await reportService.getReportAndMessages(channelId, reportId);
-
-            if (!report) {
-                // 404 for invalid reportId or channelId
-                return new NextResponse(JSON.stringify({ error: 'Report not found' }), {
-                    status: 404,
-                    headers: { 'Content-Type': 'application/json' }
-                });
-            }
-
-            return { report, messages };
         }
 
         // Parse limit parameter
@@ -57,7 +76,6 @@ export async function GET(request: Request) {
             return cached;
         }
 
-        const reportService = new ReportService(env);
         const reports = channelId
             ? await reportService.getAllReportsForChannel(channelId)
             : await reportService.getAllReports(limit);
