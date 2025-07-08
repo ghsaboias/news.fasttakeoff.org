@@ -113,8 +113,8 @@ async function updateCacheInBackground() {
                     console.log(`Found ${channels.length} channels`)
                     const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
 
-                    // Process only first 5 channels to limit execution time
-                    for (const channel of channels.slice(0, 5)) {
+                    // Process all channels but with reasonable limits
+                    for (const channel of channels) {
                         try {
                             console.log(`Processing channel ${channel.id} (${channel.name})...`)
                             const reports = await reportService.getAllReportsForChannel(channel.id)
@@ -128,10 +128,10 @@ async function updateCacheInBackground() {
                                     priority: 0.7
                                 })
 
-                                // Add only very recent reports (last 30 days, max 100 per channel)
+                                // Add only very recent reports (last 30 days, max 200 per channel)
                                 const recentReports = reports
                                     .filter(report => new Date(report.generatedAt) >= thirtyDaysAgo)
-                                    .slice(0, 100)
+                                    .slice(0, 200)
 
                                 console.log(`After filtering: ${recentReports.length} recent reports for channel ${channel.id}`)
 
