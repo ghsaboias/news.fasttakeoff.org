@@ -111,7 +111,7 @@ async function updateCacheInBackground() {
                 try {
                     const channels = await Promise.race([channelsPromise, timeoutPromise]) as DiscordChannel[]
                     console.log(`Found ${channels.length} channels`)
-                    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
+                    const oneYearAgo = new Date(Date.now() - 365 * 24 * 60 * 60 * 1000)
 
                     // Process all channels but with reasonable limits
                     for (const channel of channels) {
@@ -128,9 +128,9 @@ async function updateCacheInBackground() {
                                     priority: 0.7
                                 })
 
-                                // Add only very recent reports (last 30 days, max 200 per channel)
+                                // Add reports from last year (max 200 per channel)
                                 const recentReports = reports
-                                    .filter(report => new Date(report.generatedAt) >= thirtyDaysAgo)
+                                    .filter(report => new Date(report.generatedAt) >= oneYearAgo)
                                     .slice(0, 200)
 
                                 console.log(`After filtering: ${recentReports.length} recent reports for channel ${channel.id}`)
