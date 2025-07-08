@@ -97,7 +97,7 @@ export const CACHE = {
     },
     RETENTION: {
         // How long to keep reports in the KV store before manual cleanup (in seconds)
-        REPORTS: 30 * 24 * 60 * 60, // 30 days
+        REPORTS: 365 * 24 * 60 * 60, // 1 year
         // How long to keep extracted entities
         ENTITIES: 7 * 24 * 60 * 60, // 7 days
     },
