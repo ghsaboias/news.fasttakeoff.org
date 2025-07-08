@@ -6,7 +6,7 @@ const BASE_URL = 'https://news.fasttakeoff.org'
 // In-memory cache for sitemap
 let cachedSitemap: string | null = null
 let cacheTimestamp: number = 0
-const CACHE_DURATION = 5 * 60 * 1000 // 5 minutes for testing
+const CACHE_DURATION = 1 * 60 * 1000 // 1 minute for testing
 
 interface SitemapUrl {
     url: string
@@ -90,69 +90,49 @@ async function updateCacheInBackground() {
             console.error('Error fetching executive orders for sitemap cache:', error)
         }
 
-        // Reports - using direct KV access to avoid Discord API calls
+        // Reports - using API endpoints to get data
         try {
-            console.log('Getting Cloudflare context...')
-            // Access Cloudflare context in production runtime
-            const { env } = await getCacheContext()
-            console.log('Cloudflare context obtained:', !!env)
-            if (env && env.REPORTS_CACHE && env.CHANNELS_CACHE) {
-                console.log('Using direct KV access for sitemap generation...')
-
-                // Read channels directly from KV cache (bypass Discord API)
-                const channelsKey = `channels:guild:${env.DISCORD_GUILD_ID}`
-                const cachedChannelsData = await env.CHANNELS_CACHE.get(channelsKey, 'json') as { channels: DiscordChannel[] }
-
-                if (cachedChannelsData && cachedChannelsData.channels) {
-                    const channels = cachedChannelsData.channels
-                    console.log(`Found ${channels.length} cached channels`)
-
-                    const reportService = new ReportService(env)
-                    const oneYearAgo = new Date(Date.now() - 365 * 24 * 60 * 60 * 1000)
-
-                    // Process all channels but with reasonable limits
-                    for (const channel of channels) {
-                        try {
-                            console.log(`Processing channel ${channel.id} (${channel.name})...`)
-                            const reports = await reportService.getAllReportsForChannel(channel.id)
-                            console.log(`Found ${reports?.length || 0} reports for channel ${channel.id}`)
-                            if (reports) {
-                                // Add channel page
-                                urls.push({
-                                    url: `${BASE_URL}/current-events/${channel.id}`,
-                                    lastModified: now,
-                                    changeFrequency: 'hourly',
-                                    priority: 0.7
-                                })
-
-                                // Add reports from last year (max 200 per channel)
-                                const recentReports = reports
-                                    .filter(report => new Date(report.generatedAt) >= oneYearAgo)
-                                    .slice(0, 200)
-
-                                console.log(`After filtering: ${recentReports.length} recent reports for channel ${channel.id}`)
-
-                                recentReports.forEach(report => {
-                                    urls.push({
-                                        url: `${BASE_URL}/current-events/${report.channelId}/${report.reportId}`,
-                                        lastModified: report.generatedAt,
-                                        changeFrequency: 'daily',
-                                        priority: 0.8
-                                    })
-                                })
-                            }
-                        } catch (error) {
-                            console.error(`Error fetching reports for channel ${channel.id}:`, error)
+            console.log('Fetching reports from API...')
+            
+            // Use internal API to get reports (this works regardless of Cloudflare context)
+            const reportsResponse = await fetch(`${BASE_URL}/api/reports?limit=1000`)
+            
+            if (reportsResponse.ok) {
+                const reportsData = await reportsResponse.json()
+                console.log(`Found ${reportsData.length || 0} reports from API`)
+                
+                if (Array.isArray(reportsData) && reportsData.length > 0) {
+                    // Group reports by channel
+                    const channelMap = new Map()
+                    
+                    reportsData.forEach(report => {
+                        if (!channelMap.has(report.channelId)) {
+                            channelMap.set(report.channelId, [])
+                            // Add channel page
+                            urls.push({
+                                url: `${BASE_URL}/current-events/${report.channelId}`,
+                                lastModified: report.generatedAt || now,
+                                changeFrequency: 'hourly',
+                                priority: 0.7
+                            })
                         }
-                    }
-                } else {
-                    console.log('No cached channels found, skipping dynamic content')
+                        
+                        // Add individual report page
+                        urls.push({
+                            url: `${BASE_URL}/current-events/${report.channelId}/${report.reportId}`,
+                            lastModified: report.generatedAt || now,
+                            changeFrequency: 'daily',
+                            priority: 0.8
+                        })
+                    })
+                    
+                    console.log(`Added ${channelMap.size} channels and ${reportsData.length} reports to sitemap`)
                 }
             } else {
-                console.log('Missing env.REPORTS_CACHE or env.CHANNELS_CACHE')
+                console.error('Failed to fetch reports from API:', reportsResponse.status)
             }
         } catch (error) {
-            console.error('Error updating sitemap cache:', error)
+            console.error('Error fetching reports from API:', error)
         }
 
         console.log(`Total URLs generated: ${urls.length}`)
