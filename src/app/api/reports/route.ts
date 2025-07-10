@@ -55,10 +55,11 @@ export async function GET(request: NextRequest) {
 
         // Parse limit parameter
         let limit: number | undefined;
+        const MAX_API_LIMIT = 200;
         if (limitParam) {
             const parsedLimit = parseInt(limitParam, 10);
             if (!isNaN(parsedLimit) && parsedLimit > 0) {
-                limit = parsedLimit;
+                limit = Math.min(parsedLimit, MAX_API_LIMIT);
             }
         } else if (!channelId) {
             // Default to 100 for general API requests when no limit specified
