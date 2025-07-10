@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 
 interface Entity {
-    type: string;
+    type: 'person' | 'company' | 'fund';
     name: string;
     country?: string;
 }
@@ -28,7 +28,8 @@ export function useGraphData() {
                 const response = await fetch('/data/graph.json');
                 if (!response.ok) throw new Error('Failed to load network data');
                 const data = await response.json();
-                setGraphData(data);
+                const relationships = data.relationships.map(([from, to, type]: [string, string, string]) => ({ from, to, type }));
+                setGraphData({ entities: data.entities, relationships });
                 setLoading(false);
             } catch (err) {
                 setError(err instanceof Error ? err.message : 'Unknown error');

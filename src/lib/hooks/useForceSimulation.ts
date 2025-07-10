@@ -60,6 +60,22 @@ export function useForceSimulation(
             }
         }
 
+        // Relationship type multipliers
+        const typeMultipliers: Record<string, number> = {
+            'owns_majority_stake_in': 3.5,
+            'controlling_shareholder_of': 3.5,
+            'founder_and_majority_owner': 3.5,
+            'major_shareholder_in': 3.0,
+            'lead_investor_in': 3.0,
+            'strategic_investor_in': 3.0,
+            'founder_and_ceo_of': 2.5,
+            'executive_chairman_of': 2.5,
+            'managing_partner_of': 2.5,
+            'board_member_of': 2.0,
+            'independent_director_of': 2.0,
+            'advisory_board_member_of': 2.0
+        };
+
         // Attraction for connected nodes (Link force)
         relationships.forEach((rel) => {
             const nodeA = nodes.find((n) => n.id === rel.from);
@@ -71,7 +87,8 @@ export function useForceSimulation(
                 const distance = Math.sqrt(dx * dx + dy * dy);
 
                 // Use link strength to influence the force
-                const linkStrength = rel.strength ? 0.005 + (rel.strength * 0.002) : 0.005;
+                const multiplier = typeMultipliers[rel.type] || 1.0;
+                const linkStrength = (rel.strength ? rel.strength : 0.005) * multiplier;
                 const force = linkStrength * distance;
 
                 const fx = (dx / distance) * force;
