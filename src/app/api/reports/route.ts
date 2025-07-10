@@ -61,8 +61,8 @@ export async function GET(request: NextRequest) {
                 limit = parsedLimit;
             }
         } else if (!channelId) {
-            // Default to 4 for homepage when no limit specified
-            limit = 4;
+            // Default to 100 for general API requests when no limit specified
+            limit = 100;
         }
 
         // Add response caching for general reports requests
