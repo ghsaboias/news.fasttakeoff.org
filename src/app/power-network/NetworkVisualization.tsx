@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRef, useState } from 'react';
 import {
     useCanvasCamera,
+    useEntityRelevance,
     useFilters,
     useGraphData,
     useMobileBreakpoint,
@@ -14,15 +15,20 @@ import {
     type Node
 } from '../../lib/hooks';
 import { useBasicForceSimulation } from '../../lib/hooks/useBasicForceSimulation';
+import { formatEntityRelevance, getRelevanceDisplayClass } from '../../lib/hooks/useEntityRelevance';
 
 export default function NetworkVisualization() {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const [showTopConnected, setShowTopConnected] = useState(false);
+    const [showRelevanceScores, setShowRelevanceScores] = useState(false);
 
     // Data & layout
     const { graphData, loading, error } = useGraphData();
     const isMobile = useMobileBreakpoint(768);
     const { filters, searchTerm, setSearchTerm, toggleFilter, isNodeVisible } = useFilters();
+
+    // Entity relevance scoring
+    const entityRelevance = useEntityRelevance(graphData);
 
     // Nodes & physics
     const { nodesRef } = useNodes(graphData, isMobile);
@@ -149,6 +155,21 @@ export default function NetworkVisualization() {
                         <p className="text-gray-400 text-sm">{selectedNode.country}</p>
                     )}
 
+                    {/* Entity relevance score */}
+                    {entityRelevance && (
+                        <div className="mt-2 pt-2 border-t border-gray-700">
+                            <p className="text-gray-300 text-sm">Relevance Score:</p>
+                            <div className="flex items-center gap-2">
+                                <span className={`text-sm ${getRelevanceDisplayClass(entityRelevance.getEntityScore(selectedNode.id))}`}>
+                                    {formatEntityRelevance(entityRelevance.getEntityScore(selectedNode.id))}
+                                </span>
+                                <div className="text-xs text-gray-400">
+                                    {entityRelevance.getEntityScore(selectedNode.id).reasons.join(', ')}
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
                     {/* Connections section */}
                     {(() => {
                         const connections = graphData.relationships
@@ -159,17 +180,27 @@ export default function NetworkVisualization() {
                                 return {
                                     type: rel.type,
                                     name: otherEntity?.name || otherId,
-                                    entityType: otherEntity?.type || 'unknown'
+                                    entityType: otherEntity?.type || 'unknown',
+                                    id: otherId
                                 };
                             });
 
-                        return connections.length > 0 ? (
+                        // Get detail level to determine how many connections to show
+                        const detailLevel = entityRelevance ? entityRelevance.getEntityScore(selectedNode.id).detailLevel : 3;
+                        const connectionsToShow = detailLevel >= 4 ? connections : connections.slice(0, detailLevel + 2);
+
+                        return connectionsToShow.length > 0 ? (
                             <div className="mt-3 pt-3 border-t border-gray-600">
                                 <p className="text-gray-300 text-sm font-medium mb-2">
                                     Connections ({connections.length})
+                                    {connectionsToShow.length < connections.length && (
+                                        <span className="text-gray-500 ml-1">
+                                            (showing {connectionsToShow.length})
+                                        </span>
+                                    )}
                                 </p>
                                 <div className="space-y-1 max-h-32 overflow-y-auto">
-                                    {connections.map((conn, index) => (
+                                    {connectionsToShow.map((conn, index) => (
                                         <div key={index} className="text-xs text-gray-400">
                                             <span className="text-cyan-400">{conn.type}</span> {conn.name}
                                             <span className="text-gray-500 ml-1">({conn.entityType})</span>
@@ -207,12 +238,20 @@ export default function NetworkVisualization() {
                     </div>
                     <div className="text-yellow-400">Larger nodes = more connections</div>
                 </div>
-                <button
-                    onClick={() => setShowTopConnected(!showTopConnected)}
-                    className="mt-2 text-cyan-400 hover:text-cyan-300 text-xs"
-                >
-                    {showTopConnected ? 'Hide' : 'Show'} Top Connected
-                </button>
+                <div className="flex gap-2 mt-2">
+                    <button
+                        onClick={() => setShowTopConnected(!showTopConnected)}
+                        className="text-cyan-400 hover:text-cyan-300 text-xs"
+                    >
+                        {showTopConnected ? 'Hide' : 'Show'} Top Connected
+                    </button>
+                    <button
+                        onClick={() => setShowRelevanceScores(!showRelevanceScores)}
+                        className="text-cyan-400 hover:text-cyan-300 text-xs"
+                    >
+                        {showRelevanceScores ? 'Hide' : 'Show'} Relevance
+                    </button>
+                </div>
             </div>
 
             {/* Top Connected Panel */}
@@ -247,6 +286,36 @@ export default function NetworkVisualization() {
                                 </div>
                             ))
                         }
+                    </div>
+                </div>
+            )}
+
+            {/* Relevance Scores Panel */}
+            {showRelevanceScores && entityRelevance && (
+                <div className="absolute bottom-4 right-4 bg-gray-800 p-3 rounded-lg border border-gray-600 max-w-xs">
+                    <h4 className="text-white font-medium mb-2 text-sm">Most Relevant Entities</h4>
+                    <div className="space-y-1 max-h-64 overflow-y-auto">
+                        {entityRelevance.getTopEntities(15).map((scoreData, index) => (
+                            <div
+                                key={scoreData.entityId}
+                                className="flex items-center justify-between text-xs cursor-pointer hover:bg-gray-700 p-1 rounded"
+                                onClick={() => {
+                                    const node = nodesRef.current.find(n => n.id === scoreData.entityId);
+                                    if (node) {
+                                        setSelectedNode(node);
+                                        centerOnNode(node.x, node.y, window.innerWidth, window.innerHeight);
+                                    }
+                                }}
+                            >
+                                <div className="flex items-center gap-2">
+                                    <span className="text-gray-400">#{index + 1}</span>
+                                    <span className={getRelevanceDisplayClass(scoreData)}>
+                                        {graphData?.entities[scoreData.entityId]?.name || scoreData.entityId}
+                                    </span>
+                                </div>
+                                <span className="text-cyan-400 font-medium">{scoreData.score.toFixed(1)}</span>
+                            </div>
+                        ))}
                     </div>
                 </div>
             )}

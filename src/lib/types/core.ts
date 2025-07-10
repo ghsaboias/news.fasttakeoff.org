@@ -299,6 +299,15 @@ export interface EntityMention {
     confidence: number;
 }
 
+export interface Entity {
+    type: 'person' | 'company' | 'fund';
+    name: string;
+    country: string;
+    netWorth?: number; // in billions USD for persons
+    marketCap?: number; // in trillions USD for companies
+    aum?: number; // in trillions USD for funds
+}
+
 export interface ExtractedEntity {
     type: 'PERSON' | 'ORGANIZATION' | 'LOCATION' | 'EVENTS' | 'DATES' | 'FINANCIAL' | 'PRODUCTS' | 'OTHER';
     value: string;
@@ -325,6 +334,9 @@ export interface GraphNode {
     type: string;
     relevance: number;
     connectionCount: number;
+    netWorth?: number;
+    marketCap?: number;
+    aum?: number;
 }
 
 export interface GraphLink {
