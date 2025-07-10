@@ -3,12 +3,17 @@ export interface Entity {
     type: 'person' | 'company' | 'fund';
     name: string;
     country?: string;
+    // Financial metrics in billions USD
+    netWorth?: number;    // For persons (in billions)
+    marketCap?: number;   // For companies (in trillions, so multiply by 1000 for billions)
+    aum?: number;         // For funds (in trillions, so multiply by 1000 for billions)
 }
 
 export interface Relationship {
     from: string;
     to: string;
     type: string;
+    strength?: number;
 }
 
 export interface EntityRelevanceScore {
@@ -16,86 +21,35 @@ export interface EntityRelevanceScore {
     score: number;
     detailLevel: 1 | 2 | 3 | 4 | 5;
     reasons: string[];
+    financialValue: number; // Total financial value in billions USD
 }
 
-export interface DetailLevelConfig {
-    level: 1 | 2 | 3 | 4 | 5;
-    title: string;
-    description: string;
-    showConnections: number;
-    showBiography: boolean;
-    showMarketData: boolean;
-    showRecentNews: boolean;
-    showControversies: boolean;
-}
 
-const DETAIL_LEVELS: Record<number, DetailLevelConfig> = {
-    5: {
-        level: 5,
-        title: 'Maximum Detail',
-        description: 'Full profile with complete context',
-        showConnections: -1, // All connections
-        showBiography: true,
-        showMarketData: true,
-        showRecentNews: true,
-        showControversies: true,
-    },
-    4: {
-        level: 4,
-        title: 'High Detail',
-        description: 'Extended profile with key relationships',
-        showConnections: 10,
-        showBiography: true,
-        showMarketData: true,
-        showRecentNews: true,
-        showControversies: false,
-    },
-    3: {
-        level: 3,
-        title: 'Medium Detail',
-        description: 'Standard profile with primary relationships',
-        showConnections: 5,
-        showBiography: false,
-        showMarketData: true,
-        showRecentNews: false,
-        showControversies: false,
-    },
-    2: {
-        level: 2,
-        title: 'Low Detail',
-        description: 'Basic profile with core relationships',
-        showConnections: 3,
-        showBiography: false,
-        showMarketData: false,
-        showRecentNews: false,
-        showControversies: false,
-    },
-    1: {
-        level: 1,
-        title: 'Minimal Detail',
-        description: 'Name and primary role only',
-        showConnections: 1,
-        showBiography: false,
-        showMarketData: false,
-        showRecentNews: false,
-        showControversies: false,
-    },
+
+// Financial tier classification based on actual dollar values
+const FINANCIAL_TIERS = {
+    MEGA_WEALTH: 100, // $100B+ net worth
+    ULTRA_WEALTH: 50, // $50-100B net worth  
+    HIGH_WEALTH: 10,  // $10-50B net worth
+    WEALTH: 1,        // $1-10B net worth
+    EMERGING: 0.1     // $100M+ net worth
 };
 
-// High-influence entities that should always get maximum detail
-const TIER_1_ENTITIES = new Set([
-    'elon-musk', 'bill-gates', 'jeff-bezos', 'mark-zuckerberg',
-    'larry-page', 'sergey-brin', 'warren-buffett', 'larry-fink',
-    'tim-cook', 'sundar-pichai', 'satya-nadella', 'jensen-huang',
-    'sam-altman', 'peter-thiel', 'marc-andreessen', 'reid-hoffman'
-]);
+const MARKET_CAP_TIERS = {
+    MEGA_CAP: 1000,   // $1T+ market cap
+    LARGE_CAP: 100,   // $100B-1T market cap
+    MID_CAP: 10,      // $10-100B market cap
+    SMALL_CAP: 1,     // $1-10B market cap
+    MICRO_CAP: 0.1    // $100M+ market cap
+};
 
-// Important but second-tier entities
-const TIER_2_ENTITIES = new Set([
-    'larry-ellison', 'michael-dell', 'brian-chesky', 'drew-houston',
-    'daniel-ek', 'tobias-lutke', 'jack-dorsey', 'masayoshi-son',
-    'bernard-arnault', 'mukesh-ambani', 'jamie-dimon'
-]);
+const AUM_TIERS = {
+    MEGA_FUND: 1000,  // $1T+ AUM
+    LARGE_FUND: 100,  // $100B-1T AUM
+    MID_FUND: 10,     // $10-100B AUM
+    SMALL_FUND: 1,    // $1-10B AUM
+    MICRO_FUND: 0.1   // $100M+ AUM
+};
 
 // Controversial/sensitive entities requiring careful handling
 const CONTROVERSIAL_ENTITIES = new Set([
@@ -154,12 +108,32 @@ export class EntityRelevanceScorer {
     }
 
     private getRelationshipWeight(relType: string): number {
+        // Financial relationship weights based on control and value
         const weights: Record<string, number> = {
-            'founder_and_ceo_of': 3.0,
+            // Ownership/Control (highest weight)
+            'owns_majority_stake_in': 3.5,
+            'controlling_shareholder_of': 3.5,
+            'founder_and_majority_owner': 3.5,
+
+            // Major Investment 
+            'major_shareholder_in': 3.0,
+            'lead_investor_in': 3.0,
+            'strategic_investor_in': 3.0,
+
+            // Executive Control
+            'founder_and_ceo_of': 2.5,
+            'executive_chairman_of': 2.5,
+            'managing_partner_of': 2.5,
+
+            // Board Influence
+            'board_member_of': 2.0,
+            'independent_director_of': 2.0,
+            'advisory_board_member_of': 2.0,
+
+            // Legacy relationships
             'founder_of': 2.8,
             'ceo_of': 2.5,
             'chairman_of': 2.3,
-            'board_member_of': 2.0,
             'invests_in': 1.8,
             'owns_equity_in': 1.7,
             'partner_of': 1.5,
@@ -183,14 +157,82 @@ export class EntityRelevanceScorer {
         }, 0);
     }
 
-    private getEntityTypeMultiplier(entityType: string): number {
-        const multipliers: Record<string, number> = {
-            'person': 1.2,
-            'company': 1.0,
-            'fund': 1.1,
-        };
+    private getFinancialValue(entity: Entity): number {
+        // Calculate financial value in billions USD
+        let value = 0;
 
-        return multipliers[entityType] || 1.0;
+        if (entity.netWorth) {
+            value = entity.netWorth; // Already in billions
+        } else if (entity.marketCap) {
+            value = entity.marketCap * 1000; // Convert trillions to billions
+        } else if (entity.aum) {
+            value = entity.aum * 1000; // Convert trillions to billions
+        }
+
+        return value;
+    }
+
+    private getFinancialScore(entity: Entity): { score: number, reasons: string[] } {
+        const reasons: string[] = [];
+        let score = 0;
+
+        if (entity.type === 'person' && entity.netWorth) {
+            const netWorth = entity.netWorth;
+            if (netWorth >= FINANCIAL_TIERS.MEGA_WEALTH) {
+                score = netWorth * 0.4; // 40% weight for individual net worth
+                reasons.push(`$${netWorth.toFixed(1)}B net worth (Mega-wealth)`);
+            } else if (netWorth >= FINANCIAL_TIERS.ULTRA_WEALTH) {
+                score = netWorth * 0.35;
+                reasons.push(`$${netWorth.toFixed(1)}B net worth (Ultra-wealth)`);
+            } else if (netWorth >= FINANCIAL_TIERS.HIGH_WEALTH) {
+                score = netWorth * 0.25;
+                reasons.push(`$${netWorth.toFixed(1)}B net worth (High wealth)`);
+            } else if (netWorth >= FINANCIAL_TIERS.WEALTH) {
+                score = netWorth * 0.15;
+                reasons.push(`$${netWorth.toFixed(1)}B net worth`);
+            } else if (netWorth >= FINANCIAL_TIERS.EMERGING) {
+                score = netWorth * 0.05;
+                reasons.push(`$${(netWorth * 1000).toFixed(0)}M net worth`);
+            }
+        } else if (entity.type === 'company' && entity.marketCap) {
+            const marketCapBillions = entity.marketCap * 1000;
+            if (marketCapBillions >= MARKET_CAP_TIERS.MEGA_CAP) {
+                score = marketCapBillions * 0.35; // 35% weight for company market cap
+                reasons.push(`$${entity.marketCap.toFixed(2)}T market cap (Mega-cap)`);
+            } else if (marketCapBillions >= MARKET_CAP_TIERS.LARGE_CAP) {
+                score = marketCapBillions * 0.30;
+                reasons.push(`$${marketCapBillions.toFixed(0)}B market cap (Large-cap)`);
+            } else if (marketCapBillions >= MARKET_CAP_TIERS.MID_CAP) {
+                score = marketCapBillions * 0.20;
+                reasons.push(`$${marketCapBillions.toFixed(0)}B market cap (Mid-cap)`);
+            } else if (marketCapBillions >= MARKET_CAP_TIERS.SMALL_CAP) {
+                score = marketCapBillions * 0.10;
+                reasons.push(`$${marketCapBillions.toFixed(1)}B market cap`);
+            } else if (marketCapBillions >= MARKET_CAP_TIERS.MICRO_CAP) {
+                score = marketCapBillions * 0.03;
+                reasons.push(`$${(marketCapBillions * 1000).toFixed(0)}M market cap`);
+            }
+        } else if (entity.type === 'fund' && entity.aum) {
+            const aumBillions = entity.aum * 1000;
+            if (aumBillions >= AUM_TIERS.MEGA_FUND) {
+                score = aumBillions * 0.25; // 25% weight for fund AUM
+                reasons.push(`$${entity.aum.toFixed(1)}T AUM (Mega-fund)`);
+            } else if (aumBillions >= AUM_TIERS.LARGE_FUND) {
+                score = aumBillions * 0.25;
+                reasons.push(`$${aumBillions.toFixed(0)}B AUM (Large fund)`);
+            } else if (aumBillions >= AUM_TIERS.MID_FUND) {
+                score = aumBillions * 0.15;
+                reasons.push(`$${aumBillions.toFixed(0)}B AUM`);
+            } else if (aumBillions >= AUM_TIERS.SMALL_FUND) {
+                score = aumBillions * 0.08;
+                reasons.push(`$${aumBillions.toFixed(1)}B AUM`);
+            } else if (aumBillions >= AUM_TIERS.MICRO_FUND) {
+                score = aumBillions * 0.02;
+                reasons.push(`$${(aumBillions * 1000).toFixed(0)}M AUM`);
+            }
+        }
+
+        return { score, reasons };
     }
 
     private getGeographicMultiplier(country?: string): number {
@@ -235,36 +277,29 @@ export class EntityRelevanceScorer {
 
         const reasons: string[] = [];
         let score = 0;
+        const financialValue = this.getFinancialValue(entity);
 
-        // Handle tier-based scoring
-        if (TIER_1_ENTITIES.has(entityId)) {
-            score += 50;
-            reasons.push('Tier 1 global influence');
-        } else if (TIER_2_ENTITIES.has(entityId)) {
-            score += 35;
-            reasons.push('Tier 2 significant influence');
-        }
+        // Primary financial scoring
+        const financialResult = this.getFinancialScore(entity);
+        score += financialResult.score;
+        reasons.push(...financialResult.reasons);
 
-        // Connection-based scoring
+        // Connection-based scoring (reduced weight in favor of financial metrics)
         const connectionCount = this.connectionCounts.get(entityId) || 0;
         const weightedConnections = this.calculateWeightedConnections(entityId);
-        const connectionScore = (connectionCount * 0.3 + weightedConnections * 0.7) * 0.8;
+        const connectionScore = (connectionCount * 0.1 + weightedConnections * 0.2) * 0.3;
         score += connectionScore;
 
         if (connectionCount > 15) {
             reasons.push(`Highly connected (${connectionCount} connections)`);
         }
 
-        // Centrality bonus
+        // Centrality bonus (reduced weight)
         const centralityScore = this.centralityScores.get(entityId) || 0;
         if (centralityScore > 10) {
-            score += centralityScore * 0.2;
+            score += centralityScore * 0.05;
             reasons.push('High network centrality');
         }
-
-        // Entity type multiplier
-        const typeMultiplier = this.getEntityTypeMultiplier(entity.type);
-        score *= typeMultiplier;
 
         // Geographic multiplier
         const geoMultiplier = this.getGeographicMultiplier(entity.country);
@@ -280,16 +315,16 @@ export class EntityRelevanceScorer {
 
         // Handle controversial entities
         if (CONTROVERSIAL_ENTITIES.has(entityId)) {
-            score = Math.max(score, 45); // Ensure adequate detail for context
+            score = Math.max(score, 50); // Ensure adequate detail for context
             reasons.push('Requires contextual handling');
         }
 
-        // Determine detail level
+        // Determine detail level based on financial value and score
         let detailLevel: 1 | 2 | 3 | 4 | 5;
-        if (score >= 50) detailLevel = 5;
-        else if (score >= 30) detailLevel = 4;
-        else if (score >= 15) detailLevel = 3;
-        else if (score >= 5) detailLevel = 2;
+        if (financialValue >= 100 || score >= 100) detailLevel = 5;  // $100B+ or high score
+        else if (financialValue >= 50 || score >= 50) detailLevel = 4;   // $50B+ or medium-high score
+        else if (financialValue >= 10 || score >= 20) detailLevel = 3;   // $10B+ or medium score
+        else if (financialValue >= 1 || score >= 5) detailLevel = 2;     // $1B+ or low score
         else detailLevel = 1;
 
         return {
@@ -297,11 +332,8 @@ export class EntityRelevanceScorer {
             score: Math.round(score * 100) / 100,
             detailLevel,
             reasons,
+            financialValue,
         };
-    }
-
-    public getDetailConfig(detailLevel: 1 | 2 | 3 | 4 | 5): DetailLevelConfig {
-        return DETAIL_LEVELS[detailLevel];
     }
 
     public scoreAllEntities(): Map<string, EntityRelevanceScore> {
@@ -317,7 +349,14 @@ export class EntityRelevanceScorer {
     public getTopEntities(count: number = 20): EntityRelevanceScore[] {
         const allScores = Array.from(this.scoreAllEntities().values());
         return allScores
-            .sort((a, b) => b.score - a.score)
+            .sort((a, b) => b.financialValue - a.financialValue) // Sort by financial value first
+            .slice(0, count);
+    }
+
+    public getTopEntitiesByScore(count: number = 20): EntityRelevanceScore[] {
+        const allScores = Array.from(this.scoreAllEntities().values());
+        return allScores
+            .sort((a, b) => b.score - a.score) // Sort by total score
             .slice(0, count);
     }
 }

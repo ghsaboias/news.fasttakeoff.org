@@ -25,13 +25,16 @@ export function useGraphData() {
     useEffect(() => {
         async function loadData() {
             try {
+                console.log('Fetching graph data...');
                 const response = await fetch('/data/graph.json');
                 if (!response.ok) throw new Error('Failed to load network data');
                 const data = await response.json();
+                console.log('Graph data fetched successfully:', data);
                 const relationships = data.relationships.map(([from, to, type]: [string, string, string]) => ({ from, to, type }));
                 setGraphData({ entities: data.entities, relationships });
                 setLoading(false);
             } catch (err) {
+                console.error('Error loading graph data:', err);
                 setError(err instanceof Error ? err.message : 'Unknown error');
                 setLoading(false);
             }
@@ -39,5 +42,6 @@ export function useGraphData() {
         loadData();
     }, []);
 
+    console.log('useGraphData state:', { graphData, loading, error });
     return { graphData, loading, error };
 } 
