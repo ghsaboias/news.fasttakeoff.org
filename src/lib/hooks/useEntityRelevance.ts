@@ -10,8 +10,11 @@ export interface UseEntityRelevanceResult {
     scorer: EntityRelevanceScorer;
     getEntityScore: (entityId: string) => EntityRelevanceScore;
     getTopEntities: (count?: number) => EntityRelevanceScore[];
+    getTopEntitiesByScore: (count?: number) => EntityRelevanceScore[];
+    getTopEntitiesByFinancialValue: (count?: number) => EntityRelevanceScore[];
     getAllScores: () => Map<string, EntityRelevanceScore>;
     isHighRelevance: (entityId: string) => boolean;
+    isHighFinancialValue: (entityId: string) => boolean;
     shouldShowDetails: (entityId: string, threshold?: number) => boolean;
 }
 
@@ -32,6 +35,14 @@ export function useEntityRelevance(graphData: GraphData | null): UseEntityReleva
             return scorer.getTopEntities(count);
         };
 
+        const getTopEntitiesByScore = (count: number = 20): EntityRelevanceScore[] => {
+            return scorer.getTopEntitiesByScore(count);
+        };
+
+        const getTopEntitiesByFinancialValue = (count: number = 20): EntityRelevanceScore[] => {
+            return scorer.getTopEntities(count); // This already sorts by financial value
+        };
+
         const getAllScores = (): Map<string, EntityRelevanceScore> => {
             return scorer.scoreAllEntities();
         };
@@ -39,6 +50,11 @@ export function useEntityRelevance(graphData: GraphData | null): UseEntityReleva
         const isHighRelevance = (entityId: string): boolean => {
             const score = scorer.scoreEntity(entityId);
             return score.detailLevel >= 4;
+        };
+
+        const isHighFinancialValue = (entityId: string): boolean => {
+            const score = scorer.scoreEntity(entityId);
+            return score.financialValue >= 10; // $10B+ is considered high financial value
         };
 
         const shouldShowDetails = (entityId: string, threshold: number = 3): boolean => {
@@ -50,8 +66,11 @@ export function useEntityRelevance(graphData: GraphData | null): UseEntityReleva
             scorer,
             getEntityScore,
             getTopEntities,
+            getTopEntitiesByScore,
+            getTopEntitiesByFinancialValue,
             getAllScores,
             isHighRelevance,
+            isHighFinancialValue,
             shouldShowDetails,
         };
     }, [scorer]);
@@ -72,6 +91,22 @@ export function formatEntityRelevance(score: EntityRelevanceScore): string {
     return `${levelNames[score.detailLevel]} (${score.score.toFixed(1)})`;
 }
 
+// Utility function to format financial value for display
+export function formatFinancialValue(score: EntityRelevanceScore): string {
+    const value = score.financialValue;
+    if (value >= 1000) {
+        return `$${(value / 1000).toFixed(1)}T`;
+    } else if (value >= 1) {
+        return `$${value.toFixed(1)}B`;
+    } else if (value >= 0.1) {
+        return `$${(value * 1000).toFixed(0)}M`;
+    } else if (value > 0) {
+        return `$${(value * 1000).toFixed(1)}M`;
+    } else {
+        return 'N/A';
+    }
+}
+
 // Utility function to get display class based on relevance
 export function getRelevanceDisplayClass(score: EntityRelevanceScore): string {
     const classes = {
@@ -83,4 +118,22 @@ export function getRelevanceDisplayClass(score: EntityRelevanceScore): string {
     };
 
     return classes[score.detailLevel];
+}
+
+// Utility function to get display class based on financial value
+export function getFinancialValueDisplayClass(score: EntityRelevanceScore): string {
+    const value = score.financialValue;
+    if (value >= 100) {
+        return 'text-yellow-300 font-bold'; // Mega-wealth
+    } else if (value >= 50) {
+        return 'text-yellow-400 font-medium'; // Ultra-wealth
+    } else if (value >= 10) {
+        return 'text-green-400 font-medium'; // High wealth
+    } else if (value >= 1) {
+        return 'text-green-300'; // Wealth
+    } else if (value >= 0.1) {
+        return 'text-blue-300'; // Emerging
+    } else {
+        return 'text-gray-400'; // No significant financial data
+    }
 } 

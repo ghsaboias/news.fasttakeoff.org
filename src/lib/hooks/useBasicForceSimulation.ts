@@ -16,7 +16,8 @@ interface Relationship {
  */
 export function useBasicForceSimulation(
     nodesRef: React.MutableRefObject<Node[]>,
-    relationships?: Relationship[]
+    relationships?: Relationship[],
+    isMobile: boolean = false
 ) {
     const tick = useCallback(() => {
         if (!relationships) return;
@@ -40,7 +41,7 @@ export function useBasicForceSimulation(
                 if (distanceSq === 0) continue;
 
                 const distance = Math.sqrt(distanceSq);
-                const force = 1000 / distanceSq; // original constant
+                const force = (isMobile ? 2000 : 1000) / distanceSq;
                 const fx = (dx / distance) * force;
                 const fy = (dy / distance) * force;
 
@@ -51,8 +52,8 @@ export function useBasicForceSimulation(
             }
         }
 
-        // 3. Attraction for linked nodes (spring toward 150px)
-        const targetDistance = 150;
+        // 3. Attraction for linked nodes (spring toward target distance)
+        const targetDistance = isMobile ? 200 : 150;
         relationships.forEach((rel) => {
             const nodeA = nodes.find((n) => n.id === rel.from);
             const nodeB = nodes.find((n) => n.id === rel.to);
@@ -63,7 +64,7 @@ export function useBasicForceSimulation(
             const distance = Math.sqrt(dx * dx + dy * dy);
             if (distance === 0) return;
 
-            const force = (distance - targetDistance) * 0.01; // original coeff
+            const force = (distance - targetDistance) * 0.01;
             const fx = (dx / distance) * force;
             const fy = (dy / distance) * force;
 
@@ -78,7 +79,7 @@ export function useBasicForceSimulation(
             node.x += node.vx;
             node.y += node.vy;
         });
-    }, [nodesRef, relationships]);
+    }, [nodesRef, relationships, isMobile]);
 
     return tick;
 } 
