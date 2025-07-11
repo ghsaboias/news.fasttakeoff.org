@@ -87,8 +87,11 @@ export class ReportAI {
             const data = await response.json();
             const llmResponse = JSON.parse(data.choices[0].message.content);
 
-            // Validate required fields
-            const { headline: rawHeadline, city, body } = llmResponse;
+            // Validate required fields - handle both lowercase and capitalized field names
+            const rawHeadline = llmResponse.headline || llmResponse.Headline;
+            const city = llmResponse.city || llmResponse.City;
+            const body = llmResponse.body || llmResponse.Body;
+
             const isValidString = (str: unknown): str is string => typeof str === 'string' && str.trim() !== '';
 
             if (!isValidString(rawHeadline) || !isValidString(city) || !isValidString(body)) {
