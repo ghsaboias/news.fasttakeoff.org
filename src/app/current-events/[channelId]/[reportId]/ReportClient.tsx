@@ -1,6 +1,7 @@
 "use client"
 
 import NotFound from '@/app/not-found';
+import FactCheckDisplay from "@/components/current-events/FactCheckDisplay";
 import MessageItem from "@/components/current-events/MessageItem";
 import { AttributedReportViewer } from '@/components/source-attribution';
 import { Button } from "@/components/ui/button";
@@ -17,6 +18,7 @@ import { DiscordMessage, ReportResponse } from "@/lib/types/core";
 import {
     ArrowLeft,
     Check,
+    CheckCircle,
     ChevronLeft,
     ChevronRight,
     Eye,
@@ -89,6 +91,7 @@ export default function ReportClient() {
     const [isTranslating, setIsTranslating] = useState(false);
     const [showAttributions, setShowAttributions] = useState(false);
     const [isAttributionsLoading, setIsAttributionsLoading] = useState(false);
+    const [showFactCheck, setShowFactCheck] = useState(false);
 
     const SOURCES_PER_PAGE = 20;
 
@@ -244,6 +247,17 @@ export default function ReportClient() {
                                             )}
                                         </div>
                                     </Button>
+                                    <Button
+                                        variant="outline"
+                                        size="icon"
+                                        onClick={() => setShowFactCheck(!showFactCheck)}
+                                        className="p-2 hover:bg-muted min-w-[64px] flex justify-center"
+                                        title={showFactCheck ? "Hide Fact Check" : "Show Fact Check"}
+                                    >
+                                        <div className="flex items-center gap-2">
+                                            <CheckCircle className="h-5 w-5" />
+                                        </div>
+                                    </Button>
                                 </div>
                             </div>
                         </div>
@@ -270,6 +284,13 @@ export default function ReportClient() {
                                     className="prose prose-zinc max-w-none overflow-y-auto"
                                     showAttributions={showAttributions}
                                     onLoadingChange={setIsAttributionsLoading}
+                                />
+                            )}
+                            {/* Fact Check Display */}
+                            {showFactCheck && report && (
+                                <FactCheckDisplay
+                                    reportId={report.reportId}
+                                    className="mt-4"
                                 />
                             )}
                         </div>
