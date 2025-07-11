@@ -391,4 +391,34 @@ export interface Session {
     user?: {
         id: string;
     };
+}
+
+export interface FactCheckClaim {
+    claim: string;
+    verification: 'verified' | 'partially-verified' | 'unverified' | 'false';
+    confidence: number;
+    sources: string[];
+    importance: number;
+    details: string;
+}
+
+export interface FactCheckResult {
+    reportId: string;
+    overallCredibility: 'high' | 'medium' | 'low';
+    verificationSummary: string;
+    claims: FactCheckClaim[];
+    improvements: string[];
+    missingContext: string[];
+    checkedAt: string;
+    version: string;
+}
+
+export interface LinkPreview {
+    url: string;
+    title?: string;
+    description?: string;
+    image?: string;
+    siteName?: string;
+    domain: string;
+    cachedAt: string;
 } 

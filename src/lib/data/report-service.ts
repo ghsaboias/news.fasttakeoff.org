@@ -5,6 +5,7 @@ import { FacebookService } from '../facebook-service';
 import { InstagramService } from '../instagram-service';
 import { TwitterService } from '../twitter-service';
 import { EntityExtractor } from '../utils/entity-extraction';
+import { PerplexityFactCheckService } from '../utils/fact-check-service';
 import { ReportAI, ReportContext } from '../utils/report-ai';
 import { ReportCache } from '../utils/report-cache';
 import { ChannelsService } from './channels-service';
@@ -16,6 +17,7 @@ export class ReportService {
     private instagramService: InstagramService;
     private facebookService: FacebookService;
     private twitterService: TwitterService;
+    private factCheckService: PerplexityFactCheckService;
     private env: Cloudflare.Env;
 
     constructor(env: Cloudflare.Env) {
@@ -25,6 +27,7 @@ export class ReportService {
         this.instagramService = new InstagramService(env);
         this.facebookService = new FacebookService(env);
         this.twitterService = new TwitterService(env);
+        this.factCheckService = new PerplexityFactCheckService(env);
     }
 
     async createReportAndGetMessages(channelId: string, timeframe: TimeframeKey): Promise<{ report: Report | null; messages: DiscordMessage[] }> {
@@ -352,7 +355,31 @@ export class ReportService {
             this._extractEntitiesForReports(generatedReports);
         }
 
+        // Fact-check top 2 reports with highest message count (fire and forget)
+        this._factCheckTopReports(generatedReports);
+
         return generatedReports;
+    }
+
+    private async _factCheckTopReports(reports: Report[]): Promise<void> {
+        if (reports.length === 0) {
+            console.log('[FACT CHECK] No reports to fact-check.');
+            return;
+        }
+
+        const reportsToFactCheck = reports
+            .sort((a, b) => (b.messageCount || 0) - (a.messageCount || 0))
+            .slice(0, 2); // Fact-check the top 2 reports with the highest message count
+
+        for (const report of reportsToFactCheck) {
+            try {
+                await this.factCheckService.factCheckReport(report);
+                console.log(`[FACT CHECK] Successfully fact-checked report ${report.reportId}`);
+            } catch (error) {
+                console.error(`[FACT CHECK] Failed to fact-check report ${report.reportId}:`, error);
+            }
+        }
+        console.log(`[FACT CHECK] Fact-checking completed for ${reportsToFactCheck.length} reports.`);
     }
 
     private async _postTopReportToSocialMedia(generatedReports: Report[]): Promise<void> {

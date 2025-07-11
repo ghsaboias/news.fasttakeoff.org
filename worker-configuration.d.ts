@@ -19,6 +19,7 @@ export declare namespace Cloudflare {
         OPENROUTER_API_KEY: string;
         OPENAI_API_KEY: string;
         GEMINI_API_KEY: string;
+        PERPLEXITY_API_KEY: string;
         NEXT_PUBLIC_CLERK_SIGN_IN_URL: string;
         NEXT_PUBLIC_CLERK_SIGN_UP_URL: string;
         NEXT_PUBLIC_CLERK_SIGN_IN_FORCE_REDIRECT_URL: string;
