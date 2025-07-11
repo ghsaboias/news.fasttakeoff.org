@@ -82,7 +82,7 @@ export async function scheduled(event: ScheduledEvent, env: Cloudflare.Env): Pro
         // Every 5 minutes (skip 0): Messages cache refresh
         await logRun('MESSAGES_REFRESH', () => messagesService.updateMessages(), {
             failFast: false,
-            timeoutMs: 60000 // 1 minute for cache refresh
+            timeoutMs: 120000 // 2 minutes for cache refresh
         });
     } else if (event.cron === 'MESSAGES') {
         // Manual trigger for messages
