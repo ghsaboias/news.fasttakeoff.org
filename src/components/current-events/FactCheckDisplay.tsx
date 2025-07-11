@@ -79,7 +79,7 @@ export default function FactCheckDisplay({ reportId, className }: FactCheckDispl
                 <CardContent>
                     <div className="flex items-center justify-center py-4">
                         <Loader size="sm" />
-                        <span className="ml-2 text-sm text-muted-foreground">Loading fact-check results...</span>
+                        <span className="ml-2 text-sm text-muted">Loading fact-check results...</span>
                     </div>
                 </CardContent>
             </Card>
@@ -96,7 +96,7 @@ export default function FactCheckDisplay({ reportId, className }: FactCheckDispl
                     </CardTitle>
                 </CardHeader>
                 <CardContent>
-                    <p className="text-sm text-muted-foreground">
+                    <p className="text-sm text-muted">
                         Fact-check results are not available for this report.
                     </p>
                 </CardContent>
@@ -114,7 +114,7 @@ export default function FactCheckDisplay({ reportId, className }: FactCheckDispl
                     </CardTitle>
                 </CardHeader>
                 <CardContent>
-                    <p className="text-sm text-muted-foreground">
+                    <p className="text-sm text-muted">
                         {factCheck.verificationSummary || 'Fact-check not yet available for this report'}
                     </p>
                 </CardContent>
@@ -158,18 +158,18 @@ export default function FactCheckDisplay({ reportId, className }: FactCheckDispl
                                                 {claim.verification.replace('-', ' ')}
                                             </Badge>
                                         </div>
-                                        <div className="text-xs text-muted-foreground">
+                                        <div className="text-xs text-muted">
                                             Importance: {claim.importance}/10
                                         </div>
                                     </div>
                                     {claim.details && (
-                                        <p className="text-xs text-muted-foreground ml-6">
+                                        <p className="text-xs text-muted ml-6">
                                             {claim.details}
                                         </p>
                                     )}
                                     {claim.sources.length > 0 && (
                                         <div className="ml-6 space-y-2">
-                                            <div className="text-xs font-medium text-muted-foreground">
+                                            <div className="text-xs font-medium text-muted">
                                                 Sources:
                                             </div>
                                             {claim.sources.slice(0, 3).map((source, sourceIndex) => (
@@ -203,7 +203,7 @@ export default function FactCheckDisplay({ reportId, className }: FactCheckDispl
                         <ul className="text-sm space-y-1">
                             {factCheck.improvements.map((improvement, index) => (
                                 <li key={index} className="flex items-start gap-2">
-                                    <span className="text-muted-foreground">•</span>
+                                    <span className="text-muted">•</span>
                                     <span>{improvement}</span>
                                 </li>
                             ))}
@@ -217,7 +217,7 @@ export default function FactCheckDisplay({ reportId, className }: FactCheckDispl
                         <ul className="text-sm space-y-1">
                             {factCheck.missingContext.map((context, index) => (
                                 <li key={index} className="flex items-start gap-2">
-                                    <span className="text-muted-foreground">•</span>
+                                    <span className="text-muted">•</span>
                                     <span>{context}</span>
                                 </li>
                             ))}
@@ -225,7 +225,7 @@ export default function FactCheckDisplay({ reportId, className }: FactCheckDispl
                     </div>
                 )}
 
-                <div className="text-xs text-muted-foreground pt-2 border-t">
+                <div className="text-xs text-muted pt-2 border-t">
                     Fact-checked on {new Date(factCheck.checkedAt).toLocaleString()}
                 </div>
             </CardContent>
