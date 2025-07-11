@@ -272,7 +272,7 @@ export default function ReportClient() {
                                         options={{ dateStyle: 'short', timeStyle: 'short' }}
                                     />
                                 )}
-                                {report?.generatedAt ? ' - ' : ''}{translatedContent?.city || report?.city}
+                                {report?.generatedAt ? ' - ' : ''}{translatedContent?.city || (report?.city ? report.city.split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ') : '')}
                             </p>
                             {/* Enhanced Interactive Report Body with Source Attribution */}
                             {report && channelId && (
