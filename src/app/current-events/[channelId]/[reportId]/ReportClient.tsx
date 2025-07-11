@@ -291,6 +291,7 @@ export default function ReportClient() {
                                 <FactCheckDisplay
                                     reportId={report.reportId}
                                     className="mt-4"
+                                    onDemandTrigger={true}
                                 />
                             )}
                         </div>
