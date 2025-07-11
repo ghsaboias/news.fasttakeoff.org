@@ -169,7 +169,7 @@ WHEN A PREVIOUS REPORT IS PROVIDED:
 - Only omit previous topics if they are clearly superseded or resolved
 
 FORMAT:
-- Headline: Clear, specific, non-sensational, in ALL CAPS
+- Headline: Specific, non-sensational, in ALL CAPS
 - City: Single city name related to the news
 - Body: Cohesive paragraphs separated by double newlines (\\n\\n)
 
