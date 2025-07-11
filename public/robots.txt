@@ -1,23 +1,19 @@
 User-agent: *
 Allow: /
 
-# Block sensitive paths
 Disallow: /api/
 Disallow: /_next/
 Disallow: /.well-known/
 Disallow: /admin/
 Disallow: /private/
 
-# Speed up Google News discovery
 User-agent: Googlebot-News
 Allow: /
 Crawl-delay: 1
 
-# Allow important static assets
 Allow: /favicon.ico
 Allow: /images/
 Allow: /geojson/
 
-# Sitemap locations
 Sitemap: https://news.fasttakeoff.org/news-sitemap.xml
 Sitemap: https://news.fasttakeoff.org/sitemap-index.xml
