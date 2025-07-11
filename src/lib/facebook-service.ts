@@ -80,7 +80,7 @@ export class FacebookService {
         });
 
         // Facebook allows much longer posts than Instagram, so we can include more content
-        const dateCityLine = `${formattedDate} ${formattedTime} - ${report.city}`;
+        const dateCityLine = `${formattedDate} ${formattedTime} - ${report.city.charAt(0).toUpperCase() + report.city.toLowerCase().slice(1)}`;
         const linkSection = `🔗 Read the full report: ${reportLink}`;
         const hashtagSection = hashtagsString ? `\n${hashtagsString}` : '';
 
