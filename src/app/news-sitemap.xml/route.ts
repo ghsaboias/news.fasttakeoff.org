@@ -25,7 +25,7 @@ export async function GET() {
         return new NextResponse(cachedNewsSitemap, {
             headers: {
                 'Content-Type': 'application/xml; charset=utf-8',
-                'Cache-Control': 'public, max-age=900, s-maxage=900', // 15 minutes
+                'Cache-Control': 'public, max-age=1800, s-maxage=1800', // 30 minutes
             },
         });
     } catch (error) {
