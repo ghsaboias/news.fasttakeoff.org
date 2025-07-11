@@ -1,17 +1,19 @@
 "use client"
 
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader } from "@/components/ui/loader";
 import { useApi } from "@/lib/hooks";
 import { FactCheckResult } from "@/lib/types/core";
 import { AlertTriangle, CheckCircle, Info, XCircle } from "lucide-react";
-import { useMemo } from "react";
+import { useCallback, useMemo, useState } from "react";
 import LinkPreview from "./LinkPreview";
 
 interface FactCheckDisplayProps {
     reportId: string;
     className?: string;
+    onDemandTrigger?: boolean; // New prop to enable on-demand fact-checking
 }
 
 const getVerificationIcon = (verification: string) => {
@@ -57,8 +59,11 @@ const getCredibilityColor = (credibility: string) => {
     }
 };
 
-export default function FactCheckDisplay({ reportId, className }: FactCheckDisplayProps) {
-    const { data: factCheck, loading, error } = useApi<FactCheckResult>(
+export default function FactCheckDisplay({ reportId, className, onDemandTrigger = false }: FactCheckDisplayProps) {
+    const [isTriggering, setIsTriggering] = useState(false);
+    const [triggerError, setTriggerError] = useState<string | null>(null);
+
+    const { data: factCheck, loading, error, request } = useApi<FactCheckResult>(
         () => fetch(`/api/fact-check?reportId=${reportId}`).then(res => res.json()),
         { manual: false }
     );
@@ -66,6 +71,41 @@ export default function FactCheckDisplay({ reportId, className }: FactCheckDispl
     const hasValidFactCheck = useMemo(() => {
         return factCheck && factCheck.claims && factCheck.claims.length > 0;
     }, [factCheck]);
+
+    const isFactCheckAvailable = useMemo(() => {
+        return factCheck && !factCheck.verificationSummary?.includes('not yet available');
+    }, [factCheck]);
+
+    const triggerFactCheck = useCallback(async () => {
+        if (isTriggering) return;
+
+        setIsTriggering(true);
+        setTriggerError(null);
+
+        try {
+            const response = await fetch('/api/fact-check', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ reportId }),
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || 'Failed to perform fact-check');
+            }
+
+            // Refetch the data to get the updated fact-check results
+            await request();
+        } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+            setTriggerError(errorMessage);
+            console.error('Error triggering fact-check:', error);
+        } finally {
+            setIsTriggering(false);
+        }
+    }, [reportId, isTriggering, request]);
 
     if (loading) {
         return (
@@ -99,12 +139,32 @@ export default function FactCheckDisplay({ reportId, className }: FactCheckDispl
                     <p className="text-sm text-muted">
                         Fact-check results are not available for this report.
                     </p>
+                    {onDemandTrigger && (
+                        <Button
+                            onClick={triggerFactCheck}
+                            disabled={isTriggering}
+                            className="mt-3"
+                            size="sm"
+                        >
+                            {isTriggering ? (
+                                <>
+                                    <Loader size="sm" className="mr-2" />
+                                    Fact-checking...
+                                </>
+                            ) : (
+                                'Start Fact Check'
+                            )}
+                        </Button>
+                    )}
+                    {triggerError && (
+                        <p className="text-sm text-red-600 mt-2">{triggerError}</p>
+                    )}
                 </CardContent>
             </Card>
         );
     }
 
-    if (!hasValidFactCheck) {
+    if (!hasValidFactCheck && !isFactCheckAvailable) {
         return (
             <Card className={className}>
                 <CardHeader>
@@ -117,6 +177,45 @@ export default function FactCheckDisplay({ reportId, className }: FactCheckDispl
                     <p className="text-sm text-muted">
                         {factCheck.verificationSummary || 'Fact-check not yet available for this report'}
                     </p>
+                    {onDemandTrigger && (
+                        <Button
+                            onClick={triggerFactCheck}
+                            disabled={isTriggering}
+                            className="mt-3"
+                            size="sm"
+                        >
+                            {isTriggering ? (
+                                <>
+                                    <Loader size="sm" className="mr-2" />
+                                    Fact-checking...
+                                </>
+                            ) : (
+                                'Start Fact Check'
+                            )}
+                        </Button>
+                    )}
+                    {triggerError && (
+                        <p className="text-sm text-red-600 mt-2">{triggerError}</p>
+                    )}
+                </CardContent>
+            </Card>
+        );
+    }
+
+    if (isTriggering) {
+        return (
+            <Card className={className}>
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                        <CheckCircle className="h-5 w-5" />
+                        Fact Check
+                    </CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <div className="flex items-center justify-center py-4">
+                        <Loader size="sm" />
+                        <span className="ml-2 text-sm text-muted">Performing fact-check... This may take up to 60 seconds.</span>
+                    </div>
                 </CardContent>
             </Card>
         );
