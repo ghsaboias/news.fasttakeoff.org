@@ -53,103 +53,82 @@ export class ReportAI {
         const modelOverride = (env as unknown as { [key: string]: string | undefined }).AI_MODEL_OVERRIDE;
         const modelToUse = modelOverride || aiConfig.model;
 
-        const response = await fetch(apiUrl, {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${apiKey}`,
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                messages: [
-                    {
-                        role: "system",
-                        content: AI.REPORT_GENERATION.SYSTEM_PROMPT,
-                    },
-                    { role: "user", content: prompt }
-                ],
-                model: modelToUse,
-                max_tokens: AI.REPORT_GENERATION.OUTPUT_BUFFER,
-                response_format: {
-                    type: "json_schema",
-                    json_schema: {
-                        name: "report",
-                        strict: true,
-                        schema: {
-                            type: "object",
-                            properties: {
-                                headline: {
-                                    type: "string",
-                                    description: "Clear, specific, non-sensational headline in all caps"
-                                },
-                                city: {
-                                    type: "string",
-                                    description: "Single city name, related to the news, properly capitalized (first letter of each word only)"
-                                },
-                                body: {
-                                    type: "string",
-                                    description: "Cohesive narrative of the most important verified developments, including key names, numbers, locations, dates, etc. Separate paragraphs with double newlines (\\n\\n)."
-                                },
-                            },
-                            required: ["headline", "city", "body"],
-                            additionalProperties: false
-                        },
-                    },
-                },
-            }),
-        });
+        // Create timeout controller - 30 seconds for AI requests
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => {
+            console.error(`[REPORT_AI] Request timeout after 30 seconds for channel ${context.channelName}`);
+            controller.abort();
+        }, 30000);
 
-        if (!response.ok) {
-            throw new Error(`AI API request failed: ${response.status} - ${await response.text()}`);
-        }
-
-        const data = await response.json() as { choices?: Array<{ message?: { content?: string } }> };
-        const content = data.choices?.[0]?.message?.content;
-        if (!content) throw new Error('No content returned from AI API');
-
-        let reportData: { headline?: string; city?: string; body?: string };
         try {
-            reportData = JSON.parse(content);
-        } catch (parseError) {
-            console.error(`[REPORTS] Failed to parse AI JSON response for channel ${context.channelId}:`, parseError);
-            console.error(`[REPORTS] Raw AI response: "${content}"`);
-            throw new Error('Invalid JSON format received from AI');
+            const response = await fetch(apiUrl, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${apiKey}`,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    model: modelToUse,
+                    messages: [{ role: 'user', content: prompt }],
+                    temperature: 0.7,
+                    max_tokens: 1024,
+                    response_format: { type: "json_object" }
+                }),
+                signal: controller.signal
+            });
+
+            clearTimeout(timeoutId);
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(`AI API error: ${response.status} - ${response.statusText} - ${errorText}`);
+            }
+
+            const data = await response.json();
+            const llmResponse = JSON.parse(data.choices[0].message.content);
+
+            // Validate required fields
+            const { headline: rawHeadline, city, body } = llmResponse;
+            const isValidString = (str: unknown): str is string => typeof str === 'string' && str.trim() !== '';
+
+            if (!isValidString(rawHeadline) || !isValidString(city) || !isValidString(body)) {
+                const errors: string[] = [];
+                if (!isValidString(rawHeadline)) errors.push('headline');
+                if (!isValidString(city)) errors.push('city');
+                if (!isValidString(body)) errors.push('body');
+                console.log(`[REPORTS] Invalid/Missing fields in AI response for channel ${context.channelId}: ${errors.join(', ')}`);
+                console.log(`[REPORTS] Raw AI data: ${JSON.stringify(llmResponse)}`);
+                throw new Error(`Invalid report format: missing or invalid fields (${errors.join(', ')})`);
+            }
+
+            if (isReportTruncated({ body })) {
+                console.log(`[REPORTS] Detected truncated report for channel ${context.channelName}. Last character: "${body.trim().slice(-1)}"`);
+                throw new Error('Report appears to be truncated (ends with letter without punctuation)');
+            }
+
+            const lastMessageTimestamp = messages[0]?.timestamp || new Date().toISOString();
+            const headline = rawHeadline.toUpperCase();
+
+            return {
+                headline,
+                city,
+                body,
+                reportId: uuidv4(),
+                channelId: context.channelId,
+                channelName: context.channelName,
+                cacheStatus: 'miss' as const,
+                messageCount: context.messageCount,
+                lastMessageTimestamp,
+                generatedAt: new Date().toISOString(),
+                timeframe: context.timeframe,
+                messageIds: messages.map(msg => msg.id),
+            };
+        } catch (error) {
+            clearTimeout(timeoutId);
+            if (error instanceof Error && error.name === 'AbortError') {
+                throw new Error('AI request timed out.');
+            }
+            throw error;
         }
-
-        // Validate required fields
-        const { headline: rawHeadline, city, body } = reportData;
-        const isValidString = (str: unknown): str is string => typeof str === 'string' && str.trim() !== '';
-
-        if (!isValidString(rawHeadline) || !isValidString(city) || !isValidString(body)) {
-            const errors: string[] = [];
-            if (!isValidString(rawHeadline)) errors.push('headline');
-            if (!isValidString(city)) errors.push('city');
-            if (!isValidString(body)) errors.push('body');
-            console.log(`[REPORTS] Invalid/Missing fields in AI response for channel ${context.channelId}: ${errors.join(', ')}`);
-            console.log(`[REPORTS] Raw AI data: ${JSON.stringify(reportData)}`);
-            throw new Error(`Invalid report format: missing or invalid fields (${errors.join(', ')})`);
-        }
-
-        if (isReportTruncated({ body })) {
-            console.log(`[REPORTS] Detected truncated report for channel ${context.channelName}. Last character: "${body.trim().slice(-1)}"`);
-            throw new Error('Report appears to be truncated (ends with letter without punctuation)');
-        }
-
-        const lastMessageTimestamp = messages[0]?.timestamp || new Date().toISOString();
-        const headline = rawHeadline.toUpperCase();
-
-        return {
-            headline,
-            city,
-            body,
-            reportId: uuidv4(),
-            channelId: context.channelId,
-            channelName: context.channelName,
-            cacheStatus: 'miss' as const,
-            messageCount: context.messageCount,
-            lastMessageTimestamp,
-            generatedAt: new Date().toISOString(),
-            timeframe: context.timeframe,
-            messageIds: messages.map(msg => msg.id),
-        };
     }
 }

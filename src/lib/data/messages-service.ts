@@ -277,35 +277,55 @@ export class MessagesService {
 
                     while (true) {
                         const url = `${urlBase}&after=${after}`;
-                        const response = await fetch(url, {
-                            headers: {
-                                Authorization: this.env.DISCORD_TOKEN || '',
-                                'User-Agent': API.DISCORD.USER_AGENT,
-                                'Content-Type': 'application/json',
+
+                        // Add timeout to prevent hanging
+                        const controller = new AbortController();
+                        const timeoutId = setTimeout(() => {
+                            console.error(`[MESSAGES] Discord API timeout for channel ${channel.name}`);
+                            controller.abort();
+                        }, 15000); // 15 second timeout
+
+                        try {
+                            const response = await fetch(url, {
+                                headers: {
+                                    Authorization: this.env.DISCORD_TOKEN || '',
+                                    'User-Agent': API.DISCORD.USER_AGENT,
+                                    'Content-Type': 'application/json',
+                                },
+                                signal: controller.signal
+                            });
+
+                            clearTimeout(timeoutId);
+
+                            if (!response.ok) {
+                                const errorBody = await response.text();
+                                console.error(`[MESSAGES] Discord API Error Details:`);
+                                console.error(`  Channel: ${channel.name} (${channel.id})`);
+                                console.error(`  Status: ${response.status}`);
+                                console.error(`  Status Text: ${response.statusText}`);
+                                console.error(`  Headers: ${JSON.stringify(Object.fromEntries(response.headers.entries()))}`);
+                                console.error(`  Error Body: ${errorBody}`);
+                                console.error(`  Request URL: ${url}`);
+                                throw new Error(`[MESSAGES] Discord API error for ${channel.id}: ${response.status} - ${errorBody}`);
                             }
-                        });
 
-                        if (!response.ok) {
-                            const errorBody = await response.text();
-                            console.error(`[MESSAGES] Discord API Error Details:`);
-                            console.error(`  Channel: ${channel.name} (${channel.id})`);
-                            console.error(`  Status: ${response.status}`);
-                            console.error(`  Status Text: ${response.statusText}`);
-                            console.error(`  Headers: ${JSON.stringify(Object.fromEntries(response.headers.entries()))}`);
-                            console.error(`  Error Body: ${errorBody}`);
-                            console.error(`  Request URL: ${url}`);
-                            throw new Error(`[MESSAGES] Discord API error for ${channel.id}: ${response.status} - ${errorBody}`);
+                            const messages = await response.json();
+                            if (!messages.length) break; // No more messages to fetch
+
+                            channelRawCount += messages.length;
+                            const botMessages = this.messageFilter.byBot(messages);
+                            allMessages.push(...botMessages);
+                            console.log(`[MESSAGES] Channel ${channel.name}: ${botMessages.length} bot messages, total ${allMessages.length}`);
+
+                            after = messages[0].id; // Use the newest message ID for the next batch
+                        } catch (error) {
+                            clearTimeout(timeoutId);
+                            if (error instanceof Error && error.name === 'AbortError') {
+                                console.error(`[MESSAGES] Discord API timeout for channel ${channel.name}`);
+                                throw new Error(`Discord API timeout for channel ${channel.name}`);
+                            }
+                            throw error;
                         }
-
-                        const messages = await response.json();
-                        if (!messages.length) break; // No more messages to fetch
-
-                        channelRawCount += messages.length;
-                        const botMessages = this.messageFilter.byBot(messages);
-                        allMessages.push(...botMessages);
-                        console.log(`[MESSAGES] Channel ${channel.name}: ${botMessages.length} bot messages, total ${allMessages.length}`);
-
-                        after = messages[0].id; // Use the newest message ID for the next batch
                     }
 
                     totalRawMessages += channelRawCount;
