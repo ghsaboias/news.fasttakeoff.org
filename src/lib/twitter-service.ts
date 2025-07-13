@@ -303,11 +303,10 @@ export class TwitterService {
 
         try {
             const reportUrl = `${URLs.WEBSITE_URL}/current-events/${report.channelId}/${report.reportId}`;
-            const tweetText = this.formatSingleTweet(report.headline, reportUrl);
 
-            console.log(`[TWITTER] Posting single tweet (${countTwitterCharacters(tweetText)} chars): "${tweetText.substring(0, 50)}..."`);
+            console.log(`[TWITTER] Posting single tweet (${countTwitterCharacters(report.headline)} chars): "${report.headline.substring(0, 50)}..."`);
 
-            const response = await this.postSingleTweetInternal(tweetText, accessToken);
+            const response = await this.postSingleTweetInternal(report.headline, accessToken);
 
             console.log(`[TWITTER] Successfully posted single tweet for report ${report.reportId}. Tweet ID: ${response.data.id}`);
 
