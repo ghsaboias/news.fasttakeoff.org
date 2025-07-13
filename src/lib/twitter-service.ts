@@ -267,30 +267,6 @@ export class TwitterService {
     }
 
     /**
-     * Formats a single tweet with headline and URL
-     */
-    private formatSingleTweet(headline: string, reportUrl: string): string {
-        const baseText = `${headline}\n\n${reportUrl}`;
-
-        // Check if it fits within Twitter's limit
-        if (countTwitterCharacters(baseText) <= 280) {
-            return baseText;
-        }
-
-        // If too long, truncate headline to fit with URL
-        const urlLength = countTwitterCharacters(`\n\n${reportUrl}`);
-        const availableLength = 280 - urlLength;
-
-        if (availableLength > 50) { // Only truncate if we have reasonable space
-            const truncatedHeadline = truncateForTwitter(headline, urlLength + 4); // +4 for \n\n separators
-            return `${truncatedHeadline}\n\n${reportUrl}`;
-        }
-
-        // If headline is too short after truncation, just post the link with minimal text
-        return `Breaking news:\n\n${reportUrl}`;
-    }
-
-    /**
      * Posts a single tweet with headline and URL
      */
     async postSingleTweet(report: Report): Promise<void> {
@@ -302,8 +278,6 @@ export class TwitterService {
         }
 
         try {
-            const reportUrl = `${URLs.WEBSITE_URL}/current-events/${report.channelId}/${report.reportId}`;
-
             console.log(`[TWITTER] Posting single tweet (${countTwitterCharacters(report.headline)} chars): "${report.headline.substring(0, 50)}..."`);
 
             const response = await this.postSingleTweetInternal(report.headline, accessToken);
