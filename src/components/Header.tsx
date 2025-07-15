@@ -3,7 +3,7 @@
 import { Button } from "@/components/ui/button";
 import { useGeolocation } from "@/lib/hooks/useGeolocation";
 import { UserButton, useUser } from "@clerk/nextjs";
-import { Menu } from "lucide-react";
+import { Menu, UserIcon } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
@@ -17,45 +17,48 @@ export default function Header() {
     const { isUSBased } = useGeolocation({ initialValue: false });
 
     return (
-        <header className="mx-auto flex h-16 items-center justify-between sm:px-8 bg-foreground px-4 ">
+        <header className="mx-auto flex h-16 items-center justify-between sm:px-8 bg-foreground px-4 shadow-sm gap-4">
             <Link href="/" className="flex items-center gap-2 text-xl text-[#167F6E] font-semibold">
                 <Image src="/images/brain_transparent.webp" alt="Fast Takeoff News" width={32} height={32} priority />
                 <p className="hidden lg:block">Fast Takeoff News</p>
             </Link>
-            <div className="items-center gap-6 hidden min-[600px]:flex text-background">
+            <div className="items-center gap-6 hidden min-[700px]:flex text-background">
                 {
                     isUSBased && (
                         <>
-                            <Link href="/executive-orders" className="text-sm font-medium hover:underline">
+                            <Link href="/executive-orders" className="text-sm font-medium hover:underline hover:text-[#167F6E] transition-colors text-center">
                                 Executive Orders
                             </Link>
                         </>
                     )
                 }
-                <Link href="/current-events" className="text-sm font-medium hover:underline">
+                <Link href="/current-events" className="text-sm font-medium hover:underline hover:text-[#167F6E] transition-colors text-center">
                     Current Events
                 </Link>
-                <Link href="/entities" className="text-sm font-medium hover:underline">
+                <Link href="/entities" className="text-sm font-medium hover:underline hover:text-[#167F6E] transition-colors text-center">
                     Entities
                 </Link>
-                <Link href="/message-activity" className="text-sm font-medium hover:underline">
+                <Link href="/message-activity" className="text-sm font-medium hover:underline hover:text-[#167F6E] transition-colors text-center">
                     Heatmap
                 </Link>
-                <Link href="/news-globe" className="text-sm font-medium hover:underline">
+                <Link href="/news-globe" className="text-sm font-medium hover:underline hover:text-[#167F6E] transition-colors text-center">
                     News Globe
                 </Link>
-                <Link href="/brazil-news" className="text-sm font-medium hover:underline">
+                <Link href="/brazil-news" className="text-sm font-medium hover:underline hover:text-[#167F6E] transition-colors text-center">
                     Brazil News
                 </Link>
-                <Link href="/power-network" className="text-sm font-medium hover:underline">
+                <Link href="/power-network" className="text-sm font-medium hover:underline hover:text-[#167F6E] transition-colors text-center">
                     Power Network
                 </Link>
             </div>
             {
                 user ? (
                     <div className="flex items-center gap-4">
-                        <Link href="/profile" className="text-sm font-medium hover:underline text-background">Profile</Link>
-                        <UserButton />
+                        <UserButton>
+                            <UserButton.MenuItems>
+                                <UserButton.Link href="/profile" label="Profile" labelIcon={<UserIcon />} />
+                            </UserButton.MenuItems>
+                        </UserButton>
                         <Sheet open={isMenuOpen} onOpenChange={setIsMenuOpen}>
                             <SheetTrigger asChild>
                                 <Button
@@ -64,7 +67,7 @@ export default function Header() {
                                     aria-label="Open navigation menu"
                                     aria-expanded={isMenuOpen}
                                     aria-controls="mobile-navigation"
-                                    className="min-[600px]:hidden bg-transparent"
+                                    className="min-[700px]:hidden bg-transparent"
                                 >
                                     <Menu className="h-5 w-5 text-background" />
                                 </Button>
@@ -77,28 +80,28 @@ export default function Header() {
                                     {
                                         isUSBased && (
                                             <>
-                                                <Link href="/executive-orders" className="text-sm font-medium hover:underline">
+                                                <Link href="/executive-orders" className="text-sm font-medium hover:underline hover:text-[#167F6E] transition-colors">
                                                     Executive Orders
                                                 </Link>
                                             </>
                                         )
                                     }
-                                    <Link href="/current-events" className="text-sm font-medium hover:underline">
+                                    <Link href="/current-events" className="text-sm font-medium hover:underline hover:text-[#167F6E] transition-colors">
                                         Current Events
                                     </Link>
-                                    <Link href="/entities" className="text-sm font-medium hover:underline">
+                                    <Link href="/entities" className="text-sm font-medium hover:underline hover:text-[#167F6E] transition-colors">
                                         Entities
                                     </Link>
-                                    <Link href="/message-activity" className="text-sm font-medium hover:underline">
+                                    <Link href="/message-activity" className="text-sm font-medium hover:underline hover:text-[#167F6E] transition-colors">
                                         Heatmap
                                     </Link>
-                                    <Link href="/news-globe" className="text-sm font-medium hover:underline">
+                                    <Link href="/news-globe" className="text-sm font-medium hover:underline hover:text-[#167F6E] transition-colors">
                                         News Globe
                                     </Link>
-                                    <Link href="/brazil-news" className="text-sm font-medium hover:underline">
+                                    <Link href="/brazil-news" className="text-sm font-medium hover:underline hover:text-[#167F6E] transition-colors">
                                         Brazil News
                                     </Link>
-                                    <Link href="/power-network" className="text-sm font-medium hover:underline">
+                                    <Link href="/power-network" className="text-sm font-medium hover:underline hover:text-[#167F6E] transition-colors">
                                         Power Network
                                     </Link>
                                 </div>
@@ -106,14 +109,14 @@ export default function Header() {
                         </Sheet>
                     </div>
                 ) : (
-                    <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-2">
                         <Link href="/sign-in" prefetch>
                             <Button variant="outline" size="sm">
                                 Sign In
                             </Button>
                         </Link>
                         <Link href="/sign-up">
-                            <Button size="sm">
+                            <Button variant="default" size="sm">
                                 Subscribe
                             </Button>
                         </Link>
@@ -125,7 +128,7 @@ export default function Header() {
                                     aria-label="Open navigation menu"
                                     aria-expanded={isMenuOpen}
                                     aria-controls="mobile-navigation"
-                                    className="min-[600px]:hidden text-background"
+                                    className="min-[700px]:hidden text-background"
                                 >
                                     <Menu className="h-5 w-5 text-foreground" />
                                 </Button>
@@ -138,28 +141,28 @@ export default function Header() {
                                     {
                                         isUSBased && (
                                             <>
-                                                <Link href="/executive-orders" className="text-sm font-medium hover:underline">
+                                                <Link href="/executive-orders" className="text-sm font-medium hover:underline hover:text-[#167F6E] transition-colors">
                                                     Executive Orders
                                                 </Link>
                                             </>
                                         )
                                     }
-                                    <Link href="/current-events" className="text-sm font-medium hover:underline">
+                                    <Link href="/current-events" className="text-sm font-medium hover:underline hover:text-[#167F6E] transition-colors">
                                         Current Events
                                     </Link>
-                                    <Link href="/entities" className="text-sm font-medium hover:underline">
+                                    <Link href="/entities" className="text-sm font-medium hover:underline hover:text-[#167F6E] transition-colors">
                                         Entities
                                     </Link>
-                                    <Link href="/message-activity" className="text-sm font-medium hover:underline">
+                                    <Link href="/message-activity" className="text-sm font-medium hover:underline hover:text-[#167F6E] transition-colors">
                                         Heatmap
                                     </Link>
-                                    <Link href="/news-globe" className="text-sm font-medium hover:underline">
+                                    <Link href="/news-globe" className="text-sm font-medium hover:underline hover:text-[#167F6E] transition-colors">
                                         News Globe
                                     </Link>
-                                    <Link href="/brazil-news" className="text-sm font-medium hover:underline">
+                                    <Link href="/brazil-news" className="text-sm font-medium hover:underline hover:text-[#167F6E] transition-colors">
                                         Brazil News
                                     </Link>
-                                    <Link href="/power-network" className="text-sm font-medium hover:underline">
+                                    <Link href="/power-network" className="text-sm font-medium hover:underline hover:text-[#167F6E] transition-colors">
                                         Power Network
                                     </Link>
                                 </div>
@@ -170,4 +173,4 @@ export default function Header() {
             }
         </header>
     )
-} 
+}
