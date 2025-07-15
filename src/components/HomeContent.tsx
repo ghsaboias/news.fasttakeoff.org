@@ -2,6 +2,7 @@
 
 import ReportCard from "@/components/current-events/ReportCard"
 import OrderCard from "@/components/executive-orders/OrderCard"
+import ExecutiveSummary from "@/components/ExecutiveSummary"
 import ReportCardSkeleton from "@/components/skeletons/ReportCardSkeleton"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -63,6 +64,11 @@ export default function HomeContent({ initialReports, initialExecutiveOrders }: 
 
     return (
         <div className="flex flex-col pb-8 w-[100vw] justify-center">
+            {/* Executive Summary Section - New prominent section */}
+            <section className="sm m-8 sm:m-14">
+                <ExecutiveSummary />
+            </section>
+
             {/* Hero Section - Redesigned with better visual hierarchy */}
             <section className="hero-section m-8">
                 <div className="flex flex-col items-center gap-8">

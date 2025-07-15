@@ -453,6 +453,15 @@ Response format (JSON):
   }
 }`,
     },
+    EXECUTIVE_SUMMARIES: {
+        TOKEN_PER_CHAR: 1 / 4,
+        OVERHEAD_TOKENS: 1000,
+        OUTPUT_BUFFER: 8192,
+        MAX_CONTEXT_TOKENS: 128000,
+        MAX_ATTEMPTS: 3,
+        SYSTEM_PROMPT: 'You are an expert news analyst. Your job is to create a concise, factual executive summary in simple, readable Markdown, focusing on the most important events of the last 6 hours. Use clear headlines and bullet points. Do not include any commentary or speculation. Only include events that are significant and newsworthy. Output must be valid Markdown.',
+        PROMPT_TEMPLATE: `Create a concise executive summary in Markdown of the following news reports, focusing on the most important events of the last 6 hours. Use clear headlines and bullet points. Do not include any commentary or speculation. Only include events that are significant and newsworthy.\n\nPREVIOUS EXECUTIVE SUMMARIES (if any):\n{previousExecutiveSummaries}\n\nREPORTS TO ANALYZE:\n"""\n{reportBody}\n"""\n\nRespond ONLY with valid Markdown summarizing the most important events of the last 6 hours.`,
+    },
 };
 
 // Type definitions for config
