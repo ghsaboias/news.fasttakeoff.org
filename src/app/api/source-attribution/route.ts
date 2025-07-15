@@ -3,6 +3,15 @@ import { ReportService } from '@/lib/data/report-service';
 import { SourceAttributionService } from '@/lib/utils/source-attribution';
 import { Cloudflare } from '../../../../worker-configuration';
 
+/**
+ * GET /api/source-attribution
+ * Retrieves source attributions for a report, mapping report sentences to source messages.
+ * @param request - Query params: reportId (string, required), channelId (string, required)
+ * @returns {Promise<ReportSourceAttribution | { error: string }>}
+ * @throws 400 if params are missing, 404 if report not found, 500 for errors.
+ * @auth None required.
+ * @integration Uses ReportService, SourceAttributionService.
+ */
 export async function GET(request: Request) {
     return withErrorHandling(async (env: Cloudflare.Env) => {
         const { searchParams } = new URL(request.url);

@@ -1,6 +1,17 @@
 import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
 
+/**
+ * POST /api/stripe/webhook
+ * Handles Stripe webhook events (e.g., checkout.session.completed).
+ * @param request - Raw Stripe webhook event.
+ * @returns {Promise<NextResponse<{ received: boolean } | { error: string }>>}
+ * @throws 400 for invalid signature/body, 500 for processing errors.
+ * @auth Stripe webhook secret required.
+ * @integration Uses Stripe SDK, Clerk (for subscription updates).
+ * @config { api: { bodyParser: false } }
+ */
+
 // Detect build time
 const isBuildTime = process.env.NODE_ENV === 'production' && process.env.NEXT_PHASE === 'phase-production-build';
 

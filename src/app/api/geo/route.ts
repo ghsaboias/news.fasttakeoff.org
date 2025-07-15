@@ -2,6 +2,13 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
 
+/**
+ * GET /api/geo
+ * Returns the user's country code based on the Cloudflare CF-IPCountry header.
+ * @returns {Promise<NextResponse<{ country: string } | { message: string; error: string }>>}
+ * @throws 500 if header is missing or an error occurs.
+ * @auth None required.
+ */
 export async function GET(request: NextRequest) {
     try {
         // Cloudflare adds the CF-IPCountry header automatically

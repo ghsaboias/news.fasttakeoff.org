@@ -1,6 +1,15 @@
 import { withErrorHandling } from '@/lib/api-utils';
 import { FeedsService } from '@/lib/data/feeds-service';
 
+/**
+ * GET /api/summaries/[key]
+ * Fetches a cached news summary for a specific key.
+ * @param request - Path param: key (string, required)
+ * @returns {Promise<NextResponse<SummaryResult | { error: string }>>}
+ * @throws 400 if key is missing, 404 if summary not found, 500 for errors.
+ * @auth None required.
+ * @integration Uses FeedsService.
+ */
 export async function GET(
     request: Request,
     { params }: { params: Promise<{ key: string }> }

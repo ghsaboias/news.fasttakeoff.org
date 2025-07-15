@@ -5,6 +5,21 @@ import { FactCheckResult } from '@/lib/types/core';
 import { PerplexityFactCheckService } from '@/lib/utils/fact-check-service';
 import { NextRequest, NextResponse } from 'next/server';
 
+/**
+ * GET /api/fact-check
+ * Retrieves a fact-check result for a specific report.
+ * @param request - Query param: reportId (string, required)
+ * @returns {Promise<NextResponse<FactCheckResult | { error: string }>>}
+ * @throws 400 if reportId is missing, 500 for server/cache errors.
+ *
+ * POST /api/fact-check
+ * Triggers on-demand fact-checking for a report.
+ * @param request - JSON body: { reportId: string }
+ * @returns {Promise<NextResponse<FactCheckResult | { error: string }>>}
+ * @throws 400 if reportId is missing, 404 if report not found, 408 for timeout, 500 for errors.
+ * @auth None required.
+ * @integration Uses PerplexityFactCheckService and ReportService.
+ */
 export async function GET(request: NextRequest) {
     return withErrorHandling(async (env) => {
         const { searchParams } = new URL(request.url);

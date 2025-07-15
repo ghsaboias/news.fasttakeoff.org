@@ -5,6 +5,14 @@ import { groupAndSortReports } from '@/lib/utils';
 import { EntityExtractor } from '@/lib/utils/entity-extraction';
 import { NextResponse } from 'next/server';
 
+/**
+ * POST /api/entities/extract
+ * Triggers entity extraction for the latest batch of reports that lack entity data.
+ * @returns {Promise<NextResponse<{ message: string; total: number; successful: number; failed: number } | { message: string; processed: 0 }>>}
+ * @throws 500 if extraction fails or no eligible reports are found.
+ * @auth None required.
+ * @integration Uses ReportService and EntityExtractor for batch processing.
+ */
 export async function POST() {
     return withErrorHandling(async (env) => {
         // Initialize services

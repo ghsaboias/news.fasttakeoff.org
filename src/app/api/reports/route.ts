@@ -5,6 +5,21 @@ import { ReportService } from '@/lib/data/report-service';
 import { Report, ReportResponse } from '@/lib/types/core';
 import { NextRequest, NextResponse } from 'next/server';
 
+/**
+ * GET /api/reports
+ * Fetches reports and associated messages for a channel or all channels.
+ * @param request - Query params: channelId (optional), reportId (optional), limit (optional)
+ * @returns {Promise<NextResponse<ReportResponse | Report[] | { error: string }>>}
+ * @throws 404 if report not found, 500 for errors.
+ *
+ * POST /api/reports
+ * Generates a new report for a channel and timeframe.
+ * @param request - JSON body: { channelId: string, timeframe?: '2h'|'6h', model?: string }
+ * @returns {Promise<{ report: Report, messages: DiscordMessage[] } | { error: string }>}
+ * @throws 400 if channelId is missing, 500 for errors.
+ * @auth None required.
+ * @integration Uses ReportService, CacheManager.
+ */
 export async function GET(request: NextRequest) {
     return withErrorHandling(async env => {
         const { searchParams } = new URL(request.url);

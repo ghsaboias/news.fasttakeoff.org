@@ -14,6 +14,15 @@ interface TranslationResponse {
     body: string;
 }
 
+/**
+ * POST /api/translate
+ * Translates a news report or content fields to a target language using an AI provider.
+ * @param request - JSON body: { headline?: string, city?: string, body: string, targetLang: string }
+ * @returns {Promise<NextResponse<{ translatedContent: TranslationResponse } | { error: string }>>}
+ * @throws 400 if required fields are missing, 500 for errors.
+ * @auth None required.
+ * @integration Uses AI provider for translation.
+ */
 export async function POST(req: Request) {
     try {
         const { headline, city, body, targetLang } = await req.json() as TranslationRequest;

@@ -2,6 +2,13 @@ import { withErrorHandling } from '@/lib/api-utils';
 import { fetchExecutiveOrders } from '@/lib/data/executive-orders';
 import { getStartDate } from '@/lib/utils';
 
+/**
+ * GET /api/executive-orders
+ * Fetches the 3 most recent executive orders from the Federal Register.
+ * @returns {Promise<NextResponse<ExecutiveOrder[]>>}
+ * @throws 500 if fetching or sorting fails.
+ * @auth None required.
+ */
 export async function GET() {
     return withErrorHandling(async () => {
         const startDate = getStartDate(1);
