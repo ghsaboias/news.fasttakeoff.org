@@ -1,4 +1,5 @@
 import { Cloudflare } from '../../worker-configuration';
+import { ExecutiveSummaryService } from './data/executive-summary-service';
 import { FeedsService } from './data/feeds-service';
 import { MessagesService } from './data/messages-service';
 import { ReportService } from './data/report-service';
@@ -62,6 +63,7 @@ export async function scheduled(event: ScheduledEvent, env: Cloudflare.Env): Pro
     const messagesService = new MessagesService(env);
     const reportService = new ReportService(env);
     const feedsService = new FeedsService(env);
+    const executiveSummaryService = new ExecutiveSummaryService(env);
 
     if (event.cron === '0 * * * *') {
         // Hourly: Messages → Reports → Feeds (in sequence)
@@ -78,6 +80,19 @@ export async function scheduled(event: ScheduledEvent, env: Cloudflare.Env): Pro
             failFast: false,
             timeoutMs: 240000 // 4 minutes for feeds processing
         });
+
+        // Check if this is a 6h report generation hour (0, 6, 12, 18)
+        const now = new Date();
+        const hour = now.getUTCHours();
+        if (hour === 0 || hour === 6 || hour === 12 || hour === 18) {
+            console.log(`[CRON] Hour ${hour}: 6h reports generated, running executive summary`);
+            await logRun('EXECUTIVE_SUMMARY', () => executiveSummaryService.generateAndCacheSummary(), {
+                failFast: false,
+                timeoutMs: 300000 // 5 minutes for executive summary generation
+            });
+        } else {
+            console.log(`[CRON] Hour ${hour}: No 6h reports, skipping executive summary`);
+        }
     } else if (event.cron === '5/5 * * * *') {
         // Every 5 minutes (skip 0): Messages cache refresh
         await logRun('MESSAGES_REFRESH', () => messagesService.updateMessages(), {
@@ -95,11 +110,23 @@ export async function scheduled(event: ScheduledEvent, env: Cloudflare.Env): Pro
             failFast: false,
             timeoutMs: 180000 // 3 minutes for report generation
         });
+    } else if (event.cron === 'REPORTS_6H') {
+        // Manual trigger for 6h reports
+        await logRun('REPORTS_6H', () => reportService.generateReportsForManualTrigger(['6h']), {
+            failFast: false,
+            timeoutMs: 180000 // 3 minutes for report generation
+        });
     } else if (event.cron === 'REPORTS_NO_SOCIAL') {
         // Manual trigger for reports without social media posting
         await logRun('REPORTS_NO_SOCIAL', () => reportService.generateReportsWithoutSocialMedia(['2h']), {
             failFast: false,
             timeoutMs: 180000 // 3 minutes for report generation
+        });
+    } else if (event.cron === 'EXECUTIVE_SUMMARY') {
+        // Manual trigger for executive summary generation
+        await logRun('EXECUTIVE_SUMMARY', () => executiveSummaryService.generateAndCacheSummary(), {
+            failFast: false,
+            timeoutMs: 300000 // 5 minutes for executive summary generation
         });
     }
 }

@@ -7,7 +7,7 @@ compatibility_flags = [
 
 [triggers]
 # Cron list:
-# - "0 * * * *"   → top of every hour: messages → reports → feeds (in-process ordering)
+# - "0 * * * *"   → top of every hour: messages → reports → feeds → executive summary (only when 6h reports are generated)
 # - "*/5 * * * *" → every 5 minutes (skip 0): messages cache refresh
 crons = ["0 * * * *", "5/5 * * * *"]
 
@@ -65,6 +65,10 @@ binding = "SITEMAP_CACHE"
 id = "3833f947b0244c2f9a8aebf2d2fa528f"
 preview_id = "7e534ee4e7b14c588e474b8570e0b48a"
 
+[[kv_namespaces]]
+binding = "EXECUTIVE_SUMMARIES_CACHE"
+id = "3631df94eaa7437882b4c9e739d8d4e5"
+preview_id = "32a010bc0d60478fb5fc37a268e67d10"
 
 # R2 bucket binding for Instagram images
 [[r2_buckets]]

@@ -421,4 +421,13 @@ export interface LinkPreview {
     siteName?: string;
     domain: string;
     cachedAt: string;
+}
+
+export interface ExecutiveSummary {
+    summaryId: string;
+    summary: string;
+    generatedAt: string;
+    reportCount: number;
+    timeframe: string;
+    version: string;
 } 
