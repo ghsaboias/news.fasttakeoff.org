@@ -63,10 +63,86 @@ export default function HomeContent({ initialReports, initialExecutiveOrders }: 
 
     return (
         <div className="flex flex-col pb-8 w-[100vw] justify-center">
-            {/* Reports Section - Fixed height grid */}
-            <section className="mx-auto sm:px-4 w-[95%] min-h-[800px] sm:min-h-[600px]">
-                <h2 className="sr-only">Latest Reports</h2>
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-2 mt-8">
+            {/* Hero Section - Redesigned with better visual hierarchy */}
+            <section className="hero-section m-8">
+                <div className="flex flex-col items-center gap-8">
+                    <div className="flex flex-col items-center gap-4 text-center">
+                        <h1 className="hero-title text-4xl md:text-6xl font-bold bg-gradient-to-r from-[#167F6E] to-[#0A5C52] bg-clip-text text-transparent">
+                            Fast Takeoff News
+                        </h1>
+                        <p className="text-xl md:text-2xl text-gray-600 max-w-2xl">
+                            AI-powered news for everyone. Get the latest news from on-the-ground sources.
+                        </p>
+                    </div>
+                    <form onSubmit={handleEmailSubmit} className="flex flex-col items-center gap-4 sm:w-1/2 w-[90%] max-w-md">
+                        <div className="flex items-center gap-4 w-full">
+                            <Input
+                                type="email"
+                                placeholder="Enter your email for daily updates"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                disabled={isSubmitting}
+                                required
+                                className="bg-white border-gray-300 focus:border-[#167F6E] focus:ring-[#167F6E]"
+                            />
+                            <Button
+                                type="submit"
+                                disabled={isSubmitting}
+                                className="bg-[#167F6E] hover:bg-[#0A5C52] text-white"
+                            >
+                                {isSubmitting ? "..." : "Subscribe"}
+                            </Button>
+                            {
+                                submitMessage && (
+                                    <p className={`text-sm h-5 ${submitMessage.includes('🎉') ? 'text-green-600' : 'text-red-600'}`}>
+                                        {submitMessage}
+                                    </p>
+                                )
+                            }
+                        </div>
+                    </form>
+                </div>
+            </section>
+
+            {/* Navigation Cards - New section for better discoverability */}
+            <section className="mb-8 mx-8 sm:mx-14">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <Link href="/current-events" className="group">
+                        <div className="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow p-6 border border-gray-200">
+                            <h3 className="text-lg font-semibold text-gray-900 group-hover:text-[#167F6E]">Current Events</h3>
+                            <p className="text-sm text-gray-600 mt-2">Real-time news from Discord channels</p>
+                        </div>
+                    </Link>
+                    <Link href="/news-globe" className="group">
+                        <div className="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow p-6 border border-gray-200">
+                            <h3 className="text-lg font-semibold text-gray-900 group-hover:text-[#167F6E]">News Globe</h3>
+                            <p className="text-sm text-gray-600 mt-2">Interactive 3D visualization of global news</p>
+                        </div>
+                    </Link>
+                    <Link href="/brazil-news" className="group">
+                        <div className="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow p-6 border border-gray-200">
+                            <h3 className="text-lg font-semibold text-gray-900 group-hover:text-[#167F6E]">Brazil News</h3>
+                            <p className="text-sm text-gray-600 mt-2">AI-curated Brazilian news summaries</p>
+                        </div>
+                    </Link>
+                    <Link href="/power-network" className="group">
+                        <div className="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow p-6 border border-gray-200">
+                            <h3 className="text-lg font-semibold text-gray-900 group-hover:text-[#167F6E]">Power Network</h3>
+                            <p className="text-sm text-gray-600 mt-2">Explore influential people and companies</p>
+                        </div>
+                    </Link>
+                </div>
+            </section>
+
+            {/* Reports Section - Enhanced with better layout */}
+            <section className="mx-4 sm:mx-8 min-h-[800px] sm:min-h-[600px]">
+                <div className="flex items-center justify-between mb-6 px-6">
+                    <h2 className="text-2xl md:text-3xl font-bold text-gray-900">Latest Reports</h2>
+                    <Link href="/current-events" className="text-sm font-medium text-[#167F6E] hover:underline">
+                        View all reports →
+                    </Link>
+                </div>
+                <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                     {reports.length === 0 ? (
                         // Show skeletons while loading
                         Array.from({ length: 4 }).map((_, i) => (
@@ -89,50 +165,17 @@ export default function HomeContent({ initialReports, initialExecutiveOrders }: 
                 </div>
             </section>
 
-            <div className="my-8">
-                {/* Hero Section - Fixed height to prevent layout shift */}
-                <section className="hero-section m-4 sm:m-8">
-                    <div className="flex flex-col items-center gap-8">
-                        <div className="flex flex-col items-center gap-4">
-                            <h1 className="hero-title">
-                                Fast Takeoff News
-                            </h1>
-                            <p className="text-3xl">AI-powered news for everyone.</p>
-                        </div>
-                    </div>
-                    <form onSubmit={handleEmailSubmit} className="flex flex-col items-center gap-4 sm:w-1/2 w-[90%]">
-                        <div className="flex items-center gap-4 w-full">
-                            <Input
-                                type="email"
-                                placeholder="Enter your email"
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
-                                disabled={isSubmitting}
-                                required
-                            />
-                            <Button type="submit" disabled={isSubmitting}>
-                                {isSubmitting ? "..." : "Subscribe"}
-                            </Button>
-                        </div>
-
-                        <p className={`text-sm h-5 ${submitMessage.includes('🎉') ? 'text-green-600' : 'text-red-600'}`}>
-                            {submitMessage}
-                        </p>
-                    </form>
-                </section>
-            </div>
-
-            {/* Latest Executive Orders Section - Fixed height when visible */}
+            {/* Latest Executive Orders Section - Enhanced */}
             {isUSBased === true && executiveOrders.length > 0 && (
                 <section className="mx-auto sm:px-4 w-[90%] mt-16 min-h-[300px]">
                     <div className="flex flex-col gap-6">
                         <div className="flex items-center justify-between">
-                            <h2 className="text-2xl font-bold tracking-tight md:text-3xl">Latest Executive Orders</h2>
-                            <Link href="/executive-orders" className="text-sm font-medium hover:underline">
-                                View all
+                            <h2 className="text-2xl font-bold tracking-tight md:text-3xl text-gray-900">Latest Executive Orders</h2>
+                            <Link href="/executive-orders" className="text-sm font-medium text-[#167F6E] hover:underline">
+                                View all →
                             </Link>
                         </div>
-                        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                        <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
                             {executiveOrders.map(order => (
                                 <OrderCard key={order.id} order={order} />
                             ))}
@@ -142,4 +185,4 @@ export default function HomeContent({ initialReports, initialExecutiveOrders }: 
             )}
         </div>
     )
-} 
+}
