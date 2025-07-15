@@ -65,6 +65,7 @@
     "tailwind-merge": "^3.0.2",
     "tailwindcss-animate": "^1.0.7",
     "three": "^0.176.0",
+    "ts-morph": "^26.0.0",
     "twitter-api-v2": "^1.22.0"
   },
   "devDependencies": {
