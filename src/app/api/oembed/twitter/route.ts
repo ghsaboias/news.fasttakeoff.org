@@ -3,6 +3,15 @@ import { CacheManager } from '@/lib/cache-utils';
 import { TweetEmbed, TweetEmbedCache } from '@/lib/types/core';
 import { extractTweetId, isValidTweetUrl, normalizeTweetUrl } from '@/lib/utils/twitter-utils';
 
+/**
+ * GET /api/oembed/twitter
+ * Fetches and caches Twitter/X oEmbed data for a given tweet URL.
+ * @param request - Query params: url (string, required), channelId (optional), omit_script (optional: 'true')
+ * @returns {Promise<TweetEmbed | { error: string }>}
+ * @throws 400 if url is missing/invalid, 500 for fetch/parse errors.
+ * @auth None required.
+ * @integration Uses CacheManager for 7-day caching per channel.
+ */
 async function fetchWithRetry(url: string, maxAttempts: number = 3): Promise<Response | null> {
     let lastError: Error = new Error('No attempts made');
 

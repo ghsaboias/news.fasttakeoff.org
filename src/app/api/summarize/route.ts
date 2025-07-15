@@ -4,6 +4,20 @@ import { ExecutiveOrder } from '@/lib/types/core';
 import { getCacheContext } from '@/lib/utils';
 import { NextResponse } from 'next/server';
 
+/**
+ * POST /api/summarize
+ * Generates a summary for a given executive order using an AI provider.
+ * @param request - JSON body: { order: ExecutiveOrder }
+ * @returns {Promise<NextResponse<{ summary: string } | { error: string }>>}
+ * @throws 400 if order is missing, 500 for errors.
+ *
+ * GET /api/summarize
+ * Fetches or generates the most recent combined news summary.
+ * @returns {Promise<NextResponse<SummaryResult | { error: string }>>}
+ * @throws 500 for errors.
+ * @auth None required.
+ * @integration Uses FeedsService, AI provider.
+ */
 interface SummarizeRequest {
     order: ExecutiveOrder;
 }

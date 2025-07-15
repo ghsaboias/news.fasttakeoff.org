@@ -1,6 +1,15 @@
 import { clerkClient } from '@clerk/nextjs/server';
 import { NextResponse } from 'next/server';
 
+/**
+ * POST /api/stripe/checkout
+ * Creates a Stripe checkout session for a user subscription.
+ * @param request - JSON body: { userId: string }
+ * @returns {Promise<NextResponse<{ url: string } | { error: string }>>}
+ * @throws 400 if userId is missing, 404 if user not found, 500 for Stripe/server errors.
+ * @auth Requires valid Clerk userId.
+ * @integration Uses Stripe API, Clerk.
+ */
 export async function POST(req: Request) {
     try {
         const { userId } = await req.json() as { userId: string };

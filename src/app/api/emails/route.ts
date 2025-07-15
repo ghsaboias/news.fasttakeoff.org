@@ -1,6 +1,20 @@
 import { getCacheContext } from '@/lib/utils';
 import { NextRequest, NextResponse } from 'next/server';
 
+/**
+ * POST /api/emails
+ * Subscribes a user to email updates.
+ * @param request - NextRequest with JSON body: { email: string }
+ * @returns {Promise<NextResponse<{ message: string; id: number } | { error: string }>>}
+ * @throws 400 if email is missing/invalid, 409 if already subscribed, 500 for server/database errors.
+ * @auth None required.
+ *
+ * GET /api/emails
+ * Retrieves up to 100 recent email subscriptions (admin use).
+ * @returns {Promise<NextResponse<{ emails: Array<{ id: number; email: string; subscribed_at: string; status: string }>; count: number } | { error: string }>>}
+ * @throws 500 if database is unavailable or query fails.
+ * @auth None required.
+ */
 export async function POST(request: NextRequest) {
     try {
         const { email } = await request.json();

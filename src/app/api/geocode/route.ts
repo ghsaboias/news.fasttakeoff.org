@@ -3,6 +3,15 @@ import type { Cloudflare } from '../../../../worker-configuration';
 import { CacheManager } from '../../../lib/cache-utils';
 import { getCacheContext } from '../../../lib/utils';
 
+/**
+ * GET /api/geocode
+ * Geocodes a city name to latitude/longitude using Google Maps API, with KV caching.
+ * @param request - Query param: city (string, required)
+ * @returns {Promise<NextResponse<GoogleGeocodeLocation | { error: string }>>}
+ * @throws 400 if city is missing, 404 if not found, 500 for API or cache errors.
+ * @auth None required.
+ */
+
 const GOOGLE_GEOCODING_API_KEY = process.env.GOOGLE_GEOCODING_API_KEY
 
 const GEOCODE_CACHE_TTL_SECONDS = 30 * 24 * 60 * 60;

@@ -1,3 +1,17 @@
+/**
+ * POST /api/entities
+ * Extracts entities from provided text or report.
+ * @param request - JSON body: { text: string, reportId?: string, channelId?: string, sourceType?: 'report'|'message'|'summary', options?: { minRelevance?: number, entityTypes?: string[], maxPerType?: number } }
+ * @returns {Promise<{ entities: ExtractedEntity[], summary: object } | { error: string }>}
+ * @throws 400 if text is missing, 500 for extraction errors.
+ *
+ * GET /api/entities
+ * Fetches entities for a report, or aggregates entities across reports.
+ * @param request - Query params: reportId (optional), format (optional: 'graph')
+ * @returns {Promise<{ entities: ExtractedEntity[], summary: object } | { nodes: GraphNode[], links: GraphLink[] } | { error: string }>}
+ * @throws 404 if entities not found for report, 500 for errors.
+ * @auth None required.
+ */
 import { withErrorHandling } from '@/lib/api-utils';
 import { ReportService } from '@/lib/data/report-service';
 import { ExtractedEntity, GraphLink, GraphNode } from '@/lib/types/core';

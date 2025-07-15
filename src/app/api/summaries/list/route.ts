@@ -2,6 +2,14 @@ import { FeedsService } from '@/lib/data/feeds-service';
 import { getCacheContext } from '@/lib/utils';
 import { NextResponse } from 'next/server';
 
+/**
+ * GET /api/summaries/list
+ * Lists available cached news summaries (keys and creation dates).
+ * @returns {Promise<NextResponse<{ key: string; createdAt: string }[] | { error: string }>>}
+ * @throws 500 for errors.
+ * @auth None required.
+ * @integration Uses FeedsService.
+ */
 export async function GET() {
     try {
         const { env } = await getCacheContext();

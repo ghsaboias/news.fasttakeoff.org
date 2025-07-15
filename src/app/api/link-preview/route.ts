@@ -64,6 +64,15 @@ function parseMetaTags(html: string, url: string): LinkPreview {
     };
 }
 
+/**
+ * GET /api/link-preview
+ * Fetches and caches Open Graph/meta preview data for a given URL.
+ * @param request - Query param: url (string, required)
+ * @returns {Promise<LinkPreview | { error: string }>}
+ * @throws 400 if url is missing/invalid, 500 for fetch/parse errors.
+ * @auth None required.
+ * @integration Uses CacheManager for 24h caching.
+ */
 export async function GET(request: Request) {
     return withErrorHandling(async env => {
         const { searchParams } = new URL(request.url);
