@@ -1,4 +1,4 @@
-import { ChannelMessageCounts } from '@/lib/types/core';
+import { ChannelMessageCounts, DiscordMessage } from '@/lib/types/core';
 import { Cloudflare } from '../../../worker-configuration';
 import { CacheManager } from '../cache-utils';
 import { MessagesService } from './messages-service';
@@ -24,10 +24,50 @@ export class MessageCountsService {
         const messageKeys = await this.messagesService.listMessageKeys();
         const channelIds = messageKeys.map(key => key.name.replace('messages:', ''));
 
-        for (const channelId of channelIds) {
-            await this.updateChannelCounts(channelId);
+        // Batch fetch all cached messages
+        const channelMessages = new Map<string, DiscordMessage[]>();
+        const batchSize = 10; // Process channels in batches of 10
+
+        for (let i = 0; i < channelIds.length; i += batchSize) {
+            const batchChannelIds = channelIds.slice(i, i + batchSize);
+            const batchKeys = batchChannelIds.map(id => `messages:${id}`);
+
+            const batchResults = await this.cacheManager.batchGet<{ messages: DiscordMessage[] }>('MESSAGES_CACHE', batchKeys, 2000);
+
+            for (const [key, data] of batchResults.entries()) {
+                if (data?.messages) {
+                    const channelId = key.replace('messages:', '');
+                    channelMessages.set(channelId, data.messages);
+                }
+            }
         }
 
+        // Process all channels using the batched data
+        const now = Date.now();
+        const countUpdates: Promise<void>[] = [];
+
+        for (const [channelId, messages] of channelMessages.entries()) {
+            const counts = {
+                '5min': this.countMessagesInWindow(messages, 5 * 60 * 1000),
+                '15min': this.countMessagesInWindow(messages, 15 * 60 * 1000),
+                '1h': this.countMessagesInWindow(messages, 60 * 60 * 1000),
+                '6h': this.countMessagesInWindow(messages, 6 * 60 * 60 * 1000),
+                '1d': this.countMessagesInWindow(messages, 24 * 60 * 60 * 1000),
+                '7d': this.countMessagesInWindow(messages, 7 * 24 * 60 * 60 * 1000),
+            };
+
+            const channelCounts: ChannelMessageCounts = {
+                channelId,
+                lastUpdated: now,
+                counts
+            };
+
+            // Queue the update
+            countUpdates.push(this.saveChannelCounts(channelId, channelCounts));
+        }
+
+        // Wait for all updates to complete
+        await Promise.all(countUpdates);
         console.log(`[MESSAGE_COUNTS] Updated counts for ${channelIds.length} channels`);
     }
 
@@ -36,13 +76,22 @@ export class MessageCountsService {
      */
     async updateChannelCounts(channelId: string): Promise<void> {
         const now = Date.now();
+
+        // Get all messages from cache
+        const cachedData = await this.messagesService.getAllCachedMessagesForChannel(channelId);
+        if (!cachedData?.messages) {
+            console.log(`[MESSAGE_COUNTS] No cached messages found for channel ${channelId}`);
+            return;
+        }
+
+        // Calculate counts for each time window using cached data
         const counts = {
-            '5min': await this.getMessagesInWindow(channelId, 5 * 60 * 1000),
-            '15min': await this.getMessagesInWindow(channelId, 15 * 60 * 1000),
-            '1h': await this.getMessagesInWindow(channelId, 60 * 60 * 1000),
-            '6h': await this.getMessagesInWindow(channelId, 6 * 60 * 60 * 1000),
-            '1d': await this.getMessagesInWindow(channelId, 24 * 60 * 60 * 1000),
-            '7d': await this.getMessagesInWindow(channelId, 7 * 24 * 60 * 60 * 1000),
+            '5min': this.countMessagesInWindow(cachedData.messages, 5 * 60 * 1000),
+            '15min': this.countMessagesInWindow(cachedData.messages, 15 * 60 * 1000),
+            '1h': this.countMessagesInWindow(cachedData.messages, 60 * 60 * 1000),
+            '6h': this.countMessagesInWindow(cachedData.messages, 6 * 60 * 60 * 1000),
+            '1d': this.countMessagesInWindow(cachedData.messages, 24 * 60 * 60 * 1000),
+            '7d': this.countMessagesInWindow(cachedData.messages, 7 * 24 * 60 * 60 * 1000),
         };
 
         const channelCounts: ChannelMessageCounts = {
@@ -57,16 +106,15 @@ export class MessageCountsService {
     }
 
     /**
-     * Get message count in a time window
+     * Count messages in a time window from cached messages
      */
-    private async getMessagesInWindow(channelId: string, windowMs: number): Promise<number> {
-        const since = new Date(Date.now() - windowMs);
-        const messages = await this.messagesService.getMessages(channelId, { since });
-        return messages.length;
+    private countMessagesInWindow(messages: DiscordMessage[], windowMs: number): number {
+        const cutoffTime = Date.now() - windowMs;
+        return messages.filter(msg => new Date(msg.timestamp).getTime() > cutoffTime).length;
     }
 
     /**
-     * Save channel counts to KV
+     * Save channel counts to KV with efficient batching
      */
     private async saveChannelCounts(channelId: string, counts: ChannelMessageCounts): Promise<void> {
         const key = `message-counts:${channelId}`;
@@ -74,29 +122,23 @@ export class MessageCountsService {
     }
 
     /**
-     * Get channel counts from KV
+     * Get channel counts efficiently using request-level cache
      */
     async getChannelCounts(channelId: string): Promise<ChannelMessageCounts | null> {
         const key = `message-counts:${channelId}`;
-        return await this.cacheManager.get('MESSAGES_CACHE', key);
+        return await this.cacheManager.get('MESSAGES_CACHE', key, 2000); // 2 second timeout
     }
 
     /**
-     * Get all channel counts
+     * Get all channel counts using batch operations
      */
     async getAllChannelCounts(): Promise<ChannelMessageCounts[]> {
         const messageKeys = await this.messagesService.listMessageKeys();
         const channelIds = messageKeys.map(key => key.name.replace('messages:', ''));
+        const countKeys = channelIds.map(id => `message-counts:${id}`);
 
-        const counts: ChannelMessageCounts[] = [];
-        for (const channelId of channelIds) {
-            const count = await this.getChannelCounts(channelId);
-            if (count) {
-                counts.push(count);
-            }
-        }
-
-        return counts;
+        const batchResults = await this.cacheManager.batchGet<ChannelMessageCounts>('MESSAGES_CACHE', countKeys, 2000);
+        return Array.from(batchResults.values()).filter((count): count is ChannelMessageCounts => count !== null);
     }
 
     /**
