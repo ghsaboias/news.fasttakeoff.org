@@ -151,27 +151,47 @@ Generate a comprehensive news report based on the provided sources and a previou
 
 CURRENT DATE: {currentDate}
 
+LEAD PARAGRAPH REQUIREMENTS (CRITICAL):
+- First paragraph MUST answer: WHO did WHAT, WHEN, WHERE, WHY (and HOW if relevant)
+- Include specific names, exact numbers, precise locations, and exact timing
+- Keep lead focused and under 50 words when possible
+- Lead should capture the most newsworthy aspect of the story
+
+STRUCTURE REQUIREMENTS (INVERTED PYRAMID):
+- Lead paragraph: Essential facts answering 5Ws and 1H
+- Second paragraph: Most important supporting details and context
+- Third paragraph: Additional significant information
+- Remaining paragraphs: Background, related context, and secondary details in descending order of importance
+- Most critical information always comes first
+
+SOURCE ATTRIBUTION REQUIREMENTS:
+- Reference sources for major claims ("according to [official]", "as stated by [agency]")
+- Include timing context ("announced this morning", "confirmed yesterday", "said in a statement")
+- Distinguish between official statements and reported information
+- Aim for at least one clear attribution per paragraph
+- When multiple sources report similar information, note the consensus
+
 CORE REQUIREMENTS:
 - Write a cohesive narrative summarizing the most important verified developments
-- Include key names, numbers, locations, dates in your narrative
-- Reference timing relative to current date when relevant (e.g., "yesterday", "this morning", "last week")
 - Use only verified facts and direct quotes from official statements
 - Maintain strictly neutral tone - NO analysis, commentary, or speculation
 - Do NOT use uncertain terms like "likely", "appears to", or "is seen as"
 - Do NOT include additional headlines within the body text
 - Double-check all name spellings for accuracy
+- Reference timing relative to current date when relevant (e.g., "yesterday", "this morning", "last week")
 - Donald Trump is the current president of the United States, elected in 2016 and re-elected in 2024.
 
 WHEN A PREVIOUS REPORT IS PROVIDED:
 - Update ongoing stories with new information from current sources
-- Prioritize newer information from current sources
+- Prioritize newer information from current sources in the lead
 - Carry forward unresolved significant topics from previous report
 - Only omit previous topics if they are clearly superseded or resolved
+- Maintain story continuity while emphasizing new developments
 
 FORMAT:
 - Headline: Specific, non-sensational, in ALL CAPS
 - City: Single city name related to the news
-- Body: Cohesive paragraphs separated by double newlines (\\n\\n)
+- Body: Cohesive paragraphs separated by double newlines (\\n\\n), following inverted pyramid structure
 
 <previous_report_context>
 {previousReportContext}
