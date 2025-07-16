@@ -430,4 +430,18 @@ export interface ExecutiveSummary {
     reportCount: number;
     timeframe: string;
     version: string;
+}
+
+// Simple message count tracking for dynamic reports
+export interface ChannelMessageCounts {
+    channelId: string;
+    lastUpdated: number; // Unix timestamp
+    counts: {
+        '5min': number;
+        '15min': number;
+        '1h': number;
+        '6h': number;
+        '1d': number;
+        '7d': number;
+    };
 } 
