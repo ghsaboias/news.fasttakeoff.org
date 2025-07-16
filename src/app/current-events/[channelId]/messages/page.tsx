@@ -8,7 +8,7 @@ interface PageProps {
 
 export async function generateMetadata({ params }: PageProps) {
     const { channelId } = await params;
-    
+
     return {
         title: 'Channel Messages - Fast Takeoff News',
         description: 'View channel messages',
@@ -26,7 +26,7 @@ export default async function MessagesPage({ params }: PageProps) {
     const { channelId } = await params;
 
     return (
-        <div className="flex flex-col gap-8 w-[90vw] mx-auto py-8">
+        <div className="flex flex-col gap-8 my-8 max-w-[90vw]">
             <MessagesClient channelId={channelId} />
         </div>
     );

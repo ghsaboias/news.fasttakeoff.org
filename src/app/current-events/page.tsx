@@ -64,7 +64,7 @@ export default async function CurrentEventsPage() {
     const reports = await getServerSideData();
 
     return (
-        <div className="flex flex-col gap-8 w-[90vw] mx-auto">
+        <div className="flex flex-col gap-8 my-8 max-w-[90vw]">
             <CurrentEventsClient reports={reports} />
         </div>
     );

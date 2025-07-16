@@ -12,7 +12,7 @@ export default function ExecutiveSummary({ className = '' }: ExecutiveSummaryPro
 
     if (loading) {
         return (
-            <div className={`bg-white rounded-lg shadow-md p-6 ${className}`}>
+            <div className={`bg-white shadow-md p-6 ${className}`}>
                 <div className="animate-pulse">
                     <div className="h-6 bg-gray-200 rounded w-1/3 mb-4"></div>
                     <div className="h-4 bg-gray-200 rounded w-full mb-2"></div>
@@ -26,7 +26,7 @@ export default function ExecutiveSummary({ className = '' }: ExecutiveSummaryPro
 
     if (error) {
         return (
-            <div className={`bg-white rounded-lg shadow-md p-6 ${className}`}>
+            <div className={`bg-white shadow-md p-6 ${className}`}>
                 <div className="text-center">
                     <div className="text-gray-500 mb-4">
                         <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -51,7 +51,7 @@ export default function ExecutiveSummary({ className = '' }: ExecutiveSummaryPro
     }
 
     return (
-        <div className={`bg-white rounded-lg shadow-md overflow-hidden ${className}`}>
+        <div className={`bg-white shadow-md overflow-hidden ${className}`}>
             {/* Header */}
             <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4">
                 <div className="flex items-center justify-between">
