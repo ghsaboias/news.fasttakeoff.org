@@ -68,7 +68,7 @@ export async function scheduled(event: ScheduledEvent, env: Cloudflare.Env): Pro
     if (event.cron === '0 * * * *') {
         // Hourly: Messages → Reports → Feeds (in sequence)
         await logRun('MESSAGES', () => messagesService.updateMessages(), {
-            timeoutMs: 120000 // 2 minutes for message fetching
+            timeoutMs: 180000 // 3 minutes for message fetching
         });
 
         await logRun('REPORTS_2H', () => reportService.createFreshReports(), {
@@ -102,7 +102,7 @@ export async function scheduled(event: ScheduledEvent, env: Cloudflare.Env): Pro
     } else if (event.cron === 'MESSAGES') {
         // Manual trigger for messages
         await logRun('MESSAGES', () => messagesService.updateMessages(), {
-            timeoutMs: 120000 // 2 minutes for message fetching
+            timeoutMs: 180000 // 3 minutes for message fetching
         });
     } else if (event.cron === 'REPORTS_2H') {
         // Manual trigger for 2h reports
