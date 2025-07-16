@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/select";
 import { useApi } from "@/lib/hooks";
 import { Report } from "@/lib/types/core";
-import { FilterX, Search } from "lucide-react";
+import { FilterX } from "lucide-react";
 import { useMemo, useState } from "react";
 
 export interface Props {
@@ -122,7 +122,7 @@ export default function CurrentEventsClient({ reports: initialReports, isLoading
     const lastUpdated = reportData.length > 0 ? reportData[0]?.generatedAt : null;
 
     return (
-        <div className="flex flex-col gap-6 py-8">
+        <div className="flex flex-col gap-6">
             <div className="flex flex-col gap-4 flex-row items-center justify-between">
                 <div className="flex items-center gap-2">
                     <h1 className="text-2xl font-bold">Current Events</h1>
@@ -141,13 +141,12 @@ export default function CurrentEventsClient({ reports: initialReports, isLoading
                 </div>
             </div>
             <div className="w-full flex flex-col gap-4 sm:flex-row sm:items-center justify-between">
-                <div className="relative w-full px-6">
-                    <Search className="absolute left-8 top-2.5 h-4 w-4 card-text" />
+                <div className="relative w-full">
                     <Input
                         placeholder="Search topics..."
                         value={searchQuery}
                         onChange={handleSearchChange}
-                        className="pl-8 pr-8 max-w-sm"
+                        className="max-w-sm"
                         disabled={loading}
                     />
                     {searchQuery && (
@@ -176,7 +175,7 @@ export default function CurrentEventsClient({ reports: initialReports, isLoading
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
                 {loading ? (
                     <div className="col-span-full text-center py-16 flex flex-col items-center justify-center gap-4">
                         <Loader size="lg" />
