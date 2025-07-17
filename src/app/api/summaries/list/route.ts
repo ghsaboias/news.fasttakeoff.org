@@ -10,11 +10,14 @@ import { NextResponse } from 'next/server';
  * @auth None required.
  * @integration Uses FeedsService.
  */
-export async function GET() {
+export async function GET(request: Request) {
     try {
         const { env } = await getCacheContext();
+        const { searchParams } = new URL(request.url);
+        const topicId = searchParams.get('topic');
+        console.log('topicId', topicId);
         const feedsService = new FeedsService(env);
-        const summaries = await feedsService.listAvailableSummaries();
+        const summaries = await feedsService.listAvailableSummaries(topicId || undefined);
         return NextResponse.json(summaries);
     } catch (error) {
         console.error('Failed to list summaries:', error);

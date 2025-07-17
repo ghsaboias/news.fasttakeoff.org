@@ -44,8 +44,8 @@ export default function Header() {
                 <Link href="/news-globe" className="text-sm font-medium hover:underline hover:text-[#167F6E] transition-colors text-center">
                     News Globe
                 </Link>
-                <Link href="/brazil-news" className="text-sm font-medium hover:underline hover:text-[#167F6E] transition-colors text-center">
-                    Brazil News
+                <Link href="/brazil" className="text-sm font-medium hover:underline hover:text-[#167F6E] transition-colors text-center">
+                    Brazil
                 </Link>
                 <Link href="/power-network" className="text-sm font-medium hover:underline hover:text-[#167F6E] transition-colors text-center">
                     Power Network
@@ -98,8 +98,8 @@ export default function Header() {
                                     <Link href="/news-globe" className="text-sm font-medium hover:underline hover:text-[#167F6E] transition-colors">
                                         News Globe
                                     </Link>
-                                    <Link href="/brazil-news" className="text-sm font-medium hover:underline hover:text-[#167F6E] transition-colors">
-                                        Brazil News
+                                    <Link href="/brazil" className="text-sm font-medium hover:underline hover:text-[#167F6E] transition-colors">
+                                        Brazil
                                     </Link>
                                     <Link href="/power-network" className="text-sm font-medium hover:underline hover:text-[#167F6E] transition-colors">
                                         Power Network
@@ -159,8 +159,8 @@ export default function Header() {
                                     <Link href="/news-globe" className="text-sm font-medium hover:underline hover:text-[#167F6E] transition-colors">
                                         News Globe
                                     </Link>
-                                    <Link href="/brazil-news" className="text-sm font-medium hover:underline hover:text-[#167F6E] transition-colors">
-                                        Brazil News
+                                    <Link href="/brazil" className="text-sm font-medium hover:underline hover:text-[#167F6E] transition-colors">
+                                        Brazil
                                     </Link>
                                     <Link href="/power-network" className="text-sm font-medium hover:underline hover:text-[#167F6E] transition-colors">
                                         Power Network

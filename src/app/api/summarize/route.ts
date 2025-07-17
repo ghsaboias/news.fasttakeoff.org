@@ -141,11 +141,13 @@ async function generateSummary(order: ExecutiveOrder): Promise<string> {
     }
 }
 
-export async function GET() {
+export async function GET(request: Request) {
     try {
         const { env } = await getCacheContext();
+        const { searchParams } = new URL(request.url);
+        const topicId = searchParams.get('topic');
         const feedsService = new FeedsService(env);
-        const result = await feedsService.getOrCreateSummary();
+        const result = await feedsService.getOrCreateSummary(topicId || undefined);
         return NextResponse.json(result);
     } catch (error) {
         console.error('Summarization error:', error);

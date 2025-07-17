@@ -73,6 +73,17 @@ const CRON_TASKS = {
         await logRun('REPORTS_2H', () => reportService.generateReports('2h'), {
             timeoutMs: TASK_TIMEOUTS.REPORTS
         });
+
+        const feedsService = new FeedsService(env);
+
+        // Generate summaries for both topics
+        await logRun('FEEDS_GERAL', () => feedsService.createFreshSummary('geral', ['CNN-Brasil', 'BBC-Brasil', 'G1 - Política', 'G1 - Economia', 'UOL']), {
+            timeoutMs: TASK_TIMEOUTS.FEEDS
+        });
+
+        await logRun('FEEDS_MERCADO', () => feedsService.createFreshSummary('mercado', ['Investing.com Brasil - Empresas', 'Investing.com Brasil - Mercado']), {
+            timeoutMs: TASK_TIMEOUTS.FEEDS
+        });
     },
 
     // Every 6 hours (0:00, 6:00, 12:00, 18:00)
@@ -128,7 +139,11 @@ async function handleManualTrigger(trigger: string, env: Cloudflare.Env): Promis
             timeoutMs: TASK_TIMEOUTS.EXECUTIVE_SUMMARY
         }),
 
-        'FEEDS': () => logRun('FEEDS', () => feedsService.createFreshSummary(), {
+        'FEEDS_GERAL': () => logRun('FEEDS_GERAL', () => feedsService.createFreshSummary('geral', ['CNN-Brasil', 'BBC-Brasil', 'G1 - Política', 'G1 - Economia', 'UOL']), {
+            timeoutMs: TASK_TIMEOUTS.FEEDS
+        }),
+
+        'FEEDS_MERCADO': () => logRun('FEEDS_MERCADO', () => feedsService.createFreshSummary('mercado', ['Investing.com Brasil - Empresas', 'Investing.com Brasil - Mercado']), {
             timeoutMs: TASK_TIMEOUTS.FEEDS
         })
     };
