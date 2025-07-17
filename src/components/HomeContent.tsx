@@ -125,10 +125,10 @@ export default function HomeContent({ initialReports, initialExecutiveOrders }: 
                             <p className="text-sm text-gray-600 mt-2">Interactive 3D visualization of global news</p>
                         </div>
                     </Link>
-                    <Link href="/brazil-news" className="group">
+                    <Link href="/brazil" className="group">
                         <div className="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow p-6 border border-gray-200">
-                            <h3 className="text-lg font-semibold text-gray-900 group-hover:text-[#167F6E]">Brazil News</h3>
-                            <p className="text-sm text-gray-600 mt-2">AI-curated Brazilian news summaries</p>
+                            <h3 className="text-lg font-semibold text-gray-900 group-hover:text-[#167F6E]">Brazil</h3>
+                            <p className="text-sm text-gray-600 mt-2">AI-curated Brazilian news summaries with topic selection</p>
                         </div>
                     </Link>
                     <Link href="/power-network" className="group">

@@ -51,7 +51,7 @@ function generateStaticSitemap(): string {
         { path: '', priority: 1.0, changeFreq: 'daily' },
         { path: '/current-events', priority: 0.9, changeFreq: 'hourly' },
         { path: '/executive-orders', priority: 0.9, changeFreq: 'daily' },
-        { path: '/brazil-news', priority: 0.8, changeFreq: 'daily' },
+        { path: '/brazil', priority: 0.8, changeFreq: 'daily' },
         { path: '/news-globe', priority: 0.7, changeFreq: 'daily' },
         { path: '/privacy-policy', priority: 0.3, changeFreq: 'monthly' },
     ]

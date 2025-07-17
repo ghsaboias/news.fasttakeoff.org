@@ -53,7 +53,7 @@ export default function Footer() {
                                 </Link>
                             </li>
                             <li>
-                                <Link href="/brazil-news" className="hover:underline">
+                                <Link href="/brazil" className="hover:underline">
                                     Brazil News
                                 </Link>
                             </li>
