@@ -9,7 +9,7 @@ import { PropsWithChildren } from 'react';
 const PUBLIC_PATHS = [
     '/',
     '/news-globe',
-    '/brazil-news',
+    '/brazil',
     '/current-events',
     '/executive-orders',
     '/rss',

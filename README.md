@@ -101,7 +101,7 @@ Interactive 3D visualization of news reports with geographic data.
 
 - `GET /api/geocode` - Geocode city names for globe placement
 
-### 3. Brazil News
+### 3. Brazil
 
 Automated aggregation and AI-powered summarization of Brazilian news.
 
@@ -110,13 +110,14 @@ Automated aggregation and AI-powered summarization of Brazilian news.
 - Aggregates news from major Brazilian RSS feeds
 - Two-stage AI processing:
   - Curation based on impact and verifiability
-  - Structured summarization by categories
+  - Structured summarization by topics (Giro Geral, Mercado)
 - Historical archive with timestamp selection
 - Hourly updates with caching
+- Topic selection tabs for different news focuses
 
 #### API Endpoints
 
-- `GET /api/summaries/list` - List available summaries
+- `GET /api/summaries/list?topic=geral|mercado` - List available summaries for a topic
 - `GET /api/summaries/[key]` - Fetch specific summary
 
 #### Required Environment Variables
@@ -134,20 +135,6 @@ FACEBOOK_PAGE_ACCESS_TOKEN=<your-facebook-page-access-token>
 # Discord Integration
 DISCORD_TOKEN=<your-discord-bot-token>
 DISCORD_GUILD_ID=<your-guild-id>
-
-# Authentication & Payments
-NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=<your-clerk-publishable-key>
-CLERK_SECRET_KEY=<your-clerk-secret-key>
-STRIPE_SECRET_KEY=<your-stripe-secret-key>
-STRIPE_PRICE_ID=<your-stripe-price-id>
-STRIPE_WEBHOOK_SECRET=<your-stripe-webhook-secret>
-
-# API Configuration
-SERVER_API_URL=https://news.fasttakeoff.org  # Production URL
-# Use http://localhost:8787 for local development
-
-# Optional Services
-GOOGLE_GEOCODING_API_KEY=<your-google-geocoding-api-key>  # For News Globe
 ```
 
 #### Troubleshooting
@@ -471,7 +458,7 @@ Generates .open-next/ artifacts and deploys via wrangler.
 - **/current-events**: Displays active channels with message previews and report generation.
 - **/executive-orders**: Lists and details executive orders with pagination and search.
 - **/news-globe**: Shows an interactive 3D globe with geolocated news reports.
-- **/brazil-news**: Displays AI-generated summaries of Brazilian news, with historical archive access.
+- **/brazil**: Displays AI-generated summaries of Brazilian news, with historical archive access and topic selection tabs.
 - **/message-activity**: Displays message activity heatmap for Discord channels.
 - **/power-network**: Interactive network visualization of political and business relationships.
 - **/profile**: User profile page, shows subscription status and allows users to subscribe.
@@ -483,9 +470,9 @@ Generates .open-next/ artifacts and deploys via wrangler.
 
 #### Brazil News Display
 
-The Brazil News section provides AI-generated summaries of Brazilian news, with features for historical tracking and comparison:
+The Brazil section provides AI-generated summaries of Brazilian news, with features for historical tracking, topic selection, and comparison:
 
-- **Main View (`/brazil-news`)**: Shows the latest AI-generated summary of Brazilian news, with a dropdown selector for accessing historical summaries.
+- **Main View (`/brazil`)**: Shows the latest AI-generated summary of Brazilian news, with a dropdown selector for accessing historical summaries and tabs for topic selection (e.g., Giro Geral, Mercado).
 - **Summary Display**: Each summary is presented in a well-formatted markdown view that includes:
   - Key points and highlights from Brazilian news
   - Proper formatting for bullet points and sections
@@ -570,11 +557,11 @@ The system aggregates and summarizes news from major Brazilian RSS feeds through
 
    - Automatic hourly updates
    - Historical archives maintained in `FEEDS_CACHE`
-   - Accessible via `/brazil-news` with timestamp selection
+   - Accessible via `/brazil` with timestamp and topic selection
 
 2. **AI Processing**:
    - Stage 1: Curation of relevant news based on impact and verifiability
-   - Stage 2: Structured summarization by categories (Federal Politics, Economy, Judiciary, São Paulo)
+   - Stage 2: Structured summarization by topics (Giro Geral, Mercado)
 
 ### Troubleshooting Common Issues
 

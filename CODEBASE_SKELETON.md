@@ -65,7 +65,7 @@
     - twitter-usage/
     - .DS_Store
     - .repomix-output.txt
-  - brazil-news/
+  - brazil/
     - SummaryDisplay.tsx
     - page.tsx
   - current-events/
@@ -248,6 +248,7 @@
 # Config File Skeletons
 
 ## wrangler.toml
+
 ```toml
 main = ".open-next/worker.js"
 name = "news-fasttakeoff-org"
@@ -267,6 +268,7 @@ directory = ".open-next/assets"
 ```
 
 ## package.json
+
 ```json
 {
   "name": "news.fasttakeoff.org",
@@ -286,6 +288,7 @@ directory = ".open-next/assets"
 ```
 
 ## tsconfig.json
+
 ```json
 {
   "compilerOptions": {
@@ -305,6 +308,7 @@ directory = ".open-next/assets"
 ```
 
 ## next.config.ts
+
 ```ts
 import type { NextConfig } from "next";
 
@@ -324,6 +328,7 @@ const nextConfig: NextConfig = {
 ```
 
 ## tailwind.config.js
+
 ```js
 /** @type {import('tailwindcss').Config} */
 module.exports = {
@@ -345,6 +350,7 @@ module.exports = {
 # Source File Dense AST Skeletons
 
 ## src/app/api/channels/route.ts
+
 ```typescript
 Imports: @/lib/api-utils, @/lib/data/channels-service
 /**
@@ -358,6 +364,7 @@ export function GET(): Promise<import("/Users/guilhermesaboia/Documents/fasttake
 ```
 
 ## src/app/api/emails/route.ts
+
 ```typescript
 Imports: @/lib/utils, next/server
 /**
@@ -379,6 +386,7 @@ export function GET(): Promise<NextResponse<{ error: string; }> | NextResponse<{
 ```
 
 ## src/app/api/entities/extract/route.ts
+
 ```typescript
 Imports: @/lib/api-utils, @/lib/data/report-service, @/lib/types/core, @/lib/utils, @/lib/utils/entity-extraction, next/server
 /**
@@ -393,6 +401,7 @@ export function POST(): Promise<NextResponse<unknown>>
 ```
 
 ## src/app/api/entities/route.ts
+
 ```typescript
 Imports: @/lib/api-utils, @/lib/data/report-service, @/lib/types/core, @/lib/utils/entity-extraction, next/server
 export function POST(request: Request): Promise<NextResponse<unknown>>
@@ -400,6 +409,7 @@ export function GET(request: Request): Promise<NextResponse<unknown>>
 ```
 
 ## src/app/api/executive-orders/route.ts
+
 ```typescript
 Imports: @/lib/api-utils, @/lib/data/executive-orders, @/lib/utils
 /**
@@ -413,12 +423,14 @@ export function GET(): Promise<import("/Users/guilhermesaboia/Documents/fasttake
 ```
 
 ## src/app/api/expired/route.ts
+
 ```typescript
-Imports: next/server
-export function GET(): Promise<NextResponse<unknown>>
+Imports: next / server;
+export function GET(): Promise<NextResponse<unknown>>;
 ```
 
 ## src/app/api/fact-check/route.ts
+
 ```typescript
 Imports: @/lib/api-utils, @/lib/cache-utils, @/lib/data/report-service, @/lib/types/core, @/lib/utils/fact-check-service, next/server
 /**
@@ -441,6 +453,7 @@ export function POST(request: NextRequest): Promise<NextResponse<unknown>>
 ```
 
 ## src/app/api/geo/route.ts
+
 ```typescript
 Imports: next/server
 export dynamic = 'force-dynamic'
@@ -455,12 +468,14 @@ export function GET(request: NextRequest): Promise<NextResponse<{ country: strin
 ```
 
 ## src/app/api/geocode/route.ts
+
 ```typescript
 Imports: next/server, ../../../../worker-configuration, ../../../lib/cache-utils, ../../../lib/utils
 export function GET(request: Request): Promise<NextResponse<{ error: string; }> | NextResponse<GoogleGeocodeLocation>>
 ```
 
 ## src/app/api/images/route.ts
+
 ```typescript
 Imports: @/lib/api-utils, @/lib/utils/image-service, next/server
 /**
@@ -476,6 +491,7 @@ export function POST(request: NextRequest): Promise<NextResponse<unknown>>
 ```
 
 ## src/app/api/link-preview/route.ts
+
 ```typescript
 Imports: @/lib/api-utils, @/lib/cache-utils
 /**
@@ -491,12 +507,14 @@ export function GET(request: Request): Promise<import("/Users/guilhermesaboia/Do
 ```
 
 ## src/app/api/messages/heatmap/route.ts
+
 ```typescript
 Imports: @/lib/cache-utils, @/lib/data/channels-service, @/lib/types/core, @/lib/utils, next/server
 export function GET(): Promise<NextResponse<{ error: string; }> | NextResponse<HeatmapResponse>>
 ```
 
 ## src/app/api/messages/route.ts
+
 ```typescript
 Imports: @/lib/api-utils, @/lib/data/channels-service
 /**
@@ -511,12 +529,14 @@ export function GET(request: Request): Promise<import("/Users/guilhermesaboia/Do
 ```
 
 ## src/app/api/oembed/twitter/route.ts
+
 ```typescript
 Imports: @/lib/api-utils, @/lib/cache-utils, @/lib/types/core, @/lib/utils/twitter-utils
 export function GET(request: Request): Promise<import("/Users/guilhermesaboia/Documents/fasttakeoff/news.fasttakeoff.org/node_modules/next/server").NextResponse<unknown>>
 ```
 
 ## src/app/api/prompt-test/route.ts
+
 ```typescript
 Imports: @/lib/ai-config, @/lib/config, @/lib/data/channels-service, @/lib/data/messages-service, @/lib/types/core, fs, next/server, path, uuid, ../../../../worker-configuration
 export function GET(request: Request): Promise<NextResponse<{ channels: import("/Users/guilhermesaboia/Documents/fasttakeoff/news.fasttakeoff.org/src/lib/types/core").DiscordChannel[]; }> | NextResponse<{ sets: { id: any; channel: any; messages: any; created: any; }[]; }> | NextResponse<{ error: string; }>>
@@ -524,6 +544,7 @@ export function POST(request: Request): Promise<NextResponse<{ error: string; }>
 ```
 
 ## src/app/api/reports/route.ts
+
 ```typescript
 Imports: @/lib/api-utils, @/lib/cache-utils, @/lib/config, @/lib/data/report-service, @/lib/types/core, next/server
 /**
@@ -546,6 +567,7 @@ export function POST(request: Request): Promise<NextResponse<unknown>>
 ```
 
 ## src/app/api/rss/[feedId]/route.ts
+
 ```typescript
 Imports: @/lib/api-utils, @/lib/data/rss-service
 /**
@@ -561,6 +583,7 @@ export function GET(request: Request, { params }: { params: Promise<{ feedId: st
 ```
 
 ## src/app/api/rss/route.ts
+
 ```typescript
 Imports: @/lib/api-utils, @/lib/config
 /**
@@ -574,6 +597,7 @@ export function GET(): Promise<import("/Users/guilhermesaboia/Documents/fasttake
 ```
 
 ## src/app/api/source-attribution/route.ts
+
 ```typescript
 Imports: @/lib/api-utils, @/lib/data/report-service, @/lib/utils/source-attribution, ../../../../worker-configuration
 /**
@@ -589,6 +613,7 @@ export function GET(request: Request): Promise<import("/Users/guilhermesaboia/Do
 ```
 
 ## src/app/api/stripe/checkout/route.ts
+
 ```typescript
 Imports: @clerk/nextjs/server, next/server
 /**
@@ -604,6 +629,7 @@ export function POST(req: Request): Promise<NextResponse<{ error: any; }> | Next
 ```
 
 ## src/app/api/stripe/webhook/route.ts
+
 ```typescript
 Imports: next/server, stripe
 export function POST(req: Request): Promise<NextResponse<{ received: boolean; }> | NextResponse<{ error: string; }>>
@@ -616,6 +642,7 @@ export dynamic = 'force-dynamic'
 ```
 
 ## src/app/api/summaries/[key]/route.ts
+
 ```typescript
 Imports: @/lib/api-utils, @/lib/data/feeds-service
 /**
@@ -631,6 +658,7 @@ export function GET(request: Request, { params }: { params: Promise<{ key: strin
 ```
 
 ## src/app/api/summaries/list/route.ts
+
 ```typescript
 Imports: @/lib/data/feeds-service, @/lib/utils, next/server
 /**
@@ -645,6 +673,7 @@ export function GET(): Promise<NextResponse<{ key: string; createdAt: string; }[
 ```
 
 ## src/app/api/summarize/route.ts
+
 ```typescript
 Imports: @/lib/ai-config, @/lib/data/feeds-service, @/lib/types/core, @/lib/utils, next/server
 export function POST(req: Request): Promise<NextResponse<{ error: string; }> | NextResponse<{ summary: string; }>>
@@ -652,12 +681,14 @@ export function GET(): Promise<NextResponse<import("/Users/guilhermesaboia/Docum
 ```
 
 ## src/app/api/test-twitter/route.ts
+
 ```typescript
 Imports: @/lib/api-utils, @/lib/twitter-service, @/lib/types/core
 export function POST(request: Request): Promise<import("/Users/guilhermesaboia/Documents/fasttakeoff/news.fasttakeoff.org/node_modules/next/server").NextResponse<unknown>>
 ```
 
 ## src/app/api/translate/route.ts
+
 ```typescript
 Imports: @/lib/ai-config, next/server
 /**
@@ -673,18 +704,21 @@ export function POST(req: Request): Promise<NextResponse<{ error: string; }> | N
 ```
 
 ## src/app/api/trigger-cron/route.ts
+
 ```typescript
 Imports: @/lib/api-utils, @/lib/cron, next/server
 export function POST(request: Request): Promise<NextResponse<unknown>>
 ```
 
-## src/app/brazil-news/SummaryDisplay.tsx
+## src/app/brazil/SummaryDisplay.tsx
+
 ```typescript
 Imports: @/components/ui/loader, @/components/ui/select, @/components/utils/LocalDateTime, @/lib/hooks, @/lib/types/core, react, react-markdown
 export function SummaryDisplay(): import("/Users/guilhermesaboia/Documents/fasttakeoff/news.fasttakeoff.org/node_modules/@types/react/index").JSX.Element | null
 ```
 
-## src/app/brazil-news/page.tsx
+## src/app/brazil/page.tsx
+
 ```typescript
 Imports: ./SummaryDisplay
 export revalidate = 3600
@@ -693,6 +727,7 @@ export function BRNewsPage(): Promise<import("/Users/guilhermesaboia/Documents/f
 ```
 
 ## src/app/current-events/CurrentEventsClient.tsx
+
 ```typescript
 Imports: @/components/current-events/ReportCard, @/components/ui/badge, @/components/ui/button, @/components/ui/input, @/components/ui/loader, @/components/ui/select, @/lib/hooks, @/lib/types/core, lucide-react, react
 export interface Props {  reports: Report[];  isLoading?: boolean;
@@ -701,18 +736,21 @@ export function CurrentEventsClient({ reports: initialReports, isLoading = false
 ```
 
 ## src/app/current-events/[channelId]/ChannelDetailClient.tsx
+
 ```typescript
 Imports: @/components/current-events/ReportCard, @/components/ui/button, @/lib/types/core, lucide-react, next/link, next/navigation, react
 export function ChannelDetailClient({ reports, channel }: { reports: Report[]; channel: DiscordChannel | null }): import("/Users/guilhermesaboia/Documents/fasttakeoff/news.fasttakeoff.org/node_modules/@types/react/index").JSX.Element
 ```
 
 ## src/app/current-events/[channelId]/[reportId]/ReportClient.tsx
+
 ```typescript
 Imports: @/app/not-found, @/components/current-events/FactCheckDisplay, @/components/current-events/MessageItem, @/components/source-attribution, @/components/ui/button, @/components/ui/dropdown-menu, @/components/ui/loader, @/components/utils/LocalDateTime, @/lib/hooks, @/lib/types/core, lucide-react, next/link, next/navigation, react, react-masonry-css, sonner
 export function ReportClient(): import("/Users/guilhermesaboia/Documents/fasttakeoff/news.fasttakeoff.org/node_modules/@types/react/index").JSX.Element
 ```
 
 ## src/app/current-events/[channelId]/[reportId]/page.tsx
+
 ```typescript
 Imports: @/lib/data/channels-service, @/lib/data/report-service, @/lib/utils, next/navigation, ./ReportClient
 export revalidate = 300
@@ -722,6 +760,7 @@ export function ReportDetailPage({ params }: { params: Promise<{ channelId: stri
 ```
 
 ## src/app/current-events/[channelId]/messages/MessagesClient.tsx
+
 ```typescript
 Imports: @/components/current-events/timeline/MessageTimeline, @/components/ui/button, @/components/ui/loader, @/lib/types/core, lucide-react, next/link, react
 export function MessagesClient({
@@ -730,6 +769,7 @@ export function MessagesClient({
 ```
 
 ## src/app/current-events/[channelId]/messages/page.tsx
+
 ```typescript
 Imports: ./MessagesClient
 export function generateMetadata({ params }: PageProps): Promise<{ title: string; description: string; alternates: { canonical: string; }; robots: { index: boolean; follow: boolean; }; }>
@@ -737,6 +777,7 @@ export function MessagesPage({ params }: PageProps): Promise<import("/Users/guil
 ```
 
 ## src/app/current-events/[channelId]/page.tsx
+
 ```typescript
 Imports: @/lib/data/channels-service, @/lib/data/report-service, @/lib/types/core, @/lib/utils, next/navigation, ./ChannelDetailClient
 export revalidate = 600
@@ -746,6 +787,7 @@ export function ChannelDetailPage({ params }: { params: Promise<{ channelId: str
 ```
 
 ## src/app/current-events/page.tsx
+
 ```typescript
 Imports: @/lib/data/report-service, @/lib/utils, ./CurrentEventsClient
 export revalidate = 300
@@ -754,18 +796,21 @@ export function CurrentEventsPage(): Promise<import("/Users/guilhermesaboia/Docu
 ```
 
 ## src/app/entities/EntitiesClient.tsx
+
 ```typescript
 Imports: @/components/ui/badge, @/components/ui/button, @/components/ui/card, @/components/ui/input, @/components/ui/loader, @/components/ui/select, @/lib/types/core, lucide-react, next/link, react
 export function EntitiesClient(): import("/Users/guilhermesaboia/Documents/fasttakeoff/news.fasttakeoff.org/node_modules/@types/react/index").JSX.Element
 ```
 
 ## src/app/entities/graph/EntityGraphClient.tsx
+
 ```typescript
 Imports: @/components/ui/loader, @/lib/config, @/lib/hooks, @/lib/types/core, next/image, next/link, react, ../../../lib/hooks
 export function EntityGraphClient(): import("/Users/guilhermesaboia/Documents/fasttakeoff/news.fasttakeoff.org/node_modules/@types/react/index").JSX.Element
 ```
 
 ## src/app/entities/graph/page.tsx
+
 ```typescript
 Imports: next, ./EntityGraphClient
 export metadata: Metadata = {
@@ -777,6 +822,7 @@ export function EntityGraphPage(): import("/Users/guilhermesaboia/Documents/fast
 ```
 
 ## src/app/entities/page.tsx
+
 ```typescript
 Imports: next, ./EntitiesClient
 export metadata: Metadata = {
@@ -788,12 +834,14 @@ export function EntitiesPage(): import("/Users/guilhermesaboia/Documents/fasttak
 ```
 
 ## src/app/executive-orders/ExecutiveOrdersClient.tsx
+
 ```typescript
 Imports: @/components/executive-orders/OrderCard, @/components/ui/button, @/components/ui/input, @/components/ui/loader, @/components/ui/separator, @/lib/data/executive-orders, @/lib/hooks, @/lib/types/core, @/lib/utils, react
 export function ClientExecutiveOrders({ initialOrders }: { initialOrders: ExecutiveOrder[] }): import("/Users/guilhermesaboia/Documents/fasttakeoff/news.fasttakeoff.org/node_modules/@types/react/index").JSX.Element
 ```
 
 ## src/app/executive-orders/[id]/ExecutiveOrderClient.tsx
+
 ```typescript
 Imports: @/components/ui/button, @/components/ui/loader, @/lib/data/executive-orders, @/lib/types/core, @/lib/utils, lucide-react, next/link, next/navigation, react, react-markdown
 export function ExecutiveOrderClient({
@@ -804,6 +852,7 @@ export function ExecutiveOrderClient({
 ```
 
 ## src/app/executive-orders/[id]/page.tsx
+
 ```typescript
 Imports: @/lib/data/executive-orders, @/lib/utils, next/navigation, ./ExecutiveOrderClient
 export function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<{ title: string; description: string; alternates: { canonical: string; }; robots: { index: boolean; follow: boolean; }; }>
@@ -811,6 +860,7 @@ export function ExecutiveOrderPage({ params }: { params: Promise<{ id: string }>
 ```
 
 ## src/app/executive-orders/page.tsx
+
 ```typescript
 Imports: @/lib/data/executive-orders, @/lib/utils, ./ExecutiveOrdersClient
 export revalidate = 3600
@@ -819,6 +869,7 @@ export function ExecutiveOrdersPage(): Promise<import("/Users/guilhermesaboia/Do
 ```
 
 ## src/app/layout.tsx
+
 ```typescript
 Imports: @/components/RootLayoutClient, @/components/analytics/ThirdPartyScripts, next/font/google, ./critical.css, ./globals.css, ./metadata
 export function RootLayout({
@@ -829,6 +880,7 @@ export function RootLayout({
 ```
 
 ## src/app/message-activity/page.tsx
+
 ```typescript
 Imports: @/components/MessageHeatmap, react
 export function generateMetadata(): Promise<{ title: string; description: string; alternates: { canonical: string; }; }>
@@ -836,6 +888,7 @@ export function MessageActivityPage(): import("/Users/guilhermesaboia/Documents/
 ```
 
 ## src/app/metadata.ts
+
 ```typescript
 Imports: next
 export metadata: Metadata = {
@@ -881,12 +934,14 @@ export metadata: Metadata = {
 ```
 
 ## src/app/news-globe/NewsGlobeClient.tsx
+
 ```typescript
-Imports: next/dynamic, react
-export function NewsGlobeClient(): import("/Users/guilhermesaboia/Documents/fasttakeoff/news.fasttakeoff.org/node_modules/@types/react/index").JSX.Element
+Imports: next / dynamic, react;
+export function NewsGlobeClient(): import("/Users/guilhermesaboia/Documents/fasttakeoff/news.fasttakeoff.org/node_modules/@types/react/index").JSX.Element;
 ```
 
 ## src/app/news-globe/page.tsx
+
 ```typescript
 Imports: ./NewsGlobeClient
 export function generateMetadata(): Promise<{ title: string; description: string; alternates: { canonical: string; }; }>
@@ -894,18 +949,21 @@ export function NewsGlobePage(): import("/Users/guilhermesaboia/Documents/fastta
 ```
 
 ## src/app/news-sitemap.xml/route.ts
+
 ```typescript
 Imports: @/lib/data/channels-service, @/lib/data/report-service, @/lib/utils
 export function GET(): Promise<Response>
 ```
 
 ## src/app/not-found.tsx
+
 ```typescript
 Imports: @/components/ui/button, @/components/ui/card, @/components/ui/separator, next/link
 export function NotFound(): import("/Users/guilhermesaboia/Documents/fasttakeoff/news.fasttakeoff.org/node_modules/@types/react/index").JSX.Element
 ```
 
 ## src/app/page.tsx
+
 ```typescript
 Imports: @/components/HomeContent, @/lib/cache-utils, @/lib/data/report-service, @/lib/types/core, @/lib/utils, react
 export revalidate = 180
@@ -915,12 +973,14 @@ export function Home(): Promise<import("/Users/guilhermesaboia/Documents/fasttak
 ```
 
 ## src/app/power-network/NetworkVisualization.tsx
+
 ```typescript
 Imports: next/image, next/link, react, ../../components/ui/sheet, ../../lib/hooks, ../../lib/hooks/useBasicForceSimulation, ../../lib/hooks/useEntityRelevance
 export function NetworkVisualization(): import("/Users/guilhermesaboia/Documents/fasttakeoff/news.fasttakeoff.org/node_modules/@types/react/index").JSX.Element
 ```
 
 ## src/app/power-network/page.tsx
+
 ```typescript
 Imports: next, ./NetworkVisualization
 export metadata: Metadata = {
@@ -932,6 +992,7 @@ export function PowerNetworkPage(): import("/Users/guilhermesaboia/Documents/fas
 ```
 
 ## src/app/privacy-policy/page.tsx
+
 ```typescript
 Imports: next
 export metadata: Metadata = {
@@ -942,36 +1003,42 @@ export function PrivacyPolicy(): import("/Users/guilhermesaboia/Documents/fastta
 ```
 
 ## src/app/profile/page.tsx
+
 ```typescript
 Imports: @/components/ui/button, @/components/ui/card, @/components/ui/loader, @clerk/nextjs, next/navigation, react
 export function ProfilePage(): import("/Users/guilhermesaboia/Documents/fasttakeoff/news.fasttakeoff.org/node_modules/@types/react/index").JSX.Element | null
 ```
 
 ## src/app/rss/route.ts
+
 ```typescript
 Imports: @/lib/config, @/lib/data/channels-service, @/lib/data/report-service, @/lib/utils, next/server
 export function GET(): Promise<NextResponse<unknown>>
 ```
 
 ## src/app/sign-in/[[...sign-in]]/page.tsx
+
 ```typescript
 Imports: @clerk/nextjs
 export function Page(): import("/Users/guilhermesaboia/Documents/fasttakeoff/news.fasttakeoff.org/node_modules/@types/react/index").JSX.Element
 ```
 
 ## src/app/sign-up/[[...sign-up]]/page.tsx
+
 ```typescript
 Imports: @clerk/nextjs
 export function SignUpPage(): import("/Users/guilhermesaboia/Documents/fasttakeoff/news.fasttakeoff.org/node_modules/@types/react/index").JSX.Element
 ```
 
 ## src/app/sitemap-index.xml/route.ts
+
 ```typescript
-Imports: next/server
-export function GET(): Promise<NextResponse<unknown>>
+Imports: next / server;
+export function GET(): Promise<NextResponse<unknown>>;
 ```
 
 ## src/app/sitemap.xml/route.ts
+
 ```typescript
 Imports: @/lib/data/sitemap-service, @/lib/utils, next/server
 export function GET(): Promise<NextResponse<unknown>>
@@ -979,30 +1046,35 @@ export dynamic = 'force-dynamic'
 ```
 
 ## src/components/Footer.tsx
+
 ```typescript
 Imports: @/components/ui/separator, @/lib/hooks/useGeolocation, next/link
 export function Footer(): import("/Users/guilhermesaboia/Documents/fasttakeoff/news.fasttakeoff.org/node_modules/@types/react/index").JSX.Element
 ```
 
 ## src/components/Header.tsx
+
 ```typescript
 Imports: @/components/ui/button, @/lib/hooks/useGeolocation, @clerk/nextjs, lucide-react, next/image, next/link, react, ./ui/sheet
 export function Header(): import("/Users/guilhermesaboia/Documents/fasttakeoff/news.fasttakeoff.org/node_modules/@types/react/index").JSX.Element
 ```
 
 ## src/components/HomeContent.tsx
+
 ```typescript
 Imports: @/components/current-events/ReportCard, @/components/executive-orders/OrderCard, @/components/skeletons/ReportCardSkeleton, @/components/ui/button, @/components/ui/input, @/lib/hooks/useGeolocation, @/lib/types/core, next/link, react
 export function HomeContent({ initialReports, initialExecutiveOrders }: HomeContentProps): import("/Users/guilhermesaboia/Documents/fasttakeoff/news.fasttakeoff.org/node_modules/@types/react/index").JSX.Element
 ```
 
 ## src/components/MessageHeatmap.tsx
+
 ```typescript
 Imports: @/lib/hooks, react
 export function MessageHeatmap(): import("/Users/guilhermesaboia/Documents/fasttakeoff/news.fasttakeoff.org/node_modules/@types/react/index").JSX.Element
 ```
 
 ## src/components/ReportPanel.tsx
+
 ```typescript
 Imports: @/components/ui/button, @/components/utils/LocalDateTime, lucide-react, next/link
 export ReportPanel: React.FC<ReportPanelProps> = ({ report, onClose }) => {
@@ -1049,24 +1121,28 @@ export ReportPanel: React.FC<ReportPanelProps> = ({ report, onClose }) => {
 ```
 
 ## src/components/RootLayoutClient.tsx
+
 ```typescript
 Imports: @/components/auth/AuthProvider, @/components/Footer, @/components/Header, @/lib/config, next/navigation, react
 export function RootLayoutClient({ children }: RootLayoutClientProps): React.JSX.Element
 ```
 
 ## src/components/analytics/ThirdPartyScripts.tsx
+
 ```typescript
-Imports: next/script
-export function ThirdPartyScripts(): import("/Users/guilhermesaboia/Documents/fasttakeoff/news.fasttakeoff.org/node_modules/@types/react/index").JSX.Element
+Imports: next / script;
+export function ThirdPartyScripts(): import("/Users/guilhermesaboia/Documents/fasttakeoff/news.fasttakeoff.org/node_modules/@types/react/index").JSX.Element;
 ```
 
 ## src/components/auth/AuthProvider.tsx
+
 ```typescript
 Imports: @clerk/nextjs, next/navigation, next/script, react
 export function AuthProvider({ children }: PropsWithChildren): import("/Users/guilhermesaboia/Documents/fasttakeoff/news.fasttakeoff.org/node_modules/@types/react/index").JSX.Element
 ```
 
 ## src/components/current-events/EntityDisplay.tsx
+
 ```typescript
 Imports: @/components/ui/badge, @/components/ui/card, @/lib/types/core
 export function EntityDisplay({ entities, showMentions = false, maxPerType = 5 }: EntityDisplayProps): import("/Users/guilhermesaboia/Documents/fasttakeoff/news.fasttakeoff.org/node_modules/@types/react/index").JSX.Element
@@ -1074,36 +1150,42 @@ export function EntitySummary({ entities }: EntitySummaryProps): import("/Users/
 ```
 
 ## src/components/current-events/FactCheckDisplay.tsx
+
 ```typescript
 Imports: @/components/ui/badge, @/components/ui/button, @/components/ui/card, @/components/ui/loader, @/lib/hooks, @/lib/types/core, lucide-react, react, ./LinkPreview
 export function FactCheckDisplay({ reportId, className, onDemandTrigger = false }: FactCheckDisplayProps): import("/Users/guilhermesaboia/Documents/fasttakeoff/news.fasttakeoff.org/node_modules/@types/react/index").JSX.Element
 ```
 
 ## src/components/current-events/LinkBadge.tsx
+
 ```typescript
 Imports: next/link, ../ui/badge
 export function BadgeLink({ href, children, variant = "default", className }: BadgeLinkProps): import("/Users/guilhermesaboia/Documents/fasttakeoff/news.fasttakeoff.org/node_modules/@types/react/index").JSX.Element
 ```
 
 ## src/components/current-events/LinkPreview.tsx
+
 ```typescript
 Imports: @/lib/hooks, @/lib/types/core, lucide-react, next/image, react
 export function LinkPreview({ url, className = "" }: LinkPreviewProps): import("/Users/guilhermesaboia/Documents/fasttakeoff/news.fasttakeoff.org/node_modules/@types/react/index").JSX.Element
 ```
 
 ## src/components/current-events/MediaPreview.tsx
+
 ```typescript
 Imports: @/components/ui/dialog, @radix-ui/react-visually-hidden, next/image
 export function MediaPreview({ url, type, contentType, alt }: MediaPreviewProps): import("/Users/guilhermesaboia/Documents/fasttakeoff/news.fasttakeoff.org/node_modules/@types/react/index").JSX.Element
 ```
 
 ## src/components/current-events/MessageItem.tsx
+
 ```typescript
 Imports: @/components/utils/LocalDateTime, @/lib/types/core, @/lib/utils, @/lib/utils/twitter-utils, next/image, next/link, react, ./MediaPreview, ./TelegramEmbed, ./TranslationBadge, ./TweetEmbed
 export function MessageItem({ message, noAccordion = false, channelId }: MessageItemProps): import("/Users/guilhermesaboia/Documents/fasttakeoff/news.fasttakeoff.org/node_modules/@types/react/index").JSX.Element
 ```
 
 ## src/components/current-events/ReportCard.tsx
+
 ```typescript
 Imports: @/components/ui/badge, @/components/ui/card, @/components/utils/LocalDateTime, @/lib/config, @/lib/types/core, next/link, ./LinkBadge
 export function ReportCard({
@@ -1113,48 +1195,56 @@ export function ReportCard({
 ```
 
 ## src/components/current-events/TelegramEmbed.tsx
+
 ```typescript
 Imports: @/lib/utils, react
 export function TelegramEmbed({ content, className = '' }: TelegramEmbedProps): import("/Users/guilhermesaboia/Documents/fasttakeoff/news.fasttakeoff.org/node_modules/@types/react/index").JSX.Element | null
 ```
 
 ## src/components/current-events/TranslationBadge.tsx
+
 ```typescript
 Imports: @/lib/utils/twitter-utils
 export function TranslationBadge({ footerText, className = "" }: TranslationBadgeProps): import("/Users/guilhermesaboia/Documents/fasttakeoff/news.fasttakeoff.org/node_modules/@types/react/index").JSX.Element | null
 ```
 
 ## src/components/current-events/TweetEmbed.tsx
+
 ```typescript
 Imports: @/lib/types/core, @/lib/utils/twitter-utils, react
 export function TweetEmbed({ content, channelId, className = '', onEmbedFail }: TweetEmbedProps): import("/Users/guilhermesaboia/Documents/fasttakeoff/news.fasttakeoff.org/node_modules/@types/react/index").JSX.Element | null
 ```
 
 ## src/components/current-events/timeline/MessageItemTimeline.tsx
+
 ```typescript
 Imports: @/components/current-events/MediaPreview, @/components/current-events/TweetEmbed, @/components/ui/accordion, @/components/utils/LocalDateTime, @/lib/types/core, next/image, react
 export function MessageItemTimeline({ message, index, noAccordion = false, channelId }: MessageItemProps): React.JSX.Element
 ```
 
 ## src/components/current-events/timeline/MessageTimeline.tsx
+
 ```typescript
 Imports: @/lib/types/core, ./MessageItemTimeline
 export function MessageTimeline({ messages, channelId }: MessageTimelineProps): import("/Users/guilhermesaboia/Documents/fasttakeoff/news.fasttakeoff.org/node_modules/@types/react/index").JSX.Element
 ```
 
 ## src/components/executive-orders/OrderCard.tsx
+
 ```typescript
 Imports: @/lib/types/core, @/lib/utils, next/link, ../ui/button, ../ui/card
 export function OrderCard({ order }: { order: ExecutiveOrder }): import("/Users/guilhermesaboia/Documents/fasttakeoff/news.fasttakeoff.org/node_modules/@types/react/index").JSX.Element
 ```
 
 ## src/components/skeletons/ReportCardSkeleton.tsx
+
 ```typescript
 Imports: @/components/ui/card
 export function ReportCardSkeleton(): import("/Users/guilhermesaboia/Documents/fasttakeoff/news.fasttakeoff.org/node_modules/@types/react/index").JSX.Element
 ```
 
 ## src/components/source-attribution/AttributedReportViewer.tsx
+
 ```typescript
 Imports: @/lib/hooks, @/lib/types/core, react, ./InteractiveReportBody
 export function AttributedReportViewer({
@@ -1169,6 +1259,7 @@ export function AttributedReportViewer({
 ```
 
 ## src/components/source-attribution/InteractiveReportBody.tsx
+
 ```typescript
 Imports: @/lib/types/core, react, ./SourceTooltip
 export function InteractiveReportBody({
@@ -1181,12 +1272,14 @@ export function InteractiveReportBody({
 ```
 
 ## src/components/source-attribution/SourceTooltip.tsx
+
 ```typescript
 Imports: @/components/ui/popover, @/components/utils/LocalDateTime, @/lib/types/core, @/lib/utils, @/lib/utils/twitter-utils, next/image, next/link, ../current-events/MediaPreview
 export function SourceTooltip({ attribution, sourceMessages, children }: SourceTooltipProps): import("/Users/guilhermesaboia/Documents/fasttakeoff/news.fasttakeoff.org/node_modules/@types/react/index").JSX.Element
 ```
 
 ## src/components/ui/accordion.tsx
+
 ```typescript
 Imports: @radix-ui/react-accordion, lucide-react, react, @/lib/utils
 export function Accordion({
@@ -1209,6 +1302,7 @@ export function AccordionContent({
 ```
 
 ## src/components/ui/badge.tsx
+
 ```typescript
 Imports: @radix-ui/react-slot, class-variance-authority, react, @/lib/utils
 export function Badge({
@@ -1221,6 +1315,7 @@ export function Badge({
 ```
 
 ## src/components/ui/button.tsx
+
 ```typescript
 Imports: @radix-ui/react-slot, class-variance-authority, react, @/lib/utils
 export function Button({
@@ -1236,6 +1331,7 @@ export function Button({
 ```
 
 ## src/components/ui/card.tsx
+
 ```typescript
 Imports: react, @/lib/utils
 export function Card({ className, ...props }: React.ComponentProps<"div">): React.JSX.Element
@@ -1247,6 +1343,7 @@ export function CardFooter({ className, ...props }: React.ComponentProps<"div">)
 ```
 
 ## src/components/ui/dialog.tsx
+
 ```typescript
 Imports: @radix-ui/react-dialog, lucide-react, react, @/lib/utils
 export function Dialog({
@@ -1283,6 +1380,7 @@ export function DialogDescription({
 ```
 
 ## src/components/ui/dropdown-menu.tsx
+
 ```typescript
 Imports: react, @radix-ui/react-dropdown-menu, lucide-react, @/lib/utils
 export function DropdownMenu({
@@ -1358,18 +1456,21 @@ export function DropdownMenuSubContent({
 ```
 
 ## src/components/ui/input.tsx
+
 ```typescript
 Imports: react, @/lib/utils
 export function Input({ className, type, ...props }: React.ComponentProps<"input">): React.JSX.Element
 ```
 
 ## src/components/ui/loader.tsx
+
 ```typescript
 Imports: @/lib/utils, lucide-react
 export function Loader({ size = "md", className, ...props }: LoaderProps): import("/Users/guilhermesaboia/Documents/fasttakeoff/news.fasttakeoff.org/node_modules/@types/react/index").JSX.Element
 ```
 
 ## src/components/ui/pagination.tsx
+
 ```typescript
 Imports: react, lucide-react, @/lib/utils, @/components/ui/button
 export function Pagination({ className, ...props }: React.ComponentProps<"nav">): React.JSX.Element
@@ -1399,6 +1500,7 @@ export function PaginationEllipsis({
 ```
 
 ## src/components/ui/popover.tsx
+
 ```typescript
 Imports: @radix-ui/react-popover, react, @/lib/utils
 export function Popover({
@@ -1423,6 +1525,7 @@ export function PopoverAnchor({
 ```
 
 ## src/components/ui/select.tsx
+
 ```typescript
 Imports: @radix-ui/react-select, lucide-react, react, @/lib/utils
 export function Select({
@@ -1469,6 +1572,7 @@ export function SelectScrollDownButton({
 ```
 
 ## src/components/ui/separator.tsx
+
 ```typescript
 Imports: react, @radix-ui/react-separator, @/lib/utils
 export function Separator({
@@ -1480,6 +1584,7 @@ export function Separator({
 ```
 
 ## src/components/ui/sheet.tsx
+
 ```typescript
 Imports: @radix-ui/react-dialog, lucide-react, react, @/lib/utils
 export function Sheet({ ...props }: React.ComponentProps<typeof SheetPrimitive.Root>): React.JSX.Element
@@ -1510,6 +1615,7 @@ export function SheetDescription({
 ```
 
 ## src/components/ui/tabs.tsx
+
 ```typescript
 Imports: @radix-ui/react-tabs, react, @/lib/utils
 export function Tabs({
@@ -1531,6 +1637,7 @@ export function TabsContent({
 ```
 
 ## src/components/ui/tooltip.tsx
+
 ```typescript
 Imports: @radix-ui/react-tooltip, react, @/lib/utils
 export function TooltipProvider({
@@ -1560,16 +1667,21 @@ export function TooltipContent({
 ```
 
 ## src/components/utils/ClientOnly.tsx
+
 ```typescript
-Imports: react
+Imports: react;
 /**
 Wrapper component that only renders children on the client side
 Prevents hydration mismatches for components that render differently on server vs client
 */
-export function ClientOnly({ children, fallback = null }: ClientOnlyProps): import("/Users/guilhermesaboia/Documents/fasttakeoff/news.fasttakeoff.org/node_modules/@types/react/index").JSX.Element
+export function ClientOnly({
+  children,
+  fallback = null,
+}: ClientOnlyProps): import("/Users/guilhermesaboia/Documents/fasttakeoff/news.fasttakeoff.org/node_modules/@types/react/index").JSX.Element;
 ```
 
 ## src/components/utils/LocalDateTime.tsx
+
 ```typescript
 Imports: @/lib/utils, ./ClientOnly
 /**
@@ -1589,6 +1701,7 @@ export function LocalDateTimeFull({ dateString, className, options }: Omit<Local
 ```
 
 ## src/lib/ai-config.ts
+
 ```typescript
 Imports: @/lib/config
 /**
@@ -1612,6 +1725,7 @@ export function getAIAPIKey(env?: { [key: string]: string | undefined }, provide
 ```
 
 ## src/lib/api-utils.ts
+
 ```typescript
 Imports: @/lib/utils, next/server, ../../worker-configuration
 export API_CACHE_HEADERS = { 'Cache-Control': 'public, max-age=300, s-maxage=300' }
@@ -1619,6 +1733,7 @@ export function withErrorHandling(handler: (env: Cloudflare.Env) => Promise<T>, 
 ```
 
 ## src/lib/cache-utils.ts
+
 ```typescript
 Imports: ../../worker-configuration
 export class CacheManager
@@ -1634,12 +1749,14 @@ export class CacheManager
 ```
 
 ## src/lib/clerkUtils.ts
+
 ```typescript
 Imports: @clerk/nextjs/server
 export function updateUserSubscription(userId: string): Promise<void>
 ```
 
 ## src/lib/config.ts
+
 ```typescript
 Imports: dotenv
 /**
@@ -1871,7 +1988,7 @@ Extract entities and respond with the following JSON structure:
            - Votações na Câmara e Senado
            - Discussões e investigações no Congresso Nacional
            - Decisões regulatórias do governo federal do Brasil
-        
+
         2. Critérios de Seleção:
            - Priorizar fatos verificáveis e decisões concretas
            - Focar em atos oficiais e votações registradas
@@ -1879,7 +1996,7 @@ Extract entities and respond with the following JSON structure:
            - Priorizar dados econômicos de fontes independentes
            - Distinguir entre fatos e declarações oficiais
            - Buscar múltiplas fontes quando possível
-        
+
         3. Critérios de Exclusão:
            - Excluir notícias puramente locais
            - Excluir especulações sobre futuras decisões
@@ -1887,14 +2004,14 @@ Extract entities and respond with the following JSON structure:
            - Excluir declarações sem evidências concretas
            - Excluir propaganda governamental disfarçada de notícia
            - Excluir notícias baseadas apenas em fontes oficiais sem verificação independente
-        
+
         Para cada artigo selecionado, forneça:
         - Uma pontuação de importância (1-10)
         - Uma explicação objetiva focada em fatos verificáveis
-        
+
         Artigos para análise:
         {articles}
-        
+
         Responda no seguinte formato JSON:
         {
             "selectedStories": [
@@ -1910,7 +2027,7 @@ Extract entities and respond with the following JSON structure:
                 }
             ]
         }
-        
+
         Importante:
         - Priorize APENAS notícias com fatos verificáveis
         - Mantenha os títulos exatamente como estão no original
@@ -2003,7 +2120,7 @@ Response format:
 {
   "attributions": [
     {
-      "id": "attr1", 
+      "id": "attr1",
       "text": "exact sentence from report",
       "sourceMessageId": "1390020515489517570",
       "confidence": 0.8
@@ -2108,12 +2225,14 @@ export UI = {
 ```
 
 ## src/lib/cron.ts
+
 ```typescript
 Imports: ../../worker-configuration, ./data/feeds-service, ./data/messages-service, ./data/report-service
 export function scheduled(event: ScheduledEvent, env: Cloudflare.Env): Promise<void>
 ```
 
 ## src/lib/data/channels-service.ts
+
 ```typescript
 Imports: @/lib/config, @/lib/types/core, ../../../worker-configuration, ../cache-utils, ./messages-service
 export class ChannelsService
@@ -2128,6 +2247,7 @@ export function getChannelName(env: Cloudflare.Env, channelId: string): Promise<
 ```
 
 ## src/lib/data/executive-orders.ts
+
 ```typescript
 Imports: @/lib/types/api, @/lib/types/core, ../../../worker-configuration, ../cache-utils, ../transformers/executive-orders
 export function fetchExecutiveOrders(page: number = 1, startDate: string = '2025-01-20', category?: string): Promise<ApiResponse>
@@ -2136,6 +2256,7 @@ export function findExecutiveOrderByNumber(eoNumber: string, date?: string, env?
 ```
 
 ## src/lib/data/feeds-service.ts
+
 ```typescript
 Imports: @/lib/cache-utils, @/lib/config, @/lib/types/core, ../../../worker-configuration, ../ai-config, ../config, ./rss-service
 export function summarizeFeed(input: SummaryInputData & { env: Cloudflare.Env }): Promise<SummaryResult>
@@ -2150,6 +2271,7 @@ export class FeedsService
 ```
 
 ## src/lib/data/messages-service.ts
+
 ```typescript
 Imports: @/lib/config, @/lib/types/core, ../../../worker-configuration, ../cache-utils, ./channels-service
 export class MessagesService
@@ -2165,6 +2287,7 @@ export class MessagesService
 ```
 
 ## src/lib/data/report-service.ts
+
 ```typescript
 Imports: @/lib/config, @/lib/types/core, ../../../worker-configuration, ../facebook-service, ../instagram-service, ../twitter-service, ../utils/entity-extraction, ../utils/fact-check-service, ../utils/report-ai, ../utils/report-cache, ./channels-service, ./messages-service
 export class ReportService
@@ -2202,6 +2325,7 @@ Useful for testing or when social media posting is not desired.
 ```
 
 ## src/lib/data/rss-service.ts
+
 ```typescript
 Imports: @/lib/config, @/lib/types/core, rss-parser
 /**
@@ -2218,6 +2342,7 @@ export function getFeedItems(feedId: string, sinceTimestamp?: number): Promise<F
 ```
 
 ## src/lib/data/sitemap-service.ts
+
 ```typescript
 Imports: ../../../worker-configuration, ../types/core, ./report-service
 export class SitemapService
@@ -2236,6 +2361,7 @@ Gets the cached sitemap or generates a fallback
 ```
 
 ## src/lib/facebook-service.ts
+
 ```typescript
 Imports: ../../worker-configuration, ./config, ./types/core
 export class FacebookService
@@ -2244,12 +2370,17 @@ export class FacebookService
 ```
 
 ## src/lib/hooks/useApi.ts
+
 ```typescript
-Imports: react
-export function useApi(fetcher: (...args: unknown[]) => Promise<T>, options: UseApiOptions<T> = {}): UseApiState<T>
+Imports: react;
+export function useApi(
+  fetcher: (...args: unknown[]) => Promise<T>,
+  options: UseApiOptions<T> = {}
+): UseApiState<T>;
 ```
 
 ## src/lib/hooks/useBasicForceSimulation.ts
+
 ```typescript
 Imports: react, ./useNodes
 /**
@@ -2263,12 +2394,29 @@ export function useBasicForceSimulation(nodesRef: React.MutableRefObject<Node[]>
 ```
 
 ## src/lib/hooks/useCanvasCamera.ts
+
 ```typescript
-Imports: react
-export function useCanvasCamera(): { cameraRef: import("/Users/guilhermesaboia/Documents/fasttakeoff/news.fasttakeoff.org/node_modules/@types/react/index").RefObject<Camera>; onWheel: (e: React.WheelEvent<HTMLCanvasElement>) => void; onPanStart: (clientX: number, clientY: number) => void; onPanMove: (clientX: number, clientY: number) => void; onPanEnd: () => void; onTouchStart: (e: React.TouchEvent<HTMLCanvasElement>) => void; onTouchMove: (e: React.TouchEvent<HTMLCanvasElement>) => void; onTouchEnd: (e: React.TouchEvent<HTMLCanvasElement>) => void; centerOnNode: (nodeX: number, nodeY: number, canvasWidth: number, canvasHeight: number) => void; }
+Imports: react;
+export function useCanvasCamera(): {
+  cameraRef: import("/Users/guilhermesaboia/Documents/fasttakeoff/news.fasttakeoff.org/node_modules/@types/react/index").RefObject<Camera>;
+  onWheel: (e: React.WheelEvent<HTMLCanvasElement>) => void;
+  onPanStart: (clientX: number, clientY: number) => void;
+  onPanMove: (clientX: number, clientY: number) => void;
+  onPanEnd: () => void;
+  onTouchStart: (e: React.TouchEvent<HTMLCanvasElement>) => void;
+  onTouchMove: (e: React.TouchEvent<HTMLCanvasElement>) => void;
+  onTouchEnd: (e: React.TouchEvent<HTMLCanvasElement>) => void;
+  centerOnNode: (
+    nodeX: number,
+    nodeY: number,
+    canvasWidth: number,
+    canvasHeight: number
+  ) => void;
+};
 ```
 
 ## src/lib/hooks/useEntityRelevance.ts
+
 ```typescript
 Imports: react, ../utils/entity-relevance-scorer
 export interface GraphData {  entities: Record<string, Entity>;  relationships: Relationship[];
@@ -2283,42 +2431,70 @@ export function getFinancialValueDisplayClass(score: EntityRelevanceScore): stri
 ```
 
 ## src/lib/hooks/useFilters.ts
+
 ```typescript
-Imports: react
-export function useFilters(entityTypes: string[] = DEFAULT_TYPES): { searchTerm: string; setSearchTerm: import("/Users/guilhermesaboia/Documents/fasttakeoff/news.fasttakeoff.org/node_modules/@types/react/index").Dispatch<import("/Users/guilhermesaboia/Documents/fasttakeoff/news.fasttakeoff.org/node_modules/@types/react/index").SetStateAction<string>>; filters: Record<string, boolean>; toggleFilter: (type: string) => void; isNodeVisible: (node: Node, selectedNode: Node | null, relationships?: Relationship[]) => boolean; }
+Imports: react;
+export function useFilters(entityTypes: string[] = DEFAULT_TYPES): {
+  searchTerm: string;
+  setSearchTerm: import("/Users/guilhermesaboia/Documents/fasttakeoff/news.fasttakeoff.org/node_modules/@types/react/index").Dispatch<
+    import("/Users/guilhermesaboia/Documents/fasttakeoff/news.fasttakeoff.org/node_modules/@types/react/index").SetStateAction<string>
+  >;
+  filters: Record<string, boolean>;
+  toggleFilter: (type: string) => void;
+  isNodeVisible: (
+    node: Node,
+    selectedNode: Node | null,
+    relationships?: Relationship[]
+  ) => boolean;
+};
 ```
 
 ## src/lib/hooks/useForceSimulation.ts
+
 ```typescript
 Imports: react, ./useNodes
 export function useForceSimulation(nodesRef: React.MutableRefObject<Node[]>, relationships?: Relationship[]): () => void
 ```
 
 ## src/lib/hooks/useGeolocation.ts
+
 ```typescript
-Imports: react
+Imports: react;
 /**
 Hook to determine if the user is US-based via geolocation API
 Consolidates duplicate geo-checking logic across components
 */
-export function useGeolocation(options: UseGeolocationOptions = {}): { isUSBased: boolean | null; loading: boolean; error: string | null; }
+export function useGeolocation(options: UseGeolocationOptions = {}): {
+  isUSBased: boolean | null;
+  loading: boolean;
+  error: string | null;
+};
 ```
 
 ## src/lib/hooks/useGraphData.ts
+
 ```typescript
-Imports: react
-export interface GraphData {  entities: Record<string, Entity>;  relationships: Relationship[];
+Imports: react;
+export interface GraphData {
+  entities: Record<string, Entity>;
+  relationships: Relationship[];
 }
-export function useGraphData(): { graphData: GraphData | null; loading: boolean; error: string | null; }
+export function useGraphData(): {
+  graphData: GraphData | null;
+  loading: boolean;
+  error: string | null;
+};
 ```
 
 ## src/lib/hooks/useMobileBreakpoint.ts
+
 ```typescript
-Imports: react
-export function useMobileBreakpoint(breakpoint: number = 768): boolean
+Imports: react;
+export function useMobileBreakpoint(breakpoint: number = 768): boolean;
 ```
 
 ## src/lib/hooks/useNetworkRenderer.ts
+
 ```typescript
 Imports: @/lib/config, react, ./useNodes
 export function useNetworkRenderer({
@@ -2333,12 +2509,14 @@ export function useNetworkRenderer({
 ```
 
 ## src/lib/hooks/useNodeSelection.ts
+
 ```typescript
 Imports: react, ./useNodes
 export function useNodeSelection(nodesRef: React.MutableRefObject<Node[]>, cameraRef: React.MutableRefObject<Camera>, isNodeVisible: (node: Node) => boolean): { selectedNode: Node | null; setSelectedNode: import("/Users/guilhermesaboia/Documents/fasttakeoff/news.fasttakeoff.org/node_modules/@types/react/index").Dispatch<import("/Users/guilhermesaboia/Documents/fasttakeoff/news.fasttakeoff.org/node_modules/@types/react/index").SetStateAction<Node | null>>; canvasHandlers: { onMouseDown: (e: React.MouseEvent<HTMLCanvasElement>) => { type: "drag"; node: Node; startPos?: undefined; } | { type: "pan"; startPos: { x: number; y: number; }; node?: undefined; }; onMouseMove: (e: React.MouseEvent<HTMLCanvasElement>) => { type: "drag"; clientPos?: undefined; } | { type: "pan"; clientPos: { x: number; y: number; }; }; onMouseUp: () => { type: "end"; }; onTouchStart: (e: React.TouchEvent<HTMLCanvasElement>) => { type: "drag"; node: Node; startPos?: undefined; } | { type: "pan"; startPos: { x: number; y: number; }; node?: undefined; } | { type: "pinch"; node?: undefined; startPos?: undefined; } | { type: "none"; node?: undefined; startPos?: undefined; }; onTouchMove: (e: React.TouchEvent<HTMLCanvasElement>) => { type: "drag"; clientPos?: undefined; } | { type: "pan"; clientPos: { x: number; y: number; }; } | { type: "pinch"; clientPos?: undefined; }; onTouchEnd: (e: React.TouchEvent<HTMLCanvasElement>) => { type: "end"; }; }; }
 ```
 
 ## src/lib/hooks/useNodes.ts
+
 ```typescript
 Imports: react, ../types/core
 export interface Node {  country?: string;  x: number;  y: number;  vx: number;  vy: number;  radius: number;
@@ -2347,6 +2525,7 @@ export function useNodes(graphData: GenericGraphData, isMobile: boolean): { node
 ```
 
 ## src/lib/instagram-service.ts
+
 ```typescript
 Imports: ../../worker-configuration, ./config, ./types/core
 export class InstagramService
@@ -2354,11 +2533,13 @@ export class InstagramService
 ```
 
 ## src/lib/seo/ping-search-engines.ts
+
 ```typescript
-export function pingSearchEngines(newUrls: string[]): Promise<void>
+export function pingSearchEngines(newUrls: string[]): Promise<void>;
 ```
 
 ## src/lib/transformers/executive-orders.ts
+
 ```typescript
 Imports: ../types/api, ../types/core
 export function transformAgency(agency: FederalRegisterAgency): Agency
@@ -2368,6 +2549,7 @@ export function transformFederalRegisterOrders(orders: FederalRegisterOrder[]): 
 ```
 
 ## src/lib/twitter-service.ts
+
 ```typescript
 Imports: @/lib/types/core, ../../worker-configuration, ./config, ./utils/twitter-utils
 export class TwitterService
@@ -2388,6 +2570,7 @@ Now uses single tweet format with headline and URL
 ```
 
 ## src/lib/types/api.ts
+
 ```typescript
 Imports: ./core
 export interface FederalRegisterAgency {  json_url?: string;  slug?: string;  raw_name?: string;  parent_id?: number | null;
@@ -2403,140 +2586,337 @@ export interface ApiResponse {  orders: ExecutiveOrder[];  pagination: Paginatio
 ```
 
 ## src/lib/types/core.ts
+
 ```typescript
-export interface ExecutiveOrderBase {  id: string;  title: string;  date: string;  orderNumber: number;  category: string;  summary: string;
+export interface ExecutiveOrderBase {
+  id: string;
+  title: string;
+  date: string;
+  orderNumber: number;
+  category: string;
+  summary: string;
 }
-export interface Section {  title: string;  content: string;
+export interface Section {
+  title: string;
+  content: string;
 }
-export interface Content {  rawText?: string;  html?: string;  xml?: string;  sections: Section[];
+export interface Content {
+  rawText?: string;
+  html?: string;
+  xml?: string;
+  sections: Section[];
 }
-export interface Agency {  id: number;  name: string;  url?: string;  parentId?: number | null;
+export interface Agency {
+  id: number;
+  name: string;
+  url?: string;
+  parentId?: number | null;
 }
-export interface Publication {  citation?: string;  volume?: number;  startPage?: number;  endPage?: number;  publicationDate?: string;  signingDate?: string;
+export interface Publication {
+  citation?: string;
+  volume?: number;
+  startPage?: number;
+  endPage?: number;
+  publicationDate?: string;
+  signingDate?: string;
 }
-export interface DocumentLinks {  htmlUrl?: string;  pdfUrl?: string;  bodyHtmlUrl?: string;  rawTextUrl?: string;  fullTextXmlUrl?: string;  modsUrl?: string;
+export interface DocumentLinks {
+  htmlUrl?: string;
+  pdfUrl?: string;
+  bodyHtmlUrl?: string;
+  rawTextUrl?: string;
+  fullTextXmlUrl?: string;
+  modsUrl?: string;
 }
-export interface DocumentMetadata {  documentType?: string;  subtype?: string;  tocDoc?: string;  tocSubject?: string;  presidentialDocumentNumber?: string;  executiveOrderNotes?: string;  dispositionNotes?: string;
+export interface DocumentMetadata {
+  documentType?: string;
+  subtype?: string;
+  tocDoc?: string;
+  tocSubject?: string;
+  presidentialDocumentNumber?: string;
+  executiveOrderNotes?: string;
+  dispositionNotes?: string;
 }
-export interface Image {  url: string;  type: string;  size?: string;
+export interface Image {
+  url: string;
+  type: string;
+  size?: string;
 }
-export interface ExecutiveOrder {  content: Content;  publication: Publication;  links: DocumentLinks;  metadata: DocumentMetadata;  agencies: Agency[];  images?: Record<string, Image>;  relatedOrders?: string[];
+export interface ExecutiveOrder {
+  content: Content;
+  publication: Publication;
+  links: DocumentLinks;
+  metadata: DocumentMetadata;
+  agencies: Agency[];
+  images?: Record<string, Image>;
+  relatedOrders?: string[];
 }
-export interface DiscordMessage {  id: string;  content: string;  timestamp: string;  author: {
-        username: string;
-        discriminator: string;
-        avatar: string;
-        global_name: string;
-        id: string;
-    };  embeds?: {
-        type?: string;
-        url?: string;
-        title?: string;
-        description?: string;
-        timestamp?: string;
-        fields?: { name: string; value: string; inline?: boolean }[];
-        author?: {
-            name: string;
-            icon_url?: string;
-            proxy_icon_url?: string;
-        };
-        footer?: {
-            text: string;
-        };
-        thumbnail?: {
-            url: string;
-            proxy_url?: string;
-            width?: number;
-            height?: number;
-            content_type?: string;
-            placeholder?: string;
-            placeholder_version?: number;
-            flags?: number;
-        };
-        content_scan_version?: number;
-    }[];  referenced_message?: {
-        author: {
-            username: string;
-            discriminator: string;
-            avatar: string;
-            global_name: string;
-            id: string;
-        }
-        content: string;
-    };  attachments?: {
-        url: string;
-        filename: string;
-        content_type: string;
-        size: number;
-        id: string;
-    }[];
+export interface DiscordMessage {
+  id: string;
+  content: string;
+  timestamp: string;
+  author: {
+    username: string;
+    discriminator: string;
+    avatar: string;
+    global_name: string;
+    id: string;
+  };
+  embeds?: {
+    type?: string;
+    url?: string;
+    title?: string;
+    description?: string;
+    timestamp?: string;
+    fields?: { name: string; value: string; inline?: boolean }[];
+    author?: {
+      name: string;
+      icon_url?: string;
+      proxy_icon_url?: string;
+    };
+    footer?: {
+      text: string;
+    };
+    thumbnail?: {
+      url: string;
+      proxy_url?: string;
+      width?: number;
+      height?: number;
+      content_type?: string;
+      placeholder?: string;
+      placeholder_version?: number;
+      flags?: number;
+    };
+    content_scan_version?: number;
+  }[];
+  referenced_message?: {
+    author: {
+      username: string;
+      discriminator: string;
+      avatar: string;
+      global_name: string;
+      id: string;
+    };
+    content: string;
+  };
+  attachments?: {
+    url: string;
+    filename: string;
+    content_type: string;
+    size: number;
+    id: string;
+  }[];
 }
-export interface PermissionOverwrite {  id: string;  type: number;  allow: string;  deny: string;
+export interface PermissionOverwrite {
+  id: string;
+  type: number;
+  allow: string;
+  deny: string;
 }
-export interface DiscordChannel {  id: string;  type: number;  guild_id?: string;  position: number;  permission_overwrites: PermissionOverwrite[];  name: string;  topic?: string | null;  nsfw?: boolean;  last_message_id?: string | null;  bitrate?: number;  user_limit?: number;  rate_limit_per_user?: number;  recipients?: {
-        id: string;
-        username: string;
-        discriminator: string;
-        avatar: string;
-        global_name?: string;
-    }[];  icon?: string | null;  owner_id?: string;  application_id?: string;  parent_id?: string | null;  last_pin_timestamp?: string | null;  rtc_region?: string | null;  video_quality_mode?: number;  message_count?: number;  member_count?: number;  thread_metadata?: {
-        archived: boolean;
-        auto_archive_duration: number;
-        archive_timestamp: string;
-        locked: boolean;
-        invitable?: boolean;
-        create_timestamp?: string | null;
-    };  member?: {
-        id?: string;
-        user_id?: string;
-        join_timestamp: string;
-        flags: number;
-    };  default_auto_archive_duration?: number;  permissions?: string;  flags?: number;  total_message_sent?: number;  available_tags?: string[];  applied_tags?: string[];  default_reaction_emoji?: string | null;  default_thread_rate_limit_per_user?: number;  default_sort_order?: number | null;  default_forum_layout?: number;  hasActivity?: boolean;  lastMessageTimestamp?: string | null;  messageCount?: number;  messages?: DiscordMessage[];
+export interface DiscordChannel {
+  id: string;
+  type: number;
+  guild_id?: string;
+  position: number;
+  permission_overwrites: PermissionOverwrite[];
+  name: string;
+  topic?: string | null;
+  nsfw?: boolean;
+  last_message_id?: string | null;
+  bitrate?: number;
+  user_limit?: number;
+  rate_limit_per_user?: number;
+  recipients?: {
+    id: string;
+    username: string;
+    discriminator: string;
+    avatar: string;
+    global_name?: string;
+  }[];
+  icon?: string | null;
+  owner_id?: string;
+  application_id?: string;
+  parent_id?: string | null;
+  last_pin_timestamp?: string | null;
+  rtc_region?: string | null;
+  video_quality_mode?: number;
+  message_count?: number;
+  member_count?: number;
+  thread_metadata?: {
+    archived: boolean;
+    auto_archive_duration: number;
+    archive_timestamp: string;
+    locked: boolean;
+    invitable?: boolean;
+    create_timestamp?: string | null;
+  };
+  member?: {
+    id?: string;
+    user_id?: string;
+    join_timestamp: string;
+    flags: number;
+  };
+  default_auto_archive_duration?: number;
+  permissions?: string;
+  flags?: number;
+  total_message_sent?: number;
+  available_tags?: string[];
+  applied_tags?: string[];
+  default_reaction_emoji?: string | null;
+  default_thread_rate_limit_per_user?: number;
+  default_sort_order?: number | null;
+  default_forum_layout?: number;
+  hasActivity?: boolean;
+  lastMessageTimestamp?: string | null;
+  messageCount?: number;
+  messages?: DiscordMessage[];
 }
-export interface Report {  headline: string;  city: string;  body: string;  reportId: string;  generatedAt: string;  channelId?: string;  channelName?: string;  cacheStatus?: 'hit' | 'miss';  messageCount?: number;  lastMessageTimestamp?: string;  userGenerated?: boolean;  messageIds?: string[];  timeframe?: string;
+export interface Report {
+  headline: string;
+  city: string;
+  body: string;
+  reportId: string;
+  generatedAt: string;
+  channelId?: string;
+  channelName?: string;
+  cacheStatus?: "hit" | "miss";
+  messageCount?: number;
+  lastMessageTimestamp?: string;
+  userGenerated?: boolean;
+  messageIds?: string[];
+  timeframe?: string;
 }
-export interface CachedMessages {  messages: DiscordMessage[];  cachedAt: string;  messageCount: number;  lastMessageTimestamp: string;  channelName: string;
+export interface CachedMessages {
+  messages: DiscordMessage[];
+  cachedAt: string;
+  messageCount: number;
+  lastMessageTimestamp: string;
+  channelName: string;
 }
-export interface ReportResponse {  report: Report;  messages: DiscordMessage[];  previousReportId?: string | null;  nextReportId?: string | null;
+export interface ReportResponse {
+  report: Report;
+  messages: DiscordMessage[];
+  previousReportId?: string | null;
+  nextReportId?: string | null;
 }
-export interface FeedItem {  title: string;  link: string;  pubDate: string;  contentSnippet?: string;  enclosureUrl?: string;  categories?: string[];
+export interface FeedItem {
+  title: string;
+  link: string;
+  pubDate: string;
+  contentSnippet?: string;
+  enclosureUrl?: string;
+  categories?: string[];
 }
-export interface SummaryInputData {  feedId?: string;  isCombined: boolean;  articles: FeedItem[];  timeRange: string;
+export interface SummaryInputData {
+  feedId?: string;
+  isCombined: boolean;
+  articles: FeedItem[];
+  timeRange: string;
 }
-export interface SelectedStory {  title: string;  importance: number;  reasoning: string;  originalSnippet: string;  pubDate: string;
+export interface SelectedStory {
+  title: string;
+  importance: number;
+  reasoning: string;
+  originalSnippet: string;
+  pubDate: string;
 }
-export interface UnselectedStory {  title: string;  originalSnippet: string;  pubDate: string;
+export interface UnselectedStory {
+  title: string;
+  originalSnippet: string;
+  pubDate: string;
 }
-export interface SummaryMetrics {  processingTimeMs: number;  tokensUsed: number;  totalCost: number;
+export interface SummaryMetrics {
+  processingTimeMs: number;
+  tokensUsed: number;
+  totalCost: number;
 }
-export interface SummaryResult {  input: {
-        feedId?: string;
-        isCombined: boolean;
-        totalArticles: number;
-        timeRange: string;
-    };  metrics: SummaryMetrics;  selectedStories: SelectedStory[];  unselectedStories: UnselectedStory[];  summary: string;
+export interface SummaryResult {
+  input: {
+    feedId?: string;
+    isCombined: boolean;
+    totalArticles: number;
+    timeRange: string;
+  };
+  metrics: SummaryMetrics;
+  selectedStories: SelectedStory[];
+  unselectedStories: UnselectedStory[];
+  summary: string;
 }
-export interface TweetEmbed {  tweetId: string;  url: string;  html: string;  author_name: string;  author_url: string;  provider_name: string;  provider_url: string;  cache_age?: number;  width?: number;  height?: number;  cachedAt: string;
+export interface TweetEmbed {
+  tweetId: string;
+  url: string;
+  html: string;
+  author_name: string;
+  author_url: string;
+  provider_name: string;
+  provider_url: string;
+  cache_age?: number;
+  width?: number;
+  height?: number;
+  cachedAt: string;
 }
-export interface TweetEmbedCache {
+export interface TweetEmbedCache {}
+export interface EntityMention {
+  text: string;
+  startIndex: number;
+  endIndex: number;
+  confidence: number;
 }
-export interface EntityMention {  text: string;  startIndex: number;  endIndex: number;  confidence: number;
+export interface Entity {
+  type: "person" | "company" | "fund";
+  name: string;
+  country: string;
+  netWorth?: number;
+  marketCap?: number;
+  aum?: number;
 }
-export interface Entity {  type: 'person' | 'company' | 'fund';  name: string;  country: string;  netWorth?: number;  marketCap?: number;  aum?: number;
+export interface ExtractedEntity {
+  type:
+    | "PERSON"
+    | "ORGANIZATION"
+    | "LOCATION"
+    | "EVENTS"
+    | "DATES"
+    | "FINANCIAL"
+    | "PRODUCTS"
+    | "OTHER";
+  value: string;
+  mentions: EntityMention[];
+  relevanceScore: number;
+  category?: string;
+  reportId?: string;
 }
-export interface ExtractedEntity {  type: 'PERSON' | 'ORGANIZATION' | 'LOCATION' | 'EVENTS' | 'DATES' | 'FINANCIAL' | 'PRODUCTS' | 'OTHER';  value: string;  mentions: EntityMention[];  relevanceScore: number;  category?: string;  reportId?: string;
+export interface EntityExtractionResult {
+  entities: ExtractedEntity[];
+  extractedAt: string;
+  processingTimeMs: number;
+  sourceLength: number;
 }
-export interface EntityExtractionResult {  entities: ExtractedEntity[];  extractedAt: string;  processingTimeMs: number;  sourceLength: number;
+export interface EnhancedReport {
+  entities?: EntityExtractionResult;
 }
-export interface EnhancedReport {  entities?: EntityExtractionResult;
+export interface GraphNode {
+  id: string;
+  name: string;
+  type: string;
+  relevance: number;
+  connectionCount: number;
+  netWorth?: number;
+  marketCap?: number;
+  aum?: number;
 }
-export interface GraphNode {  id: string;  name: string;  type: string;  relevance: number;  connectionCount: number;  netWorth?: number;  marketCap?: number;  aum?: number;
+export interface GraphLink {
+  source: string;
+  target: string;
+  strength: number;
 }
-export interface GraphLink {  source: string;  target: string;  strength: number;
+export interface GraphData {
+  nodes: GraphNode[];
+  links: GraphLink[];
 }
-export interface GraphData {  nodes: GraphNode[];  links: GraphLink[];
-}
-export interface TransformedGraphData {  entities: { [key: string]: GraphNode };  relationships: { from: string; to: string; type: string; strength: number }[];
+export interface TransformedGraphData {
+  entities: { [key: string]: GraphNode };
+  relationships: { from: string; to: string; type: string; strength: number }[];
 }
 /**
 Represents a segment of text in a report with its corresponding source attribution
@@ -2588,37 +2968,110 @@ export interface ReportSourceAttribution {
   */
   version: string;
 }
-export interface Session {  user?: {
-        id: string;
-    };
+export interface Session {
+  user?: {
+    id: string;
+  };
 }
-export interface FactCheckClaim {  claim: string;  verification: 'verified' | 'partially-verified' | 'unverified' | 'false';  confidence: number;  sources: string[];  importance: number;  details: string;
+export interface FactCheckClaim {
+  claim: string;
+  verification: "verified" | "partially-verified" | "unverified" | "false";
+  confidence: number;
+  sources: string[];
+  importance: number;
+  details: string;
 }
-export interface FactCheckResult {  reportId: string;  overallCredibility: 'high' | 'medium' | 'low';  verificationSummary: string;  claims: FactCheckClaim[];  improvements: string[];  missingContext: string[];  checkedAt: string;  version: string;
+export interface FactCheckResult {
+  reportId: string;
+  overallCredibility: "high" | "medium" | "low";
+  verificationSummary: string;
+  claims: FactCheckClaim[];
+  improvements: string[];
+  missingContext: string[];
+  checkedAt: string;
+  version: string;
 }
-export interface LinkPreview {  url: string;  title?: string;  description?: string;  image?: string;  siteName?: string;  domain: string;  cachedAt: string;
+export interface LinkPreview {
+  url: string;
+  title?: string;
+  description?: string;
+  image?: string;
+  siteName?: string;
+  domain: string;
+  cachedAt: string;
 }
 ```
 
 ## src/lib/types/executive-orders.ts
+
 ```typescript
-export interface FederalRegisterOrder {  document_number: string;  title: string;  publication_date: string;  signing_date: string;  executive_order_number: number;  presidential_document_type: string;  abstract?: string;  html_url: string;  pdf_url: string;  type: string;  agencies: Array<{
-        name: string;
-        id: number;
-        url?: string;
-        json_url?: string;
-        slug?: string;
-        raw_name?: string;
-        parent_id?: number | null
-    }>;  body_html?: string;  body_html_url?: string;  raw_text_url?: string;  full_text_xml_url?: string;  citation?: string;  start_page?: number;  end_page?: number;  volume?: number;  disposition_notes?: string;  executive_order_notes?: string;  presidential_document_number?: string;  toc_doc?: string;  toc_subject?: string;  subtype?: string;  mods_url?: string;  images?: Record<string, Record<string, string>>;
+export interface FederalRegisterOrder {
+  document_number: string;
+  title: string;
+  publication_date: string;
+  signing_date: string;
+  executive_order_number: number;
+  presidential_document_type: string;
+  abstract?: string;
+  html_url: string;
+  pdf_url: string;
+  type: string;
+  agencies: Array<{
+    name: string;
+    id: number;
+    url?: string;
+    json_url?: string;
+    slug?: string;
+    raw_name?: string;
+    parent_id?: number | null;
+  }>;
+  body_html?: string;
+  body_html_url?: string;
+  raw_text_url?: string;
+  full_text_xml_url?: string;
+  citation?: string;
+  start_page?: number;
+  end_page?: number;
+  volume?: number;
+  disposition_notes?: string;
+  executive_order_notes?: string;
+  presidential_document_number?: string;
+  toc_doc?: string;
+  toc_subject?: string;
+  subtype?: string;
+  mods_url?: string;
+  images?: Record<string, Record<string, string>>;
 }
-export interface FederalRegisterResponse {  count: number;  total_pages: number;  results: FederalRegisterOrder[];
+export interface FederalRegisterResponse {
+  count: number;
+  total_pages: number;
+  results: FederalRegisterOrder[];
 }
-export interface OrderDetails {  full_text_xml?: string;  body_html?: string;  abstract?: string;  executive_order_notes?: string;  disposition_notes?: string;  citation?: string;  volume?: number;  start_page?: number;  end_page?: number;  subtype?: string;  type?: string;  body_html_url?: string;  raw_text_url?: string;  full_text_xml_url?: string;  mods_url?: string;  toc_doc?: string;  toc_subject?: string;  presidential_document_number?: string;  images?: Record<string, Record<string, string>>;
+export interface OrderDetails {
+  full_text_xml?: string;
+  body_html?: string;
+  abstract?: string;
+  executive_order_notes?: string;
+  disposition_notes?: string;
+  citation?: string;
+  volume?: number;
+  start_page?: number;
+  end_page?: number;
+  subtype?: string;
+  type?: string;
+  body_html_url?: string;
+  raw_text_url?: string;
+  full_text_xml_url?: string;
+  mods_url?: string;
+  toc_doc?: string;
+  toc_subject?: string;
+  presidential_document_number?: string;
+  images?: Record<string, Record<string, string>>;
 }
 ```
 
 ## src/lib/utils/entity-cache.ts
+
 ```typescript
 Imports: @/lib/config, @/lib/types/core, ../../../worker-configuration, ../cache-utils
 export class EntityCache
@@ -2654,6 +3107,7 @@ Used when displaying reports with their entities
 ```
 
 ## src/lib/utils/entity-extraction.ts
+
 ```typescript
 Imports: @/lib/ai-config, @/lib/config, @/lib/types/core, ../../../worker-configuration, ./entity-cache
 export interface EntityExtractionContext {  reportId?: string;  channelId?: string;  sourceType: 'report' | 'message' | 'summary';  processingHint?: string;
@@ -2683,6 +3137,7 @@ Get top entities by type
 ```
 
 ## src/lib/utils/entity-relevance-scorer.ts
+
 ```typescript
 export interface Entity {  type: 'person' | 'company' | 'fund';  name: string;  country?: string;  netWorth?: number;  marketCap?: number;  aum?: number;
 }
@@ -2699,6 +3154,7 @@ export function getEntityDetailLevel(entityId: string, entities: Record<string, 
 ```
 
 ## src/lib/utils/fact-check-service.ts
+
 ```typescript
 Imports: @/lib/cache-utils, @/lib/config, @/lib/types/core, ../../../worker-configuration, ../ai-config
 export class PerplexityFactCheckService
@@ -2713,6 +3169,7 @@ Batch fact-check multiple reports
 ```
 
 ## src/lib/utils/image-service.ts
+
 ```typescript
 Imports: ../../../worker-configuration
 export class ImageService
@@ -2720,6 +3177,7 @@ export class ImageService
 ```
 
 ## src/lib/utils/message-filter-service.ts
+
 ```typescript
 Imports: @/lib/config, @/lib/types/core
 /**
@@ -2802,6 +3260,7 @@ Chain multiple filters together
 ```
 
 ## src/lib/utils/report-ai.ts
+
 ```typescript
 Imports: @/lib/ai-config, @/lib/config, @/lib/types/core, uuid, ../../../worker-configuration, ./report-utils
 export interface ReportContext {  channelId: string;  channelName: string;  messageCount: number;  timeframe: string;
@@ -2811,6 +3270,7 @@ export class ReportAI
 ```
 
 ## src/lib/utils/report-cache.ts
+
 ```typescript
 Imports: @/lib/config, @/lib/types/core, @/lib/utils, ../../../worker-configuration, ../cache-utils
 export class ReportCache
@@ -2825,6 +3285,7 @@ export class ReportCache
 ```
 
 ## src/lib/utils/report-utils.ts
+
 ```typescript
 Imports: @/lib/config, @/lib/types/core
 export function formatSingleMessage(message: DiscordMessage): string
@@ -2834,6 +3295,7 @@ export function isReportTruncated(report: { body: string }): boolean
 ```
 
 ## src/lib/utils/source-attribution/source-attribution-ai.ts
+
 ```typescript
 Imports: @/lib/ai-config, @/lib/config, @/lib/types/core, @/lib/utils/report-utils, ../../../../worker-configuration
 /**
@@ -2847,6 +3309,7 @@ Generate source attributions for a report
 ```
 
 ## src/lib/utils/source-attribution/source-attribution-service.ts
+
 ```typescript
 Imports: @/lib/cache-utils, @/lib/config, @/lib/types/core, ../../../../worker-configuration, ./source-attribution-ai
 /**
@@ -2868,6 +3331,7 @@ Get attribution statistics for monitoring
 ```
 
 ## src/lib/utils/twitter-utils.ts
+
 ```typescript
 /**
 Utility functions for Twitter-related operations
@@ -2876,54 +3340,61 @@ Utility functions for Twitter-related operations
 Counts characters in tweet text, accounting for URL shortening
 Twitter counts URLs as 23 characters regardless of actual length
 */
-export function countTwitterCharacters(text: string): number
+export function countTwitterCharacters(text: string): number;
 /**
 Validates if text fits within Twitter's character limit
 */
-export function isValidTweetLength(text: string): boolean
+export function isValidTweetLength(text: string): boolean;
 /**
 Extracts sentences from text for tweet content
 */
-export function extractSentences(text: string, maxSentences: number = 2): string
+export function extractSentences(
+  text: string,
+  maxSentences: number = 2
+): string;
 /**
 Truncates text to fit Twitter character limit with ellipsis
 */
-export function truncateForTwitter(text: string, reservedChars: number = 0): string
+export function truncateForTwitter(
+  text: string,
+  reservedChars: number = 0
+): string;
 /**
 Formats a thread preview for logging/debugging
 */
-export function formatThreadPreview(tweets: string[]): string
+export function formatThreadPreview(tweets: string[]): string;
 /**
 Detects X/Twitter URLs in text content
 */
-export function detectTweetUrls(content: string): string[]
+export function detectTweetUrls(content: string): string[];
 /**
 Extracts tweet ID from X/Twitter URL
 */
-export function extractTweetId(url: string): string | null
+export function extractTweetId(url: string): string | null;
 /**
 Validates if a URL is a valid X/Twitter status URL
 */
-export function isValidTweetUrl(url: string): boolean
+export function isValidTweetUrl(url: string): boolean;
 /**
 Normalizes X/Twitter URL to use x.com domain
 */
-export function normalizeTweetUrl(url: string): string
+export function normalizeTweetUrl(url: string): string;
 /**
 Extracts the source language from a Discord embed footer text
 @param footerText - The footer text (e.g., "Translated from: Arabic")
 @returns The source language or null if not a translation
 */
-export function extractSourceLanguage(footerText?: string): string | null
+export function extractSourceLanguage(footerText?: string): string | null;
 /**
 Checks if content is translated based on embed footer
 @param footerText - The footer text from Discord embed
 @returns boolean indicating if content is translated
 */
-export function isTranslatedContent(footerText?: string): boolean
+export function isTranslatedContent(footerText?: string): boolean;
 ```
 
 ## src/lib/utils.ts
+
 ```typescript
 Imports: @opennextjs/cloudflare, clsx, tailwind-merge, ../../worker-configuration, ./types/core
 export function cn(...inputs: ClassValue[]): string
@@ -3028,6 +3499,7 @@ export function groupAndSortReports(reports: Report[]): Report[]
 ```
 
 ## src/middleware.ts
+
 ```typescript
 Imports: @clerk/nextjs/server
 export config = {
@@ -3037,4 +3509,3 @@ export config = {
     ],
 }
 ```
-
