@@ -82,3 +82,5 @@ src/app/api/prompt-test/route.ts
 flow.md
 
 test_instagram.txt
+
+analysis-results/
