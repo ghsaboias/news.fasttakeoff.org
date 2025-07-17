@@ -57,76 +57,100 @@ async function logRun(
     }
 }
 
+// Define task timeouts
+const TASK_TIMEOUTS = {
+    MESSAGES: 120000,      // 2 minutes
+    REPORTS: 180000,       // 3 minutes
+    FEEDS: 240000,         // 4 minutes
+    EXECUTIVE_SUMMARY: 300000  // 5 minutes
+} as const;
+
+// Map cron expressions to their tasks
+const CRON_TASKS = {
+    // Every 2 hours (0:00, 2:00, 4:00, etc)
+    "0 */2 * * *": async (env: Cloudflare.Env) => {
+        const reportService = new ReportService(env);
+        await logRun('REPORTS_2H', () => reportService.generateReports('2h'), {
+            timeoutMs: TASK_TIMEOUTS.REPORTS
+        });
+    },
+
+    // Every 6 hours (0:00, 6:00, 12:00, 18:00)
+    "0 */6 * * *": async (env: Cloudflare.Env) => {
+        const reportService = new ReportService(env);
+        const executiveSummaryService = new ExecutiveSummaryService(env);
+
+        await logRun('REPORTS_6H', () => reportService.generateReports('6h'), {
+            timeoutMs: TASK_TIMEOUTS.REPORTS
+        });
+
+        await logRun('EXECUTIVE_SUMMARY', () => executiveSummaryService.generateAndCacheSummary(), {
+            timeoutMs: TASK_TIMEOUTS.EXECUTIVE_SUMMARY
+        });
+    },
+
+    // Every 15 minutes
+    "*/15 * * * *": async (env: Cloudflare.Env) => {
+        const messagesService = new MessagesService(env);
+        await logRun('MESSAGES', () => messagesService.updateMessages(), {
+            timeoutMs: TASK_TIMEOUTS.MESSAGES
+        });
+    }
+} as const;
+
+// Handle manual triggers
+async function handleManualTrigger(trigger: string, env: Cloudflare.Env): Promise<void> {
+    const reportService = new ReportService(env);
+    const messagesService = new MessagesService(env);
+    const executiveSummaryService = new ExecutiveSummaryService(env);
+    const feedsService = new FeedsService(env);
+
+    const MANUAL_TRIGGERS: Record<string, () => Promise<void>> = {
+        'MESSAGES': () => logRun('MESSAGES', () => messagesService.updateMessages(), {
+            timeoutMs: TASK_TIMEOUTS.MESSAGES
+        }),
+
+        'REPORTS_2H': () => logRun('REPORTS_2H', () => reportService.generateReports('2h'), {
+            timeoutMs: TASK_TIMEOUTS.REPORTS
+        }),
+
+        'REPORTS_6H': () => logRun('REPORTS_6H', () => reportService.generateReports('6h'), {
+            timeoutMs: TASK_TIMEOUTS.REPORTS
+        }),
+
+        'REPORTS_NO_SOCIAL': () => logRun('REPORTS_NO_SOCIAL',
+            () => reportService.generateReportsWithoutSocialMedia(['2h']), {
+            timeoutMs: TASK_TIMEOUTS.REPORTS
+        }),
+
+        'EXECUTIVE_SUMMARY': () => logRun('EXECUTIVE_SUMMARY',
+            () => executiveSummaryService.generateAndCacheSummary(), {
+            timeoutMs: TASK_TIMEOUTS.EXECUTIVE_SUMMARY
+        }),
+
+        'FEEDS': () => logRun('FEEDS', () => feedsService.createFreshSummary(), {
+            timeoutMs: TASK_TIMEOUTS.FEEDS
+        })
+    };
+
+    const handler = MANUAL_TRIGGERS[trigger];
+    if (handler) {
+        await handler();
+    } else {
+        console.warn(`[CRON] Unknown manual trigger: ${trigger}`);
+    }
+}
+
 export async function scheduled(event: ScheduledEvent, env: Cloudflare.Env): Promise<void> {
     console.log(`[CRON] Handling scheduled event: ${event.cron}`);
 
-    const messagesService = new MessagesService(env);
-    const reportService = new ReportService(env);
-    const feedsService = new FeedsService(env);
-    const executiveSummaryService = new ExecutiveSummaryService(env);
-
-    if (event.cron === '0 * * * *') {
-        // Hourly: Messages → Reports → Feeds (in sequence)
-        await logRun('MESSAGES', () => messagesService.updateMessages(), {
-            timeoutMs: 180000 // 3 minutes for message fetching
-        });
-
-        await logRun('REPORTS_2H', () => reportService.createFreshReports(), {
-            failFast: false,
-            timeoutMs: 180000 // 3 minutes for report generation
-        });
-
-        await logRun('FEEDS', () => feedsService.createFreshSummary(), {
-            failFast: false,
-            timeoutMs: 240000 // 4 minutes for feeds processing
-        });
-
-        // Check if this is a 6h report generation hour (0, 6, 12, 18)
-        const now = new Date();
-        const hour = now.getUTCHours();
-        if (hour === 0 || hour === 6 || hour === 12 || hour === 18) {
-            console.log(`[CRON] Hour ${hour}: 6h reports generated, running executive summary`);
-            await logRun('EXECUTIVE_SUMMARY', () => executiveSummaryService.generateAndCacheSummary(), {
-                failFast: false,
-                timeoutMs: 300000 // 5 minutes for executive summary generation
-            });
-        } else {
-            console.log(`[CRON] Hour ${hour}: No 6h reports, skipping executive summary`);
-        }
-    } else if (event.cron === '5/5 * * * *') {
-        // Every 5 minutes (skip 0): Messages cache refresh
-        await logRun('MESSAGES_REFRESH', () => messagesService.updateMessages(), {
-            failFast: false,
-            timeoutMs: 120000 // 2 minutes for cache refresh
-        });
-    } else if (event.cron === 'MESSAGES') {
-        // Manual trigger for messages
-        await logRun('MESSAGES', () => messagesService.updateMessages(), {
-            timeoutMs: 180000 // 3 minutes for message fetching
-        });
-    } else if (event.cron === 'REPORTS_2H') {
-        // Manual trigger for 2h reports
-        await logRun('REPORTS_2H', () => reportService.generateReportsForManualTrigger(['2h']), {
-            failFast: false,
-            timeoutMs: 180000 // 3 minutes for report generation
-        });
-    } else if (event.cron === 'REPORTS_6H') {
-        // Manual trigger for 6h reports
-        await logRun('REPORTS_6H', () => reportService.generateReportsForManualTrigger(['6h']), {
-            failFast: false,
-            timeoutMs: 180000 // 3 minutes for report generation
-        });
-    } else if (event.cron === 'REPORTS_NO_SOCIAL') {
-        // Manual trigger for reports without social media posting
-        await logRun('REPORTS_NO_SOCIAL', () => reportService.generateReportsWithoutSocialMedia(['2h']), {
-            failFast: false,
-            timeoutMs: 180000 // 3 minutes for report generation
-        });
-    } else if (event.cron === 'EXECUTIVE_SUMMARY') {
-        // Manual trigger for executive summary generation
-        await logRun('EXECUTIVE_SUMMARY', () => executiveSummaryService.generateAndCacheSummary(), {
-            failFast: false,
-            timeoutMs: 300000 // 5 minutes for executive summary generation
-        });
+    // Check if this is a scheduled cron task
+    const scheduledTask = CRON_TASKS[event.cron as keyof typeof CRON_TASKS];
+    if (scheduledTask) {
+        await scheduledTask(env);
+        return;
     }
+
+    // If not a scheduled task, try handling as manual trigger
+    await handleManualTrigger(event.cron, env);
 }
