@@ -23,7 +23,7 @@ export async function GET() {
 
         // Add cache headers for better performance
         const response = NextResponse.json(summary);
-        response.headers.set('Cache-Control', 'public, max-age=300'); // 5 minutes
+        response.headers.set('Cache-Control', 'public, max-age=60'); // 1 minute
         return response;
     }, 'Failed to fetch executive summary');
 }

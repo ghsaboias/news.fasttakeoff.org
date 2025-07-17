@@ -86,7 +86,7 @@ export default function ExecutiveSummary({ className = '' }: ExecutiveSummaryPro
                             strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
                             em: ({ children }) => <em className="italic">{children}</em>,
                             ul: ({ children }) => <ul className="list-disc space-y-1 mb-4 ml-4">{children}</ul>,
-                            li: ({ children }) => <li className="mb-1">{children}</li>,
+                            li: ({ children }) => <li className="mb-1 text-md">{children}</li>,
                         }}
                     >
                         {summary.summary}

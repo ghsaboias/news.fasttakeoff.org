@@ -1728,7 +1728,7 @@ export function getAIAPIKey(env?: { [key: string]: string | undefined }, provide
 
 ```typescript
 Imports: @/lib/utils, next/server, ../../worker-configuration
-export API_CACHE_HEADERS = { 'Cache-Control': 'public, max-age=300, s-maxage=300' }
+export API_CACHE_HEADERS = { 'Cache-Control': 'public, max-age=60, s-maxage=60' }
 export function withErrorHandling(handler: (env: Cloudflare.Env) => Promise<T>, errorMessage: string): Promise<NextResponse<unknown>>
 ```
 

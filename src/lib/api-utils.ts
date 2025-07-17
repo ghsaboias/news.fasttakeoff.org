@@ -3,7 +3,7 @@ import { getCacheContext } from '@/lib/utils';
 import { NextResponse } from 'next/server';
 import { Cloudflare } from '../../worker-configuration';
 
-export const API_CACHE_HEADERS = { 'Cache-Control': 'public, max-age=300, s-maxage=300' };
+export const API_CACHE_HEADERS = { 'Cache-Control': 'public, max-age=60, s-maxage=60' };
 
 export async function withErrorHandling<T>(
     handler: (env: Cloudflare.Env) => Promise<T>,
