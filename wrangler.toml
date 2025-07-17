@@ -10,7 +10,7 @@ compatibility_flags = [
 # Every 6 hours (0:00, 6:00, 12:00, 18:00) for 6h reports and executive summary
 # Every 15 minutes for message updates
 crons = [
-    "0 */2 * * *",    # 2h reports
+    "0 */2 * * *",    # 2h reports and feeds summaries
     "0 */6 * * *",    # 6h reports and executive summary
     "*/15 * * * *"    # Message updates
 ]

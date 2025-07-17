@@ -8,9 +8,14 @@ import { getFeedItems } from './rss-service';
 
 
 // First stage: Curation
-async function curateArticles(articles: FeedItem[], env: Cloudflare.Env): Promise<{ selectedStories: SelectedStory[], unselectedStories: UnselectedStory[] }> {
+async function curateArticles(articles: FeedItem[], env: Cloudflare.Env, topicId?: string): Promise<{ selectedStories: SelectedStory[], unselectedStories: UnselectedStory[] }> {
     const articlesText = formatArticlesForPrompt(articles);
-    const prompt = AI.BRAZIL_NEWS.CURATE_PROMPT.replace('{articles}', articlesText);
+    let prompt: string;
+    if (topicId === 'mercado') {
+        prompt = AI.BRAZIL_NEWS.CURATE_PROMPT_MERCADO.replace('{articles}', articlesText);
+    } else {
+        prompt = AI.BRAZIL_NEWS.CURATE_PROMPT_GERAL.replace('{articles}', articlesText);
+    }
 
     // Get AI config and make the call
     const aiConfig = getAIProviderConfig();
@@ -62,7 +67,7 @@ async function curateArticles(articles: FeedItem[], env: Cloudflare.Env): Promis
 }
 
 // Second stage: Summarization
-async function createSummary(selectedStories: SelectedStory[], env: Cloudflare.Env): Promise<string> {
+async function createSummary(selectedStories: SelectedStory[], env: Cloudflare.Env, topicId?: string): Promise<string> {
     const storiesText = selectedStories.map(story => `
 Title: ${story.title}
 Importance: ${story.importance}/10
@@ -70,7 +75,12 @@ Published: ${story.pubDate}
 Content: ${story.originalSnippet}
 `).join('\n');
 
-    const prompt = AI.BRAZIL_NEWS.SUMMARIZE_PROMPT.replace('{articles}', storiesText);
+    let prompt: string;
+    if (topicId === 'mercado') {
+        prompt = AI.BRAZIL_NEWS.SUMMARIZE_PROMPT_MERCADO.replace('{articles}', storiesText);
+    } else {
+        prompt = AI.BRAZIL_NEWS.SUMMARIZE_PROMPT_GERAL.replace('{articles}', storiesText);
+    }
 
     // Get AI config and make the call
     const aiConfig = getAIProviderConfig();
@@ -116,14 +126,14 @@ function calculateTimeRange(articles: FeedItem[]): string {
     return `Last ${hoursDiff} hours`;
 }
 
-export async function summarizeFeed(input: SummaryInputData & { env: Cloudflare.Env }): Promise<SummaryResult> {
+export async function summarizeFeed(input: SummaryInputData & { env: Cloudflare.Env, topicId?: string }): Promise<SummaryResult> {
     const startTime = Date.now();
 
     // First stage: Curate articles
-    const { selectedStories, unselectedStories } = await curateArticles(input.articles, input.env);
+    const { selectedStories, unselectedStories } = await curateArticles(input.articles, input.env, input.topicId);
 
     // Second stage: Create summary
-    const summary = await createSummary(selectedStories, input.env);
+    const summary = await createSummary(selectedStories, input.env, input.topicId);
 
     // Calculate metrics
     const processingTimeMs = Date.now() - startTime;
@@ -148,14 +158,17 @@ export async function summarizeFeed(input: SummaryInputData & { env: Cloudflare.
     };
 }
 
-export async function summarizeFeeds(feedIds: string[], env: Cloudflare.Env): Promise<SummaryResult> {
-    // Calculate timestamp for 1 hour ago
-    const oneHourAgo = Date.now() - TIME.ONE_HOUR_MS;
+export async function summarizeFeeds(feedIds: string[], env: Cloudflare.Env, topicId?: string): Promise<SummaryResult> {
+    // Calculate timestamp for 2 hours ago
+    const twoHoursAgo = Date.now() - TIME.TWO_HOURS_MS;
 
-    // Fetch all articles from the last hour in parallel
-    const articlePromises = feedIds.map(feedId => getFeedItems(feedId, oneHourAgo));
+    // Fetch all articles from the last 2 hours in parallel
+    const articlePromises = feedIds.map(feedId => getFeedItems(feedId, twoHoursAgo));
     const articlesArrays = await Promise.all(articlePromises);
     const allArticles = articlesArrays.flat();
+
+    // Debug: Log all article dates and titles for diagnosis
+    console.log('[DEBUG] Articles fetched for summarization:', allArticles.map(a => ({ title: a.title, pubDate: a.pubDate })));
 
     // Sort articles by date, newest first
     const sortedArticles = allArticles.sort((a, b) =>
@@ -164,10 +177,12 @@ export async function summarizeFeeds(feedIds: string[], env: Cloudflare.Env): Pr
 
     // Generate summary
     return summarizeFeed({
+        feedId: topicId || 'combined',
         isCombined: true,
         articles: sortedArticles,
-        timeRange: `Last hour`,
-        env
+        timeRange: `Last 2 hours`,
+        env,
+        topicId
     });
 }
 
@@ -183,27 +198,44 @@ export class FeedsService {
         this.cacheManager = new CacheManager(env);
     }
 
-    private getCurrentHourKey(): string {
+    private getCurrentHourKey(topicId?: string): string {
         const now = new Date();
+        // Log current server time in local and UTC
+        console.log('[DEBUG] getCurrentHourKey: now (local):', now.toString());
+        console.log('[DEBUG] getCurrentHourKey: now (UTC):', now.toUTCString());
         const year = now.getFullYear();
         const month = String(now.getMonth() + 1).padStart(2, '0');
         const day = String(now.getDate()).padStart(2, '0');
         const hour = String(now.getHours()).padStart(2, '0');
-        return `feeds_summary:${year}-${month}-${day}-${hour}h`;
+        const prefix = topicId ? `feeds_summary_${topicId}` : 'feeds_summary';
+        const key = `${prefix}:${year}-${month}-${day}-${hour}h`;
+        console.log('[DEBUG] getCurrentHourKey: generated key:', key);
+        return key;
     }
 
-    async getCachedSummary(): Promise<SummaryResult | null> {
-        const key = this.getCurrentHourKey();
+    async getCachedSummary(topicId?: string): Promise<SummaryResult | null> {
+        const key = this.getCurrentHourKey(topicId);
+        console.log('[DEBUG] getCachedSummary: looking for key:', key);
         const cached = await this.cacheManager.get<{ createdAt: string; data: SummaryResult }>('FEEDS_CACHE', key);
+        if (cached) {
+            console.log('[DEBUG] getCachedSummary: found cached summary for key:', key);
+        } else {
+            console.log('[DEBUG] getCachedSummary: no cached summary for key:', key);
+        }
         return cached?.data || null;
     }
 
-    async listAvailableSummaries(): Promise<{ key: string; createdAt: string }[]> {
-        const keys = await this.cacheManager.list('FEEDS_CACHE', { prefix: 'feeds_summary:' });
+    async listAvailableSummaries(topicId?: string): Promise<{ key: string; createdAt: string }[]> {
+        const prefix = topicId ? `feeds_summary_${topicId}:` : 'feeds_summary:';
+        const keys = await this.cacheManager.list('FEEDS_CACHE', { prefix });
+        console.log('[DEBUG] listAvailableSummaries: found keys:', keys.keys.map(k => k.name));
         const summaries: { key: string; createdAt: string }[] = [];
 
         for (const key of keys.keys) {
-            const match = key.name.match(/feeds_summary:(\d{4})-(\d{2})-(\d{2})-(\d{2})h/);
+            const pattern = topicId ?
+                new RegExp(`feeds_summary_${topicId}:(\\d{4})-(\\d{2})-(\\d{2})-(\\d{2})h`) :
+                /feeds_summary:(\d{4})-(\d{2})-(\d{2})-(\d{2})h/;
+            const match = key.name.match(pattern);
             if (match) {
                 const [, year, month, day, hour] = match;
                 const createdAt = new Date(`${year}-${month}-${day}T${hour}:00:00.000Z`).toISOString();
@@ -225,26 +257,27 @@ export class FeedsService {
         return cached?.data || null;
     }
 
-    async getOrCreateSummary(): Promise<SummaryResult> {
+    async getOrCreateSummary(topicId?: string): Promise<SummaryResult> {
         // First try to get the current hour's cached summary
-        const cached = await this.getCachedSummary();
+        const cached = await this.getCachedSummary(topicId);
         if (cached) {
             return cached;
         }
 
         // If no current hour cache, try to get the most recent cached summary
-        const recentSummary = await this.getMostRecentCachedSummary();
+        const recentSummary = await this.getMostRecentCachedSummary(topicId);
         if (recentSummary) {
             console.log('[FEEDS] No current hour cache, serving most recent cached summary');
             return recentSummary;
         }
 
         // If no cached summaries exist at all, throw an error
+        // (This is the only case where we show the waiting message)
         throw new Error('No cached summary available. Please wait for the next hourly update.');
     }
 
-    async getMostRecentCachedSummary(): Promise<SummaryResult | null> {
-        const summaries = await this.listAvailableSummaries();
+    async getMostRecentCachedSummary(topicId?: string): Promise<SummaryResult | null> {
+        const summaries = await this.listAvailableSummaries(topicId);
         if (summaries.length === 0) {
             return null;
         }
@@ -254,13 +287,17 @@ export class FeedsService {
         return this.getSummaryByKey(mostRecent.key);
     }
 
-    async createFreshSummary(): Promise<SummaryResult> {
-        console.log('[FEEDS] Starting fresh summary generation');
+    async createFreshSummary(topicId?: string, feedIds?: string[]): Promise<SummaryResult> {
+        console.log(`[FEEDS] Starting fresh summary generation for topic: ${topicId || 'default'}`);
         const startTime = Date.now();
 
         try {
-            const summary = await summarizeFeeds(['CNN-Brasil', 'BBC-Brasil', 'G1 - Política', 'G1 - Economia', 'UOL'], this.env);
-            const key = this.getCurrentHourKey();
+            // Use provided feedIds or default to geral news feeds
+            const defaultFeeds = ['CNN-Brasil', 'BBC-Brasil', 'G1 - Política', 'G1 - Economia', 'UOL'];
+            const targetFeeds = feedIds || defaultFeeds;
+
+            const summary = await summarizeFeeds(targetFeeds, this.env, topicId);
+            const key = this.getCurrentHourKey(topicId);
 
             await this.cacheManager.put(
                 'FEEDS_CACHE',
