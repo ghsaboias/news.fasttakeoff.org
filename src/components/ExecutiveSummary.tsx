@@ -7,6 +7,40 @@ interface ExecutiveSummaryProps {
     className?: string;
 }
 
+// Helper to split mini summary into sections
+function parseMiniSummarySections(miniSummary: string) {
+    // Split on '## ' but keep the heading
+    const rawSections = miniSummary.split(/(^## .*)/m).filter(Boolean);
+    const sections: { heading: string; content: string }[] = [];
+    for (let i = 0; i < rawSections.length; i++) {
+        if (rawSections[i].startsWith('## ')) {
+            const heading = rawSections[i].trim();
+            const content = rawSections[i + 1]?.trim() || '';
+            sections.push({ heading, content });
+            i++; // skip content
+        }
+    }
+    return sections;
+}
+
+// Helper to split main summary into sections (ignoring the first # Executive Summary heading)
+function parseMainSummarySections(summary: string) {
+    // Remove the first # Executive Summary heading
+    const content = summary.replace(/^# Executive Summary\s*/i, '');
+    // Split on '## ' but keep the heading
+    const rawSections = content.split(/(^## .*)/m).filter(Boolean);
+    const sections: { heading: string; content: string }[] = [];
+    for (let i = 0; i < rawSections.length; i++) {
+        if (rawSections[i].startsWith('## ')) {
+            const heading = rawSections[i].trim();
+            const content = rawSections[i + 1]?.trim() || '';
+            sections.push({ heading, content });
+            i++; // skip content
+        }
+    }
+    return sections;
+}
+
 export default function ExecutiveSummary({ className = '' }: ExecutiveSummaryProps) {
     const { summary, loading, error, refetch } = useExecutiveSummary();
 
@@ -74,24 +108,106 @@ export default function ExecutiveSummary({ className = '' }: ExecutiveSummaryPro
                 </div>
             </div>
 
+            {/* Mini Executive Summary */}
+            {summary.miniSummary && (() => {
+                const sections = parseMiniSummarySections(summary.miniSummary);
+                let rows: { sections: { heading: string; content: string }[] }[] = [];
+                if (sections.length <= 3) {
+                    rows = [{ sections }];
+                } else if (sections.length === 4) {
+                    rows = [
+                        { sections: sections.slice(0, 2) },
+                        { sections: sections.slice(2, 4) },
+                    ];
+                } else if (sections.length === 5) {
+                    rows = [
+                        { sections: sections.slice(0, 3) },
+                        { sections: sections.slice(3, 5) },
+                    ];
+                }
+                return (
+                    <div className="p-4 border-b border-gray-200 bg-gray-50">
+                        <div className="flex flex-col gap-6">
+                            {rows.map((row, rowIdx) => (
+                                <div
+                                    key={rowIdx}
+                                    className={`flex flex-row flex-wrap gap-2 justify-center`}
+                                >
+                                    {row.sections.map((section, colIdx) => (
+                                        <div
+                                            key={colIdx}
+                                            className={`flex-1 min-w-[260px] max-w-md bg-white rounded shadow-sm p-4 m-2`}
+                                        >
+                                            <ReactMarkdown
+                                                components={{
+                                                    h2: ({ children }) => <h2 className="text-2xl font-bold text-gray-900 mb-2 text-center">{children}</h2>,
+                                                    ul: ({ children }) => <ul className="list-disc space-y-1 mb-4 ml-4">{children}</ul>,
+                                                    li: ({ children }) => <li className="mb-1 text-md">{children}</li>,
+                                                    strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
+                                                    p: ({ children }) => <p className="mb-4">{children}</p>,
+                                                }}
+                                            >
+                                                {`${section.heading}\n\n${section.content}`}
+                                            </ReactMarkdown>
+                                        </div>
+                                    ))}
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                );
+            })()}
+
             {/* Content */}
             <div className="p-6">
-                <div className="prose prose-sm max-w-none">
-                    <ReactMarkdown
-                        components={{
-                            h1: ({ children }) => <h1 className="text-3xl font-bold text-gray-900 mt-4 mb-4 text-center">{children}</h1>,
-                            h2: ({ children }) => <h2 className="text-3xl font-bold text-gray-900 mb-2 text-center">{children}</h2>,
-                            h3: ({ children }) => <h3 className="text-lg font-semibold text-gray-900 mt-4 mb-2">{children}</h3>,
-                            p: ({ children }) => <p className="mb-4">{children}</p>,
-                            strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
-                            em: ({ children }) => <em className="italic">{children}</em>,
-                            ul: ({ children }) => <ul className="list-disc space-y-1 mb-4 ml-4">{children}</ul>,
-                            li: ({ children }) => <li className="mb-1 text-md">{children}</li>,
-                        }}
-                    >
-                        {summary.summary}
-                    </ReactMarkdown>
-                </div>
+                {/* Main heading as page title */}
+                <h1 className="text-3xl font-bold text-gray-900 my-2 text-center">Executive Summary</h1>
+                {(() => {
+                    const sections = parseMainSummarySections(summary.summary);
+                    let rows: { sections: { heading: string; content: string }[] }[] = [];
+                    if (sections.length <= 3) {
+                        rows = [{ sections }];
+                    } else if (sections.length === 4) {
+                        rows = [
+                            { sections: sections.slice(0, 2) },
+                            { sections: sections.slice(2, 4) },
+                        ];
+                    } else if (sections.length === 5) {
+                        rows = [
+                            { sections: sections.slice(0, 3) },
+                            { sections: sections.slice(3, 5) },
+                        ];
+                    }
+                    return (
+                        <div className="flex flex-col gap-6">
+                            {rows.map((row, rowIdx) => (
+                                <div
+                                    key={rowIdx}
+                                    className={`flex flex-row flex-wrap gap-4 justify-center`}
+                                >
+                                    {row.sections.map((section, colIdx) => (
+                                        <div
+                                            key={colIdx}
+                                            className={`flex-1 min-w-[260px] max-w-md bg-gray-100 rounded shadow-sm p-4`}
+                                        >
+                                            <ReactMarkdown
+                                                components={{
+                                                    h2: ({ children }) => <h2 className="text-2xl font-bold text-gray-900 mb-4 text-center">{children}</h2>,
+                                                    ul: ({ children }) => <ul className="list-disc mb-4 ml-4">{children}</ul>,
+                                                    li: ({ children }) => <li className="my-4">{children}</li>,
+                                                    strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
+                                                    p: ({ children }) => <p className="mb-4">{children}</p>,
+                                                }}
+                                            >
+                                                {`${section.heading}\n\n${section.content}`}
+                                            </ReactMarkdown>
+                                        </div>
+                                    ))}
+                                </div>
+                            ))}
+                        </div>
+                    );
+                })()}
             </div>
         </div>
     );

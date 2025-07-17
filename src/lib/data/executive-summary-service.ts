@@ -67,10 +67,15 @@ export class ExecutiveSummaryService {
             // Generate the summary using AI
             const summary = await this.generateSummaryWithAI(allReports, previousSummaries);
 
+            // Generate the mini summary using AI
+            const miniPrompt = AI.EXECUTIVE_SUMMARIES.MINI_PROMPT_TEMPLATE.replace('{executiveSummary}', summary);
+            const miniSummary = await this.makeAIRequest(miniPrompt);
+
             // Create the executive summary object
             const executiveSummary: ExecutiveSummary = {
                 summaryId: `exec-summary-${Date.now()}`,
                 summary: summary,
+                miniSummary: miniSummary,
                 generatedAt: new Date().toISOString(),
                 reportCount: allReports.length,
                 timeframe: '6h',

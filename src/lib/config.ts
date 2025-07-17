@@ -555,6 +555,14 @@ Response format (JSON):
         MAX_ATTEMPTS: 3,
         SYSTEM_PROMPT: 'You are an expert news analyst. Your job is to create a concise, factual executive summary in simple, readable Markdown, focusing on the most important events of the last 6 hours. Use clear headlines and bullet points. Do not include any commentary or speculation. Only include events that are significant and newsworthy. Output must be valid Markdown.',
         PROMPT_TEMPLATE: `Create a concise executive summary in Markdown of the following news reports, focusing on the most important events of the last 6 hours. Use clear headlines and bullet points. Do not include any commentary or speculation. Only include events that are significant and newsworthy.\n\nPREVIOUS EXECUTIVE SUMMARIES (if any):\n{previousExecutiveSummaries}\n\nREPORTS TO ANALYZE:\n"""\n{reportBody}\n"""\n\nRespond ONLY with valid Markdown summarizing the most important events of the last 6 hours.`,
+        MINI_PROMPT_TEMPLATE: `Given the following Executive Summary, write a much more compact version, preserving all key facts and events. 
+For each section in the summary, output a Markdown section heading (## Section Name) followed by a concise bullet point list of the most important facts/events from that section. 
+Do NOT include a top-level 'Executive Summary' heading or any introductory text. 
+Keep each section to a maximum of 3 bullet points, and the entire summary to 5 sections or fewer. 
+Use bold for key entities.
+
+Executive Summary:
+{executiveSummary}`,
     },
 };
 
