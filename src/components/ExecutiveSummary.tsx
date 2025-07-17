@@ -51,18 +51,18 @@ export default function ExecutiveSummary({ className = '' }: ExecutiveSummaryPro
     }
 
     return (
-        <div className={`bg-white shadow-md overflow-hidden ${className}`}>
+        <div className={`shadow-[0_4px_6px_-1px_rgba(0,0,0,0.1)] ${className}`}>
             {/* Header */}
-            <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4">
+            <div className="bg-primary px-6 py-4">
                 <div className="flex items-center justify-between">
                     <div>
-                        <p className="text-blue-100 text-sm">
+                        <p className="text-background text-sm">
                             Last {summary.timeframe} • {summary.reportCount} reports analyzed
                         </p>
                     </div>
                     <div className="text-right">
-                        <p className="text-blue-100 text-xs">
-                            Generated: {new Date(summary.generatedAt).toLocaleString()}
+                        <p className="text-background text-xs">
+                            {new Date(summary.generatedAt).toLocaleString()}
                         </p>
                         <button
                             onClick={() => refetch()}

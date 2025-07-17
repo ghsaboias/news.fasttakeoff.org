@@ -63,7 +63,7 @@ export default function HomeContent({ initialReports, initialExecutiveOrders }: 
     }
 
     return (
-        <div className="flex flex-col pb-8 m-8 justify-center">
+        <div className="flex flex-col pb-8 justify-center">
             {/* Executive Summary Section - New prominent section */}
             <section className="sm sm:m-14">
                 <ExecutiveSummary />
