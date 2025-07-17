@@ -6,10 +6,14 @@ compatibility_flags = [
 ]
 
 [triggers]
-# Cron list:
-# - "0 * * * *"   → top of every hour: messages → reports → feeds → executive summary (only when 6h reports are generated)
-# - "*/5 * * * *" → every 5 minutes (skip 0): messages cache refresh
-crons = ["0 * * * *", "5/5 * * * *"]
+# Every 2 hours (0:00, 2:00, 4:00, etc) for 2h reports
+# Every 6 hours (0:00, 6:00, 12:00, 18:00) for 6h reports and executive summary
+# Every 15 minutes for message updates
+crons = [
+    "0 */2 * * *",    # 2h reports
+    "0 */6 * * *",    # 6h reports and executive summary
+    "*/15 * * * *"    # Message updates
+]
 
 [assets]
 directory = ".open-next/assets"

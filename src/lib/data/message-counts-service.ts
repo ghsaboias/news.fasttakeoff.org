@@ -148,7 +148,7 @@ export class MessageCountsService {
         const { counts: c } = counts;
 
         // Generate if we have activity in the last 5 minutes
-        return c['5min'] >= 3;
+        return c['15min'] >= 3;
     }
 
     /**

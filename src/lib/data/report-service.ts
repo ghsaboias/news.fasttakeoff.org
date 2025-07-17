@@ -416,36 +416,12 @@ export class ReportService {
     }
 
     /**
-     * Production method: Generates reports for timeframes active based on the current UTC hour.
-     * Smart scheduling: 2h reports every 2 hours (2am, 4am, 8am, 10am, 2pm, 4pm, 8pm, 10pm)
-     * 6h reports every 6 hours (12am, 6am, 12pm, 6pm)
+     * Generates reports for a specific timeframe with social media posting
      */
-    async createFreshReports(extractEntities: boolean = false): Promise<void> {
-        console.log('[REPORTS] Production run starting.');
-        const now = new Date();
-        const hour = now.getUTCHours();
-
-        const timeframesToProcess: TimeframeKey[] = [];
-
-        // 6h reports: 12am (0), 6am (6), 12pm (12), 6pm (18)
-        if (hour === 0 || hour === 6 || hour === 12 || hour === 18) {
-            timeframesToProcess.push('6h');
-            console.log(`[REPORTS] Hour ${hour}: Processing 6h timeframe`);
-        }
-        // 2h reports: every 2 hours except 6h hours
-        else if (hour % 2 === 0) {
-            timeframesToProcess.push('2h');
-            console.log(`[REPORTS] Hour ${hour}: Processing 2h timeframe`);
-        }
-
-        if (timeframesToProcess.length === 0) {
-            console.log(`[REPORTS] Hour ${hour}: No timeframes scheduled. Exiting.`);
-            return;
-        }
-
-        const generatedReports = await this._generateAndCacheReportsForTimeframes(timeframesToProcess, extractEntities);
-        await this._postTopReportToSocialMedia(generatedReports);
-        console.log('[REPORTS] Production run finished.');
+    async generateReports(timeframe: TimeframeKey): Promise<void> {
+        const reports = await this._generateAndCacheReportsForTimeframes([timeframe], false); // Set extractEntities to false
+        await this._postTopReportToSocialMedia(reports);
+        console.log(`[REPORTS] Generated ${reports.length} reports for timeframe ${timeframe}`);
     }
 
     /**
