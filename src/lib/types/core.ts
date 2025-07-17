@@ -430,6 +430,7 @@ export interface ExecutiveSummary {
     reportCount: number;
     timeframe: string;
     version: string;
+    miniSummary?: string;
 }
 
 // Simple message count tracking for dynamic reports

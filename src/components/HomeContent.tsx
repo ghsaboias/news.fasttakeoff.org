@@ -65,12 +65,12 @@ export default function HomeContent({ initialReports, initialExecutiveOrders }: 
     return (
         <div className="flex flex-col pb-8 justify-center">
             {/* Executive Summary Section - New prominent section */}
-            <section className="sm sm:m-14">
+            <section>
                 <ExecutiveSummary />
             </section>
 
             {/* Hero Section - Redesigned with better visual hierarchy */}
-            <section className="hero-section m-8">
+            <section className="hero-section m-6 sm:m-8">
                 <div className="flex flex-col items-center gap-8">
                     <div className="flex flex-col items-center gap-4 text-center">
                         <h1 className="hero-title text-4xl md:text-6xl font-bold bg-gradient-to-r from-[#167F6E] to-[#0A5C52] bg-clip-text text-transparent">
@@ -111,7 +111,7 @@ export default function HomeContent({ initialReports, initialExecutiveOrders }: 
             </section>
 
             {/* Navigation Cards - New section for better discoverability */}
-            <section className="mb-8 mx-8 sm:mx-14">
+            <section className="mb-6 mx-6 sm:mx-8">
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                     <Link href="/current-events" className="group">
                         <div className="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow p-6 border border-gray-200">
@@ -141,7 +141,7 @@ export default function HomeContent({ initialReports, initialExecutiveOrders }: 
             </section>
 
             {/* Reports Section - Enhanced with better layout */}
-            <section className="mx-4 sm:mx-8 min-h-[800px] sm:min-h-[600px]">
+            <section className="mx-6 sm:mx-8">
                 <div className="flex items-center justify-between mb-6">
                     <h2 className="text-2xl md:text-3xl font-bold text-gray-900">Latest Reports</h2>
                     <Link href="/current-events" className="text-sm font-medium text-[#167F6E] hover:underline">
