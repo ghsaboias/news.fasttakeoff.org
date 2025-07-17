@@ -116,7 +116,7 @@ export default function HomeContent({ initialReports, initialExecutiveOrders }: 
                     <Link href="/current-events" className="group">
                         <div className="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow p-6 border border-gray-200">
                             <h3 className="text-lg font-semibold text-gray-900 group-hover:text-[#167F6E]">Current Events</h3>
-                            <p className="text-sm text-gray-600 mt-2">Real-time news from Discord channels</p>
+                            <p className="text-sm text-gray-600 mt-2">Real-time news from on-the-ground sources</p>
                         </div>
                     </Link>
                     <Link href="/news-globe" className="group">
@@ -128,7 +128,7 @@ export default function HomeContent({ initialReports, initialExecutiveOrders }: 
                     <Link href="/brazil" className="group">
                         <div className="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow p-6 border border-gray-200">
                             <h3 className="text-lg font-semibold text-gray-900 group-hover:text-[#167F6E]">Brazil</h3>
-                            <p className="text-sm text-gray-600 mt-2">AI-curated Brazilian news summaries with topic selection</p>
+                            <p className="text-sm text-gray-600 mt-2">AI-curated Brazilian news summaries</p>
                         </div>
                     </Link>
                     <Link href="/power-network" className="group">

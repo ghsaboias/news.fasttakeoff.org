@@ -7,13 +7,13 @@ export const revalidate = 300; // 5 minutes - same as homepage
 export async function generateMetadata() {
     return {
         title: 'Current Events - Fast Takeoff News',
-        description: 'Latest updates from Discord channels.',
+        description: 'Latest updates from on-the-ground sources.',
         alternates: {
             canonical: 'https://news.fasttakeoff.org/current-events'
         },
         openGraph: {
             title: 'Current Events - Fast Takeoff News',
-            description: 'Latest updates from Discord channels.',
+            description: 'Latest updates from on-the-ground sources.',
             type: 'website',
             images: [
                 {
@@ -27,7 +27,7 @@ export async function generateMetadata() {
         twitter: {
             card: 'summary_large_image',
             title: 'Current Events - Fast Takeoff News',
-            description: 'Latest updates from Discord channels.',
+            description: 'Latest updates from on-the-ground sources.',
             images: [
                 {
                     url: 'https://news.fasttakeoff.org/images/og-screenshot.webp',
