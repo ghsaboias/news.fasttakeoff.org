@@ -41,7 +41,7 @@ export default function ReportCard({
     return (
         <Card className="flex flex-col gap-4">
             <CardHeader>
-                <CardTitle className="text-2xl font-semibold line-clamp-4 leading-tight hover:text-accent mx-auto">
+                <CardTitle className="text-2xl font-semibold line-clamp-4 leading-tight hover:text-accent">
                     <Link href={`/current-events/${report.channelId}/${report.reportId}`}>
                         {report.headline}
                     </Link>

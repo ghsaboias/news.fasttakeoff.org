@@ -63,7 +63,7 @@ export default function HomeContent({ initialReports, initialExecutiveOrders }: 
     }
 
     return (
-        <div className="flex flex-col pb-8 w-[100vw] justify-center">
+        <div className="flex flex-col pb-8 m-8 justify-center">
             {/* Executive Summary Section - New prominent section */}
             <section className="sm sm:m-14">
                 <ExecutiveSummary />
@@ -142,7 +142,7 @@ export default function HomeContent({ initialReports, initialExecutiveOrders }: 
 
             {/* Reports Section - Enhanced with better layout */}
             <section className="mx-4 sm:mx-8 min-h-[800px] sm:min-h-[600px]">
-                <div className="flex items-center justify-between mb-6 px-6">
+                <div className="flex items-center justify-between mb-6">
                     <h2 className="text-2xl md:text-3xl font-bold text-gray-900">Latest Reports</h2>
                     <Link href="/current-events" className="text-sm font-medium text-[#167F6E] hover:underline">
                         View all reports →
