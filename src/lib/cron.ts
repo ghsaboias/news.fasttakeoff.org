@@ -99,8 +99,15 @@ const CRON_TASKS: Record<string, CronTaskFunction> = {
         }
 
         const reportService = new ReportService(env);
+        const executiveSummaryService = new ExecutiveSummaryService(env);
+
         await logRun('REPORTS_2H', () => reportService.generateReports('2h'), {
             timeoutMs: TASK_TIMEOUTS.REPORTS
+        });
+
+        // Generate executive summary after reports are created
+        await logRun('EXECUTIVE_SUMMARY', () => executiveSummaryService.generateAndCacheSummary(), {
+            timeoutMs: TASK_TIMEOUTS.EXECUTIVE_SUMMARY
         });
 
         const feedsService = new FeedsService(env);
