@@ -94,16 +94,11 @@ export default function ExecutiveSummary({ className = '' }: ExecutiveSummaryPro
                             Last {summary.timeframe} • {summary.reportCount} reports analyzed
                         </p>
                     </div>
+                    <h2 className="text-background text-2xl font-bold">Quick Digest</h2>
                     <div className="text-right">
-                        <p className="text-background text-xs">
+                        <p className="text-background text-sm">
                             {new Date(summary.generatedAt).toLocaleString()}
                         </p>
-                        <button
-                            onClick={() => refetch()}
-                            className="mt-1 text-blue-200 hover:text-white text-xs underline hidden"
-                        >
-                            Refresh
-                        </button>
                     </div>
                 </div>
             </div>
@@ -161,7 +156,7 @@ export default function ExecutiveSummary({ className = '' }: ExecutiveSummaryPro
             {/* Content */}
             <div className="p-6">
                 {/* Main heading as page title */}
-                <h1 className="text-3xl font-bold text-gray-900 my-2 text-center">Executive Summary</h1>
+                <h1 className="text-3xl font-bold text-gray-900 text-center mb-4">Executive Summary</h1>
                 {(() => {
                     const sections = parseMainSummarySections(summary.summary);
                     let rows: { sections: { heading: string; content: string }[] }[] = [];
