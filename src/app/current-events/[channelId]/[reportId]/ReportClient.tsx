@@ -30,7 +30,6 @@ import {
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import Masonry from 'react-masonry-css';
 import { Toaster, toast } from 'sonner';
 
 const fetchReportAndMessages = async (channelId: string, reportId: string): Promise<ReportResponse> => {
@@ -116,7 +115,7 @@ export default function ReportClient() {
 
     return (
         <>
-            <div className="p-6 mx-autoflex flex-col w-[95vw]">
+            <div className="p-6 mx-autoflex flex-col">
                 {isLoading ? (
                     <div className="flex items-center justify-center h-full">
                         <Loader size="xl" />
@@ -226,7 +225,7 @@ export default function ReportClient() {
                                         options={{ dateStyle: 'short', timeStyle: 'short' }}
                                     />
                                 )}
-                                {report?.generatedAt ? ' - ' : ''}{translatedContent?.city || (report?.city ? report.city.split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ') : '')}
+                                {report?.generatedAt ? ' - ' : ''}{translatedContent?.city || report?.city || ''}
                             </p>
                             {/* Enhanced Interactive Report Body with Source Attribution */}
                             {report && channelId && (
@@ -250,20 +249,10 @@ export default function ReportClient() {
                             )}
                         </div>
                         {allMessages.length > 0 && (
-                            <div className="flex flex-col gap-0">
-                                <div className="border-b border-border" />
-                                <Masonry
-                                    breakpointCols={{
-                                        default: 1,
-                                        768: 1
-                                    }}
-                                    className="masonry-grid"
-                                    columnClassName="masonry-column"
-                                >
-                                    {displayedMessages.map((message) => (
-                                        <MessageItem key={message.id} message={message} channelId={channelId} />
-                                    ))}
-                                </Masonry>
+                            <div className="flex flex-col gap-0 border-t border-border">
+                                {displayedMessages.map((message) => (
+                                    <MessageItem key={message.id} message={message} channelId={channelId} />
+                                ))}
                                 {hasMore && (
                                     <div className="flex justify-center py-6">
                                         <Button variant="outline" onClick={loadMore}>

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 interface TranslatedContent {
     headline?: string;
@@ -45,6 +45,16 @@ export function useTranslateReport(
     const [isTranslating, setIsTranslating] = useState(false);
     const [selectedLanguage, setSelectedLanguage] = useState<LanguageCode>('en');
 
+    // Use refs for callback functions to avoid unnecessary re-renders
+    const onSuccessRef = useRef(onSuccess);
+    const onErrorRef = useRef(onError);
+
+    // Update refs when callbacks change
+    useEffect(() => {
+        onSuccessRef.current = onSuccess;
+        onErrorRef.current = onError;
+    }, [onSuccess, onError]);
+
     const translateReport = useCallback(async () => {
         if (!report || selectedLanguage === 'en') {
             setTranslatedContent(null);
@@ -74,20 +84,20 @@ export function useTranslateReport(
             const { translatedContent: newTranslatedContent } = await response.json();
             setTranslatedContent(newTranslatedContent);
 
-            if (onSuccess) {
-                onSuccess(newTranslatedContent);
+            if (onSuccessRef.current) {
+                onSuccessRef.current(newTranslatedContent);
             }
         } catch (error) {
             console.error('Translation error:', error);
             setTranslatedContent(null);
 
-            if (onError) {
-                onError(error instanceof Error ? error : new Error('Translation failed'));
+            if (onErrorRef.current) {
+                onErrorRef.current(error instanceof Error ? error : new Error('Translation failed'));
             }
         } finally {
             setIsTranslating(false);
         }
-    }, [report, selectedLanguage, onSuccess, onError]);
+    }, [report, selectedLanguage]); // Removed onSuccess and onError from dependencies
 
     useEffect(() => {
         translateReport();

@@ -4,6 +4,71 @@ import { TweetEmbed, TweetEmbedCache } from '@/lib/types/core';
 import { extractTweetId, isValidTweetUrl, normalizeTweetUrl } from '@/lib/utils/twitter-utils';
 
 /**
+ * Sanitize HTML content to prevent XSS attacks
+ * This is a basic sanitizer that removes dangerous elements and attributes
+ * For production, consider using a more robust library like DOMPurify
+ */
+function sanitizeHtml(html: string): string {
+    if (!html) return '';
+
+    // Remove script tags and their content
+    html = html.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
+
+    // Remove event handler attributes (onclick, onload, etc.)
+    html = html.replace(/\s*on\w+\s*=\s*["'][^"']*["']/gi, '');
+
+    // Remove javascript: URLs
+    html = html.replace(/javascript:/gi, '');
+
+    // Remove data: URLs (potential for XSS)
+    html = html.replace(/data:/gi, '');
+
+    // Remove vbscript: URLs
+    html = html.replace(/vbscript:/gi, '');
+
+    // Remove iframe tags (potential for clickjacking)
+    html = html.replace(/<iframe\b[^<]*(?:(?!<\/iframe>)<[^<]*)*<\/iframe>/gi, '');
+
+    // Remove object and embed tags (potential for XSS)
+    html = html.replace(/<(object|embed)\b[^<]*(?:(?!<\/(object|embed)>)<[^<]*)*<\/(object|embed)>/gi, '');
+
+    // Remove form tags (potential for CSRF)
+    html = html.replace(/<form\b[^<]*(?:(?!<\/form>)<[^<]*)*<\/form>/gi, '');
+
+    // Remove input tags (potential for form injection)
+    html = html.replace(/<input\b[^>]*>/gi, '');
+
+    // Remove textarea tags
+    html = html.replace(/<textarea\b[^<]*(?:(?!<\/textarea>)<[^<]*)*<\/textarea>/gi, '');
+
+    // Remove select tags
+    html = html.replace(/<select\b[^<]*(?:(?!<\/select>)<[^<]*)*<\/select>/gi, '');
+
+    // Remove button tags (potential for clickjacking)
+    html = html.replace(/<button\b[^<]*(?:(?!<\/button>)<[^<]*)*<\/button>/gi, '');
+
+    // Remove meta refresh tags (potential for redirect attacks)
+    html = html.replace(/<meta[^>]*http-equiv\s*=\s*["']refresh["'][^>]*>/gi, '');
+
+    // Remove base tags (potential for base tag hijacking)
+    html = html.replace(/<base\b[^>]*>/gi, '');
+
+    // Remove link tags with dangerous rel values
+    html = html.replace(/<link[^>]*rel\s*=\s*["'](import|prefetch|preload)["'][^>]*>/gi, '');
+
+    // Remove style tags (potential for CSS injection)
+    html = html.replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, '');
+
+    // Remove link tags with stylesheet rel (potential for CSS injection)
+    html = html.replace(/<link[^>]*rel\s*=\s*["']stylesheet["'][^>]*>/gi, '');
+
+    // Remove any remaining dangerous attributes
+    html = html.replace(/\s*(on\w+|javascript:|data:|vbscript:)\s*=\s*["'][^"']*["']/gi, '');
+
+    return html.trim();
+}
+
+/**
  * GET /api/oembed/twitter
  * Fetches and caches Twitter/X oEmbed data for a given tweet URL.
  * @param request - Query params: url (string, required), channelId (optional), omit_script (optional: 'true')
@@ -127,7 +192,7 @@ export async function GET(request: Request) {
         const tweetEmbed: TweetEmbed = {
             tweetId,
             url: normalizedUrl,
-            html: oembedData.html || '',
+            html: sanitizeHtml(oembedData.html || ''), // Sanitize HTML
             author_name: oembedData.author_name || '',
             author_url: oembedData.author_url || '',
             provider_name: oembedData.provider_name || 'X',
