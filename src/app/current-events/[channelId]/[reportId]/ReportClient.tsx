@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Loader } from "@/components/ui/loader";
 import { LocalDateTimeFull } from "@/components/utils/LocalDateTime";
-import { useApi } from "@/lib/hooks";
+import { useApi, useTranslateReport, type LanguageCode } from "@/lib/hooks";
 import { DiscordMessage, ReportResponse } from "@/lib/types/core";
 import {
     ArrowLeft,
@@ -32,22 +32,6 @@ import { useParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Masonry from 'react-masonry-css';
 import { Toaster, toast } from 'sonner';
-
-interface TranslatedContent {
-    headline?: string;
-    city?: string;
-    body: string;
-}
-
-const LANGUAGES = {
-    en: 'English',
-    es: 'Spanish',
-    fr: 'French',
-    de: 'German',
-    pt: 'Portuguese'
-} as const;
-
-type LanguageCode = keyof typeof LANGUAGES;
 
 const fetchReportAndMessages = async (channelId: string, reportId: string): Promise<ReportResponse> => {
     const response = await fetch(`/api/reports?channelId=${channelId}&reportId=${reportId}`);
@@ -86,12 +70,24 @@ export default function ReportClient() {
     const [displayedMessages, setDisplayedMessages] = useState<DiscordMessage[]>([]);
     const [messageCount, setMessageCount] = useState(0);
     const [currentPage, setCurrentPage] = useState(1);
-    const [selectedLanguage, setSelectedLanguage] = useState<LanguageCode>('en');
-    const [translatedContent, setTranslatedContent] = useState<TranslatedContent | null>(null);
-    const [isTranslating, setIsTranslating] = useState(false);
     const [showAttributions, setShowAttributions] = useState(false);
     const [isAttributionsLoading, setIsAttributionsLoading] = useState(false);
     const [showFactCheck, setShowFactCheck] = useState(false);
+
+    const {
+        translatedContent,
+        isTranslating,
+        selectedLanguage,
+        setSelectedLanguage,
+        LANGUAGES
+    } = useTranslateReport(report || null, {
+        onSuccess: () => {
+            toast.success(`Translated to ${LANGUAGES[selectedLanguage]}`);
+        },
+        onError: () => {
+            toast.error('Translation failed. Please try again.');
+        }
+    });
 
     const SOURCES_PER_PAGE = 20;
 
@@ -103,49 +99,7 @@ export default function ReportClient() {
         }
     }, [allMessages]);
 
-    useEffect(() => {
-        const translateReport = async () => {
-            if (!report || selectedLanguage === 'en') {
-                setTranslatedContent(null);
-                return;
-            }
 
-            setIsTranslating(true);
-            const toastId = toast.loading(`Translating to ${LANGUAGES[selectedLanguage]}...`);
-
-            try {
-                const response = await fetch('/api/translate', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        headline: report.headline,
-                        city: report.city,
-                        body: report.body,
-                        targetLang: selectedLanguage,
-                    }),
-                });
-
-                if (!response.ok) throw new Error('Failed to translate report');
-                const { translatedContent } = await response.json();
-                setTranslatedContent(translatedContent);
-                toast.success(`Translated to ${LANGUAGES[selectedLanguage]}`, {
-                    id: toastId,
-                });
-            } catch (error) {
-                console.error('Translation error:', error);
-                setTranslatedContent(null);
-                toast.error('Translation failed. Please try again.', {
-                    id: toastId,
-                });
-            } finally {
-                setIsTranslating(false);
-            }
-        };
-
-        translateReport();
-    }, [report, selectedLanguage]);
 
     const loadMore = () => {
         const nextPage = currentPage + 1;
@@ -168,7 +122,7 @@ export default function ReportClient() {
                         <Loader size="xl" />
                     </div>
                 ) : (
-                    <div className="flex flex-col gap-6">
+                    <div className="flex flex-col gap-6 max-w-full sm:max-w-[70%] mx-auto">
                         <div className="flex items-center gap-2 justify-between">
                             <div className="flex flex-col gap-2 sm:flex-row sm:justify-between sm:space-y-0 sm:gap-4 sm:w-full">
                                 <div className="flex items-center gap-3 flex-wrap">
@@ -300,7 +254,7 @@ export default function ReportClient() {
                                 <div className="border-b border-border" />
                                 <Masonry
                                     breakpointCols={{
-                                        default: 2,
+                                        default: 1,
                                         768: 1
                                     }}
                                     className="masonry-grid"

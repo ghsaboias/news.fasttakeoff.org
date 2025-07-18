@@ -127,7 +127,7 @@ export function InteractiveReportBody({
 
     return (
         <div className={`relative ${className}`}>
-            <div className="text-md leading-relaxed">
+            <div className="text-lg leading-relaxed">
                 {createInteractiveParagraphs()}
             </div>
         </div>

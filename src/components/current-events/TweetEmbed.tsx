@@ -232,7 +232,7 @@ export default function TweetEmbed({ content, channelId, className = '', onEmbed
     }
 
     return (
-        <div className={`space-y-4 ${className}`}>
+        <div className={`flex flex-col gap-4 ${className}`}>
             {tweetEmbeds.map((embed) => {
                 // Only render the embed container if there's actual HTML content
                 if (!embed.html || embed.html.trim() === '') {

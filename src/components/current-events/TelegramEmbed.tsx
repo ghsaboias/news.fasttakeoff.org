@@ -64,7 +64,7 @@ export default function TelegramEmbed({ content, className = '' }: TelegramEmbed
     if (telegramUrls.length === 0) return null;
 
     return (
-        <div className={`space-y-4 ${className}`}>
+        <div className={`flex flex-col gap-4 ${className}`}>
             <div ref={containerRef} />
         </div>
     );
