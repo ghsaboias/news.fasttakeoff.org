@@ -65,10 +65,39 @@ const TASK_TIMEOUTS = {
     EXECUTIVE_SUMMARY: 300000  // 5 minutes
 } as const;
 
+/**
+ * Check if current time coincides with 6h report schedule
+ * Returns true if we're at 0:00, 6:00, 12:00, or 18:00
+ */
+function is6hReportTime(scheduledTime: number): boolean {
+    const date = new Date(scheduledTime);
+    const hour = date.getHours();
+    return hour % 6 === 0; // 0, 6, 12, 18
+}
+
+// Type for cron task functions
+type CronTaskFunction = (env: Cloudflare.Env, scheduledTime?: number) => Promise<void>;
+
 // Map cron expressions to their tasks
-const CRON_TASKS = {
+const CRON_TASKS: Record<string, CronTaskFunction> = {
     // Every 2 hours (0:00, 2:00, 4:00, etc)
-    "0 */2 * * *": async (env: Cloudflare.Env) => {
+    "0 */2 * * *": async (env: Cloudflare.Env, scheduledTime?: number) => {
+        // Skip 2h report generation if this coincides with 6h report time
+        if (scheduledTime && is6hReportTime(scheduledTime)) {
+            console.log('[CRON] Skipping 2h report generation - coincides with 6h report time');
+
+            // Still generate feeds summaries even when skipping 2h reports
+            const feedsService = new FeedsService(env);
+            await logRun('FEEDS_GERAL', () => feedsService.createFreshSummary('geral', ['CNN-Brasil', 'BBC-Brasil', 'G1 - Política', 'G1 - Economia', 'UOL']), {
+                timeoutMs: TASK_TIMEOUTS.FEEDS
+            });
+
+            await logRun('FEEDS_MERCADO', () => feedsService.createFreshSummary('mercado', ['Investing.com Brasil - Empresas', 'Investing.com Brasil - Mercado']), {
+                timeoutMs: TASK_TIMEOUTS.FEEDS
+            });
+            return;
+        }
+
         const reportService = new ReportService(env);
         await logRun('REPORTS_2H', () => reportService.generateReports('2h'), {
             timeoutMs: TASK_TIMEOUTS.REPORTS
@@ -107,7 +136,7 @@ const CRON_TASKS = {
             timeoutMs: TASK_TIMEOUTS.MESSAGES
         });
     }
-} as const;
+};
 
 // Handle manual triggers
 async function handleManualTrigger(trigger: string, env: Cloudflare.Env): Promise<void> {
@@ -160,9 +189,9 @@ export async function scheduled(event: ScheduledEvent, env: Cloudflare.Env): Pro
     console.log(`[CRON] Handling scheduled event: ${event.cron}`);
 
     // Check if this is a scheduled cron task
-    const scheduledTask = CRON_TASKS[event.cron as keyof typeof CRON_TASKS];
+    const scheduledTask = CRON_TASKS[event.cron];
     if (scheduledTask) {
-        await scheduledTask(env);
+        await scheduledTask(env, event.scheduledTime);
         return;
     }
 
