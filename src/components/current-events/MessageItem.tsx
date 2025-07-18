@@ -47,7 +47,7 @@ export default function MessageItem({ message, noAccordion = false, channelId }:
     const translationFooter = translationEmbed?.footer?.text;
 
     const MessageContent = () => (
-        <div className={`px-2 py-6 border-b border-soft-border-foreground ${showDiscordFallback ? 'px-6' : ''}`}>
+        <div className={`py-6 border-b border-soft-border-foreground ${showDiscordFallback ? 'px-6' : ''}`}>
             {/* Content Section - Show for non-embeddable content OR when Twitter embed fails */}
             {(showDiscordFallback) && <div className="flex flex-col pb-2">
                 {/* Show fallback message for deleted tweets */}
@@ -129,7 +129,7 @@ export default function MessageItem({ message, noAccordion = false, channelId }:
 
             {/* Translation Badge for Twitter posts - show below tweet embed */}
             {isTwitterPost && !tweetEmbedFailed && translationEmbed && (
-                <div className="mt-2 px-4">
+                <div className="mt-2">
                     <div className="border border-soft-border-foreground p-4 rounded-lg">
                         {/* Translation Badge */}
                         <div className="mb-3">

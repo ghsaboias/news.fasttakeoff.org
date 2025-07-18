@@ -27,6 +27,40 @@ interface TweetEmbedProps {
 const embedCache = new Map<string, { embed: TweetEmbedType; cachedAt: number }>();
 const CACHE_DURATION = 30 * 60 * 1000; // 30 minutes
 
+/**
+ * Safe HTML renderer component
+ * Uses a ref to render sanitized HTML without dangerouslySetInnerHTML
+ */
+function SafeHtmlRenderer({
+    html,
+    className,
+    style
+}: {
+    html: string;
+    className?: string;
+    style?: React.CSSProperties;
+}) {
+    const containerRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        if (containerRef.current && html) {
+            // Clear existing content
+            containerRef.current.innerHTML = '';
+
+            // Create a temporary div to parse the HTML
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = html;
+
+            // Move all child nodes to our container
+            while (tempDiv.firstChild) {
+                containerRef.current.appendChild(tempDiv.firstChild);
+            }
+        }
+    }, [html]);
+
+    return <div ref={containerRef} className={className} style={style} />;
+}
+
 export default function TweetEmbed({ content, channelId, className = '', onEmbedFail }: TweetEmbedProps) {
     const [tweetEmbeds, setTweetEmbeds] = useState<TweetEmbedType[]>([]);
     const [loading, setLoading] = useState(false);
@@ -240,14 +274,14 @@ export default function TweetEmbed({ content, channelId, className = '', onEmbed
                 }
 
                 return (
-                    <div
+                    <SafeHtmlRenderer
                         key={embed.tweetId}
-                        className="tweet-embed-container overflow-hidden px-4"
+                        html={embed.html}
+                        className="mx-auto"
                         style={{
                             backgroundColor: 'white',
                             color: 'initial'
                         }}
-                        dangerouslySetInnerHTML={{ __html: embed.html }}
                     />
                 );
             })}

@@ -31,7 +31,7 @@ export const ReportPanel: React.FC<ReportPanelProps> = ({ report, onClose }) => 
 
             <div className="space-y-4">
                 <div className="flex items-center text-sm text-muted-foreground">
-                    <span>{report.city.charAt(0).toUpperCase() + report.city.toLowerCase().slice(1)}</span>
+                    <span>{report.city}</span>
                     <span className="mx-2">•</span>
                     <LocalDateTimeFull
                         dateString={report.generatedAt}

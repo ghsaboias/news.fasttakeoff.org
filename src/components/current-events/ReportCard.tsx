@@ -48,7 +48,7 @@ export default function ReportCard({
                 </CardTitle>
                 <div className="flex justify-between items-center">
                     <p className="text-md font-medium line-clamp-1">
-                        {report.city.charAt(0).toUpperCase() + report.city.toLowerCase().slice(1)} - {report.generatedAt && report.timeframe ? (
+                        {report.city} - {report.generatedAt && report.timeframe ? (
                             (() => {
                                 const end = new Date(report.generatedAt);
                                 const ms = timeframeToMs(report.timeframe);

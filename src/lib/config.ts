@@ -144,7 +144,7 @@ export const AI = {
         // Maximum retries for AI API calls
         MAX_ATTEMPTS: 3,
         // Prompt template for report generation - NOTE: This might need adjustment if switching models significantly
-        SYSTEM_PROMPT: 'You are an experienced news wire journalist. Always complete your full response. Respond in valid JSON format with: {"headline": "clear, specific, descriptive headline in ALL CAPS", "city": "single city name properly capitalized (e.g. New York, Tel Aviv, São Paulo, Texas, Moscow, etc.)", "body": "cohesive narrative with paragraphs separated by double newlines (\\n\\n)"}',
+        SYSTEM_PROMPT: 'You are an experienced news wire journalist. Always complete your full response. Respond in valid JSON format with: {"headline": "clear, specific, descriptive headline in ALL CAPS", "city": "single city name in title case (e.g. New York, Tel Aviv, São Paulo, Texas, Moscow, etc.) - NOT all caps", "body": "cohesive narrative with paragraphs separated by double newlines (\\n\\n)"}',
 
         PROMPT_TEMPLATE: `
 Generate a comprehensive news report based on the provided sources and a previous report (if provided).
@@ -190,7 +190,7 @@ WHEN A PREVIOUS REPORT IS PROVIDED:
 
 FORMAT:
 - Headline: Specific, non-sensational, in ALL CAPS
-- City: Single city name related to the news
+- City: Single city name in title case (e.g. New York, Tel Aviv, São Paulo) - NOT all caps
 - Body: Cohesive paragraphs separated by double newlines (\\n\\n), following inverted pyramid structure
 
 <previous_report_context>
