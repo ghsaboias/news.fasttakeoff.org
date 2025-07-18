@@ -27,7 +27,7 @@ export async function generateStaticParams() {
 
         // Collect all reports with their timestamps
         const allReports: Array<{ channelId: string; reportId: string; generatedAt: string }> = [];
-        
+
         for (const channel of channels) {
             const reports = await reportService.getAllReportsForChannel(channel.id);
             if (reports && reports.length > 0) {
@@ -40,12 +40,12 @@ export async function generateStaticParams() {
                 });
             }
         }
-        
+
         // Sort by most recent first and take top 50
         const topReports = allReports
             .sort((a, b) => new Date(b.generatedAt).getTime() - new Date(a.generatedAt).getTime())
             .slice(0, 50);
-        
+
         // Return params without the timestamp
         return topReports.map(({ channelId, reportId }) => ({
             channelId,
@@ -251,10 +251,9 @@ export default async function ReportDetailPage({ params }: { params: Promise<{ c
     return (
         <>
             {structuredData && (
-                <script
-                    type="application/ld+json"
-                    dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
-                />
+                <script type="application/ld+json">
+                    {JSON.stringify(structuredData)}
+                </script>
             )}
             <ReportClient />
         </>
