@@ -7,11 +7,16 @@ config({ path: '.env.local' });
 /**
  * Defines the structure for an AI provider's configuration.
  */
+export interface AIProviderModel {
+    id: string;
+    displayName: string;
+}
+
 export interface AIProviderConfig {
     endpoint: string;
-    model: string;
-    apiKeyEnvVar: string; // The exact name of the environment variable
-    displayName: string; // User-friendly name for display
+    models: AIProviderModel[];
+    apiKeyEnvVar: string;
+    displayName?: string; // Optional, for legacy support
 }
 
 /**
@@ -20,19 +25,37 @@ export interface AIProviderConfig {
 export const AI_PROVIDERS: Record<string, AIProviderConfig> = {
     groq: {
         endpoint: 'https://api.groq.com/openai/v1/chat/completions',
-        model: 'llama-4-maverick-17b-128e-instruct',
+        models: [
+            {
+                id: 'llama-4-maverick-17b-128e-instruct',
+                displayName: 'Llama 4 Maverick (Groq)',
+            },
+        ],
         apiKeyEnvVar: 'GROQ_API_KEY',
         displayName: 'Llama 4 Maverick (Groq)',
     },
     openrouter: {
         endpoint: 'https://openrouter.ai/api/v1/chat/completions',
-        model: 'google/gemini-2.5-flash',
+        models: [
+            {
+                id: 'google/gemini-2.5-flash',
+                displayName: 'Gemini 2.5 Flash (OpenRouter)',
+            },
+            {
+                id: 'qwen/qwen3-235b-a22b',
+                displayName: 'Qwen3 235B (OpenRouter)',
+            },
+        ],
         apiKeyEnvVar: 'OPENROUTER_API_KEY',
-        displayName: 'Gemini 2.5 Flash (OpenRouter)',
     },
     perplexity: {
         endpoint: 'https://api.perplexity.ai/chat/completions',
-        model: 'sonar',
+        models: [
+            {
+                id: 'sonar',
+                displayName: 'Perplexity Sonar',
+            },
+        ],
         apiKeyEnvVar: 'PERPLEXITY_API_KEY',
         displayName: 'Perplexity Sonar',
     },
