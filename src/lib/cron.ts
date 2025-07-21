@@ -59,10 +59,10 @@ async function logRun(
 
 // Define task timeouts
 const TASK_TIMEOUTS = {
-    MESSAGES: 120000,      // 2 minutes
-    REPORTS: 180000,       // 3 minutes
+    MESSAGES: 180000,      // 3 minutes
+    EXECUTIVE_SUMMARY: 180000,  // 3 minutes
+    REPORTS: 240000,       // 4 minutes
     FEEDS: 240000,         // 4 minutes
-    EXECUTIVE_SUMMARY: 300000  // 5 minutes
 } as const;
 
 /**

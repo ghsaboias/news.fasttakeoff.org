@@ -95,11 +95,11 @@ ${formatted}
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({
+                model: aiConfig.model,
                 messages: [
                     { role: "system", content: AI.SOURCE_ATTRIBUTION.SYSTEM_PROMPT },
                     { role: "user", content: prompt }
                 ],
-                model: aiConfig.model,
                 max_tokens: AI.SOURCE_ATTRIBUTION.OUTPUT_BUFFER,
                 temperature: 0.2, // Lower for more consistent sentence mapping
                 response_format: {
