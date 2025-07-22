@@ -35,6 +35,9 @@ export default function Header() {
                 <Link href="/current-events" className="text-sm font-medium hover:underline hover:text-[#167F6E] transition-colors text-center">
                     Current Events
                 </Link>
+                <Link href="/mktfeed" className="text-sm font-medium hover:underline hover:text-[#167F6E] transition-colors text-center">
+                    Market Feed
+                </Link>
                 <Link href="/entities" className="text-sm font-medium hover:underline hover:text-[#167F6E] transition-colors text-center">
                     Entities
                 </Link>
@@ -88,6 +91,9 @@ export default function Header() {
                                     }
                                     <Link href="/current-events" className="text-sm font-medium hover:underline hover:text-[#167F6E] transition-colors">
                                         Current Events
+                                    </Link>
+                                    <Link href="/mktfeed" className="text-sm font-medium hover:underline hover:text-[#167F6E] transition-colors">
+                                        Market Feed
                                     </Link>
                                     <Link href="/entities" className="text-sm font-medium hover:underline hover:text-[#167F6E] transition-colors">
                                         Entities
@@ -149,6 +155,9 @@ export default function Header() {
                                     }
                                     <Link href="/current-events" className="text-sm font-medium hover:underline hover:text-[#167F6E] transition-colors">
                                         Current Events
+                                    </Link>
+                                    <Link href="/mktfeed" className="text-sm font-medium hover:underline hover:text-[#167F6E] transition-colors">
+                                        Market Feed
                                     </Link>
                                     <Link href="/entities" className="text-sm font-medium hover:underline hover:text-[#167F6E] transition-colors">
                                         Entities
