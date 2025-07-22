@@ -2,6 +2,7 @@ import { Cloudflare } from '../../worker-configuration';
 import { ExecutiveSummaryService } from './data/executive-summary-service';
 import { FeedsService } from './data/feeds-service';
 import { MessagesService } from './data/messages-service';
+import { MktNewsService } from './data/mktnews-service';
 import { ReportService } from './data/report-service';
 
 interface ScheduledEvent {
@@ -60,6 +61,7 @@ async function logRun(
 // Define task timeouts
 const TASK_TIMEOUTS = {
     MESSAGES: 180000,      // 3 minutes
+    MKTNEWS: 120000,       // 2 minutes (shorter since it's just HTTP polling)
     EXECUTIVE_SUMMARY: 180000,  // 3 minutes
     REPORTS: 240000,       // 4 minutes
     FEEDS: 240000,         // 4 minutes
@@ -142,6 +144,14 @@ const CRON_TASKS: Record<string, CronTaskFunction> = {
         await logRun('MESSAGES', () => messagesService.updateMessages(), {
             timeoutMs: TASK_TIMEOUTS.MESSAGES
         });
+    },
+
+    // Every 5 minutes for MktNews polling
+    "*/5 * * * *": async (env: Cloudflare.Env) => {
+        const mktNewsService = new MktNewsService(env);
+        await logRun('MKTNEWS', () => mktNewsService.updateMessages(), {
+            timeoutMs: TASK_TIMEOUTS.MKTNEWS
+        });
     }
 };
 
@@ -151,6 +161,7 @@ async function handleManualTrigger(trigger: string, env: Cloudflare.Env): Promis
     const messagesService = new MessagesService(env);
     const executiveSummaryService = new ExecutiveSummaryService(env);
     const feedsService = new FeedsService(env);
+    const mktNewsService = new MktNewsService(env);
 
     const MANUAL_TRIGGERS: Record<string, () => Promise<void>> = {
         'MESSAGES': () => logRun('MESSAGES', () => messagesService.updateMessages(), {
@@ -181,6 +192,10 @@ async function handleManualTrigger(trigger: string, env: Cloudflare.Env): Promis
 
         'FEEDS_MERCADO': () => logRun('FEEDS_MERCADO', () => feedsService.createFreshSummary('mercado', ['Investing.com Brasil - Empresas', 'Investing.com Brasil - Mercado']), {
             timeoutMs: TASK_TIMEOUTS.FEEDS
+        }),
+
+        'MKTNEWS': () => logRun('MKTNEWS', () => mktNewsService.updateMessages(), {
+            timeoutMs: TASK_TIMEOUTS.MKTNEWS
         })
     };
 
