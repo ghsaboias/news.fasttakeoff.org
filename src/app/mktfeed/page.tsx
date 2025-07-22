@@ -1,5 +1,5 @@
 import { Suspense } from 'react';
-import MktFeedClient from './MktFeedClient';
+import { MktFeedClient } from './MktFeedClient';
 
 export const metadata = {
     title: 'Market Feed - Fast Takeoff News',
