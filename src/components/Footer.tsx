@@ -43,6 +43,11 @@ export default function Footer() {
                                 </Link>
                             </li>
                             <li>
+                                <Link href="/mktfeed" className="hover:underline">
+                                    Market Feed
+                                </Link>
+                            </li>
+                            <li>
                                 <Link href="/message-activity" className="hover:underline">
                                     Heatmap
                                 </Link>
@@ -69,7 +74,7 @@ export default function Footer() {
                         <ul className="space-y-2 text-sm text-card">
                             <li>
                                 <a href="https://x.com/fasttakeoff" className="hover:underline">
-                                    Twitter
+                                    X
                                 </a>
                             </li>
                             <li>
