@@ -445,4 +445,41 @@ export interface ChannelMessageCounts {
         '1d': number;
         '7d': number;
     };
+}
+
+// MktNews types
+export interface MktNewsMessage {
+    type: 'flash';
+    data: {
+        id: string;
+        mid: string;
+        time: string;  // ISO timestamp
+        important: 0 | 1;
+        category: number[];
+        action: 1 | 2;
+        data: {
+            content: string;
+            title: string;
+            pic: string;
+        };
+        a_shares: string[];
+        remark: MktNewsRemark[];
+    };
+    timestamp: number;  // Unix timestamp in milliseconds
+    received_at: string;  // ISO timestamp when received by Pi
+}
+
+export interface MktNewsRemark {
+    id: number;
+    pics: string[];
+    title: string;
+    type: string;
+    vip_level: number;
+}
+
+export interface CachedMktNews {
+    messages: MktNewsMessage[];
+    cachedAt: string;
+    messageCount: number;
+    lastMessageTimestamp: string;
 } 

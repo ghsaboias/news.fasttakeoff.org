@@ -9,10 +9,12 @@ compatibility_flags = [
 # Every 2 hours (0:00, 2:00, 4:00, etc) for 2h reports
 # Every 6 hours (0:00, 6:00, 12:00, 18:00) for 6h reports and executive summary
 # Every 15 minutes for message updates
+# Every 5 minutes for MktNews polling
 crons = [
     "0 */2 * * *",    # 2h reports and feeds summaries
     "0 */6 * * *",    # 6h reports and executive summary
-    "*/15 * * * *"    # Message updates
+    "*/15 * * * *",   # Message updates
+    "*/5 * * * *"     # MktNews polling
 ]
 
 [assets]
@@ -73,6 +75,11 @@ preview_id = "7e534ee4e7b14c588e474b8570e0b48a"
 binding = "EXECUTIVE_SUMMARIES_CACHE"
 id = "3631df94eaa7437882b4c9e739d8d4e5"
 preview_id = "32a010bc0d60478fb5fc37a268e67d10"
+
+[[kv_namespaces]]
+binding = "MKTNEWS_CACHE"
+id = "ee7573e6ee69407c8821fbef216929fa"
+preview_id = "bad88df0ebe6481baeac45dbc325b523"
 
 # R2 bucket binding for Instagram images
 [[r2_buckets]]
