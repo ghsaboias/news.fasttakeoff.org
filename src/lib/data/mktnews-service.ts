@@ -16,122 +16,57 @@ export class MktNewsService {
     }
 
     /**
-     * Poll the Pi server for new MktNews messages
+     * Update/refresh MktNews messages (now uses push-based architecture)
+     * In the new architecture, Pi pushes data directly via /api/mktnews/ingest
+     * This method now performs cache maintenance and cleanup
      */
     async updateMessages(): Promise<void> {
-        console.log('[MKTNEWS] Starting message update...');
+        console.log('[MKTNEWS] Starting cache maintenance...');
 
-        for (let attempt = 1; attempt <= 3; attempt++) {
-            try {
-                // Get the last check timestamp from cache
-                const lastCheck = await this.getLastCheckTimestamp();
+        try {
+            // Get current cached messages
+            const cached = await this.getCachedMessages();
 
-                // Poll Pi server for new messages
-                const newMessages = await this.fetchMessagesFromPi(lastCheck);
+            if (!cached?.messages || cached.messages.length === 0) {
+                console.log('[MKTNEWS] No cached messages found - waiting for Pi to push data');
+                return;
+            }
 
-                if (newMessages.length === 0) {
-                    console.log('[MKTNEWS] No new messages found');
-                    return;
-                }
+            // Perform cache maintenance: remove old messages (older than 30 days)
+            const cutoffTime = Date.now() - (30 * 24 * 60 * 60 * 1000); // 30 days in milliseconds
+            const recentMessages = cached.messages.filter(msg =>
+                new Date(msg.received_at).getTime() > cutoffTime
+            );
 
-                console.log(`[MKTNEWS] Found ${newMessages.length} new messages`);
-
-                // Get existing cached messages
-                const cached = await this.getCachedMessages();
-                const existingMessages = cached?.messages || [];
-
-                // Merge and deduplicate messages
-                const allMessages = this.deduplicateMessages([...newMessages, ...existingMessages]);
-
-                // Keep only recent messages (last 24 hours)
-                const cutoffTime = Date.now() - TIME.TWENTY_FOUR_HOURS_MS;
-                const recentMessages = allMessages.filter(msg =>
-                    new Date(msg.received_at).getTime() > cutoffTime
-                );
+            // Only update cache if we filtered out old messages
+            if (recentMessages.length < cached.messages.length) {
+                console.log(`[MKTNEWS] Cache cleanup: ${cached.messages.length} -> ${recentMessages.length} messages`);
 
                 // Sort by timestamp (newest first)
                 recentMessages.sort((a, b) =>
                     new Date(b.received_at).getTime() - new Date(a.received_at).getTime()
                 );
 
-                // Cache the updated messages
                 await this.cacheMessages(recentMessages);
-
-                // Update last check timestamp
-                await this.updateLastCheckTimestamp();
-
-                console.log(`[MKTNEWS] Successfully cached ${recentMessages.length} messages`);
-                return;
-
-            } catch (error) {
-                const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-                console.error(`[MKTNEWS] Attempt ${attempt}/3 failed:`, errorMessage);
-
-                if (attempt === 3) {
-                    throw error;
-                }
-
-                console.log('[MKTNEWS] Retrying after 2 seconds...');
-                await new Promise(resolve => setTimeout(resolve, 2000));
-            }
-        }
-    }
-
-    /**
-     * Fetch messages from the Pi server since the last check
-     */
-    private async fetchMessagesFromPi(sinceTimestamp: number): Promise<MktNewsMessage[]> {
-        const piUrl = 'http://raspberrypi:3000';
-        const url = `${piUrl}/api/news/since/${sinceTimestamp}`;
-
-        console.log(`[MKTNEWS] Polling Pi server: ${url}`);
-
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => {
-            console.error('[MKTNEWS] Pi server request timeout');
-            controller.abort();
-        }, 10000); // 10 second timeout
-
-        try {
-            const response = await fetch(url, {
-                headers: {
-                    'User-Agent': 'news.fasttakeoff.org/worker',
-                },
-                signal: controller.signal
-            });
-
-            clearTimeout(timeoutId);
-
-            if (!response.ok) {
-                const errorText = await response.text();
-                throw new Error(`Pi server error: ${response.status} - ${errorText}`);
+                console.log(`[MKTNEWS] Cache cleanup completed`);
+            } else {
+                console.log(`[MKTNEWS] Cache is clean - ${cached.messages.length} recent messages`);
             }
 
-            const messages: MktNewsMessage[] = await response.json();
-
-            // Validate message structure
-            const validMessages = messages.filter(msg => {
-                if (!msg.data?.id || !msg.data?.time || !msg.data?.data?.content) {
-                    console.warn('[MKTNEWS] Skipping invalid message:', msg);
-                    return false;
-                }
-                return true;
-            });
-
-            console.log(`[MKTNEWS] Received ${messages.length} messages, ${validMessages.length} valid`);
-            return validMessages;
+            // Update last maintenance timestamp
+            await this.updateLastCheckTimestamp();
 
         } catch (error) {
-            clearTimeout(timeoutId);
-            if (error instanceof Error && error.name === 'AbortError') {
-                throw new Error('Pi server request timed out');
-            }
+            const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+            console.error(`[MKTNEWS] Cache maintenance failed:`, errorMessage);
             throw error;
         }
     }
 
+
+
     /**
-     * Get the last check timestamp from cache
+     * Get the last maintenance timestamp from cache
      */
     private async getLastCheckTimestamp(): Promise<number> {
         const cached = await this.cacheManager.get<{ timestamp: number }>('MKTNEWS_CACHE', 'last-check');
@@ -139,12 +74,12 @@ export class MktNewsService {
             return cached.timestamp;
         }
 
-        // Default to 1 hour ago if no previous check
+        // Default to 1 hour ago if no previous maintenance
         return Date.now() - TIME.ONE_HOUR_MS;
     }
 
     /**
-     * Update the last check timestamp
+     * Update the last maintenance timestamp
      */
     private async updateLastCheckTimestamp(): Promise<void> {
         await this.cacheManager.put('MKTNEWS_CACHE', 'last-check', {
@@ -175,9 +110,40 @@ export class MktNewsService {
     }
 
     /**
+     * Ingest new messages from Pi (public method for API endpoint)
+     */
+    async ingestMessages(newMessages: MktNewsMessage[]): Promise<number> {
+        console.log(`[MKTNEWS] Ingesting ${newMessages.length} messages from Pi`);
+
+        // Get existing cached messages
+        const cached = await this.getCachedMessages();
+        const existingMessages = cached?.messages || [];
+
+        // Merge and deduplicate messages
+        const allMessages = this.deduplicateMessages([...newMessages, ...existingMessages]);
+
+        // Keep only recent messages (last 30 days)
+        const cutoffTime = Date.now() - (30 * 24 * 60 * 60 * 1000); // 30 days in milliseconds
+        const recentMessages = allMessages.filter(msg =>
+            new Date(msg.received_at).getTime() > cutoffTime
+        );
+
+        // Sort by timestamp (newest first)
+        recentMessages.sort((a, b) =>
+            new Date(b.received_at).getTime() - new Date(a.received_at).getTime()
+        );
+
+        // Cache the updated messages
+        await this.cacheMessages(recentMessages);
+
+        console.log(`[MKTNEWS] Successfully cached ${recentMessages.length} messages`);
+        return recentMessages.length;
+    }
+
+    /**
      * Deduplicate messages by ID
      */
-    private deduplicateMessages(messages: MktNewsMessage[]): MktNewsMessage[] {
+    public deduplicateMessages(messages: MktNewsMessage[]): MktNewsMessage[] {
         const seen = new Set<string>();
         const deduped: MktNewsMessage[] = [];
 

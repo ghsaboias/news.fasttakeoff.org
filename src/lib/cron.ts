@@ -61,7 +61,7 @@ async function logRun(
 // Define task timeouts
 const TASK_TIMEOUTS = {
     MESSAGES: 180000,      // 3 minutes
-    MKTNEWS: 120000,       // 2 minutes (shorter since it's just HTTP polling)
+    MKTNEWS: 60000,        // 1 minute (just cache maintenance now)
     EXECUTIVE_SUMMARY: 180000,  // 3 minutes
     REPORTS: 240000,       // 4 minutes
     FEEDS: 240000,         // 4 minutes
@@ -146,7 +146,7 @@ const CRON_TASKS: Record<string, CronTaskFunction> = {
         });
     },
 
-    // Every 5 minutes for MktNews polling
+    // Every 5 minutes for MktNews cache maintenance
     "*/5 * * * *": async (env: Cloudflare.Env) => {
         const mktNewsService = new MktNewsService(env);
         await logRun('MKTNEWS', () => mktNewsService.updateMessages(), {
