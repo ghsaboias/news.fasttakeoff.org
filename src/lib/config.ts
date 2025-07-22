@@ -38,8 +38,8 @@ export const AI_PROVIDERS: Record<string, AIProviderConfig> = {
         endpoint: 'https://openrouter.ai/api/v1/chat/completions',
         models: [
             {
-                id: 'google/gemini-2.5-flash',
-                displayName: 'Gemini 2.5 Flash (OpenRouter)',
+                id: 'google/gemini-2.5-flash-lite',
+                displayName: 'Gemini 2.5 Flash Lite(OpenRouter)',
             },
             {
                 id: 'qwen/qwen3-235b-a22b',
