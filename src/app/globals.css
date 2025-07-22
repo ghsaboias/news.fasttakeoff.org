@@ -14,6 +14,7 @@
 
   /* UI Elements */
   --card: #ffffff;
+  --card-foreground: #000000;
   --card-text: #000000;
   --popover: #101010;
   --popover-foreground: #ffffff;

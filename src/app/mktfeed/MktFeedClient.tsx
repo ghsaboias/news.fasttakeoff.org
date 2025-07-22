@@ -67,7 +67,7 @@ export default function MktFeedClient() {
         return (
             <div className="flex flex-col items-center justify-center p-8 gap-4">
                 <Loader size="lg" />
-                <p className="text-lg text-muted-foreground">Loading market feed...</p>
+                <p className="text-lg text-foreground">Loading market feed...</p>
             </div>
         );
     }
@@ -77,7 +77,7 @@ export default function MktFeedClient() {
             <div className="flex flex-col items-center justify-center p-8 gap-4">
                 <div className="text-center">
                     <h2 className="text-xl font-semibold text-destructive mb-2">Error Loading Feed</h2>
-                    <p className="text-muted-foreground mb-4">{error}</p>
+                    <p className="text-foreground mb-4">{error}</p>
                     <Button onClick={() => fetchData()} variant="outline">
                         Try Again
                     </Button>
@@ -96,7 +96,7 @@ export default function MktFeedClient() {
                             <TrendingUp className="h-8 w-8 text-primary" />
                             Market Feed
                         </h1>
-                        <p className="text-lg text-muted-foreground mt-2">
+                        <p className="text-lg text-foreground mt-2">
                             Real-time market news and flash updates
                         </p>
                     </div>
@@ -132,7 +132,7 @@ export default function MktFeedClient() {
                 </div>
 
                 {/* Stats */}
-                <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                <div className="flex items-center gap-4 text-sm text-foreground">
                     <span className="flex items-center gap-1">
                         <Badge variant="secondary">{data?.count || 0} messages</Badge>
                         in last {timeframe}h
@@ -163,7 +163,7 @@ export default function MktFeedClient() {
                                             </Badge>
                                         )}
                                     </div>
-                                    <div className="text-sm text-muted-foreground">
+                                    <div className="text-sm text-foreground">
                                         <LocalDateTime
                                             dateString={message.received_at}
                                             options={{
@@ -202,9 +202,9 @@ export default function MktFeedClient() {
                 ) : (
                     <Card>
                         <CardContent className="flex flex-col items-center justify-center py-12">
-                            <TrendingUp className="h-12 w-12 text-muted-foreground mb-4" />
+                            <TrendingUp className="h-12 w-12 text-foreground mb-4" />
                             <h3 className="text-lg font-medium mb-2">No market updates</h3>
-                            <p className="text-muted-foreground text-center">
+                            <p className="text-foreground text-center">
                                 No market news available for the selected timeframe.
                                 <br />
                                 Try selecting a longer time period or check back later.
