@@ -13,12 +13,33 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
 
 // Format market news text by handling common patterns
-function formatMarketText(text: string): string {
-    // Remove HTML tags and convert to uppercase if entire text is wrapped in <B> tags
-    if (text.startsWith('<B>') && text.endsWith('</B>')) {
-        return text.replace(/<\/?B>/g, '').toUpperCase();
+function formatMarketText(text: string): React.ReactNode {
+    // Handle <B>, <b>, and <br> tags within the text
+    const parts = text.split(/(<\/?[Bb]>|<br\s*\/?>)/i);
+    const result: React.ReactNode[] = [];
+    let isBold = false;
+    
+    for (let i = 0; i < parts.length; i++) {
+        const part = parts[i];
+        
+        if (part === '<B>' || part === '<b>') {
+            isBold = true;
+        } else if (part === '</B>' || part === '</b>') {
+            isBold = false;
+        } else if (/^<br\s*\/?>$/i.test(part)) {
+            // Handle <br>, <br/>, <br /> tags
+            result.push(<br key={i} />);
+        } else if (part) {
+            // Only add non-empty parts
+            if (isBold) {
+                result.push(<strong key={i}>{part}</strong>);
+            } else {
+                result.push(part);
+            }
+        }
     }
-    return text;
+    
+    return result.length > 0 ? result : text;
 }
 
 interface MktFeedResponse {
