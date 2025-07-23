@@ -39,7 +39,7 @@ export const AI_PROVIDERS: Record<string, AIProviderConfig> = {
         models: [
             {
                 id: 'google/gemini-2.5-flash-lite',
-                displayName: 'Gemini 2.5 Flash Lite(OpenRouter)',
+                displayName: 'Gemini 2.5 Flash Lite (OpenRouter)',
             },
             {
                 id: 'qwen/qwen3-235b-a22b',
