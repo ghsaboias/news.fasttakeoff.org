@@ -1,5 +1,6 @@
 import { withErrorHandling } from '@/lib/api-utils';
 import { getChannelDetails } from '@/lib/data/channels-service';
+import { NextResponse } from 'next/server';
 
 /**
  * GET /api/messages
@@ -19,6 +20,10 @@ export async function GET(request: Request) {
         }
 
         const channel = await getChannelDetails(env, channelId);
-        return channel;
+        return NextResponse.json(channel, {
+            headers: {
+                'Cache-Control': 'public, s-maxage=180, stale-while-revalidate=300',
+            },
+        });
     }, 'Failed to fetch messages');
-} 
+}

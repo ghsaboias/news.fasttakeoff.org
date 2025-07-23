@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-export const dynamic = 'force-dynamic';
+// Remove force-dynamic since geo data is stable per location
+// export const dynamic = 'force-dynamic';
 
 /**
  * GET /api/geo
@@ -16,10 +17,26 @@ export async function GET(request: NextRequest) {
 
         if (!country) {
             console.warn('[API /geo] CF-IPCountry header not found. Assuming non-US (or local dev).');
-            return NextResponse.json({ country: 'XX' });
+            return NextResponse.json(
+                { country: 'XX' },
+                {
+                    headers: {
+                        // Cache for 1 hour since geo location is stable
+                        'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=7200',
+                    },
+                }
+            );
         }
 
-        return NextResponse.json({ country });
+        return NextResponse.json(
+            { country },
+            {
+                headers: {
+                    // Cache for 1 hour since geo location is stable
+                    'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=7200',
+                },
+            }
+        );
     } catch (error) {
         console.error('[API /geo] Error fetching geo data:', error);
         return NextResponse.json(
@@ -27,4 +44,4 @@ export async function GET(request: NextRequest) {
             { status: 500 }
         );
     }
-} 
+}

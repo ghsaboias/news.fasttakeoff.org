@@ -60,7 +60,11 @@ export async function GET(request: NextRequest) {
                     nextReportId,
                 };
 
-                return NextResponse.json(response);
+                return NextResponse.json(response, {
+                    headers: {
+                        'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=600',
+                    },
+                });
 
             } catch (error) {
                 console.error(`Error fetching report ${channelId}/${reportId}:`, error);
@@ -89,7 +93,11 @@ export async function GET(request: NextRequest) {
         const cached = await cacheManager.get('REPORTS_CACHE', cacheKey);
 
         if (cached) {
-            return cached;
+            return NextResponse.json(cached, {
+                headers: {
+                    'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=600',
+                },
+            });
         }
 
         const reports = channelId
@@ -100,7 +108,11 @@ export async function GET(request: NextRequest) {
         const ttl = limit && limit > 20 ? 600 : 300; // 10 minutes for large requests, 5 for small
         await cacheManager.put('REPORTS_CACHE', cacheKey, reports, ttl);
 
-        return reports;
+        return NextResponse.json(reports, {
+            headers: {
+                'Cache-Control': `public, s-maxage=${ttl}, stale-while-revalidate=${ttl * 2}`,
+            },
+        });
     }, 'Failed to fetch report(s)');
 }
 

@@ -100,7 +100,14 @@ export async function GET(request: Request) {
                     { status: 404 }
                 );
             }
-            return { entities: extractionResult.entities };
+            return NextResponse.json(
+                { entities: extractionResult.entities },
+                {
+                    headers: {
+                        'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=600',
+                    },
+                }
+            );
         }
 
         const reportService = new ReportService(env);
@@ -182,10 +189,17 @@ export async function GET(request: Request) {
                 connectedNodeIds.has(l.source) && connectedNodeIds.has(l.target)
             );
 
-            return {
-                nodes: connectedNodes,
-                links: filteredLinks,
-            };
+            return NextResponse.json(
+                {
+                    nodes: connectedNodes,
+                    links: filteredLinks,
+                },
+                {
+                    headers: {
+                        'Cache-Control': 'public, s-maxage=600, stale-while-revalidate=1200',
+                    },
+                }
+            );
         }
 
         // Otherwise, get aggregated entities from all reports
@@ -229,19 +243,26 @@ export async function GET(request: Request) {
         const uniqueEntities = Array.from(entityMap.values())
             .sort((a, b) => b.reportIds.length - a.reportIds.length || b.relevanceScore - a.relevanceScore);
 
-        return {
-            entities: uniqueEntities,
-            totalReports: reportsWithEntities.length,
-            summary: {
-                totalEntities: uniqueEntities.length,
-                entityTypes: [...new Set(uniqueEntities.map(e => e.type))],
-                topEntities: uniqueEntities.slice(0, 10).map(e => ({
-                    type: e.type,
-                    value: e.value,
-                    relevanceScore: e.relevanceScore,
-                    reportCount: e.reportIds.length
-                }))
+        return NextResponse.json(
+            {
+                entities: uniqueEntities,
+                totalReports: reportsWithEntities.length,
+                summary: {
+                    totalEntities: uniqueEntities.length,
+                    entityTypes: [...new Set(uniqueEntities.map(e => e.type))],
+                    topEntities: uniqueEntities.slice(0, 10).map(e => ({
+                        type: e.type,
+                        value: e.value,
+                        relevanceScore: e.relevanceScore,
+                        reportCount: e.reportIds.length
+                    }))
+                }
+            },
+            {
+                headers: {
+                    'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=600',
+                },
             }
-        };
+        );
     }, 'Failed to fetch entities');
 } 

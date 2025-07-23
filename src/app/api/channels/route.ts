@@ -1,5 +1,6 @@
 import { withErrorHandling } from '@/lib/api-utils';
 import { getChannels } from '@/lib/data/channels-service';
+import { NextResponse } from 'next/server';
 
 /**
  * GET /api/channels
@@ -10,7 +11,14 @@ import { getChannels } from '@/lib/data/channels-service';
  */
 export async function GET() {
     return withErrorHandling(
-        env => getChannels(env),
+        async (env) => {
+            const channels = await getChannels(env);
+            return NextResponse.json(channels, {
+                headers: {
+                    'Cache-Control': 'public, s-maxage=600, stale-while-revalidate=1200',
+                },
+            });
+        },
         'Failed to fetch channels'
     );
 }
