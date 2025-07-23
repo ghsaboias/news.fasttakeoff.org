@@ -27,11 +27,24 @@ function formatMarketText(text: string): React.ReactNode {
         } else if (part === '</B>' || part === '</b>') {
             isBold = false;
         } else if (part) {
+            // Handle line breaks within the text part
+            const textWithBreaks = part.split('\n').map((line, lineIndex, array) => {
+                if (lineIndex === array.length - 1) {
+                    // Last line, don't add break after it
+                    return line;
+                } else {
+                    // Add line break after each line except the last
+                    return [line, <br key={`${i}-br-${lineIndex}`} />];
+                }
+            }).flat();
+            
             // Only add non-empty parts
             if (isBold) {
-                result.push(<strong key={i}>{part}</strong>);
+                result.push(<strong key={i}>{textWithBreaks}</strong>);
             } else {
-                result.push(part);
+                result.push(...textWithBreaks.map((item, idx) => 
+                    typeof item === 'string' ? item : React.cloneElement(item, { key: `${i}-${idx}` })
+                ));
             }
         }
     }
