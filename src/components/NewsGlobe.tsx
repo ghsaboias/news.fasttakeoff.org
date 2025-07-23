@@ -65,6 +65,9 @@ interface GeoJsonGeometry {
 interface NewsMarkerData extends ReportFromAPI {
     lat: number;
     lon: number;
+    country?: string;
+    country_code?: string;
+    display_name?: string;
 }
 
 interface MarkerProps {
@@ -252,7 +255,7 @@ const Globe = ({ onSelectReport }: { onSelectReport: (report: NewsMarkerData) =>
                             continue;
                         }
 
-                        const location: { lat: number; lng: number } = await geoResponse.json();
+                        const location: { lat: number; lng: number; country?: string; country_code?: string; display_name?: string } = await geoResponse.json();
 
                         if (typeof location.lat === 'number' && typeof location.lng === 'number' && !(location.lat === 0 && location.lng === 0)) {
                             // Add successfully geocoded item to state immediately
@@ -260,6 +263,9 @@ const Globe = ({ onSelectReport }: { onSelectReport: (report: NewsMarkerData) =>
                                 ...report,
                                 lat: location.lat,
                                 lon: location.lng,
+                                country: location.country,
+                                country_code: location.country_code,
+                                display_name: location.display_name,
                             };
                             setNewsItems(prevItems => [...prevItems, newItem]);
                         } else {
