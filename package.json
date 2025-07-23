@@ -18,6 +18,7 @@
     "dev:worker": "wrangler dev --port 8771",
     "watch:build": "npx watch 'npm run build:worker' -- src",
     "build:cron:test": "./run_cron_test.sh",
+    "trigger:cron": "./scripts/trigger-cron-jobs.sh",
     "playground": "tsx scripts/standalone-playground.ts",
     "analyze": "ANALYZE=true next build",
     "test": "vitest",

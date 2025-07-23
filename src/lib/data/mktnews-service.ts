@@ -175,9 +175,6 @@ export class MktNewsService {
         const filteredMessages = cached.messages.filter(msg => {
             const messageTime = new Date(msg.received_at).getTime();
             const isInTimeframe = messageTime > cutoffTime;
-            if (!isInTimeframe) {
-                console.log(`[MKTNEWS] Skipping message ${msg.data.id} from ${msg.received_at} (too old)`);
-            }
             return isInTimeframe;
         });
 
