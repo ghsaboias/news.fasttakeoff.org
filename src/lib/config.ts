@@ -113,25 +113,17 @@ export const DISCORD = {
 // Cache configuration in seconds
 export const CACHE = {
     TTL: {
-        // Report cache TTL values by timeframe (in seconds)
         REPORTS: 72 * 60 * 60, // 72 hours
-        // Channel cache TTL
         CHANNELS: 12 * 60 * 60, // 12 hours
-        // Messages cache TTL
         MESSAGES: 2592000, // 30 days
-        // Feeds summary cache TTL
         FEEDS: 30 * 24 * 60 * 60, // 30 days
-        // Entity extraction cache TTL
         ENTITIES: 24 * 60 * 60, // 24 hours
     },
     RETENTION: {
-        // How long to keep reports in the KV store before manual cleanup (in seconds)
         REPORTS: 365 * 24 * 60 * 60, // 1 year
-        // How long to keep extracted entities
         ENTITIES: 7 * 24 * 60 * 60, // 7 days
     },
     REFRESH: {
-        // Thresholds for background refresh (in seconds)
         MESSAGES: 5 * 60, // 5 minutes
         CHANNELS: 60 * 60, // 1 hour
         FEEDS: 2 * 60 * 60, // 2 hours
@@ -144,8 +136,7 @@ export const TIME = {
     ONE_HOUR_MS: 3600000,
     TWO_HOURS_MS: 7200000,
     SIX_HOURS_MS: 21600000,
-    TWENTY_FOUR_HOURS_MS: 24 * 60 * 60 * 1000, // Added for 24-hour report filtering
-    // Timeframes for reports
+    TWENTY_FOUR_HOURS_MS: 24 * 60 * 60 * 1000,
     TIMEFRAMES: ['2h', '6h'] as const,
     CRON: {
         '2h': 2,
@@ -156,17 +147,11 @@ export const TIME = {
 // AI/LLM configuration
 export const AI = {
     REPORT_GENERATION: {
-        // Token estimation for prompt sizing
         TOKEN_PER_CHAR: 1 / 4,
-        // Tokens reserved for model instructions
         OVERHEAD_TOKENS: 1000,
-        // Tokens reserved for output
         OUTPUT_BUFFER: 12288,
-        // Maximum context window size
         MAX_CONTEXT_TOKENS: 128000,
-        // Maximum retries for AI API calls
         MAX_ATTEMPTS: 3,
-        // Prompt template for report generation - NOTE: This might need adjustment if switching models significantly
         SYSTEM_PROMPT: 'You are an experienced news wire journalist. Always complete your full response. Respond in valid JSON format with: {"headline": "clear, specific, descriptive headline in ALL CAPS", "city": "single city name in title case (e.g. New York, Tel Aviv, São Paulo, Texas, Moscow, etc.) - NOT all caps", "body": "cohesive narrative with paragraphs separated by double newlines (\\n\\n)"}. The body field must be a single string, not an array or object.',
 
         PROMPT_TEMPLATE: `
@@ -235,17 +220,11 @@ EXAMPLE FORMAT:
 `,
     },
     ENTITY_EXTRACTION: {
-        // Token estimation for entity extraction prompts
         TOKEN_PER_CHAR: 1 / 4,
-        // Tokens reserved for model instructions
         OVERHEAD_TOKENS: 500,
-        // Tokens reserved for output
         OUTPUT_BUFFER: 4096,
-        // Maximum context window for entity extraction
         MAX_CONTEXT_TOKENS: 32000,
-        // Maximum retries for entity extraction API calls
         MAX_ATTEMPTS: 2,
-        // System prompt for entity extraction
         SYSTEM_PROMPT: 'You are an expert entity extraction system. Extract entities from news text with high precision. Respond in valid JSON format with entity types, values, positions, and confidence scores.',
 
         PROMPT_TEMPLATE: `
@@ -605,10 +584,8 @@ Executive Summary:
     },
 };
 
-// Type definitions for config
 export type TimeframeKey = typeof TIME.TIMEFRAMES[number];
 
-// RSS feeds configuration
 export const RSS_FEEDS: Record<string, string> = {
     'CNN-Brasil': 'https://www.cnnbrasil.com.br/feed/',
     'BBC-Brasil': 'https://feeds.bbci.co.uk/portuguese/rss.xml',
@@ -620,7 +597,6 @@ export const RSS_FEEDS: Record<string, string> = {
     'Investing.com Brasil - Mercado': 'https://br.investing.com/rss/news_25.rss',
 };
 
-// Brazil news topics configuration
 export const BRAZIL_NEWS_TOPICS = {
     'geral': {
         name: 'Giro Geral',
@@ -653,8 +629,6 @@ export const ENTITY_LABELS: { [key: string]: string } = {
     LOCATION: 'Locations',
 };
 
-// UI configuration
 export const UI = {
-    // Pages that should not display header and footer (full-screen experience)
     FULL_SCREEN_PAGES: ['/news-globe', '/power-network', '/entities/graph'],
 };
