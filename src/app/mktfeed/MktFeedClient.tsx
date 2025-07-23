@@ -14,8 +14,8 @@ import { useCallback, useEffect, useState } from 'react';
 
 // Format market news text by handling common patterns
 function formatMarketText(text: string): React.ReactNode {
-    // Handle <B> and <b> tags within the text
-    const parts = text.split(/(<\/?[Bb]>)/);
+    // Handle <B>, <b>, and <br> tags within the text
+    const parts = text.split(/(<\/?[Bb]>|<br\s*\/?>)/i);
     const result: React.ReactNode[] = [];
     let isBold = false;
     
@@ -26,25 +26,15 @@ function formatMarketText(text: string): React.ReactNode {
             isBold = true;
         } else if (part === '</B>' || part === '</b>') {
             isBold = false;
+        } else if (/^<br\s*\/?>$/i.test(part)) {
+            // Handle <br>, <br/>, <br /> tags
+            result.push(<br key={i} />);
         } else if (part) {
-            // Handle line breaks within the text part
-            const textWithBreaks = part.split('\n').map((line, lineIndex, array) => {
-                if (lineIndex === array.length - 1) {
-                    // Last line, don't add break after it
-                    return line;
-                } else {
-                    // Add line break after each line except the last
-                    return [line, <br key={`${i}-br-${lineIndex}`} />];
-                }
-            }).flat();
-            
             // Only add non-empty parts
             if (isBold) {
-                result.push(<strong key={i}>{textWithBreaks}</strong>);
+                result.push(<strong key={i}>{part}</strong>);
             } else {
-                result.push(...textWithBreaks.map((item, idx) => 
-                    typeof item === 'string' ? item : React.cloneElement(item, { key: `${i}-${idx}` })
-                ));
+                result.push(part);
             }
         }
     }
