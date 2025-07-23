@@ -3,6 +3,7 @@ import { ExecutiveSummaryService } from './data/executive-summary-service';
 import { FeedsService } from './data/feeds-service';
 import { MessagesService } from './data/messages-service';
 import { MktNewsService } from './data/mktnews-service';
+import { MktNewsSummaryService } from './data/mktnews-summary-service';
 import { ReportService } from './data/report-service';
 
 interface ScheduledEvent {
@@ -62,6 +63,7 @@ async function logRun(
 const TASK_TIMEOUTS = {
     MESSAGES: 180000,      // 3 minutes
     MKTNEWS: 60000,        // 1 minute (just cache maintenance now)
+    MKTNEWS_SUMMARY: 90000, // 1.5 minutes
     EXECUTIVE_SUMMARY: 180000,  // 3 minutes
     REPORTS: 240000,       // 4 minutes
     FEEDS: 240000,         // 4 minutes
@@ -146,8 +148,13 @@ const CRON_TASKS: Record<string, CronTaskFunction> = {
         });
     },
 
-    // Every 5 minutes for MktNews cache maintenance
-    "*/5 * * * *": async (env: Cloudflare.Env) => {
+    // Every 1 hour
+    "0 * * * *": async (env: Cloudflare.Env) => {
+        const mktNewsSummaryService = new MktNewsSummaryService(env);
+        await logRun('MKTNEWS_SUMMARY', () => mktNewsSummaryService.generateAndCacheSummary(60), {
+            timeoutMs: TASK_TIMEOUTS.MKTNEWS_SUMMARY
+        });
+
         const mktNewsService = new MktNewsService(env);
         await logRun('MKTNEWS', () => mktNewsService.updateMessages(), {
             timeoutMs: TASK_TIMEOUTS.MKTNEWS
@@ -196,6 +203,10 @@ async function handleManualTrigger(trigger: string, env: Cloudflare.Env): Promis
 
         'MKTNEWS': () => logRun('MKTNEWS', () => mktNewsService.updateMessages(), {
             timeoutMs: TASK_TIMEOUTS.MKTNEWS
+        }),
+
+        'MKTNEWS_SUMMARY': () => logRun('MKTNEWS_SUMMARY', () => (new MktNewsSummaryService(env)).generateAndCacheSummary(60), {
+            timeoutMs: TASK_TIMEOUTS.MKTNEWS_SUMMARY
         })
     };
 
