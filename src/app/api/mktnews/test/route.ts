@@ -77,7 +77,7 @@ export async function POST() {
             // Sample message content (first 3 messages)
             const sampleMessages = recentMessages.slice(0, 3).map(msg => ({
                 id: msg.data.id,
-                content: msg.data.data.content.substring(0, 100) + (msg.data.data.content.length > 100 ? '...' : ''),
+                content: (msg.data.data.content || '').substring(0, 100) + ((msg.data.data.content || '').length > 100 ? '...' : ''),
                 important: msg.data.important,
                 time: msg.data.time,
                 received_at: msg.received_at

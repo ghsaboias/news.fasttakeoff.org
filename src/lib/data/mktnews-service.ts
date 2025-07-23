@@ -163,13 +163,26 @@ export class MktNewsService {
     async getMessagesForTimeframe(hours: number): Promise<MktNewsMessage[]> {
         const cached = await this.getCachedMessages();
         if (!cached?.messages) {
+            console.log(`[MKTNEWS] No cached messages found`);
             return [];
         }
 
+        console.log(`[MKTNEWS] Total cached messages: ${cached.messages.length}`);
+
         const cutoffTime = Date.now() - (hours * 60 * 60 * 1000);
-        return cached.messages.filter(msg =>
-            new Date(msg.received_at).getTime() > cutoffTime
-        );
+        console.log(`[MKTNEWS] Filtering for messages after: ${new Date(cutoffTime).toISOString()}`);
+
+        const filteredMessages = cached.messages.filter(msg => {
+            const messageTime = new Date(msg.received_at).getTime();
+            const isInTimeframe = messageTime > cutoffTime;
+            if (!isInTimeframe) {
+                console.log(`[MKTNEWS] Skipping message ${msg.data.id} from ${msg.received_at} (too old)`);
+            }
+            return isInTimeframe;
+        });
+
+        console.log(`[MKTNEWS] Found ${filteredMessages.length} messages in ${hours}h timeframe`);
+        return filteredMessages;
     }
 
     /**

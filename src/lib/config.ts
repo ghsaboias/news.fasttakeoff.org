@@ -167,7 +167,7 @@ export const AI = {
         // Maximum retries for AI API calls
         MAX_ATTEMPTS: 3,
         // Prompt template for report generation - NOTE: This might need adjustment if switching models significantly
-        SYSTEM_PROMPT: 'You are an experienced news wire journalist. Always complete your full response. Respond in valid JSON format with: {"headline": "clear, specific, descriptive headline in ALL CAPS", "city": "single city name in title case (e.g. New York, Tel Aviv, São Paulo, Texas, Moscow, etc.) - NOT all caps", "body": "cohesive narrative with paragraphs separated by double newlines (\\n\\n)"}',
+        SYSTEM_PROMPT: 'You are an experienced news wire journalist. Always complete your full response. Respond in valid JSON format with: {"headline": "clear, specific, descriptive headline in ALL CAPS", "city": "single city name in title case (e.g. New York, Tel Aviv, São Paulo, Texas, Moscow, etc.) - NOT all caps", "body": "cohesive narrative with paragraphs separated by double newlines (\\n\\n)"}. The body field must be a single string, not an array or object.',
 
         PROMPT_TEMPLATE: `
 Generate a comprehensive news report based on the provided sources and a previous report (if provided).
@@ -214,7 +214,7 @@ WHEN A PREVIOUS REPORT IS PROVIDED:
 FORMAT:
 - Headline: Specific, non-sensational, in ALL CAPS
 - City: Single city name in title case (e.g. New York, Tel Aviv, São Paulo) - NOT all caps
-- Body: Cohesive paragraphs separated by double newlines (\\n\\n), following inverted pyramid structure
+- Body: A single string containing cohesive paragraphs separated by double newlines (\\n\\n), following inverted pyramid structure. DO NOT use arrays or objects for paragraphs.
 
 <previous_report_context>
 {previousReportContext}
@@ -225,6 +225,13 @@ FORMAT:
 </new_sources>
 
 Generate your complete JSON response now:
+
+EXAMPLE FORMAT:
+{
+  "headline": "EXAMPLE HEADLINE IN ALL CAPS",
+  "city": "Example City",
+  "body": "This is the first paragraph with essential facts.\\n\\nThis is the second paragraph with supporting details.\\n\\nThis is the third paragraph with additional context."
+}
 `,
     },
     ENTITY_EXTRACTION: {
@@ -586,6 +593,15 @@ Use bold for key entities.
 
 Executive Summary:
 {executiveSummary}`,
+    },
+    MKTNEWS_SUMMARIES: {
+        TOKEN_PER_CHAR: 1 / 4,
+        OVERHEAD_TOKENS: 500,
+        OUTPUT_BUFFER: 4096,
+        MAX_CONTEXT_TOKENS: 32000,
+        MAX_ATTEMPTS: 3,
+        SYSTEM_PROMPT: 'You are a financial news desk editor. Generate a concise, bullet-point market summary based on live flash updates. Focus on concrete events, data, and company moves meaningful to traders. Respond with clear Markdown: top-level heading "## Market Flash Summary" followed by bullet points ordered by importance. Do not add commentary or speculation.',
+        PROMPT_TEMPLATE: `Create a concise market flash summary in Markdown based on the following market news messages from the last hour. Reference the three most recent previous summaries for context continuity. Highlight significant price moves, economic data releases, corporate actions, and market-moving headlines. Use clear bullet points. Avoid duplication with previous summaries unless there is a material update.\n\nPREVIOUS SUMMARIES (most recent first):\n{previousSummaries}\n\nCURRENT MESSAGES:\n"""\n{messages}\n"""\n\nRespond ONLY with valid Markdown.`,
     },
 };
 

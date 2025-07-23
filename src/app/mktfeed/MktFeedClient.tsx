@@ -6,11 +6,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loader } from '@/components/ui/loader';
 import LocalDateTime from '@/components/utils/LocalDateTime';
 import { useApi } from '@/lib/hooks';
-import { MktNewsMessage } from '@/lib/types/core';
+import { MktNewsMessage, MktNewsSummary } from '@/lib/types/core';
 import { Clock, RefreshCw, TrendingUp } from 'lucide-react';
 import Image from 'next/image';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
+import ReactMarkdown from 'react-markdown';
 
 // Format market news text by handling common patterns
 function formatMarketText(text: string): React.ReactNode {
@@ -18,10 +19,10 @@ function formatMarketText(text: string): React.ReactNode {
     const parts = text.split(/(<\/?[Bb]>|<br\s*\/?>)/i);
     const result: React.ReactNode[] = [];
     let isBold = false;
-    
+
     for (let i = 0; i < parts.length; i++) {
         const part = parts[i];
-        
+
         if (part === '<B>' || part === '<b>') {
             isBold = true;
         } else if (part === '</B>' || part === '</b>') {
@@ -38,7 +39,7 @@ function formatMarketText(text: string): React.ReactNode {
             }
         }
     }
-    
+
     return result.length > 0 ? result : text;
 }
 
@@ -50,6 +51,10 @@ interface MktFeedResponse {
     };
     timeframe: string;
     count: number;
+}
+
+interface SummaryResponse {
+    summary: MktNewsSummary | null;
 }
 
 const timeframeOptions = [
@@ -78,6 +83,20 @@ export function MktFeedClient() {
     const { data, loading, error, request } = useApi<MktFeedResponse>(fetchData, {
         manual: true,
     });
+
+    // Fetch latest 15min summary once on mount and refresh on demand
+    const fetchSummary = useCallback(async () => {
+        const res = await fetch('/api/mktnews/summary');
+        if (!res.ok) throw new Error('Failed to fetch summary');
+        return res.json();
+    }, []);
+
+    const { data: summaryData, loading: summaryLoading, error: summaryError, request: requestSummary } =
+        useApi<SummaryResponse>(fetchSummary, { manual: true });
+
+    useEffect(() => {
+        requestSummary();
+    }, [requestSummary]);
 
     useEffect(() => {
         request();
@@ -120,6 +139,32 @@ export function MktFeedClient() {
 
     return (
         <div className="container mx-auto px-4 max-w-5xl">
+            {/* Market Flash Summary */}
+            {summaryError && (
+                <Card className="mb-4 p-4 border-destructive/50">
+                    <CardTitle className="text-destructive text-sm">Failed to load summary</CardTitle>
+                </Card>
+            )}
+            {summaryLoading && (
+                <div className="mb-4 flex items-center gap-2 text-sm text-foreground/80">
+                    <Loader size="sm" /> Loading market summary...
+                </div>
+            )}
+            {summaryData?.summary && (
+                <Card className="mb-6">
+                    <CardHeader className="pb-2">
+                        <CardTitle className="text-xl font-semibold flex items-center gap-2">
+                            <TrendingUp className="h-5 w-5" /> Market Flash Summary (15m)
+                        </CardTitle>
+                        <p className="text-xs text-muted-foreground">
+                            Generated <LocalDateTime dateString={summaryData.summary.generatedAt} /> from {summaryData.summary.messageCount} messages
+                        </p>
+                    </CardHeader>
+                    <CardContent className="prose max-w-none">
+                        <ReactMarkdown>{summaryData.summary.summary}</ReactMarkdown>
+                    </CardContent>
+                </Card>
+            )}
             {/* Header */}
             <div className="flex flex-col gap-4 mb-4">
                 <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
@@ -210,7 +255,7 @@ export function MktFeedClient() {
                                         </CardTitle>
                                     )}
                                     <p className="text-foreground leading-relaxed">
-                                        {formatMarketText(message.data.data.content)}
+                                        {formatMarketText(message.data.data.content || '')}
                                     </p>
                                     {message.data.data.pic && (
                                         <div className="mt-3">
