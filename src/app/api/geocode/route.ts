@@ -5,20 +5,69 @@ import { getCacheContext } from '../../../lib/utils';
 
 /**
  * GET /api/geocode
- * Geocodes a city name to latitude/longitude using Google Maps API, with KV caching.
+ * Geocodes a city name to latitude/longitude using OpenStreetMap Nominatim (free), with KV caching.
  * @param request - Query param: city (string, required)
- * @returns {Promise<NextResponse<GoogleGeocodeLocation | { error: string }>>}
+ * @returns {Promise<NextResponse<GeocodeLocation | { error: string }>>}
  * @throws 400 if city is missing, 404 if not found, 500 for API or cache errors.
  * @auth None required.
  */
 
-const GOOGLE_GEOCODING_API_KEY = process.env.GOOGLE_GEOCODING_API_KEY
+const GEOCODE_CACHE_TTL_SECONDS = 60 * 24 * 60 * 60; // 60 days (longer since it's free)
 
-const GEOCODE_CACHE_TTL_SECONDS = 30 * 24 * 60 * 60;
-
-interface GoogleGeocodeLocation {
+interface GeocodeLocation {
     lat: number;
     lng: number;
+    country?: string;
+    country_code?: string;
+    display_name?: string;
+}
+
+interface NominatimResponse {
+    lat: string;
+    lon: string;
+    display_name: string;
+    address?: {
+        country?: string;
+        country_code?: string;
+    };
+}
+
+async function geocodeWithNominatim(city: string): Promise<GeocodeLocation | null> {
+    try {
+        const response = await fetch(
+            `https://nominatim.openstreetmap.org/search?` +
+            `q=${encodeURIComponent(city)}&format=json&limit=1&addressdetails=1`,
+            {
+                headers: {
+                    'User-Agent': 'FastTakeoffNews/1.0 (news.fasttakeoff.org)',
+                    'Accept': 'application/json'
+                }
+            }
+        );
+
+        if (!response.ok) {
+            console.error(`Nominatim API error for ${city}: ${response.status} - ${response.statusText}`);
+            return null;
+        }
+
+        const data: NominatimResponse[] = await response.json();
+
+        if (data && data.length > 0) {
+            const result = data[0];
+            return {
+                lat: parseFloat(result.lat),
+                lng: parseFloat(result.lon),
+                country: result.address?.country,
+                country_code: result.address?.country_code?.toUpperCase(),
+                display_name: result.display_name
+            };
+        }
+
+        return null;
+    } catch (error) {
+        console.error(`Nominatim geocoding error for ${city}:`, error);
+        return null;
+    }
 }
 
 export async function GET(request: Request) {
@@ -32,20 +81,13 @@ export async function GET(request: Request) {
         return NextResponse.json({ error: 'City parameter is required' }, { status: 400 });
     }
 
-    if (!GOOGLE_GEOCODING_API_KEY) {
-        return NextResponse.json(
-            { error: 'Geocoding service is not properly configured on the server.' },
-            { status: 500 }
-        );
-    }
-
     // Check KV cache first
     try {
-        const cachedLocation = await cacheManager.get<GoogleGeocodeLocation>('GEOCODE_CACHE' as keyof Cloudflare.Env, city);
+        const cachedLocation = await cacheManager.get<GeocodeLocation>('GEOCODE_CACHE' as keyof Cloudflare.Env, city);
         if (cachedLocation) {
             // Check if the cached location is the "not found" placeholder
             if (cachedLocation.lat === 0 && cachedLocation.lng === 0) {
-                return NextResponse.json({ error: `No geocoding results for ${city} (cached). Google status: ZERO_RESULTS` }, { status: 404 });
+                return NextResponse.json({ error: `No geocoding results for ${city} (cached)` }, { status: 404 });
             }
             return NextResponse.json(cachedLocation);
         }
@@ -53,41 +95,17 @@ export async function GET(request: Request) {
         console.error(`Error reading from GEOCODE_CACHE for city ${city}:`, cacheError);
     }
 
-    try {
-        const response = await fetch(
-            `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(city)}&key=${GOOGLE_GEOCODING_API_KEY}`
-        );
+    // Try Nominatim geocoding
+    const location = await geocodeWithNominatim(city);
 
-        if (!response.ok) {
-            const errorData = await response.text();
-            console.error(`Geocoding API error for ${city}: ${response.status} - ${errorData}`);
-            return NextResponse.json(
-                { error: `Failed to geocode city: ${response.statusText || response.status}` },
-                { status: response.status }
-            );
-        }
-
-        const data = await response.json();
-
-        if (data.status === 'OK' && data.results && data.results.length > 0) {
-            const location = data.results[0].geometry.location as GoogleGeocodeLocation;
-            await cacheManager.put('GEOCODE_CACHE' as keyof Cloudflare.Env, city, location, GEOCODE_CACHE_TTL_SECONDS);
-            return NextResponse.json(location);
-        } else if (data.status === 'ZERO_RESULTS') {
-            const notFoundPlaceholder: GoogleGeocodeLocation = { lat: 0, lng: 0 };
-            await cacheManager.put('GEOCODE_CACHE' as keyof Cloudflare.Env, city, notFoundPlaceholder, GEOCODE_CACHE_TTL_SECONDS);
-            return NextResponse.json({ error: `No geocoding results for ${city}. Google status: ${data.status}` }, { status: 404 });
-        } else {
-            console.error(`Geocoding API error for ${city}: ${data.status}. Error message: ${data.error_message || 'No additional error message provided.'}`);
-            return NextResponse.json(
-                { error: `Geocoding failed for ${city}. Google status: ${data.status}`, details: data.error_message },
-                { status: 500 }
-            );
-        }
-    } catch (error) {
-        console.error(`Network or other error geocoding ${city}:`, error);
-        // Try to provide more specific error information if available
-        const errorMessage = error instanceof Error ? error.message : 'Internal server error during geocoding';
-        return NextResponse.json({ error: errorMessage }, { status: 500 });
+    if (location && location.lat !== 0 && location.lng !== 0) {
+        // Cache successful result
+        await cacheManager.put('GEOCODE_CACHE' as keyof Cloudflare.Env, city, location, GEOCODE_CACHE_TTL_SECONDS);
+        return NextResponse.json(location);
+    } else {
+        // Cache "not found" result to prevent repeated API calls
+        const notFoundPlaceholder: GeocodeLocation = { lat: 0, lng: 0 };
+        await cacheManager.put('GEOCODE_CACHE' as keyof Cloudflare.Env, city, notFoundPlaceholder, GEOCODE_CACHE_TTL_SECONDS);
+        return NextResponse.json({ error: `No geocoding results for ${city}` }, { status: 404 });
     }
 }
