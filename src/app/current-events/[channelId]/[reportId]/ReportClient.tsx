@@ -115,7 +115,7 @@ export default function ReportClient() {
 
     return (
         <>
-            <div className="p-6 mx-autoflex flex-col">
+            <div className="p-6 mx-auto flex flex-col overflow-x-hidden">
                 {isLoading ? (
                     <div className="flex items-center justify-center h-full">
                         <Loader size="xl" />
