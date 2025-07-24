@@ -152,16 +152,66 @@ export function MktFeedClient() {
             )}
             {summaryData?.summary && (
                 <Card className="mb-6">
-                    <CardHeader className="pb-2">
+                    <CardHeader>
                         <CardTitle className="text-xl font-semibold flex items-center gap-2">
                             <TrendingUp className="h-5 w-5" /> Market Flash Summary (15m)
                         </CardTitle>
-                        <p className="text-xs text-muted-foreground">
+                        <p className="text-xs text-foreground">
                             Generated <LocalDateTime dateString={summaryData.summary.generatedAt} /> from {summaryData.summary.messageCount} messages
                         </p>
                     </CardHeader>
                     <CardContent className="prose max-w-none">
-                        <ReactMarkdown>{summaryData.summary.summary}</ReactMarkdown>
+                        <ReactMarkdown
+                            components={{
+                                p: ({ ...props }) => {
+                                    // Don't wrap list items in paragraphs
+                                    const content = props.children?.toString() || '';
+                                    if (content.trim().startsWith('-')) {
+                                        return <>{props.children}</>;
+                                    }
+                                    return <p className="leading-relaxed mb-3" {...props} />;
+                                },
+                                strong: ({ ...props }) => {
+                                    // Check if this is a standalone strong element that's likely a section heading
+                                    const content = props.children?.toString() || '';
+                                    const isHeading = content && [
+                                        'Market Flash Summary', 'US Stocks', 'Trump Administration', 'Digital Assets',
+                                        'Ukraine Peace', 'Elon Musk', 'US-EU Trade', 'US Treasury', 'Fed Reverse',
+                                        'Syria-Saudi', 'Corporate Actions', 'US Politics', 'Copper Tariffs', 'US Dept'
+                                    ].some(heading => content.includes(heading.split(' ')[0]));
+
+                                    return isHeading ?
+                                        <strong className="block text-lg font-bold first:mt-0 text-primary" {...props} /> :
+                                        <strong className="font-semibold" {...props} />;
+                                },
+                                // Enhanced list styling
+                                ul: ({ ...props }) => (
+                                    <ul className="flex flex-col gap-4" {...props} />
+                                ),
+                                ol: ({ ...props }) => (
+                                    <ol className="list-decimal pl-6" {...props} />
+                                ),
+                                li: ({ ...props }) => (
+                                    <li className="flex flex-col gap-2 leading-relaxed" {...props} />
+                                ),
+                                // Add heading styles for any markdown headings
+                                h1: ({ ...props }) => (
+                                    <h1 className="text-2xl font-bold first:mt-0 text-primary" {...props} />
+                                ),
+                                h2: ({ ...props }) => (
+                                    <h2 className="text-xl font-bold first:mt-0 text-primary mb-4" {...props} />
+                                ),
+                                h3: ({ ...props }) => (
+                                    <h3 className="text-lg font-semibold first:mt-0" {...props} />
+                                ),
+                                // Add blockquote styling
+                                blockquote: ({ ...props }) => (
+                                    <blockquote className="border-l-2 border-primary pl-4 my-3 italic" {...props} />
+                                )
+                            }}
+                        >
+                            {summaryData.summary.summary}
+                        </ReactMarkdown>
                     </CardContent>
                 </Card>
             )}
