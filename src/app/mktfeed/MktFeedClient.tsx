@@ -153,7 +153,7 @@ export function MktFeedClient() {
             {summaryData?.summary && (
                 <Card className="mb-6">
                     <CardHeader>
-                        <CardTitle className="text-xl font-semibold flex items-center gap-2">
+                        <CardTitle className="text-xl font-semibold flex items-center gap-2 text-primary">
                             <TrendingUp className="h-5 w-5" /> Market Flash Summary (15m)
                         </CardTitle>
                         <p className="text-xs text-foreground">
@@ -181,25 +181,28 @@ export function MktFeedClient() {
                                     ].some(heading => content.includes(heading.split(' ')[0]));
 
                                     return isHeading ?
-                                        <strong className="block text-lg font-bold first:mt-0 text-primary" {...props} /> :
+                                        <strong className="block text-lg font-bold first:mt-0" {...props} /> :
                                         <strong className="font-semibold" {...props} />;
                                 },
                                 // Enhanced list styling
                                 ul: ({ ...props }) => (
-                                    <ul className="flex flex-col gap-4" {...props} />
+                                    <ul className="space-y-4 my-4" {...props} />
                                 ),
                                 ol: ({ ...props }) => (
                                     <ol className="list-decimal pl-6" {...props} />
                                 ),
                                 li: ({ ...props }) => (
-                                    <li className="flex flex-col gap-2 leading-relaxed" {...props} />
+                                    <li className="flex gap-2 leading-relaxed">
+                                        <span className="text-foreground">•</span>
+                                        <span className="flex-1">{props.children}</span>
+                                    </li>
                                 ),
                                 // Add heading styles for any markdown headings
                                 h1: ({ ...props }) => (
-                                    <h1 className="text-2xl font-bold first:mt-0 text-primary" {...props} />
+                                    <h1 className="text-2xl font-bold first:mt-0 text-foreground" {...props} />
                                 ),
                                 h2: ({ ...props }) => (
-                                    <h2 className="text-xl font-bold first:mt-0 text-primary mb-4" {...props} />
+                                    <h2 className="text-xl font-bold first:mt-0 text-foreground mb-4" {...props} />
                                 ),
                                 h3: ({ ...props }) => (
                                     <h3 className="text-lg font-semibold first:mt-0" {...props} />
