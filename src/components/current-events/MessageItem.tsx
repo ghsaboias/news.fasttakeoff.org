@@ -141,7 +141,7 @@ export default function MessageItem({ message, noAccordion = false, channelId }:
                         {/* Translated Content */}
                         {translationEmbed.description && (
                             <div className="mb-3">
-                                <p className="text-sm leading-relaxed">
+                                <p className="text-sm leading-relaxed break-words">
                                     {translationEmbed.description}
                                 </p>
                             </div>
@@ -243,7 +243,7 @@ export default function MessageItem({ message, noAccordion = false, channelId }:
                                 {/* Embed Description */}
                                 {embed.description && (
                                     <div className="mb-3">
-                                        <p className="text-sm leading-relaxed">
+                                        <p className="text-sm leading-relaxed break-words">
                                             {embed.description}
                                         </p>
                                     </div>
