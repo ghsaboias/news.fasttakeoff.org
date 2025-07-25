@@ -61,7 +61,7 @@ async function logRun(
 
 // Define task timeouts
 const TASK_TIMEOUTS = {
-    MESSAGES: 180000,      // 3 minutes
+    MESSAGES: 240000,      // 4 minutes
     MKTNEWS: 60000,        // 1 minute (just cache maintenance now)
     MKTNEWS_SUMMARY: 90000, // 1.5 minutes
     EXECUTIVE_SUMMARY: 180000,  // 3 minutes
