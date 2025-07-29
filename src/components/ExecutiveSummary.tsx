@@ -28,7 +28,6 @@ function parseMainSummarySections(summary: string) {
     // The AI prompt specifically instructs not to include a title, so we don't need to remove anything
     // Just split on '## ' but keep the heading
     const rawSections = summary.split(/(^## .*)/m).filter(Boolean);
-    console.log("rawSections", rawSections);
     const sections: { heading: string; content: string }[] = [];
     for (let i = 0; i < rawSections.length; i++) {
         if (rawSections[i].startsWith('## ')) {
@@ -38,7 +37,6 @@ function parseMainSummarySections(summary: string) {
             i++; // skip content
         }
     }
-    console.log("sections", sections);
     return sections;
 }
 
@@ -107,7 +105,6 @@ export default function ExecutiveSummary({ className = '' }: ExecutiveSummaryPro
             {/* Mini Executive Summary */}
             {summary.miniSummary && (() => {
                 const sections = parseMiniSummarySections(summary.miniSummary);
-                console.log("sections mini", sections);
                 let rows: { sections: { heading: string; content: string }[] }[] = [];
                 if (sections.length <= 3) {
                     rows = [{ sections }];
@@ -174,6 +171,11 @@ export default function ExecutiveSummary({ className = '' }: ExecutiveSummaryPro
                             { sections: sections.slice(0, 3) },
                             { sections: sections.slice(3, 5) },
                         ];
+                    } else {
+                        // Handle any number of sections > 5 by chunking into rows of 3
+                        for (let i = 0; i < sections.length; i += 3) {
+                            rows.push({ sections: sections.slice(i, i + 3) });
+                        }
                     }
                     return (
                         <div className="flex flex-col gap-6">
