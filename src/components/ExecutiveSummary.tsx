@@ -107,6 +107,7 @@ export default function ExecutiveSummary({ className = '' }: ExecutiveSummaryPro
             {/* Mini Executive Summary */}
             {summary.miniSummary && (() => {
                 const sections = parseMiniSummarySections(summary.miniSummary);
+                console.log("sections mini", sections);
                 let rows: { sections: { heading: string; content: string }[] }[] = [];
                 if (sections.length <= 3) {
                     rows = [{ sections }];
