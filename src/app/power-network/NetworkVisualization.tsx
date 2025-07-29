@@ -2,7 +2,7 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
     Sheet,
     SheetContent,
@@ -23,7 +23,7 @@ import {
 import { useBasicForceSimulation } from '../../lib/hooks/useBasicForceSimulation';
 import { formatEntityRelevance, formatFinancialValue, getFinancialValueDisplayClass, getRelevanceDisplayClass } from '../../lib/hooks/useEntityRelevance';
 
-export default function NetworkVisualization() {
+function NetworkVisualization() {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const [showTopConnected, setShowTopConnected] = useState(false);
     const [showRelevanceScores, setShowRelevanceScores] = useState(false);
@@ -451,4 +451,6 @@ export default function NetworkVisualization() {
             )}
         </div>
     );
-} 
+}
+
+export default React.memo(NetworkVisualization); 

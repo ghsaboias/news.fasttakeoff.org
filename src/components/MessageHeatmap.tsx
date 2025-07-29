@@ -1,7 +1,7 @@
 'use client'
 
 import { useApi } from '@/lib/hooks';
-import { useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 
 interface HourlyData {
     hour: number
@@ -34,7 +34,7 @@ const fetchHeatmapData = async () => {
     return response.json();
 };
 
-export default function MessageHeatmap() {
+function MessageHeatmap() {
     const [channelFilter, setChannelFilter] = useState<string>('')
     const [showInactiveChannels, setShowInactiveChannels] = useState<boolean>(false)
     const [channelsToShow, setChannelsToShow] = useState<number>(20)
@@ -414,4 +414,6 @@ export default function MessageHeatmap() {
 
         </div>
     )
-} 
+}
+
+export default React.memo(MessageHeatmap); 
