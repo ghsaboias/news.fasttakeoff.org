@@ -154,8 +154,22 @@ export default function ExecutiveSummary({ className = '' }: ExecutiveSummaryPro
 
             {/* Content */}
             <div className="p-6">
-                {/* Main heading as page title */}
-                <h1 className="text-3xl font-bold text-gray-900 text-center mb-4">Executive Summary</h1>
+                {/* Header matching Quick Digest style */}
+                <div className="bg-primary px-6 py-4 rounded-lg mb-6">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <p className="text-background text-sm">
+                                Last {summary.timeframe} • {summary.reportCount} reports analyzed
+                            </p>
+                        </div>
+                        <h2 className="text-background text-2xl font-bold">Executive Summary</h2>
+                        <div className="text-right">
+                            <p className="text-background text-sm">
+                                {new Date(summary.generatedAt).toLocaleString()}
+                            </p>
+                        </div>
+                    </div>
+                </div>
                 {(() => {
                     const sections = parseMainSummarySections(summary.summary);
                     let rows: { sections: { heading: string; content: string }[] }[] = [];
