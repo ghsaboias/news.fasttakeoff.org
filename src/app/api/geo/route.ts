@@ -16,7 +16,6 @@ export async function GET(request: NextRequest) {
         const country = request.headers.get('cf-ipcountry')?.toUpperCase();
 
         if (!country) {
-            console.warn('[API /geo] CF-IPCountry header not found. Assuming non-US (or local dev).');
             return NextResponse.json(
                 { country: 'XX' },
                 {
