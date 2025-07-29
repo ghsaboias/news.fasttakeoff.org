@@ -182,8 +182,6 @@ export class InstagramService {
     }
 
     private async generateAndStoreImage(report: Report): Promise<string> {
-        console.log(`[INSTAGRAM] Starting image generation for report ${report.reportId}`);
-
         try {
             // Step 1: Generate HTML directly (no SVG worker needed!)
             const html = this.generateHtml(report.headline);

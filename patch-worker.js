@@ -33,7 +33,6 @@ if (match) {
 // Write the updated content back
 try {
   fs.writeFileSync(workerPath, newContent, "utf8");
-  console.log("Patched worker.js with cron handler");
 } catch (error) {
   console.error(`Failed to write to ${workerPath}: ${error.message}`);
   process.exit(1);

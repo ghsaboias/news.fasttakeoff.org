@@ -117,8 +117,6 @@ export class FacebookService {
             return;
         }
 
-        console.log(`[FACEBOOK] Starting post process for report ID: ${report.reportId}`);
-
         try {
             const message = this.prepareMessage(report);
             const postUrl = this.getPostUrl();

@@ -38,11 +38,7 @@ export async function GET() {
 export async function POST() {
     return withErrorHandling(async (env) => {
         const executiveSummaryService = new ExecutiveSummaryService(env);
-
-        console.log('[EXECUTIVE_SUMMARY_API] Manual trigger for executive summary generation');
-
         const summary = await executiveSummaryService.generateAndCacheSummary();
-
         return NextResponse.json(summary);
     }, 'Failed to generate executive summary');
 } 

@@ -21,12 +21,7 @@ export class PerplexityFactCheckService {
 
         // Try to get from cache first
         const cached = await this.cache.get<FactCheckResult>('REPORTS_CACHE', cacheKey);
-        if (cached) {
-            console.log(`[FACT_CHECK] Cache hit for report ${report.reportId}`);
-            return cached;
-        }
-
-        console.log(`[FACT_CHECK] Starting fact-check for report ${report.reportId}`);
+        if (cached) return cached;
 
         try {
             const factCheckResult = await this.performFactCheck(report);
@@ -39,7 +34,6 @@ export class PerplexityFactCheckService {
                 24 * 60 * 60 // 24 hours
             );
 
-            console.log(`[FACT_CHECK] Completed fact-check for report ${report.reportId}`);
             return factCheckResult;
         } catch (error) {
             console.error(`[FACT_CHECK] Failed to fact-check report ${report.reportId}:`, error);
@@ -154,15 +148,6 @@ export class PerplexityFactCheckService {
     }> {
         const perplexityConfig = getAIProviderConfig('perplexity');
         const apiKey = getAIAPIKey(this.env as unknown as { [key: string]: string | undefined }, 'perplexity');
-
-        console.log('Sending request to Perplexity API');
-        console.log('Request config:', {
-            endpoint: perplexityConfig.endpoint,
-            model: perplexityConfig.model,
-            hasApiKey: !!apiKey,
-            apiKeyLength: apiKey?.length || 0
-        });
-
         const requestBody: {
             model: string;
             messages: Array<{ role: string; content: string }>;
@@ -245,9 +230,6 @@ export class PerplexityFactCheckService {
             };
         }
 
-        console.log('Request body size:', JSON.stringify(requestBody).length, 'bytes');
-
-        // Add timeout to prevent hanging - Perplexity needs 10-30s for first JSON schema request
         const controller = new AbortController();
         const timeoutId = setTimeout(() => {
             console.error('Perplexity API request timeout triggered after 60 seconds');
@@ -256,7 +238,6 @@ export class PerplexityFactCheckService {
 
         let response: Response;
         try {
-            console.log('Making fetch request to Perplexity API...');
             const fetchStart = Date.now();
 
             response = await fetch(perplexityConfig.endpoint, {
