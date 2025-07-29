@@ -28,6 +28,7 @@ function parseMainSummarySections(summary: string) {
     // The AI prompt specifically instructs not to include a title, so we don't need to remove anything
     // Just split on '## ' but keep the heading
     const rawSections = summary.split(/(^## .*)/m).filter(Boolean);
+    console.log("rawSections", rawSections);
     const sections: { heading: string; content: string }[] = [];
     for (let i = 0; i < rawSections.length; i++) {
         if (rawSections[i].startsWith('## ')) {
@@ -37,6 +38,7 @@ function parseMainSummarySections(summary: string) {
             i++; // skip content
         }
     }
+    console.log("sections", sections);
     return sections;
 }
 
