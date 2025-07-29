@@ -1,8 +1,8 @@
 'use client';
 
 import { useExecutiveSummary } from '@/lib/hooks/useExecutiveSummary';
-import ReactMarkdown from 'react-markdown';
 import { ExecutiveSummary as ExecutiveSummaryType } from '@/lib/types/core';
+import ReactMarkdown from 'react-markdown';
 
 interface ExecutiveSummaryProps {
     className?: string;
@@ -44,7 +44,7 @@ function parseMainSummarySections(summary: string) {
 
 export default function ExecutiveSummary({ className = '', initialSummary }: ExecutiveSummaryProps) {
     const { summary: clientSummary, loading, error, refetch } = useExecutiveSummary();
-    
+
     // Use server-side data if available, otherwise fall back to client-side data
     const summary = initialSummary || clientSummary;
 

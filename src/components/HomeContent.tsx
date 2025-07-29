@@ -7,7 +7,7 @@ import ReportCardSkeleton from "@/components/skeletons/ReportCardSkeleton"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { useGeolocation } from "@/lib/hooks/useGeolocation"
-import { ExecutiveOrder, Report, ExecutiveSummary as ExecutiveSummaryType } from "@/lib/types/core"
+import { ExecutiveOrder, ExecutiveSummary as ExecutiveSummaryType, Report } from "@/lib/types/core"
 import Link from "next/link"
 import { useState } from "react"
 
