@@ -18,8 +18,6 @@ interface HomeContentProps {
 }
 
 export default function HomeContent({ initialReports, initialExecutiveOrders, initialExecutiveSummary }: HomeContentProps) {
-    const [reports] = useState<Report[]>(initialReports)
-    const [executiveOrders] = useState<ExecutiveOrder[]>(initialExecutiveOrders)
     const [email, setEmail] = useState("")
     const [isSubmitting, setIsSubmitting] = useState(false)
     const [submitMessage, setSubmitMessage] = useState("")
@@ -150,13 +148,13 @@ export default function HomeContent({ initialReports, initialExecutiveOrders, in
                     </Link>
                 </div>
                 <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-                    {reports.length === 0 ? (
+                    {initialReports.length === 0 ? (
                         // Show skeletons while loading
                         Array.from({ length: 4 }).map((_, i) => (
                             <ReportCardSkeleton key={i} />
                         ))
-                    ) : reports.length > 0 ? (
-                        reports.slice(0, 4).map(report => (
+                    ) : initialReports.length > 0 ? (
+                        initialReports.slice(0, 4).map(report => (
                             <ReportCard
                                 key={report.reportId}
                                 report={report}
@@ -173,7 +171,7 @@ export default function HomeContent({ initialReports, initialExecutiveOrders, in
             </section>
 
             {/* Latest Executive Orders Section - Enhanced */}
-            {isUSBased === true && executiveOrders.length > 0 && (
+            {isUSBased === true && initialExecutiveOrders.length > 0 && (
                 <section className="mx-auto sm:px-4 w-[90%] mt-16 min-h-[300px]">
                     <div className="flex flex-col gap-6">
                         <div className="flex items-center justify-between">
@@ -183,7 +181,7 @@ export default function HomeContent({ initialReports, initialExecutiveOrders, in
                             </Link>
                         </div>
                         <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-                            {executiveOrders.map(order => (
+                            {initialExecutiveOrders.map(order => (
                                 <OrderCard key={order.id} order={order} />
                             ))}
                         </div>
