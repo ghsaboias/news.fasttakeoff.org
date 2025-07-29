@@ -396,4 +396,4 @@ const NewsGlobe: React.FC = () => {
     );
 };
 
-export default NewsGlobe; 
+export default React.memo(NewsGlobe); 
