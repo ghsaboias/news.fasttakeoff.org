@@ -25,10 +25,9 @@ function parseMiniSummarySections(miniSummary: string) {
 
 // Helper to split main summary into sections (ignoring the first # Executive Summary heading)
 function parseMainSummarySections(summary: string) {
-    // Remove the first # Executive Summary heading
-    const content = summary.replace(/^# Executive Summary\s*/i, '');
-    // Split on '## ' but keep the heading
-    const rawSections = content.split(/(^## .*)/m).filter(Boolean);
+    // The AI prompt specifically instructs not to include a title, so we don't need to remove anything
+    // Just split on '## ' but keep the heading
+    const rawSections = summary.split(/(^## .*)/m).filter(Boolean);
     const sections: { heading: string; content: string }[] = [];
     for (let i = 0; i < rawSections.length; i++) {
         if (rawSections[i].startsWith('## ')) {
