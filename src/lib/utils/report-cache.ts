@@ -54,7 +54,6 @@ export class ReportCache {
             return [];
         }
 
-        const startTime = Date.now();
         const cacheManager = new CacheManager(env);
 
         // For homepage requests (small limits), try to use cached homepage reports first
