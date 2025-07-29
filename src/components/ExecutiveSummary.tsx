@@ -2,9 +2,11 @@
 
 import { useExecutiveSummary } from '@/lib/hooks/useExecutiveSummary';
 import ReactMarkdown from 'react-markdown';
+import { ExecutiveSummary as ExecutiveSummaryType } from '@/lib/types/core';
 
 interface ExecutiveSummaryProps {
     className?: string;
+    initialSummary?: ExecutiveSummaryType | null;
 }
 
 // Helper to split mini summary into sections
@@ -40,10 +42,13 @@ function parseMainSummarySections(summary: string) {
     return sections;
 }
 
-export default function ExecutiveSummary({ className = '' }: ExecutiveSummaryProps) {
-    const { summary, loading, error, refetch } = useExecutiveSummary();
+export default function ExecutiveSummary({ className = '', initialSummary }: ExecutiveSummaryProps) {
+    const { summary: clientSummary, loading, error, refetch } = useExecutiveSummary();
+    
+    // Use server-side data if available, otherwise fall back to client-side data
+    const summary = initialSummary || clientSummary;
 
-    if (loading) {
+    if (loading && !initialSummary) {
         return (
             <div className={`bg-white shadow-md p-6 ${className}`}>
                 <div className="animate-pulse">
@@ -57,7 +62,7 @@ export default function ExecutiveSummary({ className = '' }: ExecutiveSummaryPro
         );
     }
 
-    if (error) {
+    if (error && !initialSummary) {
         return (
             <div className={`bg-white shadow-md p-6 ${className}`}>
                 <div className="text-center">

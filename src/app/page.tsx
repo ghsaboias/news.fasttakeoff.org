@@ -1,7 +1,8 @@
 import HomeContent from "@/components/HomeContent";
 import { CacheManager } from "@/lib/cache-utils";
 import { ReportService } from "@/lib/data/report-service";
-import { ExecutiveOrder, Report } from "@/lib/types/core";
+import { ExecutiveSummaryService } from "@/lib/data/executive-summary-service";
+import { ExecutiveOrder, Report, ExecutiveSummary } from "@/lib/types/core";
 import { getCacheContext } from "@/lib/utils";
 import { Suspense } from "react";
 
@@ -34,14 +35,15 @@ async function getServerSideData() {
       console.log('[SERVER] Cloudflare environment not available, skipping server-side data fetch');
       return {
         reports: [],
-        executiveOrders: []
+        executiveOrders: [],
+        executiveSummary: null
       };
     }
 
     // Add response-level caching check
     const cacheManager = new CacheManager(env);
     const cacheKey = 'homepage:full-response';
-    const cachedResponse = await cacheManager.get<{ reports: Report[], executiveOrders: ExecutiveOrder[] }>('REPORTS_CACHE', cacheKey);
+    const cachedResponse = await cacheManager.get<{ reports: Report[], executiveOrders: ExecutiveOrder[], executiveSummary: ExecutiveSummary | null }>('REPORTS_CACHE', cacheKey);
 
     if (cachedResponse) {
       console.log(`[PERF] Using cached homepage response (${Date.now() - startTime}ms)`);
@@ -50,8 +52,8 @@ async function getServerSideData() {
 
     const fetchStartTime = Date.now();
 
-    // Fetch both reports and executive orders server-side in parallel
-    const [reports, executiveOrders] = await Promise.all([
+    // Fetch reports, executive orders, and executive summary server-side in parallel
+    const [reports, executiveOrders, executiveSummary] = await Promise.all([
       // Fetch reports with timeout
       (async () => {
         try {
@@ -76,6 +78,19 @@ async function getServerSideData() {
           console.error('Error fetching executive orders server-side:', error);
           return [];
         }
+      })(),
+      // Fetch executive summary with timeout
+      (async (): Promise<ExecutiveSummary | null> => {
+        try {
+          const summaryStartTime = Date.now();
+          const executiveSummaryService = new ExecutiveSummaryService(env);
+          const result = await executiveSummaryService.getLatestSummary();
+          console.log(`[PERF] Executive summary fetch took ${Date.now() - summaryStartTime}ms`);
+          return result;
+        } catch (error) {
+          console.error('Error fetching executive summary server-side:', error);
+          return null;
+        }
       })()
     ]);
 
@@ -83,7 +98,8 @@ async function getServerSideData() {
 
     const response = {
       reports: reports || [],
-      executiveOrders: executiveOrders || []
+      executiveOrders: executiveOrders || [],
+      executiveSummary: executiveSummary
     };
 
     // Cache the full response for 2 minutes
@@ -95,19 +111,21 @@ async function getServerSideData() {
     console.error('Error fetching server-side data:', error);
     return {
       reports: [],
-      executiveOrders: []
+      executiveOrders: [],
+      executiveSummary: null
     };
   }
 }
 
 export default async function Home() {
-  const { reports, executiveOrders } = await getServerSideData();
+  const { reports, executiveOrders, executiveSummary } = await getServerSideData();
 
   return (
     <Suspense fallback={<div>Loading...</div>}>
       <HomeContent
         initialReports={reports}
         initialExecutiveOrders={executiveOrders}
+        initialExecutiveSummary={executiveSummary}
       />
     </Suspense>
   )

@@ -7,16 +7,17 @@ import ReportCardSkeleton from "@/components/skeletons/ReportCardSkeleton"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { useGeolocation } from "@/lib/hooks/useGeolocation"
-import { ExecutiveOrder, Report } from "@/lib/types/core"
+import { ExecutiveOrder, Report, ExecutiveSummary as ExecutiveSummaryType } from "@/lib/types/core"
 import Link from "next/link"
 import { useState } from "react"
 
 interface HomeContentProps {
     initialReports: Report[]
     initialExecutiveOrders: ExecutiveOrder[]
+    initialExecutiveSummary: ExecutiveSummaryType | null
 }
 
-export default function HomeContent({ initialReports, initialExecutiveOrders }: HomeContentProps) {
+export default function HomeContent({ initialReports, initialExecutiveOrders, initialExecutiveSummary }: HomeContentProps) {
     const [reports] = useState<Report[]>(initialReports)
     const [executiveOrders] = useState<ExecutiveOrder[]>(initialExecutiveOrders)
     const [email, setEmail] = useState("")
@@ -66,7 +67,7 @@ export default function HomeContent({ initialReports, initialExecutiveOrders }: 
         <div className="flex flex-col pb-8 justify-center">
             {/* Executive Summary Section - New prominent section */}
             <section>
-                <ExecutiveSummary />
+                <ExecutiveSummary initialSummary={initialExecutiveSummary} />
             </section>
 
             {/* Hero Section - Redesigned with better visual hierarchy */}
