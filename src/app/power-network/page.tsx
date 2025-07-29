@@ -1,5 +1,5 @@
 import { Metadata } from 'next';
-import NetworkVisualization from './NetworkVisualization';
+import NetworkVisualizationWrapper from './NetworkVisualizationWrapper';
 
 export const metadata: Metadata = {
     title: 'Power Network - Fast Takeoff',
@@ -8,5 +8,5 @@ export const metadata: Metadata = {
 };
 
 export default function PowerNetworkPage() {
-    return <NetworkVisualization />
+    return <NetworkVisualizationWrapper />
 } 

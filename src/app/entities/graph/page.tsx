@@ -1,12 +1,12 @@
 import { Metadata } from 'next';
-import EntityGraphClient from './EntityGraphClient';
+import EntityGraphClientWrapper from './EntityGraphClientWrapper';
 
 export const metadata: Metadata = {
     title: 'Entity Graph - Fast Takeoff',
-    description: 'Interactive visualization of entities and their connections from news reports.',
-    keywords: 'entity graph, news analysis, data visualization, connected entities',
+    description: 'Interactive visualization of entity relationships',
+    keywords: 'entity graph, relationships, visualization, network',
 };
 
 export default function EntityGraphPage() {
-    return <EntityGraphClient />;
+    return <EntityGraphClientWrapper />;
 } 
