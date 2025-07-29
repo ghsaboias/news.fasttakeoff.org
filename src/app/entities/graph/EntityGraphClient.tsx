@@ -10,13 +10,13 @@ import { useRef, useState } from 'react';
 import {
     useCanvasCamera,
     useFilters,
-    useForceSimulation,
     useMobileBreakpoint,
     useNetworkRenderer,
     useNodes,
     useNodeSelection,
     type Node
 } from '../../../lib/hooks';
+import { useBasicForceSimulation } from '../../../lib/hooks/useBasicForceSimulation';
 
 const ENTITY_TYPES = Object.keys(ENTITY_LABELS);
 
@@ -54,7 +54,7 @@ export default function EntityGraphClient() {
 
     // Nodes & physics
     const { nodesRef } = useNodes(graphData, isMobile);
-    const tick = useForceSimulation(nodesRef, graphData?.relationships);
+    const tick = useBasicForceSimulation(nodesRef, graphData?.relationships, isMobile);
 
     // Camera & interaction
     const { cameraRef, onWheel, onPanStart, onPanMove, onPanEnd, onTouchStart, onTouchMove, onTouchEnd, centerOnNode } = useCanvasCamera();
