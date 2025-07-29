@@ -1,7 +1,7 @@
 "use client";
 
+import TweetEmbed from "@/components/current-events/DynamicTweetEmbed";
 import MediaPreview from "@/components/current-events/MediaPreview";
-import TweetEmbed from "@/components/current-events/TweetEmbed";
 import { AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { LocalDateTimeFull } from "@/components/utils/LocalDateTime";
 import { DiscordMessage } from "@/lib/types/core";

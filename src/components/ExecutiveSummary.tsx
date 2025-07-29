@@ -2,7 +2,7 @@
 
 import { useExecutiveSummary } from '@/lib/hooks/useExecutiveSummary';
 import { ExecutiveSummary as ExecutiveSummaryType } from '@/lib/types/core';
-import ReactMarkdown from 'react-markdown';
+import ReactMarkdown from '@/components/ui/dynamic-markdown';
 
 interface ExecutiveSummaryProps {
     className?: string;

@@ -89,8 +89,6 @@ export default function EntitiesClient() {
                 throw new Error('Failed to trigger entity extraction');
             }
 
-            const result = await response.json();
-
             // Refetch entities to get the updated list
             await fetchEntities();
 

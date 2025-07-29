@@ -3,6 +3,7 @@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import ReactMarkdown from '@/components/ui/dynamic-markdown';
 import { Loader } from '@/components/ui/loader';
 import LocalDateTime from '@/components/utils/LocalDateTime';
 import { useApi } from '@/lib/hooks';
@@ -11,7 +12,6 @@ import { Clock, RefreshCw, TrendingUp } from 'lucide-react';
 import Image from 'next/image';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
-import ReactMarkdown from 'react-markdown';
 
 // Format market news text by handling common patterns
 function formatMarketText(text: string): React.ReactNode {
@@ -65,7 +65,7 @@ const timeframeOptions = [
     { value: 24, label: '24H' },
 ];
 
-export function MktFeedClient() {
+export default function MktFeedClient() {
     const searchParams = useSearchParams();
     const router = useRouter();
 

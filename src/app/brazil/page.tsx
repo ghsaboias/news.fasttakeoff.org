@@ -1,4 +1,15 @@
-import { SummaryDisplay } from './SummaryDisplay';
+import dynamic from 'next/dynamic';
+
+// Dynamically import the Brazil summary display component
+const SummaryDisplay = dynamic(() => import('./SummaryDisplay'), {
+    loading: () => (
+        <div className="flex items-center justify-center p-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            <span className="ml-2">Loading Brazil news...</span>
+        </div>
+    ),
+    ssr: true // Keep SSR for content
+});
 
 export const revalidate = 3600; // Revalidate every hour
 

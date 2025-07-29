@@ -1,6 +1,17 @@
 import { fetchExecutiveOrders } from "@/lib/data/executive-orders";
 import { getStartDate } from "@/lib/utils";
-import ClientExecutiveOrders from './ExecutiveOrdersClient';
+import dynamic from 'next/dynamic';
+
+// Dynamically import the executive orders client component
+const ClientExecutiveOrders = dynamic(() => import('./ExecutiveOrdersClient'), {
+    loading: () => (
+        <div className="flex items-center justify-center p-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            <span className="ml-2">Loading executive orders...</span>
+        </div>
+    ),
+    ssr: true // Keep SSR for content
+});
 
 export const revalidate = 3600; // Every hour
 

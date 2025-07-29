@@ -7,10 +7,10 @@ import { detectTweetUrls } from "@/lib/utils/twitter-utils";
 import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
+import TweetEmbed from "./DynamicTweetEmbed";
 import MediaPreview from "./MediaPreview";
 import TelegramEmbed from "./TelegramEmbed";
 import TranslationBadge from "./TranslationBadge";
-import TweetEmbed from "./TweetEmbed";
 
 interface MessageItemProps {
     message: DiscordMessage;
