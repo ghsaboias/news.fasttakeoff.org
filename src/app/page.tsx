@@ -1,8 +1,8 @@
 import HomeContent from "@/components/HomeContent";
 import { CacheManager } from "@/lib/cache-utils";
-import { ReportService } from "@/lib/data/report-service";
 import { ExecutiveSummaryService } from "@/lib/data/executive-summary-service";
-import { ExecutiveOrder, Report, ExecutiveSummary } from "@/lib/types/core";
+import { ReportService } from "@/lib/data/report-service";
+import { ExecutiveOrder, ExecutiveSummary, Report } from "@/lib/types/core";
 import { getCacheContext } from "@/lib/utils";
 import { Suspense } from "react";
 
