@@ -1,5 +1,6 @@
 'use client';
 
+import ReactMarkdown from '@/components/ui/dynamic-markdown';
 import { Loader } from '@/components/ui/loader';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -8,7 +9,6 @@ import { BRAZIL_NEWS_TOPICS } from '@/lib/config';
 import { useApi } from '@/lib/hooks';
 import { SummaryResult } from '@/lib/types/core';
 import { useEffect, useState } from 'react';
-import ReactMarkdown from 'react-markdown';
 
 // Helper function to convert bullet points in text to proper markdown list items
 function formatTextWithBulletPoints(text: string): string {
@@ -48,7 +48,7 @@ const fetchSummary = async (selectedKey: string, topicId?: string): Promise<Summ
     return response.json();
 };
 
-export function SummaryDisplay() {
+export default function SummaryDisplay() {
     const [selectedKey, setSelectedKey] = useState<string>('current');
     const [activeTopic, setActiveTopic] = useState<keyof typeof BRAZIL_NEWS_TOPICS>('geral');
 

@@ -1,5 +1,16 @@
+import dynamic from 'next/dynamic';
 import { Suspense } from 'react';
-import { MktFeedClient } from './MktFeedClient';
+
+// Dynamically import the market feed client component
+const MktFeedClient = dynamic(() => import('./MktFeedClient'), {
+    loading: () => (
+        <div className="flex items-center justify-center p-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            <span className="ml-2">Loading market feed...</span>
+        </div>
+    ),
+    ssr: true // Keep SSR for content
+});
 
 export const metadata = {
     title: 'Market Feed - Fast Takeoff News',

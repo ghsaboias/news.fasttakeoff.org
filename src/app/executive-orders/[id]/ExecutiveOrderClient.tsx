@@ -9,7 +9,7 @@ import { ArrowLeft, ExternalLink, FileText, Info } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import ReactMarkdown from 'react-markdown';
+import ReactMarkdown from '@/components/ui/dynamic-markdown';
 
 interface EnhancedRelatedEOInfo extends RelatedEOInfo {
     isLoading: boolean;

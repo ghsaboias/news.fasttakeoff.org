@@ -1,6 +1,17 @@
 import { ReportService } from '@/lib/data/report-service';
 import { getCacheContext } from '@/lib/utils';
-import CurrentEventsClient from './CurrentEventsClient';
+import dynamic from 'next/dynamic';
+
+// Dynamically import the current events client component
+const CurrentEventsClient = dynamic(() => import('./CurrentEventsClient'), {
+    loading: () => (
+        <div className="flex items-center justify-center p-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            <span className="ml-2">Loading current events...</span>
+        </div>
+    ),
+    ssr: true // Keep SSR for content
+});
 
 export const revalidate = 300; // 5 minutes - same as homepage
 
