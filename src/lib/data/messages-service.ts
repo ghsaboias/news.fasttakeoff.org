@@ -259,7 +259,7 @@ export class MessagesService {
         for (let attempt = 1; attempt <= 3; attempt++) {
             try {
                 const channels = await this.channelsService.getChannels();
-                const last24Hours = new Date(Date.now() - (24 * 60 * 60 * 1000)); // 24 hours ago in milliseconds
+                const last6Hours = new Date(Date.now() - (6 * 60 * 60 * 1000)); // 6 hours ago in milliseconds
                 let fetchedAny = false;
                 let totalRawMessages = 0;
                 let totalBotMessages = 0;
@@ -267,7 +267,7 @@ export class MessagesService {
 
                 for (const channel of channels) {
                     const cached = await this.getAllCachedMessagesForChannel(channel.id);
-                    const since = cached?.lastMessageTimestamp ? new Date(cached.lastMessageTimestamp) : last24Hours;
+                    const since = cached?.lastMessageTimestamp ? new Date(cached.lastMessageTimestamp) : last6Hours;
                     const discordEpoch = 1420070400000; // 2015-01-01T00:00:00.000Z
                     const snowflake = BigInt(Math.floor(since.getTime() - discordEpoch)) << BigInt(22); // Shift 22 bits for worker/thread IDs
                     const urlBase = `${API.DISCORD.BASE_URL}/channels/${channel.id}/messages?limit=${DISCORD.MESSAGES.BATCH_SIZE}`;
