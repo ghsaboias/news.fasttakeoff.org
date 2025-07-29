@@ -21,15 +21,15 @@ export const ReportPanel: React.FC<ReportPanelProps> = ({ report, onClose }) => 
     const paragraphs = report.body.split('\n\n').filter(Boolean);
 
     return (
-        <div className="bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-l border-border h-full w-full p-4 overflow-y-auto overscroll-contain">
-            <div className="flex justify-between items-start mb-6 gap-2">
+        <div className="bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-l border-border h-full w-full p-4 overflow-y-auto overscroll-contain flex flex-col gap-4">
+            <div className="flex justify-between items-start gap-2">
                 <h2 className="text-xl font-semibold text-primary">{report.headline}</h2>
                 <Button variant="ghost" size="sm" onClick={onClose} className="shrink-0 h-6 w-6">
                     <X className="h-3 w-3 text-background" />
                 </Button>
             </div>
 
-            <div className="space-y-4">
+            <div className="flex flex-col gap-4">
                 <div className="flex items-center text-sm text-muted-foreground">
                     <span>{report.city}</span>
                     <span className="mx-2">•</span>
