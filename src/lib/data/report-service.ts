@@ -55,16 +55,6 @@ export class ReportService {
             const updatedReports = [report, ...cachedReports.filter(r => r.reportId !== report.reportId)];
             await ReportCache.store(channelId, timeframe, updatedReports, this.env);
 
-            // Extract entities in parallel (fire and forget)
-            this._extractEntitiesInBackground(report).catch(() => { });
-
-            // Ping search engines immediately after caching
-            // const newUrls = [
-            //     `https://news.fasttakeoff.org/current-events/${channelId}/${report.reportId}`,
-            //     `https://news.fasttakeoff.org/current-events/${channelId}`
-            // ];
-            // pingSearchEngines(newUrls).catch(() => { }); // Fire and forget
-
             return { report, messages };
         } catch (error) {
             console.error(`[REPORTS] Error generating ${timeframe} report for channel ${channelName}:`, error);

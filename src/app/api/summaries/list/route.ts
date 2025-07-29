@@ -15,7 +15,6 @@ export async function GET(request: Request) {
         const { env } = await getCacheContext();
         const { searchParams } = new URL(request.url);
         const topicId = searchParams.get('topic');
-        console.log('topicId', topicId);
         const feedsService = new FeedsService(env);
         const summaries = await feedsService.listAvailableSummaries(topicId || undefined);
         return NextResponse.json(summaries);

@@ -45,10 +45,7 @@ async function getServerSideData() {
     const cacheKey = 'homepage:full-response';
     const cachedResponse = await cacheManager.get<{ reports: Report[], executiveOrders: ExecutiveOrder[], executiveSummary: ExecutiveSummary | null }>('REPORTS_CACHE', cacheKey);
 
-    if (cachedResponse) {
-      console.log(`[PERF] Using cached homepage response (${Date.now() - startTime}ms)`);
-      return cachedResponse;
-    }
+    if (cachedResponse) return cachedResponse;
 
     const fetchStartTime = Date.now();
 

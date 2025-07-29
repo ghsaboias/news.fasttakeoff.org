@@ -105,7 +105,6 @@ export class ReportAI {
             }
 
             if (isReportTruncated({ body })) {
-                console.log(`[REPORTS] Detected truncated report for channel ${context.channelName}. Last character: "${body.trim().slice(-1)}"`);
                 throw new Error('Report appears to be truncated (ends with letter without punctuation)');
             }
 

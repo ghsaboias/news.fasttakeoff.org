@@ -90,7 +90,6 @@ export default function EntitiesClient() {
             }
 
             const result = await response.json();
-            console.log('[ENTITIES] Extraction completed:', result);
 
             // Refetch entities to get the updated list
             await fetchEntities();

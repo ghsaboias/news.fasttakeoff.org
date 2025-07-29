@@ -62,7 +62,6 @@ export class ReportCache {
             try {
                 const homepageReports = await this.getHomepageReports(env);
                 if (homepageReports && homepageReports.length > 0) {
-                    console.log(`[REPORTS] Using cached homepage reports (${homepageReports.length} available) in ${Date.now() - startTime}ms`);
                     return homepageReports.slice(0, limit);
                 }
                 console.log('[REPORTS] No cached homepage reports found, falling back to optimized fetch');
@@ -71,17 +70,14 @@ export class ReportCache {
             }
         }
 
-        // Optimized fallback: Use smaller KV operations for homepage requests
         if (limit && limit <= 10) {
             try {
-                // For small requests, try to get recent reports more efficiently
-                const recentKeys = await this.getRecentReportKeys(limit * 2, env); // Get 2x to account for filtering
+                const recentKeys = await this.getRecentReportKeys(limit * 2, env);
                 if (recentKeys.length > 0) {
                     const batchResults = await cacheManager.batchGet<Report[]>('REPORTS_CACHE', recentKeys, 1200);
                     const reports = Array.from(batchResults.values()).map(item => item ?? []);
                     const allReports = reports.flat();
                     const sortedReports = groupAndSortReports(allReports);
-                    console.log(`[REPORTS] Used optimized fetch for ${recentKeys.length} keys in ${Date.now() - startTime}ms`);
                     return sortedReports.slice(0, limit);
                 }
             } catch (error) {
@@ -115,7 +111,6 @@ export class ReportCache {
             // Use the original groupAndSortReports logic to prioritize today's reports by message count
             const sortedReports = groupAndSortReports(allReports);
 
-            console.log(`[REPORTS] Full scan completed in ${Date.now() - startTime}ms`);
             // Apply limit after proper sorting if specified
             return limit ? sortedReports.slice(0, limit) : sortedReports;
         } catch (error) {
@@ -148,7 +143,7 @@ export class ReportCache {
 
     static async storeHomepageReports(reports: Report[], env: Cloudflare.Env): Promise<void> {
         if (!env.REPORTS_CACHE) return;
-        
+
         try {
             const cacheManager = new CacheManager(env);
             const key = 'homepage:latest-reports';
@@ -169,7 +164,7 @@ export class ReportCache {
 
     static async getHomepageReports(env: Cloudflare.Env): Promise<Report[] | null> {
         if (!env.REPORTS_CACHE) return null;
-        
+
         try {
             const cacheManager = new CacheManager(env);
             const key = 'homepage:latest-reports';
