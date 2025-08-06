@@ -113,7 +113,7 @@ export const DISCORD = {
 // Cache configuration in seconds
 export const CACHE = {
     TTL: {
-        REPORTS: 72 * 60 * 60, // 72 hours
+        REPORTS: 30 * 24 * 60 * 60, // 30 days (changed from 72 hours)
         CHANNELS: 12 * 60 * 60, // 12 hours
         MESSAGES: 2592000, // 30 days
         FEEDS: 30 * 24 * 60 * 60, // 30 days
