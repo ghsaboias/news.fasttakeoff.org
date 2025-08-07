@@ -23,7 +23,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang='en'>
+    <html lang='en' className="dark">
       <head>
         <link rel='manifest' href='/manifest.json' />
         <link rel='alternate' type='application/rss+xml' title='Fast Takeoff News RSS' href='/rss' />
@@ -38,7 +38,7 @@ export default function RootLayout({
 
         {/* Twitter Widget Performance Optimizations */}
         <meta name="twitter:widgets:autoload" content="off" />
-        <meta name="twitter:widgets:theme" content="light" />
+        <meta name="twitter:widgets:theme" content="dark" />
         <meta name="twitter:dnt" content="on" />
         <meta name="twitter:widgets:csp" content="on" />
 
@@ -57,7 +57,7 @@ export default function RootLayout({
         </script>
       </head>
       <body
-        className={`${carlito.className} ${geistMono.variable} antialiased min-h-screen flex flex-col justify-center mx-auto`}
+        className={`${carlito.className} ${geistMono.variable} antialiased min-h-screen flex flex-col justify-center mx-auto bg-dark-950 text-dark-100`}
       >
         <RootLayoutClient>{children}</RootLayoutClient>
         <ThirdPartyScripts />

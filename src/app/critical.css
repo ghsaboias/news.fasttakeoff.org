@@ -8,6 +8,8 @@ body {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+  background: #0a0a0a; /* Deep black background */
+  color: #f3f4f6; /* Light gray text */
 }
 
 main {
@@ -31,7 +33,10 @@ main {
 .hero-title {
   font-size: 3.75rem;
   font-weight: 700;
-  color: #167f6e;
+  background: linear-gradient(135deg, #f59e0b, #f97316, #ea580c); /* Amber to Orange gradient */
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
   line-height: 1;
 }
 
@@ -45,5 +50,5 @@ main {
 .loading-placeholder {
   text-align: center;
   padding: 2rem 0;
-  color: #666;
+  color: #6b7280; /* Gray-500 */
 }

@@ -17,40 +17,40 @@ export default function Header() {
     const { isUSBased } = useGeolocation({ initialValue: false });
 
     return (
-        <header className="mx-auto flex h-16 items-center justify-between sm:px-8 bg-foreground px-4 shadow-sm gap-4">
-            <Link href="/" className="flex items-center gap-2 text-xl text-[#167F6E] font-semibold">
-                <Image src="/images/brain_transparent.webp" alt="Fast Takeoff News" width={32} height={32} priority />
+        <header className="mx-auto flex h-16 items-center justify-between sm:px-8 bg-dark-900 px-4 shadow-dark gap-4 border-b border-dark-700">
+            <Link href="/" className="flex items-center gap-2 text-xl text-industrial-500 font-semibold">
+                <Image src="/images/brain_transparent.png" alt="Fast Takeoff News" width={32} height={32} priority />
                 <p className="hidden lg:block">Fast Takeoff News</p>
             </Link>
-            <div className="items-center gap-6 hidden min-[700px]:flex text-background">
+            <div className="items-center gap-6 hidden min-[700px]:flex text-dark-100">
                 {
                     isUSBased && (
                         <>
-                            <Link href="/executive-orders" className="text-sm font-medium hover:underline hover:text-[#167F6E] transition-colors text-center">
+                            <Link href="/executive-orders" className="text-sm font-medium hover:underline hover:text-industrial-500 transition-colors text-center">
                                 Executive Orders
                             </Link>
                         </>
                     )
                 }
-                <Link href="/current-events" className="text-sm font-medium hover:underline hover:text-[#167F6E] transition-colors text-center">
+                <Link href="/current-events" className="text-sm font-medium hover:underline hover:text-industrial-500 transition-colors text-center">
                     Current Events
                 </Link>
-                <Link href="/mktfeed" className="text-sm font-medium hover:underline hover:text-[#167F6E] transition-colors text-center">
+                <Link href="/mktfeed" className="text-sm font-medium hover:underline hover:text-industrial-500 transition-colors text-center">
                     Market Feed
                 </Link>
-                <Link href="/entities" className="text-sm font-medium hover:underline hover:text-[#167F6E] transition-colors text-center">
+                <Link href="/entities" className="text-sm font-medium hover:underline hover:text-industrial-500 transition-colors text-center">
                     Entities
                 </Link>
-                <Link href="/message-activity" className="text-sm font-medium hover:underline hover:text-[#167F6E] transition-colors text-center">
+                <Link href="/message-activity" className="text-sm font-medium hover:underline hover:text-industrial-500 transition-colors text-center">
                     Heatmap
                 </Link>
-                <Link href="/news-globe" className="text-sm font-medium hover:underline hover:text-[#167F6E] transition-colors text-center">
+                <Link href="/news-globe" className="text-sm font-medium hover:underline hover:text-industrial-500 transition-colors text-center">
                     News Globe
                 </Link>
-                <Link href="/brazil" className="text-sm font-medium hover:underline hover:text-[#167F6E] transition-colors text-center">
+                <Link href="/brazil" className="text-sm font-medium hover:underline hover:text-industrial-500 transition-colors text-center">
                     Brazil
                 </Link>
-                <Link href="/power-network" className="text-sm font-medium hover:underline hover:text-[#167F6E] transition-colors text-center">
+                <Link href="/power-network" className="text-sm font-medium hover:underline hover:text-industrial-500 transition-colors text-center">
                     Power Network
                 </Link>
             </div>
@@ -70,44 +70,44 @@ export default function Header() {
                                     aria-label="Open navigation menu"
                                     aria-expanded={isMenuOpen}
                                     aria-controls="mobile-navigation"
-                                    className="min-[700px]:hidden bg-transparent"
+                                    className="min-[700px]:hidden bg-transparent border-dark-600 text-dark-100 hover:bg-dark-800"
                                 >
-                                    <Menu className="h-5 w-5 text-background" />
+                                    <Menu className="h-5 w-5" />
                                 </Button>
                             </SheetTrigger>
-                            <SheetContent side="right" className="w-[300px]">
+                            <SheetContent side="right" className="w-[300px] bg-dark-900 border-dark-700">
                                 <SheetHeader>
-                                    <SheetTitle>Menu</SheetTitle>
+                                    <SheetTitle className="text-dark-100">Menu</SheetTitle>
                                 </SheetHeader>
                                 <div className="flex flex-col gap-4 mt-8 justify-center items-center">
                                     {
                                         isUSBased && (
                                             <>
-                                                <Link href="/executive-orders" className="text-sm font-medium hover:underline hover:text-[#167F6E] transition-colors">
+                                                <Link href="/executive-orders" className="text-sm font-medium hover:underline hover:text-industrial-500 transition-colors text-dark-100">
                                                     Executive Orders
                                                 </Link>
                                             </>
                                         )
                                     }
-                                    <Link href="/current-events" className="text-sm font-medium hover:underline hover:text-[#167F6E] transition-colors">
+                                    <Link href="/current-events" className="text-sm font-medium hover:underline hover:text-industrial-500 transition-colors text-dark-100">
                                         Current Events
                                     </Link>
-                                    <Link href="/mktfeed" className="text-sm font-medium hover:underline hover:text-[#167F6E] transition-colors">
+                                    <Link href="/mktfeed" className="text-sm font-medium hover:underline hover:text-industrial-500 transition-colors text-dark-100">
                                         Market Feed
                                     </Link>
-                                    <Link href="/entities" className="text-sm font-medium hover:underline hover:text-[#167F6E] transition-colors">
+                                    <Link href="/entities" className="text-sm font-medium hover:underline hover:text-industrial-500 transition-colors text-dark-100">
                                         Entities
                                     </Link>
-                                    <Link href="/message-activity" className="text-sm font-medium hover:underline hover:text-[#167F6E] transition-colors">
+                                    <Link href="/message-activity" className="text-sm font-medium hover:underline hover:text-industrial-500 transition-colors text-dark-100">
                                         Heatmap
                                     </Link>
-                                    <Link href="/news-globe" className="text-sm font-medium hover:underline hover:text-[#167F6E] transition-colors">
+                                    <Link href="/news-globe" className="text-sm font-medium hover:underline hover:text-industrial-500 transition-colors text-dark-100">
                                         News Globe
                                     </Link>
-                                    <Link href="/brazil" className="text-sm font-medium hover:underline hover:text-[#167F6E] transition-colors">
+                                    <Link href="/brazil" className="text-sm font-medium hover:underline hover:text-industrial-500 transition-colors text-dark-100">
                                         Brazil
                                     </Link>
-                                    <Link href="/power-network" className="text-sm font-medium hover:underline hover:text-[#167F6E] transition-colors">
+                                    <Link href="/power-network" className="text-sm font-medium hover:underline hover:text-industrial-500 transition-colors text-dark-100">
                                         Power Network
                                     </Link>
                                 </div>
@@ -117,12 +117,12 @@ export default function Header() {
                 ) : (
                     <div className="flex items-center gap-2">
                         <Link href="/sign-in" prefetch>
-                            <Button variant="outline" size="sm">
+                            <Button variant="outline" size="sm" className="border-dark-600 text-dark-100 hover:bg-dark-800">
                                 Sign In
                             </Button>
                         </Link>
                         <Link href="/sign-up">
-                            <Button variant="default" size="sm">
+                            <Button variant="default" size="sm" className="bg-industrial-gradient text-white hover:shadow-industrial">
                                 Subscribe
                             </Button>
                         </Link>
@@ -134,44 +134,44 @@ export default function Header() {
                                     aria-label="Open navigation menu"
                                     aria-expanded={isMenuOpen}
                                     aria-controls="mobile-navigation"
-                                    className="min-[700px]:hidden text-background"
+                                    className="min-[700px]:hidden border-dark-600 text-dark-100 hover:bg-dark-800"
                                 >
-                                    <Menu className="h-5 w-5 text-foreground" />
+                                    <Menu className="h-5 w-5" />
                                 </Button>
                             </SheetTrigger>
-                            <SheetContent side="right" className="w-[300px]">
+                            <SheetContent side="right" className="w-[300px] bg-dark-900 border-dark-700">
                                 <SheetHeader>
-                                    <SheetTitle>Menu</SheetTitle>
+                                    <SheetTitle className="text-dark-100">Menu</SheetTitle>
                                 </SheetHeader>
                                 <div className="flex flex-col gap-4 mt-8 justify-center items-center">
                                     {
                                         isUSBased && (
                                             <>
-                                                <Link href="/executive-orders" className="text-sm font-medium hover:underline hover:text-[#167F6E] transition-colors">
+                                                <Link href="/executive-orders" className="text-sm font-medium hover:underline hover:text-industrial-500 transition-colors text-dark-100">
                                                     Executive Orders
                                                 </Link>
                                             </>
                                         )
                                     }
-                                    <Link href="/current-events" className="text-sm font-medium hover:underline hover:text-[#167F6E] transition-colors">
+                                    <Link href="/current-events" className="text-sm font-medium hover:underline hover:text-industrial-500 transition-colors text-dark-100">
                                         Current Events
                                     </Link>
-                                    <Link href="/mktfeed" className="text-sm font-medium hover:underline hover:text-[#167F6E] transition-colors">
+                                    <Link href="/mktfeed" className="text-sm font-medium hover:underline hover:text-industrial-500 transition-colors text-dark-100">
                                         Market Feed
                                     </Link>
-                                    <Link href="/entities" className="text-sm font-medium hover:underline hover:text-[#167F6E] transition-colors">
+                                    <Link href="/entities" className="text-sm font-medium hover:underline hover:text-industrial-500 transition-colors text-dark-100">
                                         Entities
                                     </Link>
-                                    <Link href="/message-activity" className="text-sm font-medium hover:underline hover:text-[#167F6E] transition-colors">
+                                    <Link href="/message-activity" className="text-sm font-medium hover:underline hover:text-industrial-500 transition-colors text-dark-100">
                                         Heatmap
                                     </Link>
-                                    <Link href="/news-globe" className="text-sm font-medium hover:underline hover:text-[#167F6E] transition-colors">
+                                    <Link href="/news-globe" className="text-sm font-medium hover:underline hover:text-industrial-500 transition-colors text-dark-100">
                                         News Globe
                                     </Link>
-                                    <Link href="/brazil" className="text-sm font-medium hover:underline hover:text-[#167F6E] transition-colors">
+                                    <Link href="/brazil" className="text-sm font-medium hover:underline hover:text-industrial-500 transition-colors text-dark-100">
                                         Brazil
                                     </Link>
-                                    <Link href="/power-network" className="text-sm font-medium hover:underline hover:text-[#167F6E] transition-colors">
+                                    <Link href="/power-network" className="text-sm font-medium hover:underline hover:text-industrial-500 transition-colors text-dark-100">
                                         Power Network
                                     </Link>
                                 </div>

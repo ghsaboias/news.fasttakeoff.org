@@ -82,7 +82,7 @@ export default function TweetEmbed({ content, channelId, className = '', onEmbed
             },
             {
                 root: null,
-                rootMargin: '200px 0px', // Load 200px before entering viewport
+                rootMargin: '500px 0px', // Load 500px before entering viewport
                 threshold: 0.1
             }
         );
@@ -252,7 +252,7 @@ export default function TweetEmbed({ content, channelId, className = '', onEmbed
                         <div className="h-4 bg-soft-border-foreground rounded w-1/2"></div>
                     </div>
                 ) : (
-                    <div className="p-4 text-sm">
+                    <div className="p-4 text-sm text-foreground">
                         Tweet will load when visible...
                     </div>
                 )}
@@ -277,10 +277,9 @@ export default function TweetEmbed({ content, channelId, className = '', onEmbed
                     <SafeHtmlRenderer
                         key={embed.tweetId}
                         html={embed.html}
-                        className="mx-auto"
+                        className="mx-auto [&_.twitter-tweet]:!py-0 [&_.twitter-tweet]:!my-0"
                         style={{
-                            backgroundColor: 'white',
-                            color: 'initial'
+                            color: 'hsl(var(--foreground))'
                         }}
                     />
                 );

@@ -3,9 +3,9 @@
     "short_name": "Fast Takeoff",
     "icons": [
       {
-        "src": "/images/brain.png",
-        "type": "image/png",
-        "sizes": "1024x1024",
+        "src": "/images/brain.svg",
+        "type": "image/svg+xml",
+        "sizes": "any",
         "purpose": "maskable"
       }
     ],
