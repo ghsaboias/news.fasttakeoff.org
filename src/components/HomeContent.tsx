@@ -64,12 +64,12 @@ export default function HomeContent({ initialReports, initialExecutiveOrders, in
     return (
         <div className="flex flex-col justify-center bg-gradient-to-b from-gray-950 via-gray-900 to-black min-h-screen">
             {/* Hero Section - Industrial dark theme */}
-            <section className="hero-section bg-gradient-to-br from-gray-950 via-gray-900 to-black backdrop-blur-lg mx-2 sm:mx-4 h-[calc(100vh-4rem)] flex items-center rounded-2xl border border-gray-700/50 shadow-2xl shadow-black/60 relative overflow-hidden">
+            <section className="hero-section bg-gradient-to-br from-gray-950 via-gray-900 to-black backdrop-blur-lg mx-2 sm:mx-4 my-2 sm:my-4 min-h-[calc(100vh-4rem-1rem)] sm:min-h-[calc(100vh-4rem-2rem)] flex items-center rounded-2xl border border-gray-700/50 shadow-2xl shadow-black/60 relative overflow-hidden">
                 {/* Industrial texture overlay */}
                 <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(255,255,255,0.02)_0%,transparent_50%)] opacity-60"></div>
                 <div className="absolute inset-0 bg-[linear-gradient(45deg,transparent_49%,rgba(255,255,255,0.01)_50%,transparent_51%)] bg-[length:20px_20px] opacity-30"></div>
 
-                <div className="flex flex-col items-center gap-6 sm:py-12 px-6 w-full relative z-10">
+                <div className="flex flex-col items-center gap-4 sm:gap-6 py-8 sm:py-12 px-6 w-full relative z-10">
                     {/* Social Proof Badge - Industrial styling */}
                     <div className="bg-gradient-to-r from-amber-600/20 to-orange-600/20 text-amber-300 border border-amber-500/40 px-4 py-2 rounded-full text-sm font-medium backdrop-blur-sm shadow-lg shadow-amber-500/10">
                         ⚡ Real-time AI analysis from global sources
@@ -81,7 +81,7 @@ export default function HomeContent({ initialReports, initialExecutiveOrders, in
                             AI-Powered News Intelligence
                         </h1>
                     </div>
-                    <div className="bg-gradient-to-br from-gray-800 via-gray-900 to-black rounded-xl shadow-2xl border border-gray-600/50 p-6 backdrop-blur-sm w-full max-w-2xl flex flex-col items-center gap-6">
+                    <div className="bg-gradient-to-br from-gray-800 via-gray-900 to-black rounded-xl shadow-2xl border border-gray-600/50 p-4 sm:p-6 backdrop-blur-sm w-full max-w-2xl flex flex-col items-center gap-4 sm:gap-6">
 
                         <p className="text-xl md:text-2xl text-gray-300 max-w-2xl font-light">
                             Get breaking news analysis and real-time intelligence from global sources.
@@ -90,21 +90,21 @@ export default function HomeContent({ initialReports, initialExecutiveOrders, in
                         <form onSubmit={handleEmailSubmit} className="w-full">
                             <div>
 
-                                <div className="space-y-4">
+                                <div className="space-y-3 sm:space-y-4">
                                     <Input
                                         type="email"
-                                        placeholder="your.email@company.com"
+                                        placeholder="your.email@email.com"
                                         value={email}
                                         onChange={(e) => setEmail(e.target.value)}
                                         disabled={isSubmitting}
                                         required
-                                        className="h-12 text-lg bg-gray-800 border-gray-600 text-gray-100 placeholder-gray-500 focus:border-amber-500 focus:ring-amber-500 focus:bg-gray-700"
+                                        className="h-10 sm:h-12 text-base sm:text-lg bg-gray-800 border-gray-600 text-gray-100 placeholder-gray-500 focus:border-amber-500 focus:ring-amber-500 focus:bg-gray-700"
                                     />
 
                                     <Button
                                         type="submit"
                                         disabled={isSubmitting}
-                                        className="w-full h-12 text-lg font-semibold bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white shadow-lg hover:shadow-xl transition-all duration-200 border border-amber-500/30"
+                                        className="w-full h-10 sm:h-12 text-base sm:text-lg font-semibold bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white shadow-lg hover:shadow-xl transition-all duration-200 border border-amber-500/30"
                                     >
                                         {isSubmitting ? "Setting up your briefings..." : "Get Free Daily Briefings →"}
                                     </Button>
