@@ -197,7 +197,7 @@ function NetworkVisualization() {
                 href="/"
                 className="absolute top-5 left-5 z-10 opacity-100"
             >
-                <Image src="/images/brain_transparent.webp" alt="Return to homepage" width={32} height={32} />
+                <Image src="/images/brain_transparent.png" alt="Return to homepage" width={32} height={32} />
             </Link>
 
             {/* Search and Filter Controls - Mobile Responsive */}

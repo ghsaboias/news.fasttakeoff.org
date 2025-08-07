@@ -7,53 +7,53 @@
 @plugin "tailwindcss-animate";
 
 :root {
-  /* Base Colors */
-  --background: #ffffff; /* Dark background */
-  --foreground: #000000; /* White text */
-  --black-transparent: rgba(0, 0, 0, 0.8);
+  /* Base Colors - Industrial Dark Theme */
+  --background: #0a0a0a; /* Deep black background */
+  --foreground: #f3f4f6; /* Light gray text */
+  --black-transparent: rgba(0, 0, 0, 0.9);
 
-  /* UI Elements */
-  --card: #ffffff;
-  --card-foreground: #000000;
-  --card-text: #000000;
-  --popover: #101010;
-  --popover-foreground: #ffffff;
+  /* UI Elements - Industrial Dark */
+  --card: #111111; /* Dark gray cards */
+  --card-foreground: #f3f4f6;
+  --card-text: #f3f4f6;
+  --popover: #1a1a1a; /* Slightly lighter for popovers */
+  --popover-foreground: #f3f4f6;
 
-  /* Primary (Fast Takeoff Teal) */
-  --primary: #0d6b5a; /* Darker shade for better contrast */
-  --primary-hover: #158a73; /* Original color for hover state */
+  /* Primary - Industrial Amber/Orange */
+  --primary: #f59e0b; /* Amber-500 */
+  --primary-hover: #f97316; /* Orange-500 */
   --primary-foreground: #ffffff;
-  --primary-light: rgba(13, 107, 90, 0.1);
+  --primary-light: rgba(245, 158, 11, 0.1);
 
-  /* Secondary */
-  --secondary: #1a1b1c;
-  --secondary-hover: #222324;
-  --secondary-foreground: #ffffff;
+  /* Secondary - Dark Gray */
+  --secondary: #1f2937; /* Gray-800 */
+  --secondary-hover: #374151; /* Gray-700 */
+  --secondary-foreground: #f3f4f6;
 
-  /* Muted */
-  --muted: #1a1b1c;
-  --muted-foreground: rgba(255, 255, 255, 0.7);
-  --muted-light: rgba(255, 255, 255, 0.05);
-  --muted-lighter: rgba(255, 255, 255, 0.03);
+  /* Muted - Industrial Grays */
+  --muted: #1f2937; /* Gray-800 */
+  --muted-foreground: rgba(243, 244, 246, 0.7);
+  --muted-light: rgba(243, 244, 246, 0.05);
+  --muted-lighter: rgba(243, 244, 246, 0.03);
 
-  /* Accent */
-  --accent: #1db39c;
-  --accent-hover: #25c7ae;
+  /* Accent - Industrial Orange */
+  --accent: #ea580c; /* Orange-600 */
+  --accent-hover: #dc2626; /* Red-600 */
   --accent-foreground: #ffffff;
 
-  /* Destructive */
-  --destructive: rgb(200 50 50);
-  --destructive-hover: rgb(220 70 70);
-  --destructive-foreground: rgb(245 245 245);
-  --destructive-light: rgba(255, 100, 100, 0.2);
+  /* Destructive - Industrial Red */
+  --destructive: #dc2626; /* Red-600 */
+  --destructive-hover: #b91c1c; /* Red-700 */
+  --destructive-foreground: #fef2f2; /* Red-50 */
+  --destructive-light: rgba(220, 38, 38, 0.2);
 
-  /* Borders and Inputs */
-  --border: #1a1b1c;
-  --soft-border: rgb(100, 100, 100);
-  --soft-border-foreground: rgb(210, 210, 210);
-  --input: #1a1b1c;
-  --ring: #1db39c;
-  --ring-hover: #25c7ae;
+  /* Borders and Inputs - Industrial Dark */
+  --border: #374151; /* Gray-700 */
+  --soft-border: #6b7280; /* Gray-500 */
+  --soft-border-foreground: #d1d5db; /* Gray-300 */
+  --input: #1f2937; /* Gray-800 */
+  --ring: #f59e0b; /* Amber-500 */
+  --ring-hover: #f97316; /* Orange-500 */
 
   /* Radius */
   --radius: 0.625rem;

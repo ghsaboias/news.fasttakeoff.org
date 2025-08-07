@@ -99,7 +99,7 @@ export default function EntityGraphClient() {
                 href="/entities"
                 className="absolute top-5 left-5 z-10 opacity-100"
             >
-                <Image src="/images/brain_transparent.webp" alt="Return to entity list" width={32} height={32} />
+                <Image src="/images/brain_transparent.png" alt="Return to entity list" width={32} height={32} />
             </Link>
 
             <div className="absolute top-4 left-20 bg-gray-800 p-2 rounded-lg flex flex-col sm:flex-row sm:items-center gap-2 z-20">

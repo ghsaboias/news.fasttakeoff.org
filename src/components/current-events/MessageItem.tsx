@@ -291,14 +291,9 @@ export default function MessageItem({ message, noAccordion = false, channelId }:
                                 {/* Embed URL (if different from title link) */}
                                 {embed.url && !embed.title && (
                                     <div className="mt-2">
-                                        <Link
-                                            href={embed.url}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="text-sm text-blue-600 dark:text-blue-400 hover:underline break-all"
-                                        >
+                                        <span className="text-sm text-blue-600 dark:text-blue-400 break-all">
                                             {embed.url}
-                                        </Link>
+                                        </span>
                                     </div>
                                 )}
                             </Link>
