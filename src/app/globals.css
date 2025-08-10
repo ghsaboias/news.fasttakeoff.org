@@ -19,11 +19,11 @@
   --popover: #1a1a1a; /* Slightly lighter for popovers */
   --popover-foreground: #f3f4f6;
 
-  /* Primary - Industrial Amber/Orange */
-  --primary: #f59e0b; /* Amber-500 */
-  --primary-hover: #f97316; /* Orange-500 */
+  /* Primary - Fast Takeoff Green/Teal */
+  --primary: #0d6b5a; /* Teal */
+  --primary-hover: #158a73; /* Teal hover */
   --primary-foreground: #ffffff;
-  --primary-light: rgba(245, 158, 11, 0.1);
+  --primary-light: rgba(13, 107, 90, 0.1);
 
   /* Secondary - Dark Gray */
   --secondary: #1f2937; /* Gray-800 */
@@ -36,9 +36,9 @@
   --muted-light: rgba(243, 244, 246, 0.05);
   --muted-lighter: rgba(243, 244, 246, 0.03);
 
-  /* Accent - Industrial Orange */
-  --accent: #ea580c; /* Orange-600 */
-  --accent-hover: #dc2626; /* Red-600 */
+  /* Accent - Green */
+  --accent: #1db39c; /* Green */
+  --accent-hover: #25c7ae; /* Green hover */
   --accent-foreground: #ffffff;
 
   /* Destructive - Industrial Red */
@@ -52,8 +52,8 @@
   --soft-border: #6b7280; /* Gray-500 */
   --soft-border-foreground: #d1d5db; /* Gray-300 */
   --input: #1f2937; /* Gray-800 */
-  --ring: #f59e0b; /* Amber-500 */
-  --ring-hover: #f97316; /* Orange-500 */
+  --ring: #1db39c; /* Green */
+  --ring-hover: #25c7ae; /* Green hover */
 
   /* Radius */
   --radius: 0.625rem;

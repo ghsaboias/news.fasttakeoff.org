@@ -95,15 +95,15 @@ module.exports = {
       },
       // Industrial theme gradients
       backgroundImage: {
-        'industrial-gradient': 'linear-gradient(135deg, #f59e0b 0%, #f97316 50%, #ea580c 100%)',
+        'industrial-gradient': 'linear-gradient(135deg, #0d6b5a 0%, #158a73 50%, #1db39c 100%)',
         'dark-gradient': 'linear-gradient(135deg, #0a0a0a 0%, #111827 50%, #1f2937 100%)',
         'card-gradient': 'linear-gradient(135deg, #111111 0%, #1f2937 100%)',
         'metallic': 'linear-gradient(135deg, rgba(255,255,255,0.02) 0%, transparent 50%)',
       },
       // Industrial shadows
       boxShadow: {
-        'industrial': '0 10px 25px -3px rgba(245, 158, 11, 0.1), 0 4px 6px -2px rgba(245, 158, 11, 0.05)',
-        'industrial-lg': '0 20px 25px -5px rgba(245, 158, 11, 0.1), 0 10px 10px -5px rgba(245, 158, 11, 0.04)',
+        'industrial': '0 10px 25px -3px rgba(16, 185, 129, 0.10), 0 4px 6px -2px rgba(16, 185, 129, 0.05)',
+        'industrial-lg': '0 20px 25px -5px rgba(16, 185, 129, 0.10), 0 10px 10px -5px rgba(16, 185, 129, 0.04)',
         'dark': '0 10px 25px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -2px rgba(0, 0, 0, 0.2)',
       },
     },
