@@ -33,7 +33,7 @@ main {
 .hero-title {
   font-size: 3.75rem;
   font-weight: 700;
-  background: linear-gradient(135deg, #f59e0b, #f97316, #ea580c); /* Amber to Orange gradient */
+  background: linear-gradient(135deg, #0d6b5a, #158a73); /* Green/Teal gradient */
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
