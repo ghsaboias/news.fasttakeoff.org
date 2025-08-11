@@ -33,6 +33,31 @@ A Next.js application aggregating executive orders from the Federal Register API
 - **Dependencies**: groq-sdk, lucide-react, class-variance-authority, full list in package.json
 - **Configuration**: ESLint (eslint.config.mjs), PostCSS (postcss.config.mjs), TypeScript (tsconfig.json)
 
+### Time Utilities (Centralized)
+
+All time durations are centralized in `src/lib/config.ts` under the `TIME` export. Avoid hardcoded multiplications like `24 * 60 * 60` or `6 * 60 * 60 * 1000`.
+
+- Constants (seconds): `SECOND_SEC`, `MINUTE_SEC`, `HOUR_SEC`, `DAY_SEC`, `WEEK_SEC`, `MONTH_30_SEC`, `YEAR_365_SEC`
+- Constants (milliseconds): `SECOND_MS`, `MINUTE_MS`, `HOUR_MS`, `DAY_MS`, `WEEK_MS`, `MONTH_30_MS`, `YEAR_365_MS`
+- Common windows (ms): `FIVE_MINUTES_MS`, `FIFTEEN_MINUTES_MS`, `THIRTY_MINUTES_MS`
+- Helpers: `minutesToMs(n)`, `hoursToMs(n)`, `daysToMs(n)`, `minutesToSec(n)`, `hoursToSec(n)`, `daysToSec(n)`
+- Backward-compatible aliases: `ONE_HOUR_MS`, `TWO_HOURS_MS`, `SIX_HOURS_MS`, `TWENTY_FOUR_HOURS_MS`
+
+Examples:
+
+```ts
+import { TIME } from "@/lib/config";
+
+// 24h window in ms
+const cutoff = Date.now() - TIME.DAY_MS;
+
+// Cache for 10 minutes in seconds
+await cache.put(ns, key, value, TIME.minutesToSec(10));
+
+// Dynamic window
+const lastXHours = Date.now() - TIME.hoursToMs(x);
+```
+
 ### Data Management and Transformation
 
 The application's core data handling is managed by services and transformers within the `src/lib/` directory:
