@@ -1832,35 +1832,65 @@ export DISCORD = {
 export CACHE = {
     TTL: {
         // Report cache TTL values by timeframe (in seconds)
-        REPORTS: 72 * 60 * 60, // 72 hours
+        REPORTS: TIME.MONTH_30_SEC, // 30 days
         // Channel cache TTL
-        CHANNELS: 12 * 60 * 60, // 12 hours
+        CHANNELS: TIME.HOUR_SEC * 12, // 12 hours
         // Messages cache TTL
         MESSAGES: 2592000, // 30 days
         // Feeds summary cache TTL
-        FEEDS: 30 * 24 * 60 * 60, // 30 days
+        FEEDS: TIME.MONTH_30_SEC, // 30 days
         // Entity extraction cache TTL
-        ENTITIES: 24 * 60 * 60, // 24 hours
+        ENTITIES: TIME.DAY_SEC, // 24 hours
     },
     RETENTION: {
         // How long to keep reports in the KV store before manual cleanup (in seconds)
-        REPORTS: 365 * 24 * 60 * 60, // 1 year
+        REPORTS: TIME.YEAR_365_SEC, // 1 year
         // How long to keep extracted entities
-        ENTITIES: 7 * 24 * 60 * 60, // 7 days
+        ENTITIES: TIME.WEEK_SEC, // 7 days
     },
     REFRESH: {
         // Thresholds for background refresh (in seconds)
-        MESSAGES: 5 * 60, // 5 minutes
-        CHANNELS: 60 * 60, // 1 hour
-        FEEDS: 2 * 60 * 60, // 2 hours
-        ENTITIES: 12 * 60 * 60, // 12 hours
+        MESSAGES: TIME.minutesToSec(5), // 5 minutes
+        CHANNELS: TIME.HOUR_SEC, // 1 hour
+        FEEDS: TIME.hoursToSec(2), // 2 hours
+        ENTITIES: TIME.hoursToSec(12), // 12 hours
     },
 }
 export TIME = {
-    ONE_HOUR_MS: 3600000,
-    TWO_HOURS_MS: 7200000,
-    SIX_HOURS_MS: 21600000,
-    TWENTY_FOUR_HOURS_MS: 24 * 60 * 60 * 1000, // Added for 24-hour report filtering
+    // Use centralized constants and helpers instead of hardcoded multiplications
+    SECOND_SEC: 1,
+    MINUTE_SEC: 60,
+    HOUR_SEC: 60 * 60,
+    DAY_SEC: 24 * 60 * 60,
+    WEEK_SEC: 7 * 24 * 60 * 60,
+    MONTH_30_SEC: 30 * 24 * 60 * 60,
+    YEAR_365_SEC: 365 * 24 * 60 * 60,
+
+    SECOND_MS: 1000,
+    MINUTE_MS: 60 * 1000,
+    HOUR_MS: 60 * 60 * 1000,
+    DAY_MS: 24 * 60 * 60 * 1000,
+    WEEK_MS: 7 * 24 * 60 * 60 * 1000,
+    MONTH_30_MS: 30 * 24 * 60 * 60 * 1000,
+    YEAR_365_MS: 365 * 24 * 60 * 60 * 1000,
+
+    FIVE_MINUTES_MS: 5 * 60 * 1000,
+    FIFTEEN_MINUTES_MS: 15 * 60 * 1000,
+    THIRTY_MINUTES_MS: 30 * 60 * 1000,
+
+    // Back-compat aliases
+    ONE_HOUR_MS: 60 * 60 * 1000,
+    TWO_HOURS_MS: 2 * 60 * 60 * 1000,
+    SIX_HOURS_MS: 6 * 60 * 60 * 1000,
+    TWENTY_FOUR_HOURS_MS: 24 * 60 * 60 * 1000,
+
+    // Helpers
+    minutesToMs: (n: number): number => n * 60 * 1000,
+    hoursToMs: (n: number): number => n * 60 * 60 * 1000,
+    daysToMs: (n: number): number => n * 24 * 60 * 60 * 1000,
+    minutesToSec: (n: number): number => n * 60,
+    hoursToSec: (n: number): number => n * 60 * 60,
+    daysToSec: (n: number): number => n * 24 * 60 * 60,
     // Timeframes for reports
     TIMEFRAMES: ['2h', '6h'] as const,
     CRON: {
