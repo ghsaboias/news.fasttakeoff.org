@@ -33,7 +33,7 @@ export class MktNewsService {
             }
 
             // Perform cache maintenance: remove old messages (older than 30 days)
-            const cutoffTime = Date.now() - (30 * 24 * 60 * 60 * 1000); // 30 days in milliseconds
+            const cutoffTime = Date.now() - TIME.daysToMs(30); // 30 days in milliseconds
             const recentMessages = cached.messages.filter(msg =>
                 new Date(msg.received_at).getTime() > cutoffTime
             );
@@ -123,7 +123,7 @@ export class MktNewsService {
         const allMessages = this.deduplicateMessages([...newMessages, ...existingMessages]);
 
         // Keep only recent messages (last 30 days)
-        const cutoffTime = Date.now() - (30 * 24 * 60 * 60 * 1000); // 30 days in milliseconds
+        const cutoffTime = Date.now() - TIME.daysToMs(30); // 30 days in milliseconds
         const recentMessages = allMessages.filter(msg =>
             new Date(msg.received_at).getTime() > cutoffTime
         );
@@ -169,7 +169,7 @@ export class MktNewsService {
 
         console.log(`[MKTNEWS] Total cached messages: ${cached.messages.length}`);
 
-        const cutoffTime = Date.now() - (hours * 60 * 60 * 1000);
+        const cutoffTime = Date.now() - TIME.hoursToMs(hours);
         console.log(`[MKTNEWS] Filtering for messages after: ${new Date(cutoffTime).toISOString()}`);
 
         const filteredMessages = cached.messages.filter(msg => {

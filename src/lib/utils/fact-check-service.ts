@@ -1,5 +1,5 @@
 import { CacheManager } from '@/lib/cache-utils';
-import { AI } from '@/lib/config';
+import { AI, TIME } from '@/lib/config';
 import { FactCheckResult, Report } from '@/lib/types/core';
 import { Cloudflare } from '../../../worker-configuration';
 import { getAIAPIKey, getAIProviderConfig } from '../ai-config';
@@ -31,7 +31,7 @@ export class PerplexityFactCheckService {
                 'REPORTS_CACHE',
                 cacheKey,
                 factCheckResult,
-                24 * 60 * 60 // 24 hours
+                TIME.DAY_SEC // 24 hours
             );
 
             return factCheckResult;

@@ -1,5 +1,6 @@
 import { withErrorHandling } from '@/lib/api-utils';
 import { CacheManager } from '@/lib/cache-utils';
+import { TIME } from '@/lib/config';
 
 interface LinkPreview {
     url: string;
@@ -131,7 +132,7 @@ export async function GET(request: Request) {
             const preview = parseMetaTags(html, url);
 
             // Cache the result for 24 hours
-            await cacheManager.put('MESSAGES_CACHE', cacheKey, preview, 24 * 60 * 60);
+            await cacheManager.put('MESSAGES_CACHE', cacheKey, preview, TIME.DAY_SEC);
 
             return preview;
 
@@ -146,7 +147,7 @@ export async function GET(request: Request) {
             };
 
             // Cache the fallback for 1 hour to avoid repeated failures
-            await cacheManager.put('MESSAGES_CACHE', cacheKey, fallbackPreview, 60 * 60);
+            await cacheManager.put('MESSAGES_CACHE', cacheKey, fallbackPreview, TIME.HOUR_SEC);
 
             return fallbackPreview;
         }

@@ -199,7 +199,7 @@ export class ReportCache {
 
         const removedCount = originalCount - filteredReports.length;
         if (removedCount > 0) {
-            console.log(`[REPORTS] Cleaned up ${removedCount} reports older than ${CACHE.RETENTION.REPORTS / (24 * 60 * 60)} days`);
+            console.log(`[REPORTS] Cleaned up ${removedCount} reports older than ${CACHE.RETENTION.REPORTS / TIME.DAY_SEC} days`);
         }
 
         return filteredReports;

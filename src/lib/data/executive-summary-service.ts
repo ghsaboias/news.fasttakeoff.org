@@ -1,7 +1,7 @@
 import { Cloudflare } from '../../../worker-configuration';
 import { getAIAPIKey, getAIProviderConfig } from '../ai-config';
 import { CacheManager } from '../cache-utils';
-import { AI, CACHE } from '../config';
+import { AI, CACHE, TIME } from '../config';
 import { ExecutiveSummary, Report } from '../types/core';
 
 export class ExecutiveSummaryService {
@@ -99,7 +99,7 @@ export class ExecutiveSummaryService {
      */
     private async getAllReportsForSummary(): Promise<Report[]> {
         const allReports: Report[] = [];
-        const sixHoursAgo = new Date(Date.now() - 6 * 60 * 60 * 1000);
+        const sixHoursAgo = new Date(Date.now() - TIME.SIX_HOURS_MS);
 
         try {
             // Get all cached reports from the REPORTS_CACHE

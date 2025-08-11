@@ -2,6 +2,7 @@ import { ApiResponse, FederalRegisterOrder, FederalRegisterResponse } from '@/li
 import { ExecutiveOrder } from '@/lib/types/core';
 import { Cloudflare } from '../../../worker-configuration';
 import { CacheManager } from '../cache-utils';
+import { TIME } from '../config';
 import { transformFederalRegisterOrder, transformFederalRegisterOrders } from '../transformers/executive-orders';
 
 const FEDERAL_REGISTER_API = 'https://www.federalregister.gov/api/v1';
@@ -14,8 +15,8 @@ export async function fetchExecutiveOrders(
 ): Promise<ApiResponse> {
     try {
         // Check if we're in a build environment (but not production runtime)
-        const isBuildOrStaticGeneration = 
-            process.env.NEXT_PHASE === 'phase-production-build' || 
+        const isBuildOrStaticGeneration =
+            process.env.NEXT_PHASE === 'phase-production-build' ||
             process.env.NEXT_PHASE === 'phase-export';
 
         // If we're in build/static generation, return empty data
@@ -78,9 +79,9 @@ export async function fetchExecutiveOrderById(id: string, env?: Cloudflare.Env):
     const cached = await cacheManager.get<ExecutiveOrder>('EXECUTIVE_ORDERS_CACHE', cacheKey);
     if (cached) {
         const age = (Date.now() - new Date(cached.publication?.publicationDate || cached.date).getTime()) / 1000;
-        const refreshThreshold = 60 * 60; // 1 hour
+        const refreshThreshold = TIME.HOUR_SEC; // 1 hour
 
-        if (age < 24 * 60 * 60) { // Within 24h TTL
+        if (age < TIME.DAY_SEC) { // Within 24h TTL
             if (age > refreshThreshold) {
                 refreshOrderInBackground(id, env, cacheKey).catch(err =>
                     console.error(`[EXEC_ORDERS] Background refresh failed for ${id}: ${err}`)
@@ -97,7 +98,7 @@ export async function fetchExecutiveOrderById(id: string, env?: Cloudflare.Env):
     const data = await response.json() as FederalRegisterOrder;
     const orderData = transformFederalRegisterOrder(data);
     if (orderData) {
-        await cacheManager.put('EXECUTIVE_ORDERS_CACHE', cacheKey, orderData, 86400);
+        await cacheManager.put('EXECUTIVE_ORDERS_CACHE', cacheKey, orderData, TIME.DAY_SEC);
     }
     return orderData;
 }
@@ -110,7 +111,7 @@ async function refreshOrderInBackground(id: string, env: Cloudflare.Env, cacheKe
         const data = await response.json() as FederalRegisterOrder;
         const orderData = transformFederalRegisterOrder(data);
         if (orderData) {
-            await cacheManager.put('EXECUTIVE_ORDERS_CACHE', cacheKey, orderData, 86400);
+            await cacheManager.put('EXECUTIVE_ORDERS_CACHE', cacheKey, orderData, TIME.DAY_SEC);
         }
     }
 }
@@ -142,7 +143,7 @@ export async function findExecutiveOrderByNumber(
         const response = await fetchExecutiveOrders(page, startDate);
         const match = response.orders.find(o => o.metadata.presidentialDocumentNumber?.toString() === eoNumber);
         if (match) {
-            await cacheManager.putRaw('EXECUTIVE_ORDERS_CACHE', cacheKey, match.id, { expirationTtl: 86400 });
+            await cacheManager.putRaw('EXECUTIVE_ORDERS_CACHE', cacheKey, match.id, { expirationTtl: TIME.DAY_SEC });
             return match.id;
         }
         if (response.orders.length === 0) break;

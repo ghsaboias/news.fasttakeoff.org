@@ -1,5 +1,5 @@
 import { Cloudflare } from '../../worker-configuration';
-import { URLs } from './config';
+import { TIME, URLs } from './config';
 import { Report } from './types/core';
 const WEBSITE_URL = URLs.WEBSITE_URL;
 
@@ -10,7 +10,7 @@ const INSTAGRAM_PUBLISH_MEDIA_URL = `https://graph.instagram.com/v20.0/${INSTAGR
 const INSTAGRAM_CAPTION_MAX_LENGTH = 2200;
 
 // R2 image retention period (7 days)
-const IMAGE_RETENTION_SECONDS = 60 * 60 * 24 * 7;
+const IMAGE_RETENTION_SECONDS = TIME.WEEK_SEC;
 
 // Browser Rendering API constants
 const BROWSER_RENDERING_API = 'https://api.cloudflare.com/client/v4/accounts';

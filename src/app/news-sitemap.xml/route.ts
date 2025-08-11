@@ -1,3 +1,4 @@
+import { TIME } from '@/lib/config'
 import { getChannels } from '@/lib/data/channels-service'
 import { ReportService } from '@/lib/data/report-service'
 import { getCacheContext } from '@/lib/utils'
@@ -21,7 +22,7 @@ export async function GET() {
         const reportService = new ReportService(env)
         const channels = await getChannels(env)
 
-        const twoDaysAgo = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000)
+        const twoDaysAgo = new Date(Date.now() - TIME.daysToMs(2))
         const recentReports = []
 
         for (const channel of channels.slice(0, 5)) {

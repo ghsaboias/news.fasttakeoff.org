@@ -1,5 +1,6 @@
 import { withErrorHandling } from '@/lib/api-utils';
 import { CacheManager } from '@/lib/cache-utils';
+import { TIME } from '@/lib/config';
 import { TweetEmbed, TweetEmbedCache } from '@/lib/types/core';
 import { extractTweetId, isValidTweetUrl, normalizeTweetUrl } from '@/lib/utils/twitter-utils';
 
@@ -180,7 +181,7 @@ export async function GET(request: Request) {
                 const cacheKey = `tweet_embeds:${channelId}`;
                 const existingCache = await cacheManager.get<TweetEmbedCache>('MESSAGES_CACHE', cacheKey) || {};
                 existingCache[tweetId] = deletedTweetEmbed;
-                await cacheManager.put('MESSAGES_CACHE', cacheKey, existingCache, 7 * 24 * 60 * 60);
+                await cacheManager.put('MESSAGES_CACHE', cacheKey, existingCache, TIME.WEEK_SEC);
             }
 
             return deletedTweetEmbed;
@@ -211,7 +212,7 @@ export async function GET(request: Request) {
             existingCache[tweetId] = tweetEmbed;
 
             // Cache for 7 days (same as Twitter's typical cache age)
-            await cacheManager.put('MESSAGES_CACHE', cacheKey, existingCache, 7 * 24 * 60 * 60);
+            await cacheManager.put('MESSAGES_CACHE', cacheKey, existingCache, TIME.WEEK_SEC);
         }
 
         return tweetEmbed;

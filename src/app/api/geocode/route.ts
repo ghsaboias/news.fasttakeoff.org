@@ -1,3 +1,4 @@
+import { TIME } from '@/lib/config';
 import { NextResponse } from 'next/server';
 import type { Cloudflare } from '../../../../worker-configuration';
 import { CacheManager } from '../../../lib/cache-utils';
@@ -12,7 +13,7 @@ import { getCacheContext } from '../../../lib/utils';
  * @auth None required.
  */
 
-const GEOCODE_CACHE_TTL_SECONDS = 60 * 24 * 60 * 60; // 60 days (longer since it's free)
+const GEOCODE_CACHE_TTL_SECONDS = TIME.daysToSec(60); // 60 days (longer since it's free)
 
 interface GeocodeLocation {
     lat: number;

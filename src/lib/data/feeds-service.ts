@@ -121,7 +121,7 @@ function calculateTimeRange(articles: FeedItem[]): string {
 
     const newest = new Date(Math.max(...dates));
     const oldest = new Date(Math.min(...dates));
-    const hoursDiff = Math.round((newest.getTime() - oldest.getTime()) / (1000 * 60 * 60));
+    const hoursDiff = Math.round((newest.getTime() - oldest.getTime()) / TIME.HOUR_MS);
 
     return `Last ${hoursDiff} hours`;
 }

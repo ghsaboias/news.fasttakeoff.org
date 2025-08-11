@@ -133,15 +133,49 @@ export const CACHE = {
 
 // Time-based configuration values (in milliseconds)
 export const TIME = {
-    ONE_HOUR_MS: 3600000,
-    TWO_HOURS_MS: 7200000,
-    SIX_HOURS_MS: 21600000,
+    // Base units (seconds)
+    SECOND_SEC: 1,
+    MINUTE_SEC: 60,
+    HOUR_SEC: 60 * 60,
+    DAY_SEC: 24 * 60 * 60,
+    WEEK_SEC: 7 * 24 * 60 * 60,
+    MONTH_30_SEC: 30 * 24 * 60 * 60,
+    YEAR_365_SEC: 365 * 24 * 60 * 60,
+
+    // Base units (milliseconds)
+    SECOND_MS: 1000,
+    MINUTE_MS: 60 * 1000,
+    HOUR_MS: 60 * 60 * 1000,
+    DAY_MS: 24 * 60 * 60 * 1000,
+    WEEK_MS: 7 * 24 * 60 * 60 * 1000,
+    MONTH_30_MS: 30 * 24 * 60 * 60 * 1000,
+    YEAR_365_MS: 365 * 24 * 60 * 60 * 1000,
+
+    // Common windows (milliseconds)
+    FIVE_MINUTES_MS: 5 * 60 * 1000,
+    FIFTEEN_MINUTES_MS: 15 * 60 * 1000,
+    THIRTY_MINUTES_MS: 30 * 60 * 1000,
+
+    // Backward compatible aliases
+    ONE_HOUR_MS: 60 * 60 * 1000,
+    TWO_HOURS_MS: 2 * 60 * 60 * 1000,
+    SIX_HOURS_MS: 6 * 60 * 60 * 1000,
     TWENTY_FOUR_HOURS_MS: 24 * 60 * 60 * 1000,
+
+    // Timeframes and cron mapping
     TIMEFRAMES: ['2h', '6h'] as const,
     CRON: {
         '2h': 2,
         '6h': 6,
     },
+
+    // Helper converters
+    minutesToMs: (n: number): number => n * 60 * 1000,
+    hoursToMs: (n: number): number => n * 60 * 60 * 1000,
+    daysToMs: (n: number): number => n * 24 * 60 * 60 * 1000,
+    minutesToSec: (n: number): number => n * 60,
+    hoursToSec: (n: number): number => n * 60 * 60,
+    daysToSec: (n: number): number => n * 24 * 60 * 60,
 };
 
 // AI/LLM configuration
