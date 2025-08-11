@@ -67,6 +67,61 @@ export class TwitterService {
     }
 
     /**
+     * Creates a single location hashtag from report data.
+     * Preference: city; if unavailable, attempt a coarse fallback from channel name.
+     */
+    private buildLocationHashtag(report: Report): string | null {
+        const makeHash = (raw: string): string | null => {
+            const trimmed = raw.trim();
+            if (!trimmed) return null;
+            // Remove non-letters/digits and spaces; keep Unicode letters/digits
+            const compact = trimmed.replace(/[^\p{L}\p{N}]+/gu, '');
+            if (!compact) return null;
+            return `#${compact}`;
+        };
+
+        // 1) Prefer city when available
+        if (report.city) {
+            const fromCity = makeHash(report.city);
+            if (fromCity) return fromCity;
+        }
+
+        // 2) Minimal fallback from channel name → broad geography
+        const channel = (report.channelName || '').toLowerCase();
+        if (channel.includes('ukraine')) return '#Ukraine';
+        if (channel.includes('israel') || channel.includes('palestin')) return '#Gaza';
+        if (channel.includes('china') || channel.includes('taiwan')) return '#Taiwan';
+        if (channel.includes('sudan')) return '#Sudan';
+        if (channel.includes('united-kingdom') || channel.includes('ireland')) return '#UK';
+        if (channel.includes('continental-europe')) return '#Europe';
+        if (channel.includes('south-central-africa')) return '#Africa';
+        if (channel.includes('arabian-peninsula')) return '#Gulf';
+
+        return null;
+    }
+
+    /**
+     * Appends a hashtag if it fits within 280 chars.
+     */
+    private appendHashtagIfFits(baseText: string, hashtag: string | null): string {
+        if (!hashtag) return baseText;
+        const candidate = `${baseText} ${hashtag}`;
+        return countTwitterCharacters(candidate) <= 280 ? candidate : baseText;
+    }
+
+    /**
+     * Determines if this report qualifies as a "big event" for threaded posting.
+     * Rule: timeframe is 2h and messageCount > 20
+     */
+    private isBigEvent(report: Report): boolean {
+        const timeframe = (report.timeframe || '').toLowerCase();
+        const count = typeof report.messageCount === 'number' ? report.messageCount : 0;
+        if (timeframe === '2h') return count > 20;
+        if (timeframe === '6h') return count > 50;
+        return false;
+    }
+
+    /**
      * Refreshes the access token using the refresh token stored in KV.
      * Updates the tokens in KV upon successful refresh.
      * @returns The new access token, or null if refresh failed.
@@ -278,9 +333,12 @@ export class TwitterService {
         }
 
         try {
-            console.log(`[TWITTER] Posting single tweet (${countTwitterCharacters(report.headline)} chars): "${report.headline.substring(0, 50)}..."`);
+            const locationTag = this.buildLocationHashtag(report);
+            const text = this.appendHashtagIfFits(report.headline, locationTag);
 
-            const response = await this.postSingleTweetInternal(report.headline, accessToken);
+            console.log(`[TWITTER] Posting single tweet (${countTwitterCharacters(text)} chars): "${text.substring(0, 50)}..."`);
+
+            const response = await this.postSingleTweetInternal(text, accessToken);
 
             console.log(`[TWITTER] Successfully posted single tweet for report ${report.reportId}. Tweet ID: ${response.data.id}`);
 
@@ -321,8 +379,7 @@ export class TwitterService {
     }
 
     /**
-     * Posts a threaded tweet for a report
-     * @deprecated Use postSingleTweet instead for simpler posting
+     * Posts a threaded tweet for a report (used for big events)
      */
     async postThreadedTweet(report: Report): Promise<void> {
         const accessToken = await this.getValidAccessToken();
@@ -335,8 +392,9 @@ export class TwitterService {
         try {
             const reportUrl = `${URLs.WEBSITE_URL}/current-events/${report.channelId}/${report.reportId}`;
 
-            // Tweet 1: Headline + context
-            const tweet1Text = report.headline;
+            // Tweet 1: Headline + optional location hashtag
+            const locationTag = this.buildLocationHashtag(report);
+            const tweet1Text = this.appendHashtagIfFits(report.headline, locationTag);
 
             console.log(`[TWITTER] Posting first tweet (${countTwitterCharacters(tweet1Text)} chars): "${tweet1Text.substring(0, 50)}..."`);
             const tweet1Response = await this.postSingleTweetInternal(tweet1Text, accessToken);
@@ -369,7 +427,10 @@ export class TwitterService {
      * Now uses single tweet format with headline and URL
      */
     async postTweet(report: Report): Promise<void> {
-        // Use the new single tweet approach
+        if (this.isBigEvent(report)) {
+            await this.postThreadedTweet(report);
+            return;
+        }
         await this.postSingleTweet(report);
     }
 }
