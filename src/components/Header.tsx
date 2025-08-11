@@ -18,7 +18,7 @@ export default function Header() {
 
     return (
         <header className="mx-auto flex h-16 items-center justify-between sm:px-8 bg-dark-900 px-4 shadow-dark gap-4 border-b border-dark-700">
-            <Link href="/" className="flex items-center gap-2 text-xl text-industrial-500 font-semibold">
+            <Link href="/" className="flex items-center gap-2 text-xl text-accent font-semibold">
                 <Image src="/images/brain_transparent.png" alt="Fast Takeoff News" width={32} height={32} priority />
                 <p className="hidden lg:block">Fast Takeoff News</p>
             </Link>
@@ -26,31 +26,31 @@ export default function Header() {
                 {
                     isUSBased && (
                         <>
-                            <Link href="/executive-orders" className="text-sm font-medium hover:underline hover:text-industrial-500 transition-colors text-center">
+                            <Link href="/executive-orders" className="text-sm font-medium hover:underline hover:text-accent transition-colors text-center">
                                 Executive Orders
                             </Link>
                         </>
                     )
                 }
-                <Link href="/current-events" className="text-sm font-medium hover:underline hover:text-industrial-500 transition-colors text-center">
+                <Link href="/current-events" className="text-sm font-medium hover:underline hover:text-accent transition-colors text-center">
                     Current Events
                 </Link>
-                <Link href="/mktfeed" className="text-sm font-medium hover:underline hover:text-industrial-500 transition-colors text-center">
+                <Link href="/mktfeed" className="text-sm font-medium hover:underline hover:text-accent transition-colors text-center">
                     Market Feed
                 </Link>
-                <Link href="/entities" className="text-sm font-medium hover:underline hover:text-industrial-500 transition-colors text-center">
+                <Link href="/entities" className="text-sm font-medium hover:underline hover:text-accent transition-colors text-center">
                     Entities
                 </Link>
-                <Link href="/message-activity" className="text-sm font-medium hover:underline hover:text-industrial-500 transition-colors text-center">
+                <Link href="/message-activity" className="text-sm font-medium hover:underline hover:text-accent transition-colors text-center">
                     Heatmap
                 </Link>
-                <Link href="/news-globe" className="text-sm font-medium hover:underline hover:text-industrial-500 transition-colors text-center">
+                <Link href="/news-globe" className="text-sm font-medium hover:underline hover:text-accent transition-colors text-center">
                     News Globe
                 </Link>
-                <Link href="/brazil" className="text-sm font-medium hover:underline hover:text-industrial-500 transition-colors text-center">
+                <Link href="/brazil" className="text-sm font-medium hover:underline hover:text-accent transition-colors text-center">
                     Brazil
                 </Link>
-                <Link href="/power-network" className="text-sm font-medium hover:underline hover:text-industrial-500 transition-colors text-center">
+                <Link href="/power-network" className="text-sm font-medium hover:underline hover:text-accent transition-colors text-center">
                     Power Network
                 </Link>
             </div>
@@ -83,31 +83,31 @@ export default function Header() {
                                     {
                                         isUSBased && (
                                             <>
-                                                <Link href="/executive-orders" className="text-sm font-medium hover:underline hover:text-industrial-500 transition-colors text-dark-100">
+                                                <Link href="/executive-orders" className="text-sm font-medium hover:underline hover:text-accent transition-colors text-dark-100">
                                                     Executive Orders
                                                 </Link>
                                             </>
                                         )
                                     }
-                                    <Link href="/current-events" className="text-sm font-medium hover:underline hover:text-industrial-500 transition-colors text-dark-100">
+                                    <Link href="/current-events" className="text-sm font-medium hover:underline hover:text-accent transition-colors text-dark-100">
                                         Current Events
                                     </Link>
-                                    <Link href="/mktfeed" className="text-sm font-medium hover:underline hover:text-industrial-500 transition-colors text-dark-100">
+                                    <Link href="/mktfeed" className="text-sm font-medium hover:underline hover:text-accent transition-colors text-dark-100">
                                         Market Feed
                                     </Link>
-                                    <Link href="/entities" className="text-sm font-medium hover:underline hover:text-industrial-500 transition-colors text-dark-100">
+                                    <Link href="/entities" className="text-sm font-medium hover:underline hover:text-accent transition-colors text-dark-100">
                                         Entities
                                     </Link>
-                                    <Link href="/message-activity" className="text-sm font-medium hover:underline hover:text-industrial-500 transition-colors text-dark-100">
+                                    <Link href="/message-activity" className="text-sm font-medium hover:underline hover:text-accent transition-colors text-dark-100">
                                         Heatmap
                                     </Link>
-                                    <Link href="/news-globe" className="text-sm font-medium hover:underline hover:text-industrial-500 transition-colors text-dark-100">
+                                    <Link href="/news-globe" className="text-sm font-medium hover:underline hover:text-accent transition-colors text-dark-100">
                                         News Globe
                                     </Link>
-                                    <Link href="/brazil" className="text-sm font-medium hover:underline hover:text-industrial-500 transition-colors text-dark-100">
+                                    <Link href="/brazil" className="text-sm font-medium hover:underline hover:text-accent transition-colors text-dark-100">
                                         Brazil
                                     </Link>
-                                    <Link href="/power-network" className="text-sm font-medium hover:underline hover:text-industrial-500 transition-colors text-dark-100">
+                                    <Link href="/power-network" className="text-sm font-medium hover:underline hover:text-accent transition-colors text-dark-100">
                                         Power Network
                                     </Link>
                                 </div>
@@ -122,7 +122,7 @@ export default function Header() {
                             </Button>
                         </Link>
                         <Link href="/sign-up">
-                            <Button variant="default" size="sm" className="bg-industrial-gradient text-white hover:shadow-industrial">
+                            <Button variant="default" size="sm" className="bg-industrial-gradient text-white hover:brightness-110 hover:shadow-industrial-lg transition-all">
                                 Subscribe
                             </Button>
                         </Link>
@@ -147,31 +147,31 @@ export default function Header() {
                                     {
                                         isUSBased && (
                                             <>
-                                                <Link href="/executive-orders" className="text-sm font-medium hover:underline hover:text-industrial-500 transition-colors text-dark-100">
+                                                <Link href="/executive-orders" className="text-sm font-medium hover:underline hover:text-accent transition-colors text-dark-100">
                                                     Executive Orders
                                                 </Link>
                                             </>
                                         )
                                     }
-                                    <Link href="/current-events" className="text-sm font-medium hover:underline hover:text-industrial-500 transition-colors text-dark-100">
+                                    <Link href="/current-events" className="text-sm font-medium hover:underline hover:text-accent transition-colors text-dark-100">
                                         Current Events
                                     </Link>
-                                    <Link href="/mktfeed" className="text-sm font-medium hover:underline hover:text-industrial-500 transition-colors text-dark-100">
+                                    <Link href="/mktfeed" className="text-sm font-medium hover:underline hover:text-accent transition-colors text-dark-100">
                                         Market Feed
                                     </Link>
-                                    <Link href="/entities" className="text-sm font-medium hover:underline hover:text-industrial-500 transition-colors text-dark-100">
+                                    <Link href="/entities" className="text-sm font-medium hover:underline hover:text-accent transition-colors text-dark-100">
                                         Entities
                                     </Link>
-                                    <Link href="/message-activity" className="text-sm font-medium hover:underline hover:text-industrial-500 transition-colors text-dark-100">
+                                    <Link href="/message-activity" className="text-sm font-medium hover:underline hover:text-accent transition-colors text-dark-100">
                                         Heatmap
                                     </Link>
-                                    <Link href="/news-globe" className="text-sm font-medium hover:underline hover:text-industrial-500 transition-colors text-dark-100">
+                                    <Link href="/news-globe" className="text-sm font-medium hover:underline hover:text-accent transition-colors text-dark-100">
                                         News Globe
                                     </Link>
-                                    <Link href="/brazil" className="text-sm font-medium hover:underline hover:text-industrial-500 transition-colors text-dark-100">
+                                    <Link href="/brazil" className="text-sm font-medium hover:underline hover:text-accent transition-colors text-dark-100">
                                         Brazil
                                     </Link>
-                                    <Link href="/power-network" className="text-sm font-medium hover:underline hover:text-industrial-500 transition-colors text-dark-100">
+                                    <Link href="/power-network" className="text-sm font-medium hover:underline hover:text-accent transition-colors text-dark-100">
                                         Power Network
                                     </Link>
                                 </div>
