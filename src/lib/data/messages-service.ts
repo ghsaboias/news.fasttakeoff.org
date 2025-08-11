@@ -253,13 +253,13 @@ export class MessagesService {
         await this.cacheManager.put('MESSAGES_CACHE', cacheKey, safeData, CACHE.TTL.MESSAGES);
     }
 
-    async updateMessages(): Promise<void> {
+    async updateMessages(local: boolean = false): Promise<void> {
         console.log(`[MESSAGES] Starting updateMessages...`);
 
         for (let attempt = 1; attempt <= 3; attempt++) {
             try {
                 const channels = await this.channelsService.getChannels();
-                const last6Hours = new Date(Date.now() - (6 * 60 * 60 * 1000)); // 6 hours ago in milliseconds
+                const last6Hours = new Date(Date.now() - TIME.SIX_HOURS_MS);
                 let fetchedAny = false;
                 let totalRawMessages = 0;
                 let totalBotMessages = 0;
@@ -267,7 +267,10 @@ export class MessagesService {
 
                 for (const channel of channels) {
                     const cached = await this.getAllCachedMessagesForChannel(channel.id);
-                    const since = cached?.lastMessageTimestamp ? new Date(cached.lastMessageTimestamp) : last6Hours;
+                    // Base since from cache or 6h ago if nothing cached
+                    const sinceCandidate = cached?.lastMessageTimestamp ? new Date(cached.lastMessageTimestamp) : last6Hours;
+                    // If running locally, cap lookback to at most 6h; in prod, do not cap
+                    const since = local && sinceCandidate.getTime() < last6Hours.getTime() ? last6Hours : sinceCandidate;
                     const discordEpoch = 1420070400000; // 2015-01-01T00:00:00.000Z
                     const snowflake = BigInt(Math.floor(since.getTime() - discordEpoch)) << BigInt(22); // Shift 22 bits for worker/thread IDs
                     const urlBase = `${API.DISCORD.BASE_URL}/channels/${channel.id}/messages?limit=${DISCORD.MESSAGES.BATCH_SIZE}`;
@@ -315,7 +318,7 @@ export class MessagesService {
                             channelRawCount += messages.length;
                             const botMessages = this.messageFilter.byBot(messages);
                             allMessages.push(...botMessages);
-                            console.log(`[MESSAGES] Channel ${channel.name}: ${botMessages.length} bot messages, total ${allMessages.length}`);
+                            console.log(`[MESSAGES] Channel ${channel.name}: ${botMessages.length} bot messages, total ${allMessages.length} - OLDEST: ${messages[0].timestamp}`);
 
                             after = messages[0].id; // Use the newest message ID for the next batch
                         } catch (error) {

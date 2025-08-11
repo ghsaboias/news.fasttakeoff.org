@@ -143,7 +143,7 @@ const CRON_TASKS: Record<string, CronTaskFunction> = {
     // Every 15 minutes
     "*/15 * * * *": async (env: Cloudflare.Env) => {
         const messagesService = new MessagesService(env);
-        await logRun('MESSAGES', () => messagesService.updateMessages(), {
+        await logRun('MESSAGES', () => messagesService.updateMessages(true), {
             timeoutMs: TASK_TIMEOUTS.MESSAGES
         });
     },
@@ -171,7 +171,7 @@ async function handleManualTrigger(trigger: string, env: Cloudflare.Env): Promis
     const mktNewsService = new MktNewsService(env);
 
     const MANUAL_TRIGGERS: Record<string, () => Promise<void>> = {
-        'MESSAGES': () => logRun('MESSAGES', () => messagesService.updateMessages(), {
+        'MESSAGES': () => logRun('MESSAGES', () => messagesService.updateMessages(true), {
             timeoutMs: TASK_TIMEOUTS.MESSAGES
         }),
 
