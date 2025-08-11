@@ -172,7 +172,7 @@ export default function HomeContent({ initialReports, initialExecutiveOrders, in
                 </div>
             </section>
 
-            {/* Reports Section - Enhanced with industrial dark theme */}
+            {/* Reports Section */}
             <section className="mx-6 sm:mx-8">
                 <div className="flex items-center justify-between mb-6">
                     <h2 className="text-2xl md:text-3xl font-bold text-gray-100">Latest Reports</h2>

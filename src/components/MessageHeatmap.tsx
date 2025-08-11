@@ -58,15 +58,16 @@ function MessageHeatmap() {
     });
 
     const getColorIntensity = (count: number, maxCount: number): string => {
-        if (count === 0) return '#f8fafc' // slate-50 for better contrast
+        // Dark-theme friendly, brand-aligned green/teal scale
+        // Zero activity: blend with dark background grid
+        if (count === 0) return '#1f2937' // dark-800
 
         const intensity = Math.min(count / maxCount, 1)
 
-        // Use a better color scale for accessibility
-        if (intensity < 0.25) return '#dbeafe' // blue-100
-        if (intensity < 0.5) return '#93c5fd'  // blue-300
-        if (intensity < 0.75) return '#3b82f6' // blue-500
-        return '#1d4ed8' // blue-700 for highest intensity
+        if (intensity < 0.25) return '#0b3f35' // deep teal
+        if (intensity < 0.5) return '#0d6b5a'  // primary teal
+        if (intensity < 0.75) return '#158a73' // hover teal
+        return '#1db39c' // accent green (highest)
     }
 
     const formatUTCTime = (utcHour: number): string => {
@@ -162,36 +163,36 @@ function MessageHeatmap() {
     const leftMargin = CONSTANTS.LEFT_MARGIN // Space for channel names
 
     return (
-        <div className="w-full bg-white rounded-lg border p-4">
+        <div className="w-full bg-dark-900 rounded-lg border border-dark-700 p-4 shadow-dark">
             <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-gray-900">
+                <h3 className="text-lg font-semibold text-dark-100">
                     Sources Heatmap (Last 24 Hours)
                 </h3>
                 {data && (
-                    <div className="text-xs text-gray-500">
+                    <div className="text-xs text-dark-400">
                         Updated: {new Date(data.lastUpdated).toLocaleTimeString()}
                     </div>
                 )}
             </div>
 
             {/* Filter Controls - Always visible */}
-            <div className="flex items-center gap-4 mb-4 pb-4 border-b">
+            <div className="flex items-center gap-4 mb-4 pb-4 border-b border-dark-700">
                 <div className="flex items-center gap-2">
                     <input
                         type="text"
                         placeholder="Search channels..."
                         value={channelFilter}
                         onChange={(e) => setChannelFilter(e.target.value)}
-                        className="px-3 py-1 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="px-3 py-1 text-sm rounded-md bg-dark-800 text-dark-100 placeholder:text-dark-500 border border-dark-600 focus:outline-none focus:ring-2 focus:ring-accent"
                         disabled={loading}
                     />
                 </div>
-                <label className="flex items-center gap-2 text-sm">
+                <label className="flex items-center gap-2 text-sm text-dark-200">
                     <input
                         type="checkbox"
                         checked={showInactiveChannels}
                         onChange={(e) => setShowInactiveChannels(e.target.checked)}
-                        className="rounded"
+                        className="rounded accent-accent"
                         disabled={loading}
                     />
                     Show inactive channels
@@ -200,20 +201,20 @@ function MessageHeatmap() {
 
             {/* Content Area */}
             {loading && (
-                <div className="flex items-center justify-center h-32 bg-gray-50 rounded-lg">
-                    <div className="text-sm text-gray-500">Loading activity data...</div>
+                <div className="flex items-center justify-center h-32 bg-dark-800 rounded-lg border border-dark-700">
+                    <div className="text-sm text-dark-400">Loading activity data...</div>
                 </div>
             )}
 
             {!loading && (error || !data) && (
-                <div className="flex items-center justify-center h-32 bg-gray-50 rounded-lg">
-                    <div className="text-sm text-gray-500">Unable to load activity data</div>
+                <div className="flex items-center justify-center h-32 bg-dark-800 rounded-lg border border-dark-700">
+                    <div className="text-sm text-dark-400">Unable to load activity data</div>
                 </div>
             )}
 
             {!loading && data && filteredChannels.length === 0 && (
-                <div className="flex items-center justify-center h-32 bg-gray-50 rounded-lg">
-                    <div className="text-sm text-gray-500">
+                <div className="flex items-center justify-center h-32 bg-dark-800 rounded-lg border border-dark-700">
+                    <div className="text-sm text-dark-400">
                         {channelFilter ? 'No channels match your search' : 'No channel activity in the last 24 hours'}
                     </div>
                 </div>
@@ -235,7 +236,7 @@ function MessageHeatmap() {
                                     x={leftMargin + (x / 100) * (CONSTANTS.CHART_WIDTH - leftMargin)}
                                     y={labelHeight - 4}
                                     textAnchor="middle"
-                                    className="text-xs fill-gray-500"
+                                    className="text-xs fill-dark-400"
                                 >
                                     {label}
                                 </text>
@@ -249,7 +250,7 @@ function MessageHeatmap() {
                                         x={leftMargin - 8}
                                         y={labelHeight + channelIndex * rowHeight + rowHeight / 2 + 4}
                                         textAnchor="end"
-                                        className="text-sm fill-gray-700"
+                                        className="text-sm fill-dark-300"
                                     >
                                         {channel.channelName}
                                     </text>
@@ -270,9 +271,9 @@ function MessageHeatmap() {
                                                 width={cellWidth - 1}
                                                 height={rowHeight - 8}
                                                 fill={getColorIntensity(hourData.count, maxCountForScale)}
-                                                stroke="#e5e7eb"
+                                                stroke="#374151" /* dark-700 */
                                                 strokeWidth="0.5"
-                                                className="cursor-pointer hover:stroke-gray-400"
+                                                className="cursor-pointer hover:stroke-dark-500"
                                                 onMouseEnter={(e) => {
                                                     const rect = e.currentTarget
 
@@ -331,7 +332,7 @@ function MessageHeatmap() {
                                         x={CONSTANTS.CHART_WIDTH + 10}
                                         y={labelHeight + channelIndex * rowHeight + rowHeight / 2 + 4}
                                         textAnchor="start"
-                                        className="text-xs fill-gray-600 font-medium"
+                                        className="text-xs fill-dark-400 font-medium"
                                     >
                                         {channel.totalMessages}
                                     </text>
@@ -384,7 +385,7 @@ function MessageHeatmap() {
                             <div className="flex justify-center mt-6">
                                 <button
                                     onClick={() => setChannelsToShow(prev => prev + 20)}
-                                    className="px-4 py-2 text-sm border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
+                                    className="px-4 py-2 text-sm border border-dark-600 text-dark-100 rounded-md hover:bg-dark-800 transition-colors"
                                 >
                                     Load More Channels ({totalAvailable - channelsToShow} remaining)
                                 </button>
@@ -394,14 +395,15 @@ function MessageHeatmap() {
 
 
                     {/* Legend */}
-                    <div className="flex items-center justify-between mt-4 text-xs text-gray-500">
+                    <div className="flex items-center justify-between mt-4 text-xs text-dark-400">
                         <div className="flex items-center gap-2">
                             <span>Activity:</span>
                             <div className="flex items-center gap-1">
-                                <div className="w-3 h-3 bg-gray-100 border border-gray-300 rounded-sm"></div>
+                                <div className="w-3 h-3 rounded-sm border border-dark-600" style={{ backgroundColor: '#1f2937' }}></div>
                                 <span>Low</span>
-                                <div className="w-3 h-3 bg-blue-300 border border-gray-300 rounded-sm"></div>
-                                <div className="w-3 h-3 bg-blue-500 border border-gray-300 rounded-sm"></div>
+                                <div className="w-3 h-3 rounded-sm border border-dark-600" style={{ backgroundColor: '#0d6b5a' }}></div>
+                                <span>Medium</span>
+                                <div className="w-3 h-3 rounded-sm border border-dark-600" style={{ backgroundColor: '#1db39c' }}></div>
                                 <span>High</span>
                             </div>
                         </div>

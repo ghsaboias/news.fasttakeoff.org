@@ -22,7 +22,7 @@ export default function Footer() {
                         <h4 className="text-sm font-semibold text-dark-100">Navigation</h4>
                         <ul className="space-y-2 text-sm text-dark-300">
                             <li>
-                                <Link href="/" className="hover:underline hover:text-industrial-500 transition-colors">
+                                <Link href="/" className="hover:underline hover:text-accent transition-colors">
                                     Home
                                 </Link>
                             </li>
@@ -30,7 +30,7 @@ export default function Footer() {
                                 isUSBased && (
                                     <>
                                         <li>
-                                            <Link href="/executive-orders" className="hover:underline hover:text-industrial-500 transition-colors">
+                                            <Link href="/executive-orders" className="hover:underline hover:text-accent transition-colors">
                                                 Executive Orders
                                             </Link>
                                         </li>
@@ -38,32 +38,32 @@ export default function Footer() {
                                 )
                             }
                             <li>
-                                <Link href="/current-events" className="hover:underline hover:text-industrial-500 transition-colors">
+                                <Link href="/current-events" className="hover:underline hover:text-accent transition-colors">
                                     Current Events
                                 </Link>
                             </li>
                             <li>
-                                <Link href="/mktfeed" className="hover:underline hover:text-industrial-500 transition-colors">
+                                <Link href="/mktfeed" className="hover:underline hover:text-accent transition-colors">
                                     Market Feed
                                 </Link>
                             </li>
                             <li>
-                                <Link href="/message-activity" className="hover:underline hover:text-industrial-500 transition-colors">
+                                <Link href="/message-activity" className="hover:underline hover:text-accent transition-colors">
                                     Heatmap
                                 </Link>
                             </li>
                             <li>
-                                <Link href="/news-globe" className="hover:underline hover:text-industrial-500 transition-colors">
+                                <Link href="/news-globe" className="hover:underline hover:text-accent transition-colors">
                                     News Globe
                                 </Link>
                             </li>
                             <li>
-                                <Link href="/brazil" className="hover:underline hover:text-industrial-500 transition-colors">
+                                <Link href="/brazil" className="hover:underline hover:text-accent transition-colors">
                                     Brazil News
                                 </Link>
                             </li>
                             <li>
-                                <Link href="/power-network" className="hover:underline hover:text-industrial-500 transition-colors">
+                                <Link href="/power-network" className="hover:underline hover:text-accent transition-colors">
                                     Power Network
                                 </Link>
                             </li>
@@ -73,17 +73,17 @@ export default function Footer() {
                         <h4 className="text-sm font-semibold text-dark-100">Contact</h4>
                         <ul className="space-y-2 text-sm text-dark-300">
                             <li>
-                                <a href="https://x.com/fasttakeoff" className="hover:underline hover:text-industrial-500 transition-colors">
+                                <a href="https://x.com/fasttakeoff" className="hover:underline hover:text-accent transition-colors">
                                     X
                                 </a>
                             </li>
                             <li>
-                                <a href="https://www.instagram.com/fast.takeoff.news/" className="hover:underline hover:text-industrial-500 transition-colors">
+                                <a href="https://www.instagram.com/fast.takeoff.news/" className="hover:underline hover:text-accent transition-colors">
                                     Instagram
                                 </a>
                             </li>
                             <li>
-                                <a href="https://www.facebook.com/profile.php?id=61577293156084" className="hover:underline hover:text-industrial-500 transition-colors">
+                                <a href="https://www.facebook.com/profile.php?id=61577293156084" className="hover:underline hover:text-accent transition-colors">
                                     Facebook
                                 </a>
                             </li>
