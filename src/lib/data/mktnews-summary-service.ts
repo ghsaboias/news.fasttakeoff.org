@@ -1,7 +1,7 @@
 import { Cloudflare } from '../../../worker-configuration';
 import { getAIAPIKey, getAIProviderConfig } from '../ai-config';
 import { CacheManager } from '../cache-utils';
-import { AI, CACHE } from '../config';
+import { AI, CACHE, TIME } from '../config';
 import { MktNewsMessage, MktNewsSummary } from '../types/core';
 import { MktNewsService } from './mktnews-service';
 
@@ -45,7 +45,7 @@ export class MktNewsSummaryService {
 
         const messages = await this.mktNewsService.getMessagesForTimeframe(hours);
 
-        const cutoffTime = Date.now() - (hours * 60 * 60 * 1000);
+        const cutoffTime = Date.now() - TIME.hoursToMs(hours);
         console.log(`[MKTNEWS_SUMMARY] Cutoff time: ${new Date(cutoffTime).toISOString()}`);
         console.log(`[MKTNEWS_SUMMARY] Found ${messages.length} messages in timeframe`);
 

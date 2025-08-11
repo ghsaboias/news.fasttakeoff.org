@@ -1,4 +1,5 @@
 import { withErrorHandling } from '@/lib/api-utils';
+import { TIME } from '@/lib/config';
 import { ReportService } from '@/lib/data/report-service';
 import { EnhancedReport } from '@/lib/types/core';
 import { groupAndSortReports } from '@/lib/utils';
@@ -25,7 +26,7 @@ export async function POST() {
         const groupedReports = groupAndSortReports(reportsWithEntities) as EnhancedReport[];
 
         // Find where the latest run ends (first gap > 15 minutes)
-        const FIFTEEN_MINUTES_MS = 15 * 60 * 1000;
+        const FIFTEEN_MINUTES_MS = TIME.FIFTEEN_MINUTES_MS;
         let latestRunEndIndex = 0;
 
         for (let i = 1; i < groupedReports.length; i++) {

@@ -1,6 +1,7 @@
 import { ChannelMessageCounts, DiscordMessage } from '@/lib/types/core';
 import { Cloudflare } from '../../../worker-configuration';
 import { CacheManager } from '../cache-utils';
+import { TIME } from '../config';
 import { MessagesService } from './messages-service';
 
 export class MessageCountsService {
@@ -48,12 +49,12 @@ export class MessageCountsService {
 
         for (const [channelId, messages] of channelMessages.entries()) {
             const counts = {
-                '5min': this.countMessagesInWindow(messages, 5 * 60 * 1000),
-                '15min': this.countMessagesInWindow(messages, 15 * 60 * 1000),
-                '1h': this.countMessagesInWindow(messages, 60 * 60 * 1000),
-                '6h': this.countMessagesInWindow(messages, 6 * 60 * 60 * 1000),
-                '1d': this.countMessagesInWindow(messages, 24 * 60 * 60 * 1000),
-                '7d': this.countMessagesInWindow(messages, 7 * 24 * 60 * 60 * 1000),
+                '5min': this.countMessagesInWindow(messages, TIME.FIVE_MINUTES_MS),
+                '15min': this.countMessagesInWindow(messages, TIME.FIFTEEN_MINUTES_MS),
+                '1h': this.countMessagesInWindow(messages, TIME.ONE_HOUR_MS),
+                '6h': this.countMessagesInWindow(messages, TIME.SIX_HOURS_MS),
+                '1d': this.countMessagesInWindow(messages, TIME.DAY_MS),
+                '7d': this.countMessagesInWindow(messages, TIME.WEEK_MS),
             };
 
             const channelCounts: ChannelMessageCounts = {
@@ -86,12 +87,12 @@ export class MessageCountsService {
 
         // Calculate counts for each time window using cached data
         const counts = {
-            '5min': this.countMessagesInWindow(cachedData.messages, 5 * 60 * 1000),
-            '15min': this.countMessagesInWindow(cachedData.messages, 15 * 60 * 1000),
-            '1h': this.countMessagesInWindow(cachedData.messages, 60 * 60 * 1000),
-            '6h': this.countMessagesInWindow(cachedData.messages, 6 * 60 * 60 * 1000),
-            '1d': this.countMessagesInWindow(cachedData.messages, 24 * 60 * 60 * 1000),
-            '7d': this.countMessagesInWindow(cachedData.messages, 7 * 24 * 60 * 60 * 1000),
+            '5min': this.countMessagesInWindow(cachedData.messages, TIME.FIVE_MINUTES_MS),
+            '15min': this.countMessagesInWindow(cachedData.messages, TIME.FIFTEEN_MINUTES_MS),
+            '1h': this.countMessagesInWindow(cachedData.messages, TIME.ONE_HOUR_MS),
+            '6h': this.countMessagesInWindow(cachedData.messages, TIME.SIX_HOURS_MS),
+            '1d': this.countMessagesInWindow(cachedData.messages, TIME.DAY_MS),
+            '7d': this.countMessagesInWindow(cachedData.messages, TIME.WEEK_MS),
         };
 
         const channelCounts: ChannelMessageCounts = {
@@ -118,7 +119,7 @@ export class MessageCountsService {
      */
     private async saveChannelCounts(channelId: string, counts: ChannelMessageCounts): Promise<void> {
         const key = `message-counts:${channelId}`;
-        await this.cacheManager.put('MESSAGES_CACHE', key, counts, 24 * 60 * 60); // 24 hour TTL
+        await this.cacheManager.put('MESSAGES_CACHE', key, counts, TIME.DAY_SEC); // 24 hour TTL
     }
 
     /**

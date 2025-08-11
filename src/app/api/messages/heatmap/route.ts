@@ -1,4 +1,5 @@
 import { CacheManager } from '@/lib/cache-utils';
+import { TIME } from '@/lib/config';
 import { ChannelsService } from '@/lib/data/channels-service';
 import { CachedMessages } from '@/lib/types/core';
 import { getCacheContext } from '@/lib/utils';
@@ -30,7 +31,7 @@ function processMessagesIntoHourlyBuckets(
     channels: Array<{ id: string; name: string }>,
     now: Date
 ): ChannelHeatmapData[] {
-    const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+    const twentyFourHoursAgo = new Date(now.getTime() - TIME.DAY_MS);
 
     const result: ChannelHeatmapData[] = [];
 
@@ -129,7 +130,7 @@ export async function GET() {
                 channels: [],
                 lastUpdated: now.toISOString(),
                 timeRange: {
-                    start: new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString(),
+                    start: new Date(now.getTime() - TIME.DAY_MS).toISOString(),
                     end: now.toISOString()
                 }
             };
@@ -147,13 +148,13 @@ export async function GET() {
             channels: channelData,
             lastUpdated: now.toISOString(),
             timeRange: {
-                start: new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString(),
+                start: new Date(now.getTime() - TIME.DAY_MS).toISOString(),
                 end: now.toISOString()
             }
         };
 
-        // Cache the result for 10 minutes (600 seconds)
-        await cacheManager.put('MESSAGES_CACHE', 'heatmap:hourly', response, 600);
+        // Cache the result for 10 minutes
+        await cacheManager.put('MESSAGES_CACHE', 'heatmap:hourly', response, TIME.minutesToSec(10));
 
         console.log(`[HEATMAP] Generated heatmap in ${Date.now() - startTime}ms`);
 

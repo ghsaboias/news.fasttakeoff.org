@@ -12,7 +12,7 @@ export async function GET() {
 
     // Get recent reports from all channels
     const allReports = []
-    const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000)
+    const oneDayAgo = new Date(Date.now() - TIME.DAY_MS)
     const timeframes: TimeframeKey[] = [...TIME.TIMEFRAMES] // Get all configured timeframes
 
     for (const channel of channels) {

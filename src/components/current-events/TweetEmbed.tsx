@@ -1,4 +1,5 @@
 'use client';
+import { TIME } from '@/lib/config';
 
 import { TweetEmbed as TweetEmbedType } from '@/lib/types/core';
 import { detectTweetUrls } from '@/lib/utils/twitter-utils';
@@ -25,7 +26,7 @@ interface TweetEmbedProps {
 
 // Global client-side cache for tweet embeds with performance tracking
 const embedCache = new Map<string, { embed: TweetEmbedType; cachedAt: number }>();
-const CACHE_DURATION = 30 * 60 * 1000; // 30 minutes
+const CACHE_DURATION = TIME.THIRTY_MINUTES_MS; // 30 minutes
 
 /**
  * Safe HTML renderer component

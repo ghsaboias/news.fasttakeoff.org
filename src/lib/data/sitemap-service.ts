@@ -1,4 +1,5 @@
 import { Cloudflare } from '../../../worker-configuration';
+import { TIME } from '../config';
 import { DiscordChannel } from '../types/core';
 import { ReportService } from './report-service';
 
@@ -130,7 +131,7 @@ ${urls.map(url => `  <url>
 
             // Store in KV cache with 1 week TTL
             await this.env.SITEMAP_CACHE.put('sitemap:xml', sitemap, {
-                expirationTtl: 7 * 24 * 60 * 60 // 1 week
+                expirationTtl: TIME.WEEK_SEC // 1 week
             });
 
             console.log('[SITEMAP] Sitemap cached successfully');

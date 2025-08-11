@@ -1,3 +1,4 @@
+import { TIME } from '@/lib/config';
 import { NextResponse } from 'next/server';
 
 // Simple API route to handle 410 Gone responses for expired content
@@ -16,12 +17,12 @@ export async function GET() {
     <a href="/current-events">View Current News</a>
 </body>
 </html>`,
-        { 
+        {
             status: 410,
             statusText: 'Gone',
             headers: {
                 'Content-Type': 'text/html; charset=utf-8',
-                'Cache-Control': 'public, max-age=86400', // Cache 410 responses for 24 hours
+                'Cache-Control': `public, max-age=${TIME.DAY_SEC}`,
             }
         }
     );

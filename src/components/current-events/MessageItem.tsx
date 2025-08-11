@@ -1,6 +1,7 @@
 "use client";
 
 import { LocalDateTimeFull } from "@/components/utils/LocalDateTime";
+import { TIME } from "@/lib/config";
 import { DiscordMessage } from "@/lib/types/core";
 import { detectTelegramUrls } from "@/lib/utils";
 import { detectTweetUrls } from "@/lib/utils/twitter-utils";
@@ -30,7 +31,7 @@ export default function MessageItem({ message, noAccordion = false, channelId }:
     // Check if message is older than 24 hours
     const messageDate = new Date(message.timestamp);
     const now = new Date();
-    const isOlderThan24Hours = (now.getTime() - messageDate.getTime()) > (24 * 60 * 60 * 1000);
+    const isOlderThan24Hours = (now.getTime() - messageDate.getTime()) > TIME.DAY_MS;
 
     // Show Discord message fallback for Twitter posts when embed fails
     const showDiscordFallback = isTwitterPost && tweetEmbedFailed;

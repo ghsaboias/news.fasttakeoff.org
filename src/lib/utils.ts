@@ -2,6 +2,7 @@ import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 import { Cloudflare } from '../../worker-configuration';
+import { TIME } from './config';
 import { Report } from "./types/core";
 
 export function cn(...inputs: ClassValue[]) {
@@ -329,7 +330,7 @@ export function groupAndSortReports(reports: Report[]): Report[] {
 
   // Since reports are generated every ~2h, we need to find all reports from the latest generation run
   // Reports from the same run should have very similar timestamps (within a few minutes)
-  const runThreshold = 15 * 60 * 1000 // 15 minutes in milliseconds (generous buffer for generation time)
+  const runThreshold = TIME.FIFTEEN_MINUTES_MS // 15 minutes in milliseconds (generous buffer for generation time)
   const latestRunReports: Report[] = []
   const olderReports: Report[] = []
 
