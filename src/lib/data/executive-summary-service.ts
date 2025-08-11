@@ -54,7 +54,7 @@ export class ExecutiveSummaryService {
         console.log('[EXECUTIVE_SUMMARY] Starting generation of new executive summary (6h cycle)');
 
         try {
-            // Get all reports from the last 24 hours
+            // Get all reports from the last 6 hours
             const allReports = await this.getAllReportsForSummary();
 
             if (allReports.length === 0) {
@@ -142,7 +142,7 @@ export class ExecutiveSummaryService {
     private async generateSummaryWithAI(reports: Report[], previousSummaries: ExecutiveSummary[]): Promise<string> {
         // Prepare the reports content
         const reportsContent = reports.map(report =>
-            `HEADLINE: ${report.headline}\nCITY: ${report.city}\nBODY: ${report.body}\n`
+            `HEADLINE: ${report.headline}\nCITY: ${report.city}\nGENERATED_AT: ${report.generatedAt}\nBODY: ${report.body}\n`
         ).join('\n---\n\n');
 
         // Prepare previous summaries context
