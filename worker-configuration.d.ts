@@ -17,6 +17,8 @@ export declare namespace Cloudflare {
         MKTNEWS_SUMMARIES_CACHE: KVNamespace;
         DISCORD_TOKEN: string;
         DISCORD_GUILD_ID: string;
+        /** When set (e.g., "1"), all Discord-dependent tasks are disabled */
+        DISCORD_DISABLED?: string;
         GROQ_API_KEY: string;
         OPENROUTER_API_KEY: string;
         OPENAI_API_KEY: string;

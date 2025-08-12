@@ -86,6 +86,11 @@ type CronTaskFunction = (env: Cloudflare.Env, scheduledTime?: number) => Promise
 const CRON_TASKS: Record<string, CronTaskFunction> = {
     // Every 2 hours (0:00, 2:00, 4:00, etc)
     "0 */2 * * *": async (env: Cloudflare.Env, scheduledTime?: number) => {
+        // Skip if Discord-dependent processing is disabled
+        if ((env as unknown as { DISCORD_DISABLED?: string | boolean }).DISCORD_DISABLED) {
+            console.warn('[CRON] DISCORD_DISABLED is set – skipping REPORTS_2H and EXECUTIVE_SUMMARY');
+            return;
+        }
         // Skip 2h report generation if this coincides with 6h report time
         if (scheduledTime && is6hReportTime(scheduledTime)) {
             console.log('[CRON] Skipping 2h report generation - coincides with 6h report time');
@@ -128,6 +133,10 @@ const CRON_TASKS: Record<string, CronTaskFunction> = {
 
     // Every 6 hours (0:00, 6:00, 12:00, 18:00)
     "0 */6 * * *": async (env: Cloudflare.Env) => {
+        if ((env as unknown as { DISCORD_DISABLED?: string | boolean }).DISCORD_DISABLED) {
+            console.warn('[CRON] DISCORD_DISABLED is set – skipping REPORTS_6H and EXECUTIVE_SUMMARY');
+            return;
+        }
         const reportService = new ReportService(env);
         const executiveSummaryService = new ExecutiveSummaryService(env);
 
@@ -142,6 +151,10 @@ const CRON_TASKS: Record<string, CronTaskFunction> = {
 
     // Every 15 minutes
     "*/15 * * * *": async (env: Cloudflare.Env) => {
+        if ((env as unknown as { DISCORD_DISABLED?: string | boolean }).DISCORD_DISABLED) {
+            console.warn('[CRON] DISCORD_DISABLED is set – skipping MESSAGES update');
+            return;
+        }
         const messagesService = new MessagesService(env);
         await logRun('MESSAGES', () => messagesService.updateMessages(true), {
             timeoutMs: TASK_TIMEOUTS.MESSAGES
