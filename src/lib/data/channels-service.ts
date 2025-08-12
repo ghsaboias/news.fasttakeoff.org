@@ -117,6 +117,15 @@ export class ChannelsService {
         const key = `channels:guild:${this.env.DISCORD_GUILD_ID}`;
         const cached = await this.cache.get<{ channels: DiscordChannel[], fetchedAt: string }>('CHANNELS_CACHE', key);
 
+        // If Discord is disabled, serve cached channels only
+        if (this.env.DISCORD_DISABLED) {
+            if (cached?.channels) {
+                return this.filterChannels(cached.channels);
+            }
+            console.warn('[CHANNELS] DISCORD_DISABLED is set and no cached channels available');
+            return [];
+        }
+
         if (cached && (Date.now() - new Date(cached.fetchedAt).getTime()) / 1000 < CACHE.TTL.CHANNELS) {
             const age = (Date.now() - new Date(cached.fetchedAt).getTime()) / 1000;
             if (age > CACHE.REFRESH.CHANNELS) {

@@ -28,6 +28,11 @@ export class ReportService {
     }
 
     async createReportAndGetMessages(channelId: string, timeframe: TimeframeKey): Promise<{ report: Report | null; messages: DiscordMessage[] }> {
+        // If Discord-dependent processing is disabled, avoid generating new reports
+        if ((this.env as unknown as { DISCORD_DISABLED?: string | boolean }).DISCORD_DISABLED) {
+            console.warn('[REPORTS] DISCORD_DISABLED is set – skipping createReportAndGetMessages');
+            return { report: null, messages: [] };
+        }
         // Get the current most recent report for this timeframe
         const previousReports = await ReportCache.getPreviousReports(channelId, timeframe, this.env);
 
@@ -155,6 +160,7 @@ export class ReportService {
     }
 
     async getReportAndMessages(channelId: string, reportId: string, timeframe?: TimeframeKey): Promise<{ report: Report | null; messages: DiscordMessage[] }> {
+        // This read path continues to work from cache even if Discord is disabled
         // If timeframe is provided, use it directly
         if (timeframe) {
             const cachedReports = await ReportCache.get(channelId, timeframe, this.env);

@@ -256,6 +256,12 @@ export class MessagesService {
     async updateMessages(local: boolean = false): Promise<void> {
         console.log(`[MESSAGES] Starting updateMessages...`);
 
+        // Short-circuit when Discord integration is disabled
+        if (this.env.DISCORD_DISABLED) {
+            console.warn('[MESSAGES] DISCORD_DISABLED is set – skipping updateMessages');
+            return;
+        }
+
         for (let attempt = 1; attempt <= 3; attempt++) {
             try {
                 const channels = await this.channelsService.getChannels();
