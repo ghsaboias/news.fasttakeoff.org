@@ -1,5 +1,6 @@
 import RootLayoutClient from '@/components/RootLayoutClient';
 import ThirdPartyScripts from '@/components/analytics/ThirdPartyScripts';
+import { GoogleTagManager } from '@next/third-parties/google';
 import { Carlito, Geist_Mono } from 'next/font/google';
 import './critical.css';
 import './globals.css';
@@ -24,6 +25,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang='en' className="dark">
+      <GoogleTagManager gtmId="GTM-THWNJVF3" />
       <head>
         <link rel='manifest' href='/manifest.json' />
         <link rel='alternate' type='application/rss+xml' title='Fast Takeoff News RSS' href='/rss' />
