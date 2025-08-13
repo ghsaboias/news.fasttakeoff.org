@@ -41,7 +41,7 @@ export const ReportPanel: React.FC<ReportPanelProps> = ({ report, onClose }) => 
 
                 <div className="leading-relaxed">
                     {paragraphs.map((paragraph, index) => (
-                        <p key={index} className="mb-4 last:mb-0 text-justify text-card">
+                        <p key={index} className="mb-4 last:mb-0 text-justify text-foreground">
                             {paragraph}
                         </p>
                     ))}
