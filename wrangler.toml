@@ -113,7 +113,7 @@ SERVER_API_URL = "https://news.fasttakeoff.org"
 R2_PUBLIC_URL = "https://images.fasttakeoff.org"
 FACEBOOK_APP_ID = "1279507170438935"
 FACEBOOK_PAGE_ID = "818480904670711"
-DISCORD_DISABLED = "1"
+DISCORD_DISABLED = "0"
 
 [placement]
 mode = "smart"
