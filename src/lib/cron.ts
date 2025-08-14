@@ -110,14 +110,28 @@ const CRON_TASKS: Record<string, CronTaskFunction> = {
         const reportService = new ReportService(env);
         const executiveSummaryService = new ExecutiveSummaryService(env);
 
-        await logRun('REPORTS_2H', () => reportService.generateReports('2h'), {
-            timeoutMs: TASK_TIMEOUTS.REPORTS
-        });
+        // Track whether report generation succeeds
+        let reportsSuccessful = false;
+        try {
+            await logRun('REPORTS_2H', () => reportService.generateReports('2h'), {
+                timeoutMs: TASK_TIMEOUTS.REPORTS
+            });
+            reportsSuccessful = true;
+            console.log('[CRON] REPORTS_2H completed successfully, proceeding with executive summary');
+        } catch (error) {
+            console.error('[CRON] REPORTS_2H failed, skipping executive summary generation:', error);
+            // Re-throw to maintain existing error handling behavior
+            throw error;
+        }
 
-        // Generate executive summary after 2h reports are created
-        await logRun('EXECUTIVE_SUMMARY_2H', () => executiveSummaryService.generateAndCacheSummary(), {
-            timeoutMs: TASK_TIMEOUTS.EXECUTIVE_SUMMARY
-        });
+        // Generate executive summary only if reports were created successfully
+        if (reportsSuccessful) {
+            await logRun('EXECUTIVE_SUMMARY_2H', () => executiveSummaryService.generateAndCacheSummary(), {
+                timeoutMs: TASK_TIMEOUTS.EXECUTIVE_SUMMARY
+            });
+        } else {
+            console.warn('[CRON] Skipping EXECUTIVE_SUMMARY_2H due to failed report generation');
+        }
 
         const feedsService = new FeedsService(env);
 
