@@ -114,8 +114,8 @@ const CRON_TASKS: Record<string, CronTaskFunction> = {
             timeoutMs: TASK_TIMEOUTS.REPORTS
         });
 
-        // Generate executive summary after reports are created
-        await logRun('EXECUTIVE_SUMMARY', () => executiveSummaryService.generateAndCacheSummary(), {
+        // Generate executive summary after 2h reports are created
+        await logRun('EXECUTIVE_SUMMARY_2H', () => executiveSummaryService.generateAndCacheSummary(), {
             timeoutMs: TASK_TIMEOUTS.EXECUTIVE_SUMMARY
         });
 
@@ -144,7 +144,7 @@ const CRON_TASKS: Record<string, CronTaskFunction> = {
             timeoutMs: TASK_TIMEOUTS.REPORTS
         });
 
-        await logRun('EXECUTIVE_SUMMARY', () => executiveSummaryService.generateAndCacheSummary(), {
+        await logRun('EXECUTIVE_SUMMARY_6H', () => executiveSummaryService.generateAndCacheSummary(), {
             timeoutMs: TASK_TIMEOUTS.EXECUTIVE_SUMMARY
         });
     },
