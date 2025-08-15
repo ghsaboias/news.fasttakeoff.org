@@ -27,7 +27,6 @@ function NetworkVisualization() {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const [showTopConnected, setShowTopConnected] = useState(false);
     const [showRelevanceScores, setShowRelevanceScores] = useState(false);
-    const [showFinancialValues, setShowFinancialValues] = useState(true); // Default to financial values
     const [isTopConnectedMinimized, setIsTopConnectedMinimized] = useState(false);
     const [isRelevanceScoresMinimized, setIsRelevanceScoresMinimized] = useState(false);
     const [isSheetOpen, setIsSheetOpen] = useState(false);
