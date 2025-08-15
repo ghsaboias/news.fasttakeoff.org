@@ -1,18 +1,12 @@
 import { getChannels } from '@/lib/data/channels-service';
 import { ReportService } from '@/lib/data/report-service';
 import { getCacheContext } from '@/lib/utils';
-import { notFound, redirect } from 'next/navigation';
+import { notFound } from 'next/navigation';
 import ReportClient from './ReportClient';
 
 // ISR: Revalidate every 5 minutes for breaking news
 export const revalidate = 300;
 
-// Helper function to check if content is expired (>30 days)
-function isContentExpired(generatedAt: string): boolean {
-    const thirtyDaysAgo = new Date();
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-    return new Date(generatedAt) < thirtyDaysAgo;
-}
 
 // Pre-generate some popular report pages
 export async function generateStaticParams() {
@@ -94,17 +88,7 @@ export async function generateMetadata({ params }: { params: Promise<{ channelId
             };
         }
 
-        // Check if content is expired
-        if (isContentExpired(report.generatedAt)) {
-            return {
-                title: 'Content Expired - Fast Takeoff News',
-                description: 'This news report has expired and is no longer available.',
-                robots: { index: false, follow: false },
-                alternates: {
-                    canonical: `https://news.fasttakeoff.org/current-events/${channelId}/${reportId}`
-                }
-            };
-        }
+        // Content never expires - keep all reports indefinitely
 
         // Extract key topics/keywords from report content for SEO
         const contentPreview = report.body.substring(0, 160) || 'Breaking news analysis';
@@ -194,11 +178,7 @@ export default async function ReportDetailPage({ params }: { params: Promise<{ c
         notFound(); // 404 for content that never existed
     }
 
-    // CRITICAL: Check if content is expired (>30 days)
-    if (isContentExpired(report.generatedAt)) {
-        console.log(`[SERVER] Report ${reportId} expired (${report.generatedAt}), redirecting to 410 endpoint`);
-        redirect('/api/expired');
-    }
+    // Content never expires - keep all reports indefinitely
 
     // Generate structured data for the report
     let structuredData = null;

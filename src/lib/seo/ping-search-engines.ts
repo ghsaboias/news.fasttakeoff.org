@@ -4,7 +4,7 @@ export async function pingSearchEngines(newUrls: string[]): Promise<void> {
     try {
         console.log(`[PING] Starting search engine pings for ${newUrls.length} URLs`);
         
-        const promises: Promise<any>[] = [];
+        const promises: Promise<Response | void>[] = [];
 
         // Google deprecated sitemap ping in June 2023, so we skip it
         // Google now discovers sitemap updates automatically via robots.txt and periodic crawling
