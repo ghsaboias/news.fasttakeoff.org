@@ -109,10 +109,10 @@ export async function POST(request: Request) {
                     hasId: !!safeData?.id,
                     hasTime: !!safeData?.time,
                     hasContent: !!safeDataData?.content,
-                    actualContent: safeDataData?.content,
+                    hasFinancialData: !!(safeDataData?.title && (safeDataData?.actual !== undefined || safeDataData?.previous !== undefined)),
                     dataKeys: safeData ? Object.keys(safeData) : [],
                     dataDataKeys: safeDataData ? Object.keys(safeDataData) : [],
-                    rawMessage: JSON.stringify(msg).substring(0, 500)
+                    rawMessage: JSON.stringify(msg).substring(0, 300)
                 });
             }
         }
@@ -176,7 +176,18 @@ function isValidMktNewsMessage(msg: unknown): msg is MktNewsMessage {
     }
 
     const dataDataObj = dataData as Record<string, unknown>;
-    if (typeof dataDataObj.content !== 'string') {
+    
+    // Check if this is a content-based message (news)
+    const hasContent = typeof dataDataObj.content === 'string' && dataDataObj.content.length > 0;
+    
+    // Check if this is a data-based message (financial indicators)
+    const hasFinancialData = typeof dataDataObj.title === 'string' && 
+                             (dataDataObj.actual !== undefined || 
+                              dataDataObj.previous !== undefined ||
+                              dataDataObj.name !== undefined);
+    
+    // Must have either content OR financial data structure
+    if (!hasContent && !hasFinancialData) {
         return false;
     }
 
