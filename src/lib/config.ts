@@ -634,8 +634,27 @@ Executive Summary:
         OUTPUT_BUFFER: 4096,
         MAX_CONTEXT_TOKENS: 32000,
         MAX_ATTEMPTS: 3,
-        SYSTEM_PROMPT: 'You are a financial news desk editor. Generate a concise, bullet-point market summary based on live flash updates. Focus on concrete events, data, and company moves meaningful to traders. Respond with clear Markdown using bullet points ordered by importance. Do not add commentary, speculation, or any title headings. Do not include a title like "Market Flash Summary" since the UI already provides one.',
-        PROMPT_TEMPLATE: `Create a concise market flash summary in Markdown based on the following market news messages from the last hour. Reference the three most recent previous summaries for context continuity. Highlight significant price moves, economic data releases, corporate actions, and market-moving headlines. Use clear bullet points. Avoid duplication with previous summaries unless there is a material update.\n\nPREVIOUS SUMMARIES (most recent first):\n{previousSummaries}\n\nCURRENT MESSAGES:\n"""\n{messages}\n"""\n\nRespond ONLY with valid Markdown.`,
+        SYSTEM_PROMPT: 'You are a financial news desk editor. Generate a concise, thematic prose summary based on live flash updates. Focus on the most market-significant developments, grouping related events into coherent paragraphs with time context. Respond with clear Markdown paragraphs using thematic headings. Exclude routine data releases unless they show unusual patterns or significant changes. Do not add commentary or speculation.',
+        PROMPT_TEMPLATE: `Create a concise market summary in Markdown prose based on the following market news messages from the last hour. Reference the three most recent previous summaries for context continuity. 
+
+Structure your response using thematic paragraphs with **bold headings** (e.g., **Geopolitics**, **Equities**, **Commodities**, **Currencies**, etc.). Within each paragraph, write flowing prose that includes specific times and connects related developments. Focus only on the most significant market-moving events - exclude routine positioning data unless it shows notable shifts or unusual patterns.
+
+EXAMPLE FORMAT:
+**Geopolitics:** Trump-Putin summit commenced at 7:39 PM in Alaska with both leaders signaling diplomatic engagement, creating potential for policy shifts affecting global risk sentiment.
+
+**Equities:** CFTC data at 7:33 PM revealed conflicting S&P 500 flows as fund managers added 46,675 long contracts while speculators increased shorts by 74,016 contracts in the August 12 week.
+
+**Commodities:** Oil speculators flipped to net short (4,048 WTI contracts) at 7:32 PM for the first time recently, while gold longs were trimmed by 7,586 contracts to 154,226.
+
+PREVIOUS SUMMARIES (most recent first):
+{previousSummaries}
+
+CURRENT MESSAGES:
+"""
+{messages}
+"""
+
+Respond ONLY with valid Markdown prose using thematic paragraphs.`,
     },
 };
 
