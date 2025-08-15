@@ -108,7 +108,11 @@ export async function POST(request: Request) {
                     hasData: !!safeMsg?.data,
                     hasId: !!safeData?.id,
                     hasTime: !!safeData?.time,
-                    hasContent: !!safeDataData?.content
+                    hasContent: !!safeDataData?.content,
+                    actualContent: safeDataData?.content,
+                    dataKeys: safeData ? Object.keys(safeData) : [],
+                    dataDataKeys: safeDataData ? Object.keys(safeDataData) : [],
+                    rawMessage: JSON.stringify(msg).substring(0, 500)
                 });
             }
         }
