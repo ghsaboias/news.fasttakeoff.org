@@ -73,15 +73,8 @@ export class SitemapService {
                         const reports = await this.reportService.getAllReportsForChannel(channel.id);
 
                         if (reports && reports.length > 0) {
-                            // Add recent reports (last 50 per channel to avoid huge sitemaps)
-                            const recentReports = reports
-                                .filter(report => {
-                                    // Only include reports from last 30 days (aligning with business rule)
-                                    const thirtyDaysAgo = new Date();
-                                    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-                                    return new Date(report.generatedAt) >= thirtyDaysAgo;
-                                })
-                                .slice(0, 50);
+                            // Add all reports (keeping indefinitely now)
+                            const recentReports = reports.slice(0, 100); // Limit to 100 per channel for sitemap performance
 
                             console.log(`[SITEMAP] Adding ${recentReports.length} reports for channel ${channel.id}`);
 
