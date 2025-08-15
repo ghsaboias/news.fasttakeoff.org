@@ -28,6 +28,8 @@ function NetworkVisualization() {
     const [showTopConnected, setShowTopConnected] = useState(false);
     const [showRelevanceScores, setShowRelevanceScores] = useState(false);
     const [showFinancialValues, setShowFinancialValues] = useState(true); // Default to financial values
+    const [isTopConnectedMinimized, setIsTopConnectedMinimized] = useState(false);
+    const [isRelevanceScoresMinimized, setIsRelevanceScoresMinimized] = useState(false);
     const [isSheetOpen, setIsSheetOpen] = useState(false);
     const [canvasSize, setCanvasSize] = useState({ width: 800, height: 600 });
 
@@ -202,7 +204,7 @@ function NetworkVisualization() {
 
             {/* Search and Filter Controls - Mobile Responsive */}
             <div className="absolute top-4 left-4 right-4 md:left-20 md:right-auto bg-gray-800 p-2 rounded-lg z-20 max-w-full md:max-w-none">
-                <div className="flex flex-col gap-2">
+                <div className="flex flex-col gap-4">
                     <input
                         type="text"
                         placeholder="Search entities..."
@@ -223,6 +225,115 @@ function NetworkVisualization() {
                             </label>
                         ))}
                     </div>
+
+                    {/* Panel Toggle Buttons */}
+                    <div className="flex flex-wrap items-center gap-2 text-xs">
+                        <button
+                            onClick={() => setShowTopConnected(!showTopConnected)}
+                            className={`px-2 py-1 rounded transition-colors ${showTopConnected
+                                ? 'bg-cyan-600 text-white'
+                                : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                                }`}
+                        >
+                            {showTopConnected ? 'Hide' : 'Show'} Top Connected
+                        </button>
+                        <button
+                            onClick={() => setShowRelevanceScores(!showRelevanceScores)}
+                            className={`px-2 py-1 rounded transition-colors ${showRelevanceScores
+                                ? 'bg-cyan-600 text-white'
+                                : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                                }`}
+                        >
+                            {showRelevanceScores ? 'Hide' : 'Show'} Most Relevant
+                        </button>
+                    </div>
+
+                    {/* Top Connected Panel */}
+                    {showTopConnected && graphData && (
+                        <div className="mt-2 pt-2 border-t border-gray-700">
+                            <div className="flex items-center justify-between mb-2">
+                                <h4 className="text-white font-medium text-sm">Most Connected</h4>
+                                <button
+                                    onClick={() => setIsTopConnectedMinimized(!isTopConnectedMinimized)}
+                                    className="text-gray-400 hover:text-white text-xs p-1"
+                                >
+                                    {isTopConnectedMinimized ? '▼' : '▲'}
+                                </button>
+                            </div>
+                            {!isTopConnectedMinimized && (
+                                <div className="space-y-1 max-h-48 md:max-h-64 overflow-y-auto">
+                                    {nodesRef.current
+                                        .sort((a, b) => b.connectionCount - a.connectionCount)
+                                        .slice(0, isMobile ? 10 : 15)
+                                        .map((node, index) => (
+                                            <div
+                                                key={node.id}
+                                                className="flex items-center justify-between text-xs cursor-pointer hover:bg-gray-700 p-2 rounded transition-colors"
+                                                onClick={() => {
+                                                    setSelectedNode(node);
+                                                    // Center camera on node
+                                                    centerOnNode(node.x, node.y, canvasSize.width, canvasSize.height);
+                                                }}
+                                            >
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-gray-400">#{index + 1}</span>
+                                                    <span className={`
+                                                        ${node.type === 'person' ? 'text-blue-400' : ''}
+                                                        ${node.type === 'company' ? 'text-green-400' : ''}
+                                                        ${node.type === 'fund' ? 'text-orange-400' : ''}
+                                                    `}>
+                                                        {node.name}
+                                                    </span>
+                                                </div>
+                                                <span className="text-yellow-400 font-medium">{node.connectionCount}</span>
+                                            </div>
+                                        ))
+                                    }
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                    {/* Relevance Scores Panel */}
+                    {showRelevanceScores && entityRelevance && (
+                        <div className="mt-2 pt-2 border-t border-gray-700">
+                            <div className="flex items-center justify-between mb-2">
+                                <h4 className="text-white font-medium text-sm">Most Relevant</h4>
+                                <button
+                                    onClick={() => setIsRelevanceScoresMinimized(!isRelevanceScoresMinimized)}
+                                    className="text-gray-400 hover:text-white text-xs p-1"
+                                >
+                                    {isRelevanceScoresMinimized ? '▼' : '▲'}
+                                </button>
+                            </div>
+                            {!isRelevanceScoresMinimized && (
+                                <div className="space-y-1 max-h-48 md:max-h-64 overflow-y-auto">
+                                    {entityRelevance.getTopEntitiesByScore(isMobile ? 10 : 15).map((scoreData, index) => (
+                                        <div
+                                            key={scoreData.entityId}
+                                            className="flex items-center justify-between text-xs cursor-pointer hover:bg-gray-700 p-2 rounded transition-colors"
+                                            onClick={() => {
+                                                const node = nodesRef.current.find(n => n.id === scoreData.entityId);
+                                                if (node) {
+                                                    setSelectedNode(node);
+                                                    centerOnNode(node.x, node.y, canvasSize.width, canvasSize.height);
+                                                    setIsRelevanceScoresMinimized(true);
+                                                }
+                                            }}
+                                        >
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-gray-400">#{index + 1}</span>
+                                                <span className={getRelevanceDisplayClass(scoreData)}>
+                                                    {graphData?.entities[scoreData.entityId]?.name || scoreData.entityId}
+                                                </span>
+                                            </div>
+                                            <span className="text-cyan-400 font-medium">{scoreData.score.toFixed(1)}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    )}
                 </div>
             </div>
 
@@ -299,156 +410,7 @@ function NetworkVisualization() {
                 )
             )}
 
-            {/* Legend for financial tiers - Mobile Responsive */}
-            <div className="absolute bottom-4 left-4 bg-gray-800 p-2 md:p-3 rounded-lg border border-gray-600 text-xs max-w-xs md:max-w-none">
-                <div className="flex items-center justify-between mb-2">
-                    <h4 className="text-white font-medium">Financial Tiers</h4>
-                    <button
-                        onClick={() => setShowRelevanceScores(!showRelevanceScores)}
-                        className="text-cyan-400 hover:text-cyan-300 text-xs md:hidden"
-                    >
-                        {showRelevanceScores ? '−' : '+'}
-                    </button>
-                </div>
-                <div className={`space-y-1 text-gray-300 ${isMobile && showRelevanceScores ? 'hidden' : ''}`}>
-                    <div className="flex items-center gap-2">
-                        <div className="w-3 h-3 md:w-4 md:h-4 rounded-full bg-yellow-300 border-2 border-yellow-400"></div>
-                        <span className="text-xs">Mega ($100B+)</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <div className="w-3 h-3 md:w-4 md:h-4 rounded-full bg-yellow-400 border-2 border-yellow-500"></div>
-                        <span className="text-xs">Ultra ($50-100B)</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <div className="w-2 h-2 md:w-3 md:h-3 rounded-full bg-green-400"></div>
-                        <span className="text-xs">High ($10-50B)</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <div className="w-2 h-2 md:w-3 md:h-3 rounded-full bg-green-300"></div>
-                        <span className="text-xs">Wealth ($1-10B)</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <div className="w-1 h-1 md:w-2 md:h-2 rounded-full bg-blue-300"></div>
-                        <span className="text-xs">Emerging ($100M+)</span>
-                    </div>
-                </div>
-                <div className="flex flex-wrap gap-1 md:gap-2 mt-2">
-                    <button
-                        onClick={() => setShowTopConnected(!showTopConnected)}
-                        className="text-cyan-400 hover:text-cyan-300 text-xs whitespace-nowrap px-2 py-1 rounded bg-gray-700 hover:bg-gray-600 transition-colors"
-                    >
-                        {showTopConnected ? 'Hide' : 'Show'} Top
-                    </button>
-                    <button
-                        onClick={() => setShowFinancialValues(!showFinancialValues)}
-                        className="text-cyan-400 hover:text-cyan-300 text-xs whitespace-nowrap px-2 py-1 rounded bg-gray-700 hover:bg-gray-600 transition-colors"
-                    >
-                        {showFinancialValues ? 'Hide' : 'Show'} Financial
-                    </button>
-                    <button
-                        onClick={() => setShowRelevanceScores(!showRelevanceScores)}
-                        className="text-cyan-400 hover:text-cyan-300 text-xs whitespace-nowrap hidden md:block px-2 py-1 rounded bg-gray-700 hover:bg-gray-600 transition-colors"
-                    >
-                        {showRelevanceScores ? 'Hide' : 'Show'} Relevance
-                    </button>
-                </div>
-            </div>
 
-            {/* Top Connected Panel */}
-            {showTopConnected && graphData && (
-                <div className={`absolute ${isMobile ? 'bottom-20' : 'bottom-4'} right-4 bg-gray-800 p-2 md:p-3 rounded-lg border border-gray-600 max-w-xs`}>
-                    <h4 className="text-white font-medium mb-2 text-sm">Most Connected</h4>
-                    <div className="space-y-1 max-h-48 md:max-h-64 overflow-y-auto">
-                        {nodesRef.current
-                            .sort((a, b) => b.connectionCount - a.connectionCount)
-                            .slice(0, isMobile ? 10 : 15)
-                            .map((node, index) => (
-                                <div
-                                    key={node.id}
-                                    className="flex items-center justify-between text-xs cursor-pointer hover:bg-gray-700 p-2 rounded transition-colors"
-                                    onClick={() => {
-                                        setSelectedNode(node);
-                                        // Center camera on node
-                                        centerOnNode(node.x, node.y, canvasSize.width, canvasSize.height);
-                                    }}
-                                >
-                                    <div className="flex items-center gap-2">
-                                        <span className="text-gray-400">#{index + 1}</span>
-                                        <span className={`
-                                            ${node.type === 'person' ? 'text-blue-400' : ''}
-                                            ${node.type === 'company' ? 'text-green-400' : ''}
-                                            ${node.type === 'fund' ? 'text-orange-400' : ''}
-                                        `}>
-                                            {node.name}
-                                        </span>
-                                    </div>
-                                    <span className="text-yellow-400 font-medium">{node.connectionCount}</span>
-                                </div>
-                            ))
-                        }
-                    </div>
-                </div>
-            )}
-
-            {/* Financial Values Panel */}
-            {showFinancialValues && entityRelevance && !showTopConnected && (
-                <div className={`absolute ${isMobile ? 'bottom-20' : 'bottom-4'} right-4 bg-gray-800 p-2 md:p-3 rounded-lg border border-gray-600 max-w-xs`}>
-                    <h4 className="text-white font-medium mb-2 text-sm">Highest Financial Value</h4>
-                    <div className="space-y-1 max-h-48 md:max-h-64 overflow-y-auto">
-                        {entityRelevance.getTopEntitiesByFinancialValue(isMobile ? 10 : 15).map((scoreData, index) => (
-                            <div
-                                key={scoreData.entityId}
-                                className="flex items-center justify-between text-xs cursor-pointer hover:bg-gray-700 p-2 rounded transition-colors"
-                                onClick={() => {
-                                    const node = nodesRef.current.find(n => n.id === scoreData.entityId);
-                                    if (node) {
-                                        setSelectedNode(node);
-                                        centerOnNode(node.x, node.y, canvasSize.width, canvasSize.height);
-                                    }
-                                }}
-                            >
-                                <div className="flex items-center gap-2">
-                                    <span className="text-gray-400">#{index + 1}</span>
-                                    <span className={getFinancialValueDisplayClass(scoreData)}>
-                                        {graphData?.entities[scoreData.entityId]?.name || scoreData.entityId}
-                                    </span>
-                                </div>
-                                <span className="text-green-400 font-medium">{formatFinancialValue(scoreData)}</span>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            )}
-
-            {/* Relevance Scores Panel */}
-            {showRelevanceScores && entityRelevance && !showTopConnected && !showFinancialValues && (
-                <div className={`absolute ${isMobile ? 'bottom-20' : 'bottom-4'} right-4 bg-gray-800 p-2 md:p-3 rounded-lg border border-gray-600 max-w-xs`}>
-                    <h4 className="text-white font-medium mb-2 text-sm">Most Relevant</h4>
-                    <div className="space-y-1 max-h-48 md:max-h-64 overflow-y-auto">
-                        {entityRelevance.getTopEntitiesByScore(isMobile ? 10 : 15).map((scoreData, index) => (
-                            <div
-                                key={scoreData.entityId}
-                                className="flex items-center justify-between text-xs cursor-pointer hover:bg-gray-700 p-2 rounded transition-colors"
-                                onClick={() => {
-                                    const node = nodesRef.current.find(n => n.id === scoreData.entityId);
-                                    if (node) {
-                                        setSelectedNode(node);
-                                        centerOnNode(node.x, node.y, canvasSize.width, canvasSize.height);
-                                    }
-                                }}
-                            >
-                                <div className="flex items-center gap-2">
-                                    <span className="text-gray-400">#{index + 1}</span>
-                                    <span className={getRelevanceDisplayClass(scoreData)}>
-                                        {graphData?.entities[scoreData.entityId]?.name || scoreData.entityId}
-                                    </span>
-                                </div>
-                                <span className="text-cyan-400 font-medium">{scoreData.score.toFixed(1)}</span>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            )}
         </div>
     );
 }
