@@ -1,6 +1,7 @@
 'use client';
 
 import { ClerkProvider } from '@clerk/nextjs';
+import { dark } from '@clerk/themes';
 import { usePathname } from 'next/navigation';
 import Script from 'next/script';
 import { PropsWithChildren } from 'react';
@@ -34,7 +35,7 @@ export default function AuthProvider({ children }: PropsWithChildren) {
 
             <ClerkProvider
                 appearance={{
-                    baseTheme: undefined,
+                    baseTheme: dark,
                     variables: {
                         // Primary colors - reuse app's industrial theme
                         colorPrimary: 'var(--primary)',
