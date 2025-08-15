@@ -10,7 +10,6 @@ export async function GET() {
 
         if (!env) {
             console.log('[SITEMAP] No Cloudflare context, serving static fallback')
-            // Fallback to static sitemap when no context
             const staticSitemap = generateStaticSitemap()
             return new NextResponse(staticSitemap, {
                 headers: {
@@ -21,23 +20,37 @@ export async function GET() {
         }
 
         const sitemapService = new SitemapService(env)
-        const sitemap = await sitemapService.getCachedSitemap()
-
-        return new NextResponse(sitemap, {
-            headers: {
-                'Content-Type': 'application/xml; charset=utf-8',
-                'Cache-Control': 'public, max-age=3600, s-maxage=3600', // Cache for 1 hour
-            },
-        })
+        
+        // Always try to generate fresh sitemap with all content
+        try {
+            const sitemap = await sitemapService.generateFullSitemap()
+            console.log('[SITEMAP] Successfully generated full sitemap')
+            
+            return new NextResponse(sitemap, {
+                headers: {
+                    'Content-Type': 'application/xml; charset=utf-8',
+                    'Cache-Control': 'public, max-age=1800, s-maxage=1800', // Reduced cache time
+                },
+            })
+        } catch (sitemapError) {
+            console.error('[SITEMAP] Error generating full sitemap, falling back to cached:', sitemapError)
+            const sitemap = await sitemapService.getCachedSitemap()
+            
+            return new NextResponse(sitemap, {
+                headers: {
+                    'Content-Type': 'application/xml; charset=utf-8',
+                    'Cache-Control': 'public, max-age=3600, s-maxage=3600',
+                },
+            })
+        }
     } catch (error) {
         console.error('[SITEMAP] Error serving sitemap:', error)
 
-        // Fallback to static sitemap on any error
         const fallbackSitemap = generateStaticSitemap()
         return new NextResponse(fallbackSitemap, {
             headers: {
                 'Content-Type': 'application/xml; charset=utf-8',
-                'Cache-Control': 'public, max-age=1800, s-maxage=1800', // 30 min cache on errors
+                'Cache-Control': 'public, max-age=1800, s-maxage=1800',
             },
         })
     }
