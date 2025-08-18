@@ -61,7 +61,7 @@ export function useNodeSelection(
             };
             return { type: 'drag' as const, node };
         } else {
-            setSelectedNode(null);
+            // Don't clear selection when clicking outside nodes - only when panning
             return { type: 'pan' as const, startPos: { x: e.clientX, y: e.clientY } };
         }
     };
@@ -101,7 +101,7 @@ export function useNodeSelection(
                 };
                 return { type: 'drag' as const, node };
             } else {
-                setSelectedNode(null);
+                // Don't clear selection when touching outside nodes - only when panning
                 return { type: 'pan' as const, startPos: { x: e.touches[0].clientX, y: e.touches[0].clientY } };
             }
         } else if (e.touches.length === 2) {
