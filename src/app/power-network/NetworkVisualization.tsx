@@ -25,6 +25,7 @@ function NetworkVisualization() {
     const [showRelevanceScores, setShowRelevanceScores] = useState(false);
     const [isTopConnectedMinimized, setIsTopConnectedMinimized] = useState(false);
     const [isRelevanceScoresMinimized, setIsRelevanceScoresMinimized] = useState(false);
+    const [isNodePanelMinimized, setIsNodePanelMinimized] = useState(false);
 
     const [canvasSize, setCanvasSize] = useState({ width: 800, height: 600 });
 
@@ -382,9 +383,9 @@ function NetworkVisualization() {
 
             {selectedNode && (
                 isMobile ? (
-                    <div className="fixed bottom-0 left-0 right-0 bg-gray-800 border-t border-gray-700 text-white z-50 max-h-[60vh] overflow-y-auto">
+                    <div className="fixed bottom-0 left-2 right-2 bg-gray-800 border-t border-gray-700 text-white z-50 rounded-t-lg">
                         <div className="p-4">
-                            <div className="flex justify-between items-start mb-2">
+                            <div className="flex justify-between items-start">
                                 <div>
                                     <h3 className="text-white font-bold text-lg">{selectedNode.name}</h3>
                                     <p className="text-gray-300 capitalize">{selectedNode.type}</p>
@@ -392,26 +393,58 @@ function NetworkVisualization() {
                                         <p className="text-gray-400 text-sm">{selectedNode.country}</p>
                                     )}
                                 </div>
+                                <div className="flex gap-1">
+                                    <button
+                                        onClick={() => setIsNodePanelMinimized(!isNodePanelMinimized)}
+                                        className="text-gray-400 hover:text-white p-2 rounded hover:bg-gray-700 transition-colors"
+                                        title={isNodePanelMinimized ? "Expand" : "Minimize"}
+                                    >
+                                        {isNodePanelMinimized ? "+" : "−"}
+                                    </button>
+                                    <button
+                                        onClick={() => setSelectedNode(null)}
+                                        className="text-gray-400 hover:text-white p-2 rounded hover:bg-gray-700 transition-colors"
+                                        title="Close"
+                                    >
+                                        ✕
+                                    </button>
+                                </div>
+                            </div>
+                            {!isNodePanelMinimized && (
+                                <div className="mt-4 max-h-[40vh] overflow-y-auto">
+                                    {renderInfoPanelContent(selectedNode)}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                ) : (
+                    <div className="absolute top-4 right-4 bg-gray-800 p-4 rounded-lg border border-gray-600 min-w-48 max-w-80 max-h-[70vh] overflow-y-auto shadow-lg">
+                        <div className="flex justify-between items-start mb-2">
+                            <div>
+                                <h3 className="text-white font-bold text-lg">{selectedNode.name}</h3>
+                                <p className="text-gray-300 capitalize">{selectedNode.type}</p>
+                                {selectedNode?.country && (
+                                    <p className="text-gray-400 text-sm">{selectedNode.country}</p>
+                                )}
+                            </div>
+                            <div className="flex gap-1">
+                                <button
+                                    onClick={() => setIsNodePanelMinimized(!isNodePanelMinimized)}
+                                    className="text-gray-400 hover:text-white p-2 rounded hover:bg-gray-700 transition-colors"
+                                    title={isNodePanelMinimized ? "Expand" : "Minimize"}
+                                >
+                                    {isNodePanelMinimized ? "+" : "−"}
+                                </button>
                                 <button
                                     onClick={() => setSelectedNode(null)}
-                                    className="text-gray-400 hover:text-white p-2"
+                                    className="text-gray-400 hover:text-white p-2 rounded hover:bg-gray-700 transition-colors"
+                                    title="Close"
                                 >
                                     ✕
                                 </button>
                             </div>
-                            <div className="py-2">
-                                {renderInfoPanelContent(selectedNode)}
-                            </div>
                         </div>
-                    </div>
-                ) : (
-                    <div className="absolute top-4 right-4 bg-gray-800 p-4 rounded-lg border border-gray-600 min-w-48 max-w-80 shadow-lg">
-                        <h3 className="text-white font-bold text-lg">{selectedNode.name}</h3>
-                        <p className="text-gray-300 capitalize">{selectedNode.type}</p>
-                        {selectedNode?.country && (
-                            <p className="text-gray-400 text-sm">{selectedNode.country}</p>
-                        )}
-                        {renderInfoPanelContent(selectedNode)}
+                        {!isNodePanelMinimized && renderInfoPanelContent(selectedNode)}
                     </div>
                 )
             )}
