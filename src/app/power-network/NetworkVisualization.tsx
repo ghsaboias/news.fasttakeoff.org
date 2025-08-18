@@ -3,14 +3,10 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import React, { useEffect, useRef, useState } from 'react';
-import {
-    Sheet,
-    SheetContent,
-    SheetHeader,
-    SheetTitle
-} from '../../components/ui/sheet';
+
 import {
     useCanvasCamera,
+    useClickOutside,
     useEntityRelevance,
     useFilters,
     useGraphData,
@@ -29,7 +25,7 @@ function NetworkVisualization() {
     const [showRelevanceScores, setShowRelevanceScores] = useState(false);
     const [isTopConnectedMinimized, setIsTopConnectedMinimized] = useState(false);
     const [isRelevanceScoresMinimized, setIsRelevanceScoresMinimized] = useState(false);
-    const [isSheetOpen, setIsSheetOpen] = useState(false);
+
     const [canvasSize, setCanvasSize] = useState({ width: 800, height: 600 });
 
     // Data & layout
@@ -77,6 +73,22 @@ function NetworkVisualization() {
     const isNodeVisibleBound = (node: Node) => isNodeVisible(node, selectedNode, graphData?.relationships);
     const { selectedNode, setSelectedNode, canvasHandlers } = useNodeSelection(nodesRef, cameraRef, isNodeVisibleBound);
 
+    // Click outside detection to clear selection only when clicking outside the entire visualization
+    const panelRef = useClickOutside<HTMLDivElement>(
+        () => {
+            if (selectedNode) {
+                setSelectedNode(null);
+            }
+        },
+        // Exclude the canvas, control panels, and mobile panel from triggering deselection
+        [
+            '[data-testid="power-network-canvas"]',
+            '.bg-gray-800',
+            'a',
+            'button'
+        ]
+    );
+
     // Rendering
     useNetworkRenderer({
         canvasRef,
@@ -88,20 +100,7 @@ function NetworkVisualization() {
         tick
     });
 
-    useEffect(() => {
-        if (selectedNode) {
-            setIsSheetOpen(true);
-        } else {
-            setIsSheetOpen(false);
-        }
-    }, [selectedNode]);
 
-    const handleSheetChange = (open: boolean) => {
-        setIsSheetOpen(open);
-        if (!open) {
-            setSelectedNode(null);
-        }
-    };
 
     const renderInfoPanelContent = (node: Node) => {
         if (!entityRelevance || !graphData) return null;
@@ -192,7 +191,7 @@ function NetworkVisualization() {
     }
 
     return (
-        <div className="relative h-screen w-full overflow-hidden">
+        <div ref={panelRef} className="relative h-screen w-full overflow-hidden">
             {/* Brain logo - positioned outside the translating container */}
             <Link
                 href="/"
@@ -383,20 +382,28 @@ function NetworkVisualization() {
 
             {selectedNode && (
                 isMobile ? (
-                    <Sheet open={isSheetOpen} onOpenChange={handleSheetChange}>
-                        <SheetContent side="bottom" className="bg-gray-800 border-t-gray-700 text-white">
-                            <SheetHeader>
-                                <SheetTitle className="text-white">{selectedNode.name}</SheetTitle>
-                                <p className="text-gray-400 text-sm">
-                                    {selectedNode.type}
-                                    {selectedNode.country && ` - ${selectedNode.country}`}
-                                </p>
-                            </SheetHeader>
-                            <div className="py-4">
+                    <div className="fixed bottom-0 left-0 right-0 bg-gray-800 border-t border-gray-700 text-white z-50 max-h-[60vh] overflow-y-auto">
+                        <div className="p-4">
+                            <div className="flex justify-between items-start mb-2">
+                                <div>
+                                    <h3 className="text-white font-bold text-lg">{selectedNode.name}</h3>
+                                    <p className="text-gray-300 capitalize">{selectedNode.type}</p>
+                                    {selectedNode?.country && (
+                                        <p className="text-gray-400 text-sm">{selectedNode.country}</p>
+                                    )}
+                                </div>
+                                <button
+                                    onClick={() => setSelectedNode(null)}
+                                    className="text-gray-400 hover:text-white p-2"
+                                >
+                                    ✕
+                                </button>
+                            </div>
+                            <div className="py-2">
                                 {renderInfoPanelContent(selectedNode)}
                             </div>
-                        </SheetContent>
-                    </Sheet>
+                        </div>
+                    </div>
                 ) : (
                     <div className="absolute top-4 right-4 bg-gray-800 p-4 rounded-lg border border-gray-600 min-w-48 max-w-80 shadow-lg">
                         <h3 className="text-white font-bold text-lg">{selectedNode.name}</h3>

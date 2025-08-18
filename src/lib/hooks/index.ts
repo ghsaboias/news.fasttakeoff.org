@@ -1,5 +1,6 @@
 export { useApi } from './useApi';
 export { useCanvasCamera } from './useCanvasCamera';
+export { useClickOutside } from './useClickOutside';
 export { useEntityRelevance } from './useEntityRelevance';
 export { useFilters } from './useFilters';
 export { useForceSimulation } from './useForceSimulation';
