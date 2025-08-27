@@ -1,6 +1,7 @@
 import { Cloudflare } from '../../worker-configuration';
 import { TIME, URLs } from './config';
 import { Report } from './types/core';
+import { OpenRouterImageService } from './openrouter-image-service';
 const WEBSITE_URL = URLs.WEBSITE_URL;
 
 // Instagram API constants
@@ -36,6 +37,7 @@ function generateHashtagsFromChannelName(channelName: string): string[] {
 export class InstagramService {
     private readonly accessToken: string;
     private readonly env: Cloudflare.Env;
+    private readonly imageService: OpenRouterImageService;
 
     constructor(env: Cloudflare.Env) {
         // Detect build environment
@@ -45,11 +47,13 @@ export class InstagramService {
             console.log('[INSTAGRAM] Build environment detected, skipping validation');
             this.accessToken = '';
             this.env = env;
+            this.imageService = new OpenRouterImageService(env);
             return;
         }
 
         this.accessToken = env.INSTAGRAM_ACCESS_TOKEN || '';
         this.env = env;
+        this.imageService = new OpenRouterImageService(env);
         if (!this.accessToken) {
             console.warn('[INSTAGRAM] No access token found in environment');
         }
@@ -110,7 +114,7 @@ export class InstagramService {
             .replace(/'/g, '&#39;');
     }
 
-    private generateHtml(headline: string): string {
+    private generateHtml(headline: string, backgroundImageUrl: string): string {
         const lines = this.breakIntoLines(headline.split(' '), 20);
         const fontSize = this.calculateFontSize(headline);
         const lineHeight = fontSize * 1.3;
@@ -135,7 +139,7 @@ export class InstagramService {
                     left: 0;
                     width: 100%;
                     height: 100%;
-                    background-image: url('https://news.fasttakeoff.org/images/brain.png');
+                    background-image: url('${backgroundImageUrl}');
                     background-size: cover;
                     background-position: center;
                 }
@@ -145,7 +149,7 @@ export class InstagramService {
                     left: 0;
                     width: 100%;
                     height: 100%;
-                    background: rgba(0, 0, 0, 0.4);
+                    background: rgba(0, 0, 0, 0.2);
                 }
                 .content-wrapper {
                     position: absolute;
@@ -183,10 +187,22 @@ export class InstagramService {
 
     private async generateAndStoreImage(report: Report): Promise<string> {
         try {
-            // Step 1: Generate HTML directly (no SVG worker needed!)
-            const html = this.generateHtml(report.headline);
+            // Step 1: Generate background image using OpenRouter
+            console.log(`[INSTAGRAM] Generating background image for: ${report.headline}`);
+            let backgroundImageUrl: string;
+            
+            try {
+                backgroundImageUrl = await this.imageService.generateNewsBackground(report.headline, report.city);
+                console.log(`[INSTAGRAM] Generated background image successfully for ${report.city}`);
+            } catch (error) {
+                console.warn(`[INSTAGRAM] Background generation failed, using fallback: ${error}`);
+                backgroundImageUrl = 'https://news.fasttakeoff.org/images/brain.png';
+            }
 
-            // Step 2: Generate screenshot via Browser Rendering API
+            // Step 2: Generate HTML with the background image
+            const html = this.generateHtml(report.headline, backgroundImageUrl);
+
+            // Step 3: Generate screenshot via Browser Rendering API
             const screenshotStartTime = Date.now();
             const screenshotUrl = `${BROWSER_RENDERING_API}/${this.env.CLOUDFLARE_ACCOUNT_ID}/browser-rendering/screenshot`;
 
@@ -220,8 +236,21 @@ export class InstagramService {
 
             const imageBuffer = await screenshotResponse.arrayBuffer();
             console.log(`[INSTAGRAM] Screenshot generated in ${Date.now() - screenshotStartTime}ms, size: ${imageBuffer.byteLength} bytes`);
+            
+            // Save locally for testing
+            try {
+                const fs = await import('fs');
+                const path = await import('path');
+                const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+                const fileName = `instagram-test-${report.reportId}-${timestamp}.jpg`;
+                const filePath = path.join(process.cwd(), fileName);
+                fs.writeFileSync(filePath, Buffer.from(imageBuffer));
+                console.log(`[INSTAGRAM] Test image saved locally: ${fileName}`);
+            } catch (saveError) {
+                console.warn(`[INSTAGRAM] Failed to save test image locally: ${saveError}`);
+            }
 
-            // Step 3: Store in R2 (keep this the same)
+            // Step 4: Store in R2 (keep this the same)
             const r2StartTime = Date.now();
             const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
             const r2Key = `instagram/${report.reportId}/${timestamp}.jpg`;
@@ -245,7 +274,7 @@ export class InstagramService {
 
             console.log(`[INSTAGRAM] Image uploaded to R2 in ${Date.now() - r2StartTime}ms, key: ${r2Key}`);
 
-            // Step 4: Generate public URL
+            // Step 5: Generate public URL
             const publicUrl = `${this.env.R2_PUBLIC_URL}/${r2Key}`;
             console.log(`[INSTAGRAM] Public image URL: ${publicUrl}`);
 
