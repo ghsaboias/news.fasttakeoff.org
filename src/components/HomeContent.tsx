@@ -70,11 +70,6 @@ export default function HomeContent({ initialReports, initialExecutiveOrders, in
                 <div className="absolute inset-0 bg-[linear-gradient(45deg,transparent_49%,rgba(255,255,255,0.01)_50%,transparent_51%)] bg-[length:20px_20px] opacity-30"></div>
 
                 <div className="flex flex-col items-center gap-4 sm:gap-6 py-8 sm:py-12 px-6 w-full relative z-10">
-                    {/* Social Proof Badge - Industrial styling */}
-                    <div className="bg-gradient-to-r from-emerald-600/20 to-teal-600/20 text-emerald-300 border border-emerald-500/40 px-4 py-2 rounded-full text-sm font-medium backdrop-blur-sm shadow-lg shadow-emerald-500/10">
-                        ⚡ Real-time AI analysis from global sources
-                    </div>
-
                     {/* Headlines & Value Props - Industrial color scheme */}
                     <div className="flex flex-col items-center gap-4 text-center max-w-3xl">
                         <h1 className="hero-title text-5xl md:text-7xl font-bold bg-gradient-to-r from-emerald-400 via-teal-400 to-green-400 bg-clip-text text-transparent leading-tight drop-shadow-lg">
