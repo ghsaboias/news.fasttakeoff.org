@@ -38,6 +38,10 @@ export declare namespace Cloudflare {
         INSTAGRAM_ACCESS_TOKEN: string;
         TWITTER_CLIENT_ID: string;
         TWITTER_CLIENT_SECRET: string;
+        TWITTER_API_KEY: string;
+        TWITTER_API_SECRET: string;
+        TWITTER_ACCESS_TOKEN: string;
+        TWITTER_ACCESS_TOKEN_SECRET: string;
         GOOGLE_GEOCODING_API_KEY: string;
         SVG_WORKER_URL: string;
         CLOUDFLARE_API_TOKEN: string;

@@ -4,27 +4,39 @@ import { Report } from '@/lib/types/core';
 
 export async function POST(request: Request) {
     return withErrorHandling(async (env) => {
-        const { report } = await request.json();
+        const body = await request.json();
+        const report = body?.report as Report | undefined;
+        const withImage = Boolean(body?.withImage);
 
         if (!report) {
             throw new Error('Report data is required');
         }
 
-        console.log('[TEST-TWITTER] Testing Twitter service with report:', report.reportId);
+        console.log('[TEST-TWITTER][DEBUG] Start');
+        console.log('[TEST-TWITTER][DEBUG] Params:', {
+            reportId: report.reportId,
+            channelId: report.channelId,
+            timeframe: report.timeframe,
+            messageCount: report.messageCount,
+            withImage,
+            headlineChars: report.headline?.length ?? 0,
+        });
 
         const twitterService = new TwitterService(env);
 
         try {
-            await twitterService.postSingleTweet(report as Report);
+            await twitterService.postTweet(report as Report, withImage);
 
             return {
                 success: true,
-                message: 'Twitter test completed successfully',
-                reportId: report.reportId
+                message: `Twitter test completed successfully (${withImage ? 'image' : 'text'})`,
+                reportId: report.reportId,
             };
         } catch (error) {
             console.error('[TEST-TWITTER] Twitter service error:', error);
             throw error;
+        } finally {
+            console.log('[TEST-TWITTER][DEBUG] End');
         }
     }, 'Failed to test Twitter service');
-} 
+}
