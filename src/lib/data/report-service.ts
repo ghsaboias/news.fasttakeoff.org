@@ -372,10 +372,9 @@ export class ReportService {
                 console.error(`[REPORTS] Failed to post report ${topReport.reportId} to Facebook:`, err);
             }
 
-            // Post to Twitter
+            // Post to Twitter (headline with image; threaded if threshold hit)
             try {
-                // Use single tweet for headline and URL
-                await this.twitterService.postTweet(topReport);
+                await this.twitterService.postTweet(topReport, true);
             } catch (err: unknown) {
                 console.error(`[REPORTS] Failed to post tweet for report ${topReport.reportId} to Twitter:`, err);
             }

@@ -1,10 +1,14 @@
 import { Report } from '@/lib/types/core';
 import { Cloudflare, KVNamespace } from '../../worker-configuration';
-import { URLs } from './config';
+import { URLs, TIME } from './config';
 import { countTwitterCharacters, truncateForTwitter } from './utils/twitter-utils';
+import { OpenRouterImageService } from './openrouter-image-service';
 
 const TWITTER_API_URL = 'https://api.twitter.com/2/tweets';
 const TOKEN_URL = 'https://api.twitter.com/2/oauth2/token'; // X API token endpoint
+const MEDIA_UPLOAD_URL = 'https://upload.twitter.com/1.1/media/upload.json'; // X API v1.1 media upload
+const BROWSER_RENDERING_API = 'https://api.cloudflare.com/client/v4/accounts';
+const IMAGE_RETENTION_SECONDS = TIME.WEEK_SEC;
 
 // Interface for the object stored in KV
 interface TwitterTokens {
@@ -39,6 +43,13 @@ export class TwitterService {
     private kvKey = 'twitter_tokens'; // Key for storing tokens in KV
     private clientId: string;
     private clientSecret: string;
+    private readonly imageService: OpenRouterImageService;
+    private readonly env: Cloudflare.Env;
+    // OAuth 1.0a credentials for media upload
+    private oauthConsumerKey: string;
+    private oauthConsumerSecret: string;
+    private oauthAccessToken: string;
+    private oauthAccessTokenSecret: string;
 
     constructor(env: Cloudflare.Env) {
         // Detect build environment
@@ -50,6 +61,12 @@ export class TwitterService {
             this.kv = {} as KVNamespace;
             this.clientId = '';
             this.clientSecret = '';
+            this.env = env;
+            this.imageService = new OpenRouterImageService(env);
+            this.oauthConsumerKey = '';
+            this.oauthConsumerSecret = '';
+            this.oauthAccessToken = '';
+            this.oauthAccessTokenSecret = '';
             return;
         }
 
@@ -64,6 +81,14 @@ export class TwitterService {
         this.kv = env.AUTH_TOKENS; // Assign the KV namespace
         this.clientId = env.TWITTER_CLIENT_ID;
         this.clientSecret = env.TWITTER_CLIENT_SECRET;
+        this.env = env;
+        this.imageService = new OpenRouterImageService(env);
+        
+        // OAuth 1.0a credentials for media upload (same keys as working script)
+        this.oauthConsumerKey = env.TWITTER_API_KEY || '';
+        this.oauthConsumerSecret = env.TWITTER_API_SECRET || '';
+        this.oauthAccessToken = env.TWITTER_ACCESS_TOKEN || '';
+        this.oauthAccessTokenSecret = env.TWITTER_ACCESS_TOKEN_SECRET || '';
     }
 
     /**
@@ -119,6 +144,75 @@ export class TwitterService {
         if (timeframe === '2h') return count > 20;
         if (timeframe === '6h') return count > 50;
         return false;
+    }
+
+    /**
+     * Generates OAuth 1.0a signature for media upload requests
+     */
+    private async generateOAuth1Signature(url: string, method: string, params: Record<string, string>): Promise<string> {
+        // OAuth 1.0a signature generation using Web Crypto API (Cloudflare Workers compatible)
+        
+        // Sort parameters
+        const sortedParams = Object.keys(params)
+            .sort()
+            .map(key => `${encodeURIComponent(key)}=${encodeURIComponent(params[key])}`)
+            .join('&');
+        
+        // Create signature base string
+        const signatureBaseString = `${method.toUpperCase()}&${encodeURIComponent(url)}&${encodeURIComponent(sortedParams)}`;
+        
+        // Create signing key
+        const signingKey = `${encodeURIComponent(this.oauthConsumerSecret)}&${encodeURIComponent(this.oauthAccessTokenSecret)}`;
+        
+        // Use Web Crypto API for HMAC-SHA1
+        const encoder = new TextEncoder();
+        const keyData = encoder.encode(signingKey);
+        const messageData = encoder.encode(signatureBaseString);
+        
+        const cryptoKey = await crypto.subtle.importKey(
+            'raw',
+            keyData,
+            { name: 'HMAC', hash: 'SHA-1' },
+            false,
+            ['sign']
+        );
+        
+        const signature = await crypto.subtle.sign('HMAC', cryptoKey, messageData);
+        const base64Signature = btoa(String.fromCharCode(...new Uint8Array(signature)));
+        
+        return base64Signature;
+    }
+
+    /**
+     * Generates OAuth 1.0a authorization header for media upload
+     */
+    private async generateOAuth1Headers(url: string, method: string): Promise<Record<string, string>> {
+        const timestamp = Math.floor(Date.now() / 1000).toString();
+        const nonce = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+        
+        const params = {
+            oauth_consumer_key: this.oauthConsumerKey,
+            oauth_token: this.oauthAccessToken,
+            oauth_signature_method: 'HMAC-SHA1',
+            oauth_timestamp: timestamp,
+            oauth_nonce: nonce,
+            oauth_version: '1.0'
+        };
+        
+        const signature = await this.generateOAuth1Signature(url, method, params);
+        
+        const authParams = {
+            ...params,
+            oauth_signature: signature
+        };
+        
+        const authHeader = 'OAuth ' + Object.keys(authParams)
+            .map(key => `${encodeURIComponent(key)}="${encodeURIComponent(authParams[key as keyof typeof authParams])}"`)
+            .join(', ');
+        
+        return {
+            'Authorization': authHeader
+        };
     }
 
     /**
@@ -274,6 +368,107 @@ export class TwitterService {
     }
 
     /**
+     * Uploads media to Twitter using OAuth 1.0a
+     */
+    private async uploadMedia(imageBuffer: ArrayBuffer): Promise<string> {
+        if (!this.oauthConsumerKey || !this.oauthConsumerSecret || !this.oauthAccessToken || !this.oauthAccessTokenSecret) {
+            throw new Error('Missing OAuth 1.0a credentials for media upload');
+        }
+
+        console.log(`[TWITTER] Uploading media to X API v1.1 with OAuth 1.0a (${imageBuffer.byteLength} bytes)`);
+
+        // Generate OAuth 1.0a authorization headers
+        const authHeaders = await this.generateOAuth1Headers(MEDIA_UPLOAD_URL, 'POST');
+
+        // Use multipart form data approach similar to working script
+        const formBoundary = '----formdata-' + Math.random().toString(36);
+        const CRLF = '\r\n';
+        
+        // Build multipart form data manually
+        if (false) {
+        let body = '';
+        body += `--${formBoundary}${CRLF}`;
+        body += `Content-Disposition: form-data; name="media"; filename="image.jpg"${CRLF}`;
+        body += `Content-Type: image/jpeg${CRLF}${CRLF}`;
+        
+        // Convert ArrayBuffer to base64 for body construction
+        const uint8Array = new Uint8Array(imageBuffer);
+        const binaryString = Array.from(uint8Array, byte => String.fromCharCode(byte)).join('');
+        body += binaryString;
+        
+        body += `${CRLF}--${formBoundary}${CRLF}`;
+        body += `Content-Disposition: form-data; name="media_category"${CRLF}${CRLF}`;
+        body += `tweet_image`;
+        body += `${CRLF}--${formBoundary}--${CRLF}`;
+          void body;
+        }
+
+        // Rebuild multipart body using Uint8Array (Workers-safe) instead of string concatenation
+        let payload: Uint8Array;
+        {
+            const enc = new TextEncoder();
+            const parts: Uint8Array[] = [];
+            parts.push(enc.encode(`--${formBoundary}${CRLF}`));
+            parts.push(enc.encode(`Content-Disposition: form-data; name="media"; filename="image.jpg"${CRLF}`));
+            parts.push(enc.encode(`Content-Type: image/jpeg${CRLF}`));
+            parts.push(enc.encode(`Content-Transfer-Encoding: binary${CRLF}${CRLF}`));
+            parts.push(new Uint8Array(imageBuffer));
+            parts.push(enc.encode(CRLF));
+            parts.push(enc.encode(`--${formBoundary}${CRLF}`));
+            parts.push(enc.encode(`Content-Disposition: form-data; name="media_category"${CRLF}${CRLF}`));
+            parts.push(enc.encode('tweet_image'));
+            parts.push(enc.encode(CRLF));
+            parts.push(enc.encode(`--${formBoundary}--${CRLF}`));
+            let total = 0;
+            for (const p of parts) total += p.byteLength;
+            const merged = new Uint8Array(total);
+            let offset = 0;
+            for (const p of parts) { merged.set(p, offset); offset += p.byteLength; }
+            // Binary payload for multipart request
+            payload = merged;
+        }
+
+        try {
+            const response = await fetch(MEDIA_UPLOAD_URL, {
+                method: 'POST',
+                headers: {
+                    ...authHeaders,
+                    'Content-Type': `multipart/form-data; boundary=${formBoundary}`,
+                    'Accept': 'application/json',
+                    'User-Agent': 'news.fasttakeoff.org-worker/1.0'
+                },
+                body: payload
+            });
+
+            const responseText = await response.text();
+            console.log(`[TWITTER] Media upload response: ${response.status}`);
+
+            if (!response.ok) {
+                throw new Error(`Media upload failed: ${response.status} - ${responseText}`);
+            }
+
+            let result;
+            try {
+                result = JSON.parse(responseText);
+            } catch {
+                throw new Error(`Failed to parse media upload response: ${responseText}`);
+            }
+
+            const mediaId = result.media_id_string || result.media_id;
+            if (!mediaId) {
+                throw new Error(`No media ID in response: ${responseText}`);
+            }
+
+            console.log(`[TWITTER] Media uploaded successfully: ${mediaId}`);
+            return mediaId;
+
+        } catch (error) {
+            console.error('[TWITTER] Media upload error:', error instanceof Error ? error.message : String(error));
+            throw error;
+        }
+    }
+
+    /**
      * Extracts content for the second tweet (simplified like Instagram but with Twitter limits)
      */
     private extractFirstParagraph(body: string, reportUrl: string): string {
@@ -295,6 +490,236 @@ export class TwitterService {
 
         // If too long, truncate intelligently
         return truncateForTwitter(firstParagraph, urlSpace + 4); // +4 for \n\n separators
+    }
+
+    /**
+     * Calculate font size based on headline length (adapted from Instagram)
+     */
+    private calculateFontSize(headline: string): number {
+        const words = headline.split(' ');
+        const lines = this.breakIntoLines(words, 25); // Slightly longer lines for Twitter's 16:9 aspect
+        const maxLineLength = Math.max(...lines.map(line => line.length));
+
+        const BASE_FONT_SIZE = 60;
+        return Math.min(
+            BASE_FONT_SIZE,
+            (1200 / maxLineLength) * 1.5, // 1200px width for 16:9 aspect
+            600 / (lines.length * 1.5)    // 600px height for 16:9 aspect
+        );
+    }
+
+    /**
+     * Break text into lines (adapted from Instagram)
+     */
+    private breakIntoLines(words: string[], maxLength: number): string[] {
+        const lines: string[] = [];
+        let currentLine: string[] = [];
+        let currentLength = 0;
+
+        for (const word of words) {
+            if (currentLength + word.length > maxLength || word.length > maxLength) {
+                if (currentLine.length > 0) {
+                    lines.push(currentLine.join(' '));
+                    currentLine = [];
+                    currentLength = 0;
+                }
+
+                if (word.length > maxLength) {
+                    const chunks = word.match(new RegExp(`.{1,${maxLength}}`, 'g')) || [];
+                    lines.push(...chunks);
+                } else {
+                    currentLine = [word];
+                    currentLength = word.length;
+                }
+            } else {
+                currentLine.push(word);
+                currentLength += word.length + 1;
+            }
+        }
+
+        if (currentLine.length > 0) {
+            lines.push(currentLine.join(' '));
+        }
+
+        return lines;
+    }
+
+    /**
+     * Escape HTML entities
+     */
+    private escapeHtml(text: string): string {
+        return text
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+    }
+
+    /**
+     * Generate HTML template for Twitter image (16:9 aspect ratio)
+     */
+    private generateHtml(headline: string, backgroundImageUrl: string): string {
+        const lines = this.breakIntoLines(headline.split(' '), 25);
+        const fontSize = this.calculateFontSize(headline);
+        const lineHeight = fontSize * 1.3;
+
+        return `<!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=1200, height=675">
+            <style>
+                body { 
+                    margin: 0; 
+                    padding: 0; 
+                    width: 1200px; 
+                    height: 675px; 
+                    overflow: hidden;
+                    position: relative;
+                }
+                .background {
+                    position: absolute;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    background-image: url('${backgroundImageUrl}');
+                    background-size: cover;
+                    background-position: center;
+                }
+                .overlay {
+                    position: absolute;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    background: rgba(0, 0, 0, 0.2);
+                }
+                .content-wrapper {
+                    position: absolute;
+                    top: 50%;
+                    left: 50%;
+                    transform: translate(-50%, -50%);
+                    width: 1000px;
+                    padding: ${fontSize}px 0;
+                    background: rgba(0, 0, 0, 0.3);
+                    border-radius: 10px;
+                    text-align: center;
+                }
+                .headline {
+                    color: white;
+                    font-family: Arial, sans-serif;
+                    font-size: ${fontSize}px;
+                    font-weight: bold;
+                    line-height: ${lineHeight}px;
+                    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+                    -webkit-text-stroke: 2px black;
+                    margin: 0;
+                    padding: 0 40px;
+                }
+            </style>
+        </head>
+        <body>
+            <div class="background"></div>
+            <div class="overlay"></div>
+            <div class="content-wrapper">
+                <div class="headline">${lines.map(line => this.escapeHtml(line)).join('<br>')}</div>
+            </div>
+        </body>
+        </html>`;
+    }
+
+    /**
+     * Generate and store image for Twitter (adapted from Instagram pipeline)
+     */
+    private async generateAndStoreImage(report: Report): Promise<string> {
+        try {
+            // Step 1: Generate background image using OpenRouter
+            console.log(`[TWITTER] Generating background image for: ${report.headline}`);
+            let backgroundImageUrl: string;
+            
+            try {
+                backgroundImageUrl = await this.imageService.generateNewsBackground(report.headline, report.city);
+                console.log(`[TWITTER] Generated background image successfully for ${report.city}`);
+            } catch (error) {
+                console.warn(`[TWITTER] Background generation failed, using fallback: ${error}`);
+                backgroundImageUrl = 'https://news.fasttakeoff.org/images/brain.png';
+            }
+
+            // Step 2: Generate HTML with the background image (Twitter 16:9 format)
+            const html = this.generateHtml(report.headline, backgroundImageUrl);
+
+            // Step 3: Generate screenshot via Browser Rendering API
+            const screenshotStartTime = Date.now();
+            const screenshotUrl = `${BROWSER_RENDERING_API}/${this.env.CLOUDFLARE_ACCOUNT_ID}/browser-rendering/screenshot`;
+
+            console.log(`[TWITTER] Calling Browser Rendering API for screenshot`);
+            const screenshotResponse = await fetch(screenshotUrl, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${this.env.CLOUDFLARE_API_TOKEN}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    html: html,
+                    screenshotOptions: {
+                        type: 'jpeg',
+                        quality: 90,
+                        fullPage: false
+                    },
+                    viewport: {
+                        width: 1200,
+                        height: 675,  // 16:9 aspect ratio for Twitter
+                        deviceScaleFactor: 1
+                    },
+                    waitForTimeout: 2000 // Wait 2s for image to load
+                })
+            });
+
+            if (!screenshotResponse.ok) {
+                const errorText = await screenshotResponse.text();
+                throw new Error(`Screenshot generation failed: ${screenshotResponse.status} - ${errorText}`);
+            }
+
+            const imageBuffer = await screenshotResponse.arrayBuffer();
+            console.log(`[TWITTER] Screenshot generated in ${Date.now() - screenshotStartTime}ms, size: ${imageBuffer.byteLength} bytes`);
+            
+            // Step 4: Store in R2 (Twitter images bucket)
+            const r2StartTime = Date.now();
+            const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+            const r2Key = `twitter/${report.reportId}/${timestamp}.jpg`;
+
+            // Reuse the existing Instagram images R2 bucket for Twitter images
+            const r2UploadResult = await this.env.INSTAGRAM_IMAGES.put(r2Key, imageBuffer, {
+                httpMetadata: {
+                    contentType: 'image/jpeg',
+                    cacheControl: `public, max-age=${IMAGE_RETENTION_SECONDS}`,
+                },
+                customMetadata: {
+                    reportId: report.reportId,
+                    headline: report.headline,
+                    generatedAt: new Date().toISOString(),
+                    expiresAt: new Date(Date.now() + IMAGE_RETENTION_SECONDS * 1000).toISOString(),
+                },
+            });
+
+            if (!r2UploadResult) {
+                throw new Error('Failed to upload image to R2');
+            }
+
+            console.log(`[TWITTER] Image uploaded to R2 in ${Date.now() - r2StartTime}ms, key: ${r2Key}`);
+
+            // Step 5: Generate public URL
+            const publicUrl = `${this.env.R2_PUBLIC_URL}/${r2Key}`;
+            console.log(`[TWITTER] Public image URL: ${publicUrl}`);
+
+            return publicUrl;
+
+        } catch (error) {
+            console.error(`[TWITTER] Image generation failed:`, error);
+            throw new Error(`Failed to generate image: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        }
     }
 
     /**
@@ -354,11 +779,22 @@ export class TwitterService {
     private async postSingleTweetInternal(
         text: string,
         accessToken: string,
-        replyToId?: string
+        replyToId?: string,
+        mediaIds?: string[]
     ): Promise<TwitterApiResponse> {
-        const body: { text: string; reply?: { in_reply_to_tweet_id: string } } = { text };
+        console.log(`[TWITTER][DEBUG] postSingleTweetInternal: replyToId=${replyToId ?? 'none'} mediaIds=${mediaIds && mediaIds.length ? mediaIds.join(',') : 'none'} textChars=${countTwitterCharacters(text)}`);
+        const body: { 
+            text: string; 
+            reply?: { in_reply_to_tweet_id: string }; 
+            media?: { media_ids: string[] } 
+        } = { text };
+        
         if (replyToId) {
             body.reply = { in_reply_to_tweet_id: replyToId };
+        }
+        
+        if (mediaIds && mediaIds.length > 0) {
+            body.media = { media_ids: mediaIds };
         }
 
         const response = await fetch(TWITTER_API_URL, {
@@ -375,6 +811,7 @@ export class TwitterService {
             throw new Error(`Twitter API error: ${response.status} - ${errorBody}`);
         }
 
+        console.log('[TWITTER][DEBUG] postSingleTweetInternal: success');
         return await response.json() as TwitterApiResponse;
     }
 
@@ -423,14 +860,123 @@ export class TwitterService {
     }
 
     /**
-     * Posts a tweet using a valid access token obtained from KV (refreshes if needed).
-     * Now uses single tweet format with headline and URL
+     * Posts a single tweet with image
      */
-    async postTweet(report: Report): Promise<void> {
-        if (this.isBigEvent(report)) {
-            await this.postThreadedTweet(report);
+    async postSingleTweetWithImage(report: Report): Promise<void> {
+        const accessToken = await this.getValidAccessToken();
+
+        if (!accessToken) {
+            console.error('[TWITTER] Failed to post tweet with image: Could not obtain a valid access token after checking/refreshing.');
             return;
         }
-        await this.postSingleTweet(report);
+
+        try {
+            // Step 1: Generate and store image
+            const imageUrl = await this.generateAndStoreImage(report);
+
+            // Step 2: Fetch image and upload to Twitter
+            const imageResponse = await fetch(imageUrl);
+            if (!imageResponse.ok) {
+                throw new Error(`Failed to fetch generated image: ${imageResponse.status}`);
+            }
+            const imageBuffer = await imageResponse.arrayBuffer();
+            const mediaId = await this.uploadMedia(imageBuffer);
+
+            // Step 3: Post tweet with media
+            const locationTag = this.buildLocationHashtag(report);
+            const text = this.appendHashtagIfFits(report.headline, locationTag);
+
+            console.log(`[TWITTER] Posting single tweet with image (${countTwitterCharacters(text)} chars): "${text.substring(0, 50)}..."`);
+
+            const response = await this.postSingleTweetInternal(text, accessToken, undefined, [mediaId]);
+
+            console.log(`[TWITTER] Successfully posted single tweet with image for report ${report.reportId}. Tweet ID: ${response.data.id}`);
+
+        } catch (error: unknown) {
+            console.error('[TWITTER] Failed to post single tweet with image:', error instanceof Error ? error.message : String(error));
+            throw error;
+        }
+    }
+
+    /**
+     * Posts a threaded tweet with image for big events
+     */
+    async postThreadedTweetWithImage(report: Report): Promise<void> {
+        const accessToken = await this.getValidAccessToken();
+
+        if (!accessToken) {
+            console.error('[TWITTER] Failed to post threaded tweet with image: Could not obtain a valid access token after checking/refreshing.');
+            return;
+        }
+
+        try {
+            // Step 1: Generate and store image
+            const imageUrl = await this.generateAndStoreImage(report);
+
+            // Step 2: Fetch image and upload to Twitter
+            const imageResponse = await fetch(imageUrl);
+            if (!imageResponse.ok) {
+                throw new Error(`Failed to fetch generated image: ${imageResponse.status}`);
+            }
+            const imageBuffer = await imageResponse.arrayBuffer();
+            const mediaId = await this.uploadMedia(imageBuffer);
+
+            const reportUrl = `${URLs.WEBSITE_URL}/current-events/${report.channelId}/${report.reportId}`;
+
+            // Tweet 1: Headline + optional location hashtag + image
+            const locationTag = this.buildLocationHashtag(report);
+            const tweet1Text = this.appendHashtagIfFits(report.headline, locationTag);
+
+            console.log(`[TWITTER] Posting first tweet with image (${countTwitterCharacters(tweet1Text)} chars): "${tweet1Text.substring(0, 50)}..."`);
+            const tweet1Response = await this.postSingleTweetInternal(tweet1Text, accessToken, undefined, [mediaId]);
+            const tweet1Id = tweet1Response.data.id;
+
+            console.log(`[TWITTER] First tweet with image posted successfully: ${tweet1Id}`);
+
+            // Tweet 2: First paragraph + link (no image)
+            const firstParagraph = this.extractFirstParagraph(report.body, reportUrl);
+
+            if (firstParagraph) {
+                const tweet2Text = this.formatSecondTweet(firstParagraph, reportUrl);
+
+                console.log(`[TWITTER] Posting second tweet (${countTwitterCharacters(tweet2Text)} chars) as reply to ${tweet1Id}`);
+                const tweet2Response = await this.postSingleTweetInternal(tweet2Text, accessToken, tweet1Id);
+
+                console.log(`[TWITTER] Successfully posted threaded tweet with image for report ${report.reportId}. Thread: ${tweet1Id} -> ${tweet2Response.data.id}`);
+            } else {
+                console.log(`[TWITTER] No content for second tweet, posted single tweet with image for report ${report.reportId}: ${tweet1Id}`);
+            }
+
+        } catch (error: unknown) {
+            console.error('[TWITTER] Failed to post threaded tweet with image:', error instanceof Error ? error.message : String(error));
+            throw error;
+        }
+    }
+
+    /**
+     * Posts a tweet using a valid access token obtained from KV (refreshes if needed).
+     * Now supports both text-only and image tweets
+     */
+    async postTweet(report: Report, withImage: boolean = false): Promise<void> {
+        const bigEvent = this.isBigEvent(report);
+        console.log(`[TWITTER][DEBUG] postTweet: reportId=${report.reportId} withImage=${withImage} bigEvent=${bigEvent} timeframe=${report.timeframe} messageCount=${report.messageCount}`);
+
+        if (withImage) {
+            if (bigEvent) {
+                console.log('[TWITTER][DEBUG] Chosen path: postThreadedTweetWithImage');
+                await this.postThreadedTweetWithImage(report);
+            } else {
+                console.log('[TWITTER][DEBUG] Chosen path: postSingleTweetWithImage');
+                await this.postSingleTweetWithImage(report);
+            }
+        } else {
+            if (bigEvent) {
+                console.log('[TWITTER][DEBUG] Chosen path: postThreadedTweet');
+                await this.postThreadedTweet(report);
+            } else {
+                console.log('[TWITTER][DEBUG] Chosen path: postSingleTweet');
+                await this.postSingleTweet(report);
+            }
+        }
     }
 }

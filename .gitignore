@@ -86,3 +86,8 @@ test_instagram.txt
 analysis-results/
 
 .mcp.json
+ 
+# local logs and test artifacts
+.logs/
+test-image*.jpg
+test-curl-oauth.sh
