@@ -930,7 +930,7 @@ export class TwitterService {
 
         if (!accessToken) {
             console.error('[TWITTER] Failed to post threaded tweet: Could not obtain a valid access token after checking/refreshing.');
-            return;
+            throw new Error('NO_OAUTH2_TOKEN');
         }
 
         try {
