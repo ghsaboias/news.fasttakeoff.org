@@ -25,12 +25,13 @@ export async function POST(request: Request) {
         const twitterService = new TwitterService(env);
 
         try {
-            await twitterService.postTweet(report as Report, withImage);
+            const tweetId = await twitterService.postTweet(report as Report, withImage);
 
             return {
                 success: true,
                 message: `Twitter test completed successfully (${withImage ? 'image' : 'text'})`,
                 reportId: report.reportId,
+                tweetId,
             };
         } catch (error) {
             console.error('[TEST-TWITTER] Twitter service error:', error);
