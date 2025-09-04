@@ -6,7 +6,7 @@ export class OpenRouterImageService {
 
     constructor(env: Cloudflare.Env) {
         const isBuildTime = process.env.NODE_ENV === 'production' && process.env.NEXT_PHASE === 'phase-production-build';
-        
+
         if (isBuildTime) {
             console.log('[OPENROUTER] Build environment detected, skipping validation');
             this.apiKey = '';
@@ -39,7 +39,7 @@ export class OpenRouterImageService {
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
-                    model: 'google/gemini-2.5-flash-image-preview:free',
+                    model: 'google/gemini-2.5-flash-image-preview',
                     messages: [
                         {
                             role: 'user',
@@ -57,7 +57,7 @@ export class OpenRouterImageService {
 
             const result = await response.json();
             console.log(`[OPENROUTER] Full API response:`, JSON.stringify(result, null, 2));
-            
+
             if (!result.choices || !result.choices[0]?.message?.images?.[0]) {
                 console.log(`[OPENROUTER] Response structure - choices:`, result.choices ? 'exists' : 'missing');
                 if (result.choices?.[0]) {
@@ -68,7 +68,7 @@ export class OpenRouterImageService {
 
             const imageUrl = result.choices[0].message.images[0].image_url.url;
             console.log(`[OPENROUTER] Generated background image (base64 length: ${imageUrl.length})`);
-            
+
             return imageUrl;
 
         } catch (error) {
