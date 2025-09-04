@@ -151,13 +151,16 @@ export class TwitterService {
     /**
      * Generates OAuth 1.0a signature for media upload requests
      */
-    private async generateOAuth1Signature(url: string, method: string, params: Record<string, string>): Promise<string> {
+    private async generateOAuth1Signature(url: string, method: string, params: Record<string, string>, extraParams: Record<string, string> = {}): Promise<string> {
         // OAuth 1.0a signature generation using Web Crypto API (Cloudflare Workers compatible)
 
-        // Sort parameters
-        const sortedParams = Object.keys(params)
+        // Merge OAuth params with any extra params (e.g., URL query params)
+        const allParams: Record<string, string> = { ...params, ...extraParams };
+
+        // Sort parameters (lexicographically by key)
+        const sortedParams = Object.keys(allParams)
             .sort()
-            .map(key => `${encodeURIComponent(key)}=${encodeURIComponent(params[key])}`)
+            .map(key => `${encodeURIComponent(key)}=${encodeURIComponent(allParams[key])}`)
             .join('&');
 
         // Create signature base string
@@ -201,7 +204,14 @@ export class TwitterService {
             oauth_version: '1.0'
         };
 
-        const signature = await this.generateOAuth1Signature(url, method, params);
+        // Extract URL query parameters (if any) and include them in the signature base string
+        const urlObj = new URL(url);
+        const extraParams: Record<string, string> = {};
+        urlObj.searchParams.forEach((value, key) => {
+            extraParams[key] = value;
+        });
+
+        const signature = await this.generateOAuth1Signature(urlObj.origin + urlObj.pathname, method, params, extraParams);
 
         const authParams = {
             ...params,
@@ -833,7 +843,7 @@ export class TwitterService {
     /**
      * Posts a single tweet with headline and URL
      */
-    async postSingleTweet(report: Report): Promise<void> {
+    async postSingleTweet(report: Report): Promise<string> {
         const locationTag = this.buildLocationHashtag(report);
         const text = this.appendHashtagIfFits(report.headline, locationTag);
 
@@ -849,7 +859,7 @@ export class TwitterService {
             console.log(`[TWITTER] Posting single tweet via OAuth2 (${countTwitterCharacters(text)} chars): "${text.substring(0, 50)}..."`);
             const response = await this.postSingleTweetInternal(text, accessToken);
             console.log(`[TWITTER] Successfully posted single tweet for report ${report.reportId}. Tweet ID: ${response.data.id}`);
-            return;
+            return response.data.id;
         } catch (e) {
             const msg = e instanceof Error ? e.message : String(e);
             const authError = /unsupported authentication|401|403|NO_OAUTH2_TOKEN/i.test(msg);
@@ -861,7 +871,7 @@ export class TwitterService {
             try {
                 const oauth1Resp = await this.postTweetOAuth1(text);
                 console.log(`[TWITTER] Successfully posted single tweet via OAuth1 for report ${report.reportId}. Tweet ID: ${oauth1Resp.data.id}`);
-                return;
+                return oauth1Resp.data.id;
             } catch (e2) {
                 console.error('[TWITTER] OAuth1 fallback failed:', e2 instanceof Error ? e2.message : String(e2));
                 // Surface the original error context with fallback info
@@ -915,7 +925,7 @@ export class TwitterService {
     /**
      * Posts a threaded tweet for a report (used for big events)
      */
-    async postThreadedTweet(report: Report): Promise<void> {
+    async postThreadedTweet(report: Report): Promise<string> {
         const accessToken = await this.getValidAccessToken();
 
         if (!accessToken) {
@@ -946,8 +956,10 @@ export class TwitterService {
                 const tweet2Response = await this.postSingleTweetInternal(tweet2Text, accessToken, tweet1Id);
 
                 console.log(`[TWITTER] Successfully posted threaded tweet for report ${report.reportId}. Thread: ${tweet1Id} -> ${tweet2Response.data.id}`);
+                return tweet1Id;
             } else {
                 console.log(`[TWITTER] No content for second tweet, posted single tweet for report ${report.reportId}: ${tweet1Id}`);
+                return tweet1Id;
             }
 
         } catch (error: unknown) {
@@ -959,7 +971,7 @@ export class TwitterService {
     /**
      * Posts a single tweet with image
      */
-    async postSingleTweetWithImage(report: Report): Promise<void> {
+    async postSingleTweetWithImage(report: Report): Promise<string> {
         try {
             // Step 1: Generate and store image
             const imageUrl = await this.generateAndStoreImage(report);
@@ -981,6 +993,7 @@ export class TwitterService {
             const response = await this.postTweetOAuth1(text, undefined, [mediaId]);
 
             console.log(`[TWITTER] Successfully posted single tweet with image for report ${report.reportId}. Tweet ID: ${response.data.id}`);
+            return response.data.id;
 
         } catch (error: unknown) {
             console.error('[TWITTER] Failed to post single tweet with image:', error instanceof Error ? error.message : String(error));
@@ -991,7 +1004,7 @@ export class TwitterService {
     /**
      * Posts a threaded tweet with image for big events
      */
-    async postThreadedTweetWithImage(report: Report): Promise<void> {
+    async postThreadedTweetWithImage(report: Report): Promise<string> {
         try {
             // Step 1: Generate and store image
             const imageUrl = await this.generateAndStoreImage(report);
@@ -1026,8 +1039,10 @@ export class TwitterService {
                 const tweet2Response = await this.postTweetOAuth1(tweet2Text, tweet1Id);
 
                 console.log(`[TWITTER] Successfully posted threaded tweet with image for report ${report.reportId}. Thread: ${tweet1Id} -> ${tweet2Response.data.id}`);
+                return tweet1Id;
             } else {
                 console.log(`[TWITTER] No content for second tweet, posted single tweet with image for report ${report.reportId}: ${tweet1Id}`);
+                return tweet1Id;
             }
 
         } catch (error: unknown) {
@@ -1040,25 +1055,25 @@ export class TwitterService {
      * Posts a tweet using a valid access token obtained from KV (refreshes if needed).
      * Now supports both text-only and image tweets
      */
-    async postTweet(report: Report, withImage: boolean = false): Promise<void> {
+    async postTweet(report: Report, withImage: boolean = false): Promise<string> {
         const bigEvent = this.isBigEvent(report);
         console.log(`[TWITTER][DEBUG] postTweet: reportId=${report.reportId} withImage=${withImage} bigEvent=${bigEvent} timeframe=${report.timeframe} messageCount=${report.messageCount}`);
 
         if (withImage) {
             if (bigEvent) {
                 console.log('[TWITTER][DEBUG] Chosen path: postThreadedTweetWithImage');
-                await this.postThreadedTweetWithImage(report);
+                return await this.postThreadedTweetWithImage(report);
             } else {
                 console.log('[TWITTER][DEBUG] Chosen path: postSingleTweetWithImage');
-                await this.postSingleTweetWithImage(report);
+                return await this.postSingleTweetWithImage(report);
             }
         } else {
             if (bigEvent) {
                 console.log('[TWITTER][DEBUG] Chosen path: postThreadedTweet');
-                await this.postThreadedTweet(report);
+                return await this.postThreadedTweet(report);
             } else {
                 console.log('[TWITTER][DEBUG] Chosen path: postSingleTweet');
-                await this.postSingleTweet(report);
+                return await this.postSingleTweet(report);
             }
         }
     }
