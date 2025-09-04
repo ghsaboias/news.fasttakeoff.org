@@ -1,10 +1,12 @@
 import { Report } from '@/lib/types/core';
 import { Cloudflare, KVNamespace } from '../../worker-configuration';
-import { URLs, TIME } from './config';
-import { countTwitterCharacters, truncateForTwitter } from './utils/twitter-utils';
+import { TIME, URLs } from './config';
 import { OpenRouterImageService } from './openrouter-image-service';
+import { countTwitterCharacters, truncateForTwitter } from './utils/twitter-utils';
 
 const TWITTER_API_URL = 'https://api.twitter.com/2/tweets';
+// OAuth1-signed v2 tweets endpoint (api.x.com recommended for OAuth1 usage)
+const TWITTER_API_URL_OAUTH1 = 'https://api.x.com/2/tweets';
 const TOKEN_URL = 'https://api.twitter.com/2/oauth2/token'; // X API token endpoint
 const MEDIA_UPLOAD_URL = 'https://upload.twitter.com/1.1/media/upload.json'; // X API v1.1 media upload
 const BROWSER_RENDERING_API = 'https://api.cloudflare.com/client/v4/accounts';
@@ -83,7 +85,7 @@ export class TwitterService {
         this.clientSecret = env.TWITTER_CLIENT_SECRET;
         this.env = env;
         this.imageService = new OpenRouterImageService(env);
-        
+
         // OAuth 1.0a credentials for media upload (same keys as working script)
         this.oauthConsumerKey = env.TWITTER_API_KEY || '';
         this.oauthConsumerSecret = env.TWITTER_API_SECRET || '';
@@ -151,24 +153,24 @@ export class TwitterService {
      */
     private async generateOAuth1Signature(url: string, method: string, params: Record<string, string>): Promise<string> {
         // OAuth 1.0a signature generation using Web Crypto API (Cloudflare Workers compatible)
-        
+
         // Sort parameters
         const sortedParams = Object.keys(params)
             .sort()
             .map(key => `${encodeURIComponent(key)}=${encodeURIComponent(params[key])}`)
             .join('&');
-        
+
         // Create signature base string
         const signatureBaseString = `${method.toUpperCase()}&${encodeURIComponent(url)}&${encodeURIComponent(sortedParams)}`;
-        
+
         // Create signing key
         const signingKey = `${encodeURIComponent(this.oauthConsumerSecret)}&${encodeURIComponent(this.oauthAccessTokenSecret)}`;
-        
+
         // Use Web Crypto API for HMAC-SHA1
         const encoder = new TextEncoder();
         const keyData = encoder.encode(signingKey);
         const messageData = encoder.encode(signatureBaseString);
-        
+
         const cryptoKey = await crypto.subtle.importKey(
             'raw',
             keyData,
@@ -176,10 +178,10 @@ export class TwitterService {
             false,
             ['sign']
         );
-        
+
         const signature = await crypto.subtle.sign('HMAC', cryptoKey, messageData);
         const base64Signature = btoa(String.fromCharCode(...new Uint8Array(signature)));
-        
+
         return base64Signature;
     }
 
@@ -189,7 +191,7 @@ export class TwitterService {
     private async generateOAuth1Headers(url: string, method: string): Promise<Record<string, string>> {
         const timestamp = Math.floor(Date.now() / 1000).toString();
         const nonce = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
-        
+
         const params = {
             oauth_consumer_key: this.oauthConsumerKey,
             oauth_token: this.oauthAccessToken,
@@ -198,21 +200,65 @@ export class TwitterService {
             oauth_nonce: nonce,
             oauth_version: '1.0'
         };
-        
+
         const signature = await this.generateOAuth1Signature(url, method, params);
-        
+
         const authParams = {
             ...params,
             oauth_signature: signature
         };
-        
+
         const authHeader = 'OAuth ' + Object.keys(authParams)
             .map(key => `${encodeURIComponent(key)}="${encodeURIComponent(authParams[key as keyof typeof authParams])}"`)
             .join(', ');
-        
+
         return {
             'Authorization': authHeader
         };
+    }
+
+    /**
+     * Posts a single tweet using OAuth 1.0a signed request to v2 endpoint.
+     * Supports optional reply and media IDs. This avoids reliance on OAuth2 bearer tokens.
+     */
+    private async postTweetOAuth1(
+        text: string,
+        replyToId?: string,
+        mediaIds?: string[]
+    ): Promise<TwitterApiResponse> {
+        if (!this.oauthConsumerKey || !this.oauthConsumerSecret || !this.oauthAccessToken || !this.oauthAccessTokenSecret) {
+            throw new Error('Missing OAuth 1.0a credentials for tweet posting');
+        }
+
+        const body: {
+            text: string;
+            reply?: { in_reply_to_tweet_id: string };
+            media?: { media_ids: string[] }
+        } = { text };
+
+        if (replyToId) {
+            body.reply = { in_reply_to_tweet_id: replyToId };
+        }
+        if (mediaIds && mediaIds.length > 0) {
+            body.media = { media_ids: mediaIds };
+        }
+
+        // Sign the v2 tweets endpoint with OAuth1
+        const authHeaders = await this.generateOAuth1Headers(TWITTER_API_URL_OAUTH1, 'POST');
+        const response = await fetch(TWITTER_API_URL_OAUTH1, {
+            method: 'POST',
+            headers: {
+                ...authHeaders,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(body),
+        });
+
+        if (!response.ok) {
+            const errorBody = await response.text();
+            throw new Error(`Twitter API (OAuth1) error: ${response.status} - ${errorBody}`);
+        }
+        return await response.json() as TwitterApiResponse;
     }
 
     /**
@@ -383,25 +429,7 @@ export class TwitterService {
         // Use multipart form data approach similar to working script
         const formBoundary = '----formdata-' + Math.random().toString(36);
         const CRLF = '\r\n';
-        
-        // Build multipart form data manually
-        if (false) {
-        let body = '';
-        body += `--${formBoundary}${CRLF}`;
-        body += `Content-Disposition: form-data; name="media"; filename="image.jpg"${CRLF}`;
-        body += `Content-Type: image/jpeg${CRLF}${CRLF}`;
-        
-        // Convert ArrayBuffer to base64 for body construction
-        const uint8Array = new Uint8Array(imageBuffer);
-        const binaryString = Array.from(uint8Array, byte => String.fromCharCode(byte)).join('');
-        body += binaryString;
-        
-        body += `${CRLF}--${formBoundary}${CRLF}`;
-        body += `Content-Disposition: form-data; name="media_category"${CRLF}${CRLF}`;
-        body += `tweet_image`;
-        body += `${CRLF}--${formBoundary}--${CRLF}`;
-          void body;
-        }
+
 
         // Rebuild multipart body using Uint8Array (Workers-safe) instead of string concatenation
         let payload: Uint8Array;
@@ -437,7 +465,7 @@ export class TwitterService {
                     'Accept': 'application/json',
                     'User-Agent': 'news.fasttakeoff.org-worker/1.0'
                 },
-                body: payload
+                body: payload as BodyInit
             });
 
             const responseText = await response.text();
@@ -465,6 +493,62 @@ export class TwitterService {
         } catch (error) {
             console.error('[TWITTER] Media upload error:', error instanceof Error ? error.message : String(error));
             throw error;
+        }
+    }
+
+    /**
+     * Verifies OAuth1 credentials by calling v1.1 account/verify_credentials.
+     * Safe GET (non-posting). Useful for validating prod secrets.
+     */
+    public async verifyOAuth1(): Promise<{ ok: boolean; status: number; user?: { id: string; screen_name?: string }; raw?: string }>{
+        try {
+            if (!this.oauthConsumerKey || !this.oauthConsumerSecret || !this.oauthAccessToken || !this.oauthAccessTokenSecret) {
+                throw new Error('Missing OAuth 1.0a credentials');
+            }
+            const url = 'https://api.twitter.com/1.1/account/verify_credentials.json?skip_status=true&include_email=false';
+            const headers = await this.generateOAuth1Headers(url, 'GET');
+            const res = await fetch(url, { method: 'GET', headers });
+            const text = await res.text();
+            if (!res.ok) {
+                return { ok: false, status: res.status, raw: text };
+            }
+            try {
+                const j = JSON.parse(text);
+                const id = j.id_str || j.id;
+                return { ok: true, status: res.status, user: { id: String(id), screen_name: j.screen_name } };
+            } catch {
+                return { ok: true, status: res.status, raw: text };
+            }
+        } catch (e) {
+            return { ok: false, status: 0, raw: e instanceof Error ? e.message : String(e) };
+        }
+    }
+
+    /**
+     * Verifies OAuth2 token by calling v2 users/me using the KV-stored bearer.
+     * This may fail if the token is application-only or expired.
+     */
+    public async verifyOAuth2(): Promise<{ ok: boolean; status: number; user?: { id: string; username?: string; name?: string }; raw?: string }>{
+        try {
+            const token = await this.getValidAccessToken();
+            if (!token) {
+                return { ok: false, status: 0, raw: 'No valid OAuth2 access token available' };
+            }
+            const url = 'https://api.twitter.com/2/users/me';
+            const res = await fetch(url, { method: 'GET', headers: { Authorization: `Bearer ${token}` } });
+            const text = await res.text();
+            if (!res.ok) {
+                return { ok: false, status: res.status, raw: text };
+            }
+            try {
+                const j = JSON.parse(text);
+                const d = j.data || {};
+                return { ok: true, status: res.status, user: { id: String(d.id), username: d.username, name: d.name } };
+            } catch {
+                return { ok: true, status: res.status, raw: text };
+            }
+        } catch (e) {
+            return { ok: false, status: 0, raw: e instanceof Error ? e.message : String(e) };
         }
     }
 
@@ -638,7 +722,7 @@ export class TwitterService {
             // Step 1: Generate background image using OpenRouter
             console.log(`[TWITTER] Generating background image for: ${report.headline}`);
             let backgroundImageUrl: string;
-            
+
             try {
                 backgroundImageUrl = await this.imageService.generateNewsBackground(report.headline, report.city);
                 console.log(`[TWITTER] Generated background image successfully for ${report.city}`);
@@ -684,7 +768,7 @@ export class TwitterService {
 
             const imageBuffer = await screenshotResponse.arrayBuffer();
             console.log(`[TWITTER] Screenshot generated in ${Date.now() - screenshotStartTime}ms, size: ${imageBuffer.byteLength} bytes`);
-            
+
             // Step 4: Store in R2 (Twitter images bucket)
             const r2StartTime = Date.now();
             const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
@@ -750,26 +834,39 @@ export class TwitterService {
      * Posts a single tweet with headline and URL
      */
     async postSingleTweet(report: Report): Promise<void> {
-        const accessToken = await this.getValidAccessToken();
+        const locationTag = this.buildLocationHashtag(report);
+        const text = this.appendHashtagIfFits(report.headline, locationTag);
 
-        if (!accessToken) {
-            console.error('[TWITTER] Failed to post tweet: Could not obtain a valid access token after checking/refreshing.');
-            return;
-        }
-
+        // First, attempt OAuth2 (bearer) text post if a valid token is available.
+        // If the token is missing/expired or Twitter rejects the auth (401/403 Unsupported Authentication),
+        // fall back to OAuth1-signed v2 post which we know works in production.
         try {
-            const locationTag = this.buildLocationHashtag(report);
-            const text = this.appendHashtagIfFits(report.headline, locationTag);
+            const accessToken = await this.getValidAccessToken();
+            if (!accessToken) {
+                throw new Error('NO_OAUTH2_TOKEN');
+            }
 
-            console.log(`[TWITTER] Posting single tweet (${countTwitterCharacters(text)} chars): "${text.substring(0, 50)}..."`);
-
+            console.log(`[TWITTER] Posting single tweet via OAuth2 (${countTwitterCharacters(text)} chars): "${text.substring(0, 50)}..."`);
             const response = await this.postSingleTweetInternal(text, accessToken);
-
             console.log(`[TWITTER] Successfully posted single tweet for report ${report.reportId}. Tweet ID: ${response.data.id}`);
-
-        } catch (error: unknown) {
-            console.error('[TWITTER] Failed to post single tweet:', error instanceof Error ? error.message : String(error));
-            throw error;
+            return;
+        } catch (e) {
+            const msg = e instanceof Error ? e.message : String(e);
+            const authError = /unsupported authentication|401|403|NO_OAUTH2_TOKEN/i.test(msg);
+            if (!authError) {
+                console.error('[TWITTER] Failed to post single tweet (OAuth2 path):', msg);
+                throw e;
+            }
+            console.warn('[TWITTER] OAuth2 text path failed due to auth. Falling back to OAuth1...');
+            try {
+                const oauth1Resp = await this.postTweetOAuth1(text);
+                console.log(`[TWITTER] Successfully posted single tweet via OAuth1 for report ${report.reportId}. Tweet ID: ${oauth1Resp.data.id}`);
+                return;
+            } catch (e2) {
+                console.error('[TWITTER] OAuth1 fallback failed:', e2 instanceof Error ? e2.message : String(e2));
+                // Surface the original error context with fallback info
+                throw new Error(`Text post failed (OAuth2 auth + OAuth1 fallback). First error: ${msg}. Fallback error: ${e2 instanceof Error ? e2.message : String(e2)}`);
+            }
         }
     }
 
@@ -783,16 +880,16 @@ export class TwitterService {
         mediaIds?: string[]
     ): Promise<TwitterApiResponse> {
         console.log(`[TWITTER][DEBUG] postSingleTweetInternal: replyToId=${replyToId ?? 'none'} mediaIds=${mediaIds && mediaIds.length ? mediaIds.join(',') : 'none'} textChars=${countTwitterCharacters(text)}`);
-        const body: { 
-            text: string; 
-            reply?: { in_reply_to_tweet_id: string }; 
-            media?: { media_ids: string[] } 
+        const body: {
+            text: string;
+            reply?: { in_reply_to_tweet_id: string };
+            media?: { media_ids: string[] }
         } = { text };
-        
+
         if (replyToId) {
             body.reply = { in_reply_to_tweet_id: replyToId };
         }
-        
+
         if (mediaIds && mediaIds.length > 0) {
             body.media = { media_ids: mediaIds };
         }
@@ -863,13 +960,6 @@ export class TwitterService {
      * Posts a single tweet with image
      */
     async postSingleTweetWithImage(report: Report): Promise<void> {
-        const accessToken = await this.getValidAccessToken();
-
-        if (!accessToken) {
-            console.error('[TWITTER] Failed to post tweet with image: Could not obtain a valid access token after checking/refreshing.');
-            return;
-        }
-
         try {
             // Step 1: Generate and store image
             const imageUrl = await this.generateAndStoreImage(report);
@@ -886,9 +976,9 @@ export class TwitterService {
             const locationTag = this.buildLocationHashtag(report);
             const text = this.appendHashtagIfFits(report.headline, locationTag);
 
-            console.log(`[TWITTER] Posting single tweet with image (${countTwitterCharacters(text)} chars): "${text.substring(0, 50)}..."`);
+            console.log(`[TWITTER] Posting single tweet with image via OAuth1 (${countTwitterCharacters(text)} chars): "${text.substring(0, 50)}..."`);
 
-            const response = await this.postSingleTweetInternal(text, accessToken, undefined, [mediaId]);
+            const response = await this.postTweetOAuth1(text, undefined, [mediaId]);
 
             console.log(`[TWITTER] Successfully posted single tweet with image for report ${report.reportId}. Tweet ID: ${response.data.id}`);
 
@@ -902,13 +992,6 @@ export class TwitterService {
      * Posts a threaded tweet with image for big events
      */
     async postThreadedTweetWithImage(report: Report): Promise<void> {
-        const accessToken = await this.getValidAccessToken();
-
-        if (!accessToken) {
-            console.error('[TWITTER] Failed to post threaded tweet with image: Could not obtain a valid access token after checking/refreshing.');
-            return;
-        }
-
         try {
             // Step 1: Generate and store image
             const imageUrl = await this.generateAndStoreImage(report);
@@ -927,8 +1010,8 @@ export class TwitterService {
             const locationTag = this.buildLocationHashtag(report);
             const tweet1Text = this.appendHashtagIfFits(report.headline, locationTag);
 
-            console.log(`[TWITTER] Posting first tweet with image (${countTwitterCharacters(tweet1Text)} chars): "${tweet1Text.substring(0, 50)}..."`);
-            const tweet1Response = await this.postSingleTweetInternal(tweet1Text, accessToken, undefined, [mediaId]);
+            console.log(`[TWITTER] Posting first tweet with image via OAuth1 (${countTwitterCharacters(tweet1Text)} chars): "${tweet1Text.substring(0, 50)}..."`);
+            const tweet1Response = await this.postTweetOAuth1(tweet1Text, undefined, [mediaId]);
             const tweet1Id = tweet1Response.data.id;
 
             console.log(`[TWITTER] First tweet with image posted successfully: ${tweet1Id}`);
@@ -939,8 +1022,8 @@ export class TwitterService {
             if (firstParagraph) {
                 const tweet2Text = this.formatSecondTweet(firstParagraph, reportUrl);
 
-                console.log(`[TWITTER] Posting second tweet (${countTwitterCharacters(tweet2Text)} chars) as reply to ${tweet1Id}`);
-                const tweet2Response = await this.postSingleTweetInternal(tweet2Text, accessToken, tweet1Id);
+                console.log(`[TWITTER] Posting second tweet via OAuth1 (${countTwitterCharacters(tweet2Text)} chars) as reply to ${tweet1Id}`);
+                const tweet2Response = await this.postTweetOAuth1(tweet2Text, tweet1Id);
 
                 console.log(`[TWITTER] Successfully posted threaded tweet with image for report ${report.reportId}. Thread: ${tweet1Id} -> ${tweet2Response.data.id}`);
             } else {
