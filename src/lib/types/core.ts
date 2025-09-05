@@ -106,6 +106,16 @@ export interface DiscordMessage {
             placeholder_version?: number;
             flags?: number;
         };
+        image?: {
+            url: string;
+            proxy_url?: string;
+            width?: number;
+            height?: number;
+            content_type?: string;
+            placeholder?: string;
+            placeholder_version?: number;
+            flags?: number;
+        };
         content_scan_version?: number;
     }[];
     referenced_message?: {
@@ -124,6 +134,8 @@ export interface DiscordMessage {
         content_type: string;
         size: number;
         id: string;
+        width?: number;
+        height?: number;
     }[];
 }
 

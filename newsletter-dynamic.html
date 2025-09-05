@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fast Takeoff News - Dynamic Newsletter Builder</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f8f9fa;
+            color: #333;
+        }
+        .controls {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .controls h2 {
+            margin-top: 0;
+            color: #1f2937;
+        }
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #6b7280;
+        }
+        .error {
+            background: #fef2f2;
+            border: 1px solid #fca5a5;
+            border-radius: 6px;
+            padding: 15px;
+            color: #dc2626;
+            margin-bottom: 20px;
+        }
+        .generate-btn {
+            background: #059669;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-right: 10px;
+        }
+        .generate-btn:hover {
+            background: #047857;
+        }
+        .generate-btn:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+        }
+        .selections {
+            background: #f3f4f6;
+            border-radius: 6px;
+            padding: 15px;
+            margin-bottom: 20px;
+            min-height: 100px;
+        }
+        .selection-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+            padding: 10px;
+            background: white;
+            border-radius: 4px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .selection-item img {
+            width: 50px;
+            height: 50px;
+            object-fit: cover;
+            border-radius: 4px;
+        }
+        .newsletter {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 28px;
+            font-weight: 700;
+            background: linear-gradient(90deg, #10b981, #14b8a6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .header p {
+            margin: 10px 0 0 0;
+            opacity: 0.9;
+            font-size: 16px;
+        }
+        .content {
+            padding: 30px;
+        }
+        .welcome {
+            font-size: 16px;
+            margin-bottom: 25px;
+            color: #4b5563;
+        }
+        .brief-header {
+            background: linear-gradient(90deg, #1f2937, #374151);
+            color: white;
+            padding: 20px 30px;
+            margin: 0 -30px 25px -30px;
+        }
+        .brief-header h2 {
+            margin: 0;
+            font-size: 22px;
+            font-weight: 600;
+        }
+        .brief-header .date {
+            opacity: 0.8;
+            font-size: 14px;
+            margin-top: 5px;
+        }
+        .story {
+            margin-bottom: 25px;
+            border-left: 4px solid #e5e7eb;
+            padding-left: 20px;
+            position: relative;
+        }
+        .story.politics { border-left-color: #fbbf24; }
+        .story.conflict { border-left-color: #ef4444; }
+        .story.diplomacy { border-left-color: #3b82f6; }
+        .story.military { border-left-color: #fbbf24; }
+        .story.intelligence { border-left-color: #ef4444; }
+        .story.news { border-left-color: #6b7280; }
+        
+        .story-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        .story-emoji {
+            font-size: 18px;
+            margin-right: 8px;
+        }
+        .story-title {
+            font-weight: 700;
+            font-size: 18px;
+            color: #1f2937;
+            margin: 0;
+        }
+        .story-location {
+            color: #6b7280;
+            font-style: italic;
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+        .story-content {
+            color: #374151;
+            font-size: 15px;
+            line-height: 1.6;
+        }
+        .story-image {
+            width: 100%;
+            height: auto;
+            background: #f3f4f6;
+            border-radius: 6px;
+            margin: 15px 0;
+            overflow: hidden;
+            position: relative;
+        }
+        .story-image img {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+        .story-image.placeholder {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #6b7280;
+            font-style: italic;
+            cursor: pointer;
+            border: 2px dashed #d1d5db;
+            height: 200px;
+        }
+        .story-image.placeholder:hover {
+            border-color: #10b981;
+            background: #f0fdf4;
+        }
+        .image-gallery {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 10px;
+            margin: 15px 0;
+            max-height: 300px;
+            overflow-y: auto;
+            background: #f9fafb;
+            padding: 15px;
+            border-radius: 6px;
+            border: 1px solid #e5e7eb;
+        }
+        .image-option {
+            width: 100%;
+            height: 80px;
+            object-fit: cover;
+            border-radius: 4px;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: all 0.2s;
+        }
+        .image-option:hover {
+            border-color: #10b981;
+            transform: scale(1.05);
+        }
+        .image-option.selected {
+            border-color: #10b981;
+            box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2);
+        }
+        .gallery-toggle {
+            background: #10b981;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            margin: 10px 0;
+        }
+        .gallery-toggle:hover {
+            background: #059669;
+        }
+        .gallery-hidden {
+            display: none;
+        }
+        .insight {
+            background: #f3f4f6;
+            border-radius: 6px;
+            padding: 20px;
+            margin: 25px 0;
+            border-left: 4px solid #10b981;
+        }
+        .insight-title {
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 10px;
+        }
+        .cta {
+            background: #f8fafc;
+            padding: 20px;
+            border-radius: 6px;
+            margin: 25px 0;
+            text-align: center;
+        }
+        .footer {
+            background: #f8f9fa;
+            padding: 20px 30px;
+            margin: 25px -30px 0 -30px;
+            font-size: 14px;
+            color: #6b7280;
+        }
+        .signature {
+            margin: 20px 0;
+            font-style: italic;
+        }
+        .unsubscribe {
+            font-size: 12px;
+            color: #9ca3af;
+            margin-top: 15px;
+        }
+        .export-btn {
+            background: #1f2937;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-top: 10px;
+        }
+        .export-btn:hover {
+            background: #374151;
+        }
+        .story-meta {
+            font-size: 12px;
+            color: #9ca3af;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="controls">
+        <h2>🎨 Dynamic Newsletter Builder</h2>
+        <p>Generate newsletter from latest reports with real Discord images.</p>
+        
+        <button class="generate-btn" onclick="generateNewsletter()" id="generateBtn">🔄 Generate from Latest Reports</button>
+        <button class="export-btn" onclick="exportNewsletter()" id="exportBtn" disabled>📧 Export Final Newsletter HTML</button>
+        
+        <div id="errorMessage"></div>
+        
+        <h3>Selected Images:</h3>
+        <div class="selections" id="selections">
+            <p style="color: #6b7280; font-style: italic;">Generate newsletter to start selecting images.</p>
+        </div>
+    </div>
+
+    <div id="loadingMessage" class="loading" style="display: none;">
+        <p>🔄 Loading newsletter data...</p>
+    </div>
+
+    <div class="newsletter" id="newsletter" style="display: none;">
+        <div class="header">
+            <h1>Fast Takeoff News</h1>
+            <p>AI-Powered Intelligence Briefing</p>
+        </div>
+        
+        <div class="content">
+            <div class="welcome">
+                <p><strong>Hi there,</strong></p>
+                <p>Welcome to Fast Takeoff News! You're now part of a small, exclusive group of early subscribers getting AI-powered news intelligence straight from global sources.</p>
+                <p><strong>What you'll get:</strong> Real-time analysis of breaking news from channels monitoring everything from US politics to Myanmar resistance movements, compiled by AI and verified by human oversight.</p>
+            </div>
+            
+            <div class="brief-header">
+                <h2>Today's Intelligence Brief</h2>
+                <div class="date" id="briefDate"></div>
+            </div>
+            
+            <div id="storiesContainer">
+                <!-- Stories will be dynamically generated here -->
+            </div>
+            
+            <div class="insight">
+                <div class="insight-title">Why this matters:</div>
+                These aren't just headlines - they're intelligence patterns. Notice how multiple stories connect across regions and domains, revealing the interconnected nature of global events.
+            </div>
+            
+            <div class="cta">
+                <p><strong>What's next:</strong> I'm personally curating these briefings and would love your feedback. What type of analysis interests you most? Geopolitical trends? Economic intelligence? Regional conflicts?</p>
+                <p>Just reply to this email - I read every response personally.</p>
+            </div>
+            
+            <div class="signature">
+                <p>Best,<br>
+                <strong>Guilherme</strong><br>
+                Founder, Fast Takeoff News</p>
+            </div>
+            
+            <div class="footer">
+                <p><strong>P.S.</strong> - If you know someone who'd value real-time intelligence analysis, share: <a href="https://news.fasttakeoff.org">news.fasttakeoff.org</a></p>
+                
+                <div class="unsubscribe">
+                    <p><em>You're receiving this because you signed up at news.fasttakeoff.org. Unsubscribe anytime.</em></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let selectedImages = {};
+        let newsletterData = null;
+        // NEWSLETTER_DATA_PLACEHOLDER
+        
+        async function generateNewsletter() {
+            const generateBtn = document.getElementById('generateBtn');
+            const loadingMessage = document.getElementById('loadingMessage');
+            const newsletter = document.getElementById('newsletter');
+            const errorMessage = document.getElementById('errorMessage');
+            
+            generateBtn.disabled = true;
+            generateBtn.textContent = '🔄 Generating...';
+            loadingMessage.style.display = 'block';
+            newsletter.style.display = 'none';
+            errorMessage.innerHTML = '';
+            
+            try {
+                // Check if data is embedded (generated version)
+                if (typeof newsletterData !== 'undefined' && newsletterData !== null) {
+                    buildNewsletter();
+                    return;
+                }
+
+                // Try server-side API first (no script needed)
+                try {
+                    const base = (window.location.protocol === 'file:') ? 'https://news.fasttakeoff.org' : '';
+                    const apiResp = await fetch(`${base}/api/newsletter-data?limit=10`, { headers: { 'Accept': 'application/json' } });
+                    if (apiResp.ok) {
+                        newsletterData = await apiResp.json();
+                        buildNewsletter();
+                        return;
+                    }
+                } catch (e) {
+                    console.warn('API fetch failed, will try local JSON next.', e);
+                }
+
+                // Fallback: try to load from local JSON file (requires generator script)
+                try {
+                    const response = await fetch('./newsletter-data.json');
+                    if (!response.ok) {
+                        throw new Error('Newsletter data not found.');
+                    }
+                    newsletterData = await response.json();
+                    buildNewsletter();
+                } catch (e) {
+                    throw new Error('Newsletter data not found via API or local file. Either open this page on news.fasttakeoff.org or run: node scripts/generate-newsletter-data-kv.js');
+                }
+                
+            } catch (error) {
+                console.error('Error loading newsletter data:', error);
+                errorMessage.innerHTML = `
+                    <div class="error">
+                        <strong>Error:</strong> ${error.message}
+                    </div>
+                `;
+            } finally {
+                generateBtn.disabled = false;
+                generateBtn.textContent = '🔄 Generate from Latest Reports';
+                loadingMessage.style.display = 'none';
+            }
+        }
+        
+        function buildNewsletter() {
+            if (!newsletterData) return;
+            
+            // Update date
+            document.getElementById('briefDate').textContent = newsletterData.date;
+            
+            // Build stories
+            const storiesContainer = document.getElementById('storiesContainer');
+            storiesContainer.innerHTML = '';
+            
+            newsletterData.stories.forEach((story, index) => {
+                const storyElement = createStoryElement(story, index);
+                storiesContainer.appendChild(storyElement);
+            });
+            
+            // Show newsletter and enable export
+            document.getElementById('newsletter').style.display = 'block';
+            document.getElementById('exportBtn').disabled = false;
+            
+            // Reset selections
+            selectedImages = {};
+            updateSelections();
+        }
+        
+        function createStoryElement(story, index) {
+            const storyDiv = document.createElement('div');
+            storyDiv.className = `story ${story.category}`;
+            storyDiv.dataset.story = `story-${index}`;
+            
+            const hasImages = story.availableImages && story.availableImages.length > 0;
+            
+            storyDiv.innerHTML = `
+                <div class="story-header">
+                    <span class="story-emoji">${story.emoji}</span>
+                    <h3 class="story-title">${story.title}</h3>
+                </div>
+                <div class="story-location">${story.location}</div>
+                <div class="story-meta">
+                    ${story.channelName} • ${story.messageCount} messages • ${story.timeframe}
+                </div>
+                
+                <div class="story-image placeholder" data-target="story-${index}" onclick="toggleGallery('story-${index}')">
+                    <span>Click to select image</span>
+                </div>
+                
+                <button class="gallery-toggle" onclick="toggleGallery('story-${index}')">
+                    Choose Image (${story.availableImages.length} available)
+                </button>
+                <div class="image-gallery gallery-hidden" id="gallery-story-${index}">
+                    ${hasImages ? 
+                        story.availableImages.map(img => `
+                            <img class="image-option" 
+                                 src="${img.url}" 
+                                 onclick="selectImage('story-${index}', this)" 
+                                 data-description="${img.description}"
+                                 data-author="${img.author}"
+                                 title="${img.description}" />
+                        `).join('') :
+                        '<p style="color: #6b7280; font-style: italic; padding: 20px; text-align: center;">No images available for this story</p>'
+                    }
+                </div>
+                
+                <div class="story-content">
+                    ${story.content}
+                </div>
+            `;
+            
+            return storyDiv;
+        }
+        
+        function toggleGallery(storyId) {
+            const gallery = document.getElementById(`gallery-${storyId}`);
+            gallery.classList.toggle('gallery-hidden');
+        }
+        
+        function selectImage(storyId, element) {
+            // Remove previous selection for this story
+            const currentGallery = document.getElementById(`gallery-${storyId}`);
+            currentGallery.querySelectorAll('.image-option').forEach(img => {
+                img.classList.remove('selected');
+            });
+            
+            // Select new image
+            element.classList.add('selected');
+            
+            // Store selection
+            selectedImages[storyId] = {
+                src: element.src,
+                description: element.dataset.description || 'Image',
+                author: element.dataset.author || 'unknown'
+            };
+            
+            // Update the story image
+            const storyImage = document.querySelector(`[data-target="${storyId}"]`);
+            storyImage.innerHTML = `<img src="${element.src}" alt="${element.dataset.description}" style="width: 100%; height: auto; display: block;" />`;
+            storyImage.classList.remove('placeholder');
+            
+            // Update selections display
+            updateSelections();
+            
+            // Hide gallery
+            toggleGallery(storyId);
+        }
+        
+        function updateSelections() {
+            const selectionsDiv = document.getElementById('selections');
+            if (Object.keys(selectedImages).length === 0) {
+                selectionsDiv.innerHTML = '<p style="color: #6b7280; font-style: italic;">No images selected yet. Click on images in the stories to choose them.</p>';
+                return;
+            }
+            
+            let html = '';
+            for (const [storyId, image] of Object.entries(selectedImages)) {
+                const storyTitle = document.querySelector(`[data-story="${storyId}"] .story-title`)?.textContent || 'Unknown Story';
+                html += `
+                    <div class="selection-item">
+                        <img src="${image.src}" alt="${image.description}" />
+                        <div>
+                            <strong>${storyTitle}</strong><br>
+                            <small>by ${image.author}: ${image.description}</small>
+                        </div>
+                    </div>
+                `;
+            }
+            selectionsDiv.innerHTML = html;
+        }
+        
+        function exportNewsletter() {
+            if (!newsletterData) {
+                alert('Please generate newsletter data first');
+                return;
+            }
+            
+            // Clone the newsletter without the controls
+            const newsletterClone = document.getElementById('newsletter').cloneNode(true);
+            
+            // Remove gallery elements and buttons
+            newsletterClone.querySelectorAll('.gallery-toggle').forEach(el => el.remove());
+            newsletterClone.querySelectorAll('.image-gallery').forEach(el => el.remove());
+            newsletterClone.querySelectorAll('.story-meta').forEach(el => el.remove());
+            
+            // Create final HTML
+            const finalHtml = `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fast Takeoff News Newsletter</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; max-width: 600px; margin: 0 auto; padding: 0; background-color: #f8f9fa; color: #333; }
+        .newsletter { background: white; }
+        .header { background: linear-gradient(135deg, #1f2937 0%, #111827 100%); color: white; padding: 30px; text-align: center; }
+        .header h1 { margin: 0; font-size: 28px; font-weight: 700; background: linear-gradient(90deg, #10b981, #14b8a6); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+        .header p { margin: 10px 0 0 0; opacity: 0.9; font-size: 16px; }
+        .content { padding: 30px; }
+        .welcome { font-size: 16px; margin-bottom: 25px; color: #4b5563; }
+        .brief-header { background: linear-gradient(90deg, #1f2937, #374151); color: white; padding: 20px 30px; margin: 0 -30px 25px -30px; }
+        .brief-header h2 { margin: 0; font-size: 22px; font-weight: 600; }
+        .brief-header .date { opacity: 0.8; font-size: 14px; margin-top: 5px; }
+        .story { margin-bottom: 25px; border-left: 4px solid #e5e7eb; padding-left: 20px; }
+        .story.politics { border-left-color: #fbbf24; }
+        .story.conflict { border-left-color: #ef4444; }
+        .story.diplomacy { border-left-color: #3b82f6; }
+        .story.military { border-left-color: #fbbf24; }
+        .story.intelligence { border-left-color: #ef4444; }
+        .story.news { border-left-color: #6b7280; }
+        .story-header { display: flex; align-items: center; margin-bottom: 8px; }
+        .story-emoji { font-size: 18px; margin-right: 8px; }
+        .story-title { font-weight: 700; font-size: 18px; color: #1f2937; margin: 0; }
+        .story-location { color: #6b7280; font-style: italic; font-size: 14px; margin-bottom: 10px; }
+        .story-content { color: #374151; font-size: 15px; line-height: 1.6; }
+        .story-image { width: 100%; height: auto; border-radius: 6px; margin: 15px 0; overflow: hidden; }
+        .story-image img { width: 100%; height: auto; display: block; }
+        .insight { background: #f3f4f6; border-radius: 6px; padding: 20px; margin: 25px 0; border-left: 4px solid #10b981; }
+        .insight-title { font-weight: 600; color: #1f2937; margin-bottom: 10px; }
+        .cta { background: #f8fafc; padding: 20px; border-radius: 6px; margin: 25px 0; text-align: center; }
+        .footer { background: #f8f9fa; padding: 20px 30px; margin: 25px -30px 0 -30px; font-size: 14px; color: #6b7280; }
+        .signature { margin: 20px 0; font-style: italic; }
+        .unsubscribe { font-size: 12px; color: #9ca3af; margin-top: 15px; }
+    </style>
+</head>
+<body>
+    ${newsletterClone.outerHTML}
+</body>
+</html>`;
+            
+            // Download the file
+            const blob = new Blob([finalHtml], { type: 'text/html' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'fast-takeoff-newsletter-' + new Date().toISOString().split('T')[0] + '.html';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            // Also log selections to console for debugging
+            console.log('Newsletter data:', newsletterData);
+            console.log('Selected images:', selectedImages);
+        }
+    </script>
+</body>
+</html>
