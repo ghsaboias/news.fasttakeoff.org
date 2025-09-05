@@ -1,0 +1,155 @@
+'use client';
+
+import React from 'react';
+import { Loader } from '@/components/ui/loader';
+import { LocalDateTimeFull } from '@/components/utils/LocalDateTime';
+import { useApi } from '@/lib/hooks';
+import Link from 'next/link';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+
+interface FeedItemLite {
+  title: string;
+  link: string;
+  pubDate: string;
+  contentSnippet?: string;
+  enclosureUrl?: string;
+  categories?: string[];
+}
+
+interface FeedGroup {
+  sourceId: string;
+  sourceUrl: string;
+  items: FeedItemLite[];
+  error?: string;
+}
+
+type Region = 'ALL' | 'US' | 'BR';
+
+interface Props {
+  initialRegion?: Region;
+}
+
+async function fetchBySource(region: Region): Promise<FeedGroup[]> {
+  const params = new URLSearchParams();
+  if (region !== 'ALL') params.set('region', region);
+  params.set('perFeedLimit', '3');
+  const qs = params.toString();
+  const res = await fetch(`/api/news/feeds/by-source${qs ? `?${qs}` : ''}`);
+  if (!res.ok) throw new Error('Failed to load feeds by source');
+  return res.json();
+}
+
+export default function FeedsBySourceClient({ initialRegion = 'ALL' }: Props) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const [region, setRegion] = React.useState<Region>(initialRegion);
+  const { data, loading, error, request } = useApi<FeedGroup[]>(
+    (...args: unknown[]) => fetchBySource((args[0] as Region | undefined) ?? region),
+    { manual: true }
+  );
+  const [groupsByRegion, setGroupsByRegion] = React.useState<Record<Region, FeedGroup[] | undefined>>({
+    ALL: undefined,
+    US: undefined,
+    BR: undefined,
+  });
+
+  React.useEffect(() => {
+    let cancelled = false;
+    request(region).then((res) => {
+      if (cancelled) return;
+      if (res) setGroupsByRegion((prev) => ({ ...prev, [region]: res }));
+    });
+    return () => { cancelled = true; };
+  }, [region, request]);
+
+  const updateRegion = (next: Region) => {
+    setRegion(next);
+    const params = new URLSearchParams(searchParams?.toString() || '');
+    if (next === 'ALL') {
+      params.delete('region');
+    } else {
+      params.set('region', next);
+    }
+    const qs = params.toString();
+    router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+  };
+
+  if (loading && !data && !groupsByRegion[region]) {
+    return (
+      <div className="flex items-center justify-center py-16">
+        <div className="text-center">
+          <Loader size="lg" className="mx-auto mb-3" />
+          <p className="text-sm text-muted-foreground">Loading per-source view…</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="bg-red-900/40 border border-red-700 text-red-200 rounded p-4">
+        <p className="font-medium">Failed to load feed groups</p>
+        <p className="text-sm opacity-80 mt-1">{String(error.message || error)}</p>
+        <button onClick={request} className="mt-3 text-sm underline">
+          Try again
+        </button>
+      </div>
+    );
+  }
+
+  const groups = groupsByRegion[region] || data || [];
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center gap-2 mb-2">
+        <button
+          className={`text-xs px-2 py-1 rounded border ${region === 'ALL' ? 'bg-cyan-600 text-white border-cyan-500' : 'bg-muted border-border'}`}
+          onClick={() => updateRegion('ALL')}
+        >All</button>
+        <button
+          className={`text-xs px-2 py-1 rounded border ${region === 'US' ? 'bg-cyan-600 text-white border-cyan-500' : 'bg-muted border-border'}`}
+          onClick={() => updateRegion('US')}
+        >US</button>
+        <button
+          className={`text-xs px-2 py-1 rounded border ${region === 'BR' ? 'bg-cyan-600 text-white border-cyan-500' : 'bg-muted border-border'}`}
+          onClick={() => updateRegion('BR')}
+        >Brazil</button>
+        {loading && (
+          <span className="ml-2 inline-flex items-center text-xs text-muted-foreground">
+            <Loader size="sm" className="mr-1" /> Refreshing…
+          </span>
+        )}
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {groups.map((group) => (
+          <section key={group.sourceId} className="rounded border border-border bg-card p-4">
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="font-semibold text-sm truncate">{group.sourceId}</h3>
+              <Link href={group.sourceUrl} target="_blank" className="text-xs underline text-muted-foreground">Feed</Link>
+            </div>
+            {group.error && (
+              <p className="text-xs text-red-300 mb-2">{group.error}</p>
+            )}
+            <ol className="space-y-2">
+              {group.items.slice(0, 3).map((item, idx) => (
+                <li key={`${group.sourceId}-${idx}`} className="text-sm">
+                  <a href={item.link} target="_blank" rel="noopener noreferrer" className="hover:underline">
+                    {item.title}
+                  </a>
+                  <div className="text-xs text-muted-foreground mt-0.5">
+                    <LocalDateTimeFull dateString={item.pubDate} />
+                  </div>
+                </li>
+              ))}
+              {group.items.length === 0 && !group.error && (
+                <li className="text-xs text-muted-foreground">No items.</li>
+              )}
+            </ol>
+          </section>
+        ))}
+      </div>
+    </div>
+  );
+}

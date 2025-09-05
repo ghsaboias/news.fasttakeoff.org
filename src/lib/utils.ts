@@ -9,6 +9,30 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
+// Intl options helpers
+type IntlKey = keyof Intl.DateTimeFormatOptions;
+const DATE_KEYS = new Set<IntlKey>(['weekday','era','year','month','day','timeZone','calendar','timeZoneName']);
+const TIME_KEYS = new Set<IntlKey>(['hour','minute','second','hour12','timeZone','timeZoneName']);
+const DATETIME_KEYS = new Set<IntlKey>([
+  'weekday','era','year','month','day','hour','minute','second','hour12','timeZone','timeZoneName','calendar'
+]);
+
+function sanitizeIntlOptions(
+  options: Intl.DateTimeFormatOptions | undefined,
+  allowed: Set<IntlKey>
+): Intl.DateTimeFormatOptions {
+  const out: Partial<Intl.DateTimeFormatOptions> = {};
+  if (!options) return out as Intl.DateTimeFormatOptions;
+  for (const k in options) {
+    const key = k as IntlKey;
+    const val = options[key];
+    if (val !== undefined && allowed.has(key)) {
+      (out as Record<IntlKey, unknown>)[key] = val as unknown;
+    }
+  }
+  return out as Intl.DateTimeFormatOptions;
+}
+
 /**
  * Returns the current date in YYYY-MM-DD format
  * Can be used for API requests that require a date parameter
@@ -58,15 +82,17 @@ export function formatDate(
     year: 'numeric',
     month: 'long',
     day: 'numeric',
-    timeZone: 'UTC' // Force UTC to prevent hydration mismatches
+    timeZone: 'UTC' // Default UTC to prevent hydration mismatches; can be overridden via options
   }
 ): string {
   if (!dateString) return 'Date unavailable'
 
   try {
     const date = new Date(dateString)
-    // Use UTC explicitly to ensure server-client consistency
-    return date.toLocaleDateString('en-US', { ...options, timeZone: 'UTC' })
+    // Sanitize options for date-only formatting
+    const fmt = sanitizeIntlOptions(options, DATE_KEYS);
+    if (!fmt.timeZone) fmt.timeZone = 'UTC'
+    return date.toLocaleDateString('en-US', fmt)
   } catch (error) {
     console.error('Error formatting date:', error)
     return 'Invalid date'
@@ -179,7 +205,11 @@ function parseCustomDateString(dateString: string): Date | null {
  * @param timestamp ISO timestamp string or custom format like "Seg, 19 Mai 2025 18:58:57 -0300"
  * @returns Time in HH:MM format
  */
-export function formatTime(timestamp: string | undefined, showDate: boolean = false): string {
+export function formatTime(
+  timestamp: string | undefined,
+  showDate: boolean = false,
+  options?: Intl.DateTimeFormatOptions
+): string {
   if (!timestamp) return 'Time unavailable';
 
   let date: Date | null = new Date(timestamp);
@@ -197,21 +227,18 @@ export function formatTime(timestamp: string | undefined, showDate: boolean = fa
 
   try {
     if (showDate) {
-      return date.toLocaleTimeString('en-GB', {
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: false,
-        year: 'numeric',
-        month: 'numeric',
-        day: 'numeric',
-        timeZone: 'UTC' // Force UTC to prevent hydration mismatches
-      });
+      const fmt: Intl.DateTimeFormatOptions = {
+        year: 'numeric', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false
+      }
+      Object.assign(fmt, sanitizeIntlOptions(options, DATE_KEYS));
+      Object.assign(fmt, sanitizeIntlOptions(options, TIME_KEYS));
+      if (!fmt.timeZone) fmt.timeZone = 'UTC'
+      return date.toLocaleTimeString('en-GB', fmt)
     } else {
-      return date.toLocaleTimeString('en-GB', {
-        hour: '2-digit',
-        minute: '2-digit',
-        timeZone: 'UTC' // Force UTC to prevent hydration mismatches
-      });
+      const fmt: Intl.DateTimeFormatOptions = { hour: '2-digit', minute: '2-digit' }
+      Object.assign(fmt, sanitizeIntlOptions(options, TIME_KEYS));
+      if (!fmt.timeZone) fmt.timeZone = 'UTC'
+      return date.toLocaleTimeString('en-GB', fmt)
     }
   } catch (error) {
     console.error('Error formatting time:', error);
@@ -285,8 +312,24 @@ export function formatDateTimeLocal(
   if (!dateString) return 'Date unavailable'
 
   try {
-    const date = new Date(dateString)
-    return date.toLocaleString(undefined, options) // Use user's locale and timezone
+    // First try native parsing
+    let date = new Date(dateString)
+
+    // If native parsing fails (e.g., Portuguese month names), try custom parser
+    if (isNaN(date.getTime())) {
+      const parsed = parseCustomDateString(dateString)
+      if (parsed) {
+        date = parsed
+      }
+    }
+
+    // If still invalid, return a clear message instead of showing UTC fallback
+    if (isNaN(date.getTime())) {
+      return 'Invalid date'
+    }
+
+    const fmt = sanitizeIntlOptions(options, DATETIME_KEYS)
+    return date.toLocaleString(undefined, fmt) // Use user's locale and timezone
   } catch (error) {
     console.error('Error formatting datetime:', error)
     return 'Invalid date'
