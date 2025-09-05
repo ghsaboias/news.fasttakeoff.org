@@ -188,7 +188,6 @@ async function handleManualTrigger(trigger: string, env: Cloudflare.Env): Promis
     const messagesService = new MessagesService(env);
     const executiveSummaryService = new ExecutiveSummaryService(env);
     const feedsService = new FeedsService(env);
-    const mktNewsService = new MktNewsService(env);
 
     const MANUAL_TRIGGERS: Record<string, () => Promise<void>> = {
         'MESSAGES': () => logRun('MESSAGES', () => messagesService.updateMessages(true), {
@@ -221,7 +220,7 @@ async function handleManualTrigger(trigger: string, env: Cloudflare.Env): Promis
             timeoutMs: TASK_TIMEOUTS.FEEDS
         }),
 
-        'MKTNEWS': () => logRun('MKTNEWS', () => mktNewsService.updateMessages(), {
+        'MKTNEWS': () => logRun('MKTNEWS', () => (new MktNewsService(env)).updateMessages(), {
             timeoutMs: TASK_TIMEOUTS.MKTNEWS
         }),
 
@@ -244,10 +243,14 @@ export async function scheduled(event: ScheduledEvent, env: Cloudflare.Env): Pro
     // Check if this is a scheduled cron task
     const scheduledTask = CRON_TASKS[event.cron];
     if (scheduledTask) {
-        await scheduledTask(env, event.scheduledTime);
+        const p = scheduledTask(env, event.scheduledTime);
+        event.waitUntil(p);
+        await p;
         return;
     }
 
     // If not a scheduled task, try handling as manual trigger
-    await handleManualTrigger(event.cron, env);
+    const p = handleManualTrigger(event.cron, env);
+    event.waitUntil(p);
+    await p;
 }

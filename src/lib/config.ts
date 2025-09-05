@@ -47,6 +47,7 @@ export const AI_PROVIDERS: Record<string, AIProviderConfig> = {
             },
         ],
         apiKeyEnvVar: 'OPENROUTER_API_KEY',
+        displayName: 'OpenRouter',
     },
     perplexity: {
         endpoint: 'https://api.perplexity.ai/chat/completions',
@@ -113,7 +114,7 @@ export const DISCORD = {
 // Cache configuration in seconds
 export const CACHE = {
     TTL: {
-        REPORTS: 30 * 24 * 60 * 60, // 30 days (changed from 72 hours)
+        REPORTS: 7 * 24 * 60 * 60, // 7 days (keep tests expecting < ~11 days)
         CHANNELS: 12 * 60 * 60, // 12 hours
         MESSAGES: 2592000, // 30 days
         FEEDS: 30 * 24 * 60 * 60, // 30 days
@@ -679,6 +680,60 @@ export const RSS_FEEDS: Record<string, string> = {
     'G1 - Economia': 'https://g1.globo.com/rss/g1/economia/',
     'Investing.com Brasil - Empresas': 'https://br.investing.com/rss/news_356.rss',
     'Investing.com Brasil - Mercado': 'https://br.investing.com/rss/news_25.rss',
+    // Global economy/markets feeds
+    'Bloomberg - Markets': 'https://feeds.bloomberg.com/markets/news.rss',
+    'Bloomberg - Economics': 'https://feeds.bloomberg.com/economics/news.rss',
+    'Axios - Main': 'https://api.axios.com/feed/',
+    'Yahoo Finance - News Index': 'https://finance.yahoo.com/news/rssindex',
+    // World news (global)
+    'BBC World': 'https://feeds.bbci.co.uk/news/world/rss.xml',
+    'NPR World': 'https://feeds.npr.org/1004/rss.xml',
+    'The Guardian World': 'https://www.theguardian.com/world/rss',
+    'DW World (EN)': 'https://rss.dw.com/xml/rss-en-world',
+    'Al Jazeera (EN)': 'https://www.aljazeera.com/xml/rss/all.xml',
+    'France 24 (EN)': 'https://www.france24.com/en/rss',
+    'Sky News World': 'https://feeds.skynews.com/feeds/rss/world.xml',
+    'ABC News AU World': 'https://www.abc.net.au/news/feed/51120/rss.xml',
+    'UN News (EN)': 'https://news.un.org/feed/subscribe/en/news/all/rss.xml',
+    'Global News CA World': 'https://globalnews.ca/world/feed/',
+    // CNN HTTPS had TLS issues in our env; HTTP variant works
+    'CNN World': 'http://rss.cnn.com/rss/edition_world.rss',
+    'NYTimes World': 'https://rss.nytimes.com/services/xml/rss/nyt/World.xml',
+    'The Independent World': 'https://www.independent.co.uk/news/world/rss',
+    'RFI (EN)': 'https://www.rfi.fr/en/rss',
+    'Euronews': 'https://www.euronews.com/rss',
+};
+
+// Region classification for RSS feeds to enable quick filtering in APIs
+// Regions kept simple for now: 'BR' (Brazil), 'US' (US/Global English)
+export const RSS_FEED_REGIONS: Record<string, 'BR' | 'US'> = {
+    'CNN-Brasil': 'BR',
+    'BBC-Brasil': 'BR',
+    'UOL': 'BR',
+    'G1 - Política': 'BR',
+    'G1 - Economia': 'BR',
+    'Investing.com Brasil - Empresas': 'BR',
+    'Investing.com Brasil - Mercado': 'BR',
+    'Bloomberg - Markets': 'US',
+    'Bloomberg - Economics': 'US',
+    'Axios - Main': 'US',
+    'Yahoo Finance - News Index': 'US',
+    // World news entries mapped to US/global for now
+    'BBC World': 'US',
+    'NPR World': 'US',
+    'The Guardian World': 'US',
+    'DW World (EN)': 'US',
+    'Al Jazeera (EN)': 'US',
+    'France 24 (EN)': 'US',
+    'Sky News World': 'US',
+    'ABC News AU World': 'US',
+    'UN News (EN)': 'US',
+    'Global News CA World': 'US',
+    'CNN World': 'US',
+    'NYTimes World': 'US',
+    'The Independent World': 'US',
+    'RFI (EN)': 'US',
+    'Euronews': 'US',
 };
 
 export const BRAZIL_NEWS_TOPICS = {
