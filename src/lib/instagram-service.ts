@@ -2,6 +2,7 @@ import { Cloudflare } from '../../worker-configuration';
 import { TIME, URLs } from './config';
 import { Report } from './types/core';
 import { OpenRouterImageService } from './openrouter-image-service';
+import { getOrCreateBackgroundUrl } from './utils/background-image-cache';
 const WEBSITE_URL = URLs.WEBSITE_URL;
 
 // Instagram API constants
@@ -187,17 +188,8 @@ export class InstagramService {
 
     private async generateAndStoreImage(report: Report): Promise<string> {
         try {
-            // Step 1: Generate background image using OpenRouter
-            console.log(`[INSTAGRAM] Generating background image for: ${report.headline}`);
-            let backgroundImageUrl: string;
-            
-            try {
-                backgroundImageUrl = await this.imageService.generateNewsBackground(report.headline, report.city);
-                console.log(`[INSTAGRAM] Generated background image successfully for ${report.city}`);
-            } catch (error) {
-                console.warn(`[INSTAGRAM] Background generation failed, using fallback: ${error}`);
-                backgroundImageUrl = 'https://news.fasttakeoff.org/images/brain.png';
-            }
+            // Step 1: Get or create shared background image for this report (cached in R2)
+            const backgroundImageUrl = await getOrCreateBackgroundUrl(this.env, this.imageService, report);
 
             // Step 2: Generate HTML with the background image
             const html = this.generateHtml(report.headline, backgroundImageUrl);

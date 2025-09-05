@@ -2,6 +2,7 @@ import { Report } from '@/lib/types/core';
 import { Cloudflare, KVNamespace } from '../../worker-configuration';
 import { TIME, URLs } from './config';
 import { OpenRouterImageService } from './openrouter-image-service';
+import { getOrCreateBackgroundUrl } from './utils/background-image-cache';
 import { countTwitterCharacters, truncateForTwitter } from './utils/twitter-utils';
 
 const TWITTER_API_URL = 'https://api.twitter.com/2/tweets';
@@ -729,17 +730,8 @@ export class TwitterService {
      */
     private async generateAndStoreImage(report: Report): Promise<string> {
         try {
-            // Step 1: Generate background image using OpenRouter
-            console.log(`[TWITTER] Generating background image for: ${report.headline}`);
-            let backgroundImageUrl: string;
-
-            try {
-                backgroundImageUrl = await this.imageService.generateNewsBackground(report.headline, report.city);
-                console.log(`[TWITTER] Generated background image successfully for ${report.city}`);
-            } catch (error) {
-                console.warn(`[TWITTER] Background generation failed, using fallback: ${error}`);
-                backgroundImageUrl = 'https://news.fasttakeoff.org/images/brain.png';
-            }
+            // Step 1: Get or create shared background image for this report (cached in R2)
+            const backgroundImageUrl = await getOrCreateBackgroundUrl(this.env, this.imageService, report);
 
             // Step 2: Generate HTML with the background image (Twitter 16:9 format)
             const html = this.generateHtml(report.headline, backgroundImageUrl);
