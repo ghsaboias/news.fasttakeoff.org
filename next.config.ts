@@ -7,7 +7,10 @@ const withBundleAnalyzer = require('@next/bundle-analyzer')({
   enabled: process.env.ANALYZE === 'true',
 });
 
-initOpenNextCloudflareForDev();
+// Only initialize OpenNext Cloudflare dev harness when explicitly requested in dev
+if (process.env.NODE_ENV === 'development' && process.env.OPENNEXT_DEV === '1') {
+  initOpenNextCloudflareForDev();
+}
 
 const nextConfig: NextConfig = {
   images: {

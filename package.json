@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "OPENNEXT_DEV=1 next dev",
     "dev:clean": "rm -rf .wrangler/state && next dev",
     "build": "next build",
     "start": "next start",
