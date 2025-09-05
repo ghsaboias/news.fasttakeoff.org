@@ -658,6 +658,16 @@ Respond ONLY with valid Markdown prose using thematic paragraphs.`,
     },
 };
 
+// Centralized task timeouts for cron jobs (milliseconds)
+export const TASK_TIMEOUTS = {
+  MESSAGES: 300000,        // 5 minutes
+  MKTNEWS: 60000,          // 1 minute
+  MKTNEWS_SUMMARY: 90000,  // 1.5 minutes
+  EXECUTIVE_SUMMARY: 180000, // 3 minutes
+  REPORTS: 300000,         // 5 minutes
+  FEEDS: 240000,           // 4 minutes
+} as const;
+
 export type TimeframeKey = typeof TIME.TIMEFRAMES[number];
 
 export const RSS_FEEDS: Record<string, string> = {
