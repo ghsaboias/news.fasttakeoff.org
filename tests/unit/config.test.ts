@@ -43,8 +43,8 @@ describe('Configuration', () => {
       expect(CACHE.TTL.CHANNELS).toBeGreaterThan(3600); // At least 1 hour
       expect(CACHE.TTL.MESSAGES).toBeGreaterThan(3600); // At least 1 hour
 
-      // Verify values are in seconds, not milliseconds
-      expect(CACHE.TTL.REPORTS).toBeLessThan(1000000); // Less than ~11 days
+      // Reports TTL must be 365 days (in seconds)
+      expect(CACHE.TTL.REPORTS).toBe(TIME.YEAR_365_SEC);
     });
 
     it('should have refresh thresholds less than TTL', () => {
