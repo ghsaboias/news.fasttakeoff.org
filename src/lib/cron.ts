@@ -1,5 +1,6 @@
 import { Cloudflare } from '../../worker-configuration';
 import { ExecutiveSummaryService } from './data/executive-summary-service';
+import { TASK_TIMEOUTS } from './config';
 import { FeedsService } from './data/feeds-service';
 import { MessagesService } from './data/messages-service';
 import { MktNewsService } from './data/mktnews-service';
@@ -59,15 +60,7 @@ async function logRun(
     }
 }
 
-// Define task timeouts
-const TASK_TIMEOUTS = {
-    MESSAGES: 300000,      // 5 minutes
-    MKTNEWS: 60000,        // 1 minute (just cache maintenance now)
-    MKTNEWS_SUMMARY: 90000, // 1.5 minutes
-    EXECUTIVE_SUMMARY: 180000,  // 3 minutes
-    REPORTS: 240000,       // 4 minutes
-    FEEDS: 240000,         // 4 minutes
-} as const;
+// Task timeouts are centralized in config.ts via TASK_TIMEOUTS
 
 /**
  * Check if current time coincides with 6h report schedule
