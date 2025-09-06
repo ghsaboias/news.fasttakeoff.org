@@ -1,0 +1,67 @@
+[
+  {
+    "id": "Reuters-World-Deprecated",
+    "title": "Reuters World (legacy)",
+    "url": "https://feeds.reuters.com/reuters/worldNews",
+    "status": "unreachable",
+    "lastCheckedAt": "2025-09-05T00:00:00.000Z",
+    "lastError": "DNS resolution failed in current env",
+    "alternatives": [
+      { "url": "https://www.reuters.com/world/rss", "status": "401" },
+      { "url": "https://www.reuters.com/world/europe/rss", "status": "401" }
+    ],
+    "notes": "Reuters appears to require authenticated/geo-allowed access for RSS endpoints."
+  },
+  {
+    "id": "AP-World-Deprecated",
+    "title": "AP World (apf-intlnews)",
+    "url": "https://feeds.apnews.com/apf-intlnews",
+    "status": "missing",
+    "lastCheckedAt": "2025-09-05T00:00:00.000Z",
+    "lastError": "404 / HTML page",
+    "alternatives": [
+      { "url": "https://apnews.com/world-news?utm_source=rss", "status": "HTML-only" }
+    ],
+    "notes": "No longer exposes RSS; hub pages render HTML." 
+  },
+  {
+    "id": "CNN-World-HTTPS",
+    "title": "CNN World (HTTPS)",
+    "url": "https://rss.cnn.com/rss/edition_world.rss",
+    "status": "tls-failure",
+    "lastCheckedAt": "2025-09-05T00:00:00.000Z",
+    "lastError": "TLS handshake failed (LibreSSL SSL_ERROR_SYSCALL)",
+    "alternatives": [
+      { "url": "http://rss.cnn.com/rss/edition_world.rss", "status": "200" }
+    ],
+    "notes": "Use HTTP variant in this environment until HTTPS works."
+  },
+  {
+    "id": "Telegraph-World",
+    "title": "The Telegraph World",
+    "url": "https://www.telegraph.co.uk/news/world/rss.xml",
+    "status": "forbidden",
+    "lastCheckedAt": "2025-09-05T00:00:00.000Z",
+    "lastError": "403",
+    "notes": "Likely blocked without specific UA or cookie; de-prioritize."
+  },
+  {
+    "id": "WashingtonPost-World",
+    "title": "Washington Post World",
+    "url": "https://feeds.washingtonpost.com/rss/world",
+    "status": "timeout",
+    "lastCheckedAt": "2025-09-05T00:00:00.000Z",
+    "lastError": "Timeout / connection issue",
+    "notes": "Intermittent in this env; retry later or via server worker."
+  },
+  {
+    "id": "CBC-World",
+    "title": "CBC World",
+    "url": "https://www.cbc.ca/cmlink/rss-world",
+    "status": "http2-error",
+    "lastCheckedAt": "2025-09-05T00:00:00.000Z",
+    "lastError": "HTTP/2 INTERNAL_ERROR on connect",
+    "notes": "Might require different TLS/HTTP2 settings; revisit later."
+  }
+]
+

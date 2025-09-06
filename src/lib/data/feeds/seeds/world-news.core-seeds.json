@@ -1,0 +1,126 @@
+[
+  {
+    "id": "BBC-World",
+    "title": "BBC World",
+    "url": "https://feeds.bbci.co.uk/news/world/rss.xml",
+    "category": "world",
+    "trustTier": "tier1",
+    "status": "active"
+  },
+  {
+    "id": "NPR-World",
+    "title": "NPR World",
+    "url": "https://feeds.npr.org/1004/rss.xml",
+    "category": "world",
+    "trustTier": "tier1",
+    "status": "active",
+    "notes": "Range requests often return 206; content OK"
+  },
+  {
+    "id": "Guardian-World",
+    "title": "The Guardian World",
+    "url": "https://www.theguardian.com/world/rss",
+    "category": "world",
+    "trustTier": "tier1",
+    "status": "active"
+  },
+  {
+    "id": "DW-World",
+    "title": "Deutsche Welle (EN) World",
+    "url": "https://rss.dw.com/xml/rss-en-world",
+    "category": "world",
+    "trustTier": "tier2",
+    "status": "active"
+  },
+  {
+    "id": "AlJazeera-EN",
+    "title": "Al Jazeera (EN)",
+    "url": "https://www.aljazeera.com/xml/rss/all.xml",
+    "category": "world",
+    "trustTier": "tier2",
+    "status": "active"
+  },
+  {
+    "id": "France24-EN",
+    "title": "France 24 (EN)",
+    "url": "https://www.france24.com/en/rss",
+    "category": "world",
+    "trustTier": "tier2",
+    "status": "active"
+  },
+  {
+    "id": "SkyNews-World",
+    "title": "Sky News World",
+    "url": "https://feeds.skynews.com/feeds/rss/world.xml",
+    "category": "world",
+    "trustTier": "tier2",
+    "status": "active"
+  },
+  {
+    "id": "ABC-AU-World",
+    "title": "ABC News (AU) World",
+    "url": "https://www.abc.net.au/news/feed/51120/rss.xml",
+    "category": "world",
+    "trustTier": "tier2",
+    "status": "active"
+  },
+  {
+    "id": "UN-News-EN",
+    "title": "UN News (EN)",
+    "url": "https://news.un.org/feed/subscribe/en/news/all/rss.xml",
+    "category": "world",
+    "trustTier": "tier2",
+    "status": "active"
+  },
+  {
+    "id": "GlobalNews-CA-World",
+    "title": "Global News (CA) World",
+    "url": "https://globalnews.ca/world/feed/",
+    "category": "world",
+    "trustTier": "tier2",
+    "status": "active"
+  },
+  {
+    "id": "CNN-World-HTTP",
+    "title": "CNN World (HTTP)",
+    "url": "http://rss.cnn.com/rss/edition_world.rss",
+    "category": "world",
+    "trustTier": "tier2",
+    "status": "active",
+    "notes": "HTTPS endpoint failed TLS in our env; HTTP works"
+  },
+  {
+    "id": "NYTimes-World",
+    "title": "NYTimes World",
+    "url": "https://rss.nytimes.com/services/xml/rss/nyt/World.xml",
+    "category": "world",
+    "trustTier": "tier1",
+    "status": "active"
+  },
+  {
+    "id": "Independent-World",
+    "title": "The Independent World",
+    "url": "https://www.independent.co.uk/news/world/rss",
+    "category": "world",
+    "trustTier": "tier2",
+    "status": "active"
+  },
+  {
+    "id": "RFI-EN",
+    "title": "RFI (EN)",
+    "url": "https://www.rfi.fr/en/rss",
+    "category": "world",
+    "trustTier": "tier2",
+    "status": "active"
+  },
+  {
+    "id": "Euronews-World",
+    "title": "Euronews (World)",
+    "url": "https://www.euronews.com/rss",
+    "category": "world",
+    "trustTier": "tier2",
+    "status": "active",
+    "notes": "General RSS confirmed; world-only parameterized feed not verified"
+  }
+]
+
