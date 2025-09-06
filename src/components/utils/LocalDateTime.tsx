@@ -30,10 +30,10 @@ export default function LocalDateTime({
             case 'date':
                 return formatDate(dateString, options)
             case 'time':
-                return formatTime(dateString, showDate)
+                return formatTime(dateString, showDate, options)
             case 'datetime':
             default:
-                return `${formatDate(dateString)} ${formatTime(dateString)}`
+                return `${formatDate(dateString, options)} ${formatTime(dateString, false, options)}`
         }
     }
 
