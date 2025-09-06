@@ -258,6 +258,9 @@ export default function Header() {
                                     <Link href="/current-events" className="text-sm font-medium hover:underline hover:text-accent transition-colors text-dark-100">
                                         Current Events
                                     </Link>
+                                    <Link href="/feeds" className="text-sm font-medium hover:underline hover:text-accent transition-colors text-dark-100">
+                                        Feeds
+                                    </Link>
                                     <Link href="/mktfeed" className="text-sm font-medium hover:underline hover:text-accent transition-colors text-dark-100">
                                         Market Feed
                                     </Link>
