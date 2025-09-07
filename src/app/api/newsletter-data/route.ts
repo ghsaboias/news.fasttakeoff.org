@@ -49,7 +49,8 @@ function normalizeDiscordAttachmentUrl(channelId: string | undefined, attachment
     if (!attachment) return undefined;
     const { id, filename, url } = attachment;
     if (typeof url === 'string' && url.includes('/attachments/')) {
-      return url.split('?')[0];
+      // Keep Discord URLs intact - don't strip query parameters as they contain auth tokens
+      return url;
     }
     if (channelId && id && filename) {
       return `https://cdn.discordapp.com/attachments/${channelId}/${id}/${encodeURIComponent(filename)}`;
@@ -63,6 +64,10 @@ function normalizeDiscordAttachmentUrl(channelId: string | undefined, attachment
 function normalizeImageUrl(url?: string): string | undefined {
   if (!url) return undefined;
   try {
+    // Keep Discord URLs intact - don't strip query parameters as they contain auth tokens
+    if (url.includes('discordapp.com') || url.includes('discord.com')) {
+      return url;
+    }
     return url.split('?')[0];
   } catch {
     return url;
