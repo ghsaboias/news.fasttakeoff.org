@@ -325,37 +325,22 @@ export class ReportCacheD1 {
      * Get cached homepage reports
      */
     static async getHomepageReports(env: Cloudflare.Env): Promise<Report[] | null> {
-        if (!env.FAST_TAKEOFF_NEWS_DB) return null;
+        if (!env.REPORTS_CACHE) return null;
 
         try {
-            // Try primary cache first
-            let result = await env.FAST_TAKEOFF_NEWS_DB.prepare(
-                'SELECT body FROM reports WHERE report_id = ? AND expires_at > ?'
-            ).bind('homepage:latest-reports', Date.now()).first();
-
-            if (result?.body) {
-                const reports = JSON.parse(result.body as string);
+            // Homepage reports are cached in KV for fast access
+            const cached = await env.REPORTS_CACHE.get('homepage:latest-reports');
+            if (cached) {
+                const reports = JSON.parse(cached);
                 if (Array.isArray(reports) && reports.length > 0) {
                     return reports;
                 }
             }
 
-            // Fallback to backup cache
-            console.log('[REPORTS] Primary homepage cache empty, trying backup');
-            result = await env.FAST_TAKEOFF_NEWS_DB.prepare(
-                'SELECT body FROM reports WHERE report_id = ? AND expires_at > ?'
-            ).bind('homepage:backup-reports', Date.now()).first();
-
-            if (result?.body) {
-                const backupReports = JSON.parse(result.body as string);
-                if (Array.isArray(backupReports) && backupReports.length > 0) {
-                    return backupReports;
-                }
-            }
-
+            console.log('[REPORTS] No homepage reports found in KV cache');
             return null;
         } catch (error) {
-            console.warn('[REPORTS] Failed to get homepage reports:', error);
+            console.warn('[REPORTS] Failed to get homepage reports from KV:', error);
             return null;
         }
     }
