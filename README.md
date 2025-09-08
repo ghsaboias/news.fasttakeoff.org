@@ -85,9 +85,42 @@ The Current Events section provides real-time monitoring and AI-powered report g
 
 - Monitors specific Discord channels for bot messages
 - Filters messages using bot username and discriminator
-- Generates AI-powered reports with headline, city, and body content
-- Supports multiple timeframes for report generation
+- **Dynamic Report Generation**: AI-powered reports with headline, city, and body content
+- **Adaptive Window System**: Reports generated based on channel activity patterns
 - Translation support for multiple languages
+
+#### Dynamic Report Generation System
+
+The system uses **activity-driven windows** instead of fixed intervals for more responsive news coverage:
+
+**Channel Classification (7-day rolling average):**
+- **High Activity** (≥8 msgs/report): Generate when ≥3 messages OR after 30min max
+- **Medium Activity** (3-7 msgs/report): Generate when ≥2 messages OR after 60min max  
+- **Low Activity** (<3 msgs/report): Generate when ≥1 message OR after 180min max
+
+**Overlap Prevention:**
+- Checks last 4 hours for existing reports
+- Skips generation if new window would have ≥50% overlap with recent report
+- Ensures fresh content in each report without duplication
+
+**Evaluation Schedule:**
+- Runs every 15 minutes via cron (`*/15 * * * *`)
+- Processes channels in batches of 3 to avoid system overload
+- Stores evaluation metrics for monitoring dashboard
+
+**Example Scenarios:**
+```
+🟡us-politics-live (20 avg msgs): 3 messages in 10min → Generate at 15min check
+🔴ukraine-russia-live (12 avg msgs): 0 messages for 30min → Generate at 30min limit  
+🟠myanmar (3 avg msgs): 1 message appears → Generate at next 15min check
+🟡geological-events (3 avg msgs): Quiet for 180min → Generate when next event occurs
+```
+
+**Benefits:**
+- Breaking news reports within 15-30 minutes vs 2+ hours
+- ~30-40% fewer reports during quiet periods
+- Natural alignment with actual news cycles
+- Same AI prompts and quality, just smarter timing
 
 #### API Endpoints
 
@@ -324,9 +357,9 @@ scripts/check-truncation.sh  # Verify report truncation
 scripts/full-test.sh        # Full test including build
 
 # Local Development
-npm run dev                 # Start local server
-npm run preview:patch:test  # Test with Cloudflare Worker
-npm run deploy             # Deploy to production
+bun run dev                 # Start local server
+bun run preview:patch:test  # Test with Cloudflare Worker
+bun run deploy             # Deploy to production
 ```
 
 ### Cache Management
@@ -413,7 +446,7 @@ wrangler.toml           # Cloudflare Workers configuration
 ### Prerequisites
 
 - Node.js 20+
-- npm 10+ (or equivalent package manager)
+- bun 1.0+ (recommended package manager)
 - Cloudflare account with Workers and KV access
 - Environment variables:
   - DISCORD_TOKEN: Discord bot token
@@ -435,7 +468,7 @@ wrangler.toml           # Cloudflare Workers configuration
 ```bash
 git clone https://github.com/ghsaboias/news.fasttakeoff.org.git
 cd news.fasttakeoff.org
-npm install
+bun install
 ```
 
 Create .env.local:
@@ -462,7 +495,7 @@ INSTAGRAM_ACCESS_TOKEN=<your-instagram-access-token>
 Start the dev server:
 
 ```bash
-npm run dev
+bun run dev
 ```
 
 Access at http://localhost:3000.
@@ -472,19 +505,19 @@ Access at http://localhost:3000.
 Build locally:
 
 ```bash
-npm run build
+bun run build
 ```
 
 Preview with Cloudflare Workers:
 
 ```bash
-npm run preview
+bun run preview
 ```
 
 Deploy to Cloudflare:
 
 ```bash
-npm run deploy
+bun run deploy
 ```
 
 Generates .open-next/ artifacts and deploys via wrangler.
@@ -601,13 +634,13 @@ scripts/full-test.sh
 
 ```bash
 # Start local development server
-npm run dev
+bun run dev
 
 # Test with Cloudflare Worker
-npm run preview:patch:test  # Required after major code changes
+bun run preview:patch:test  # Required after major code changes
 
 # Deploy to production
-npm run deploy
+bun run deploy
 ```
 
 ### Brazil News Aggregation
