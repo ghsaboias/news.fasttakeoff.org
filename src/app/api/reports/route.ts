@@ -1,6 +1,6 @@
 import { withErrorHandling } from '@/lib/api-utils';
 import { CacheManager } from '@/lib/cache-utils';
-import { TimeframeKey } from '@/lib/config';
+import { TimeframeKey, FEATURE_FLAGS } from '@/lib/config';
 import { ReportService } from '@/lib/data/report-service';
 import { Report, ReportResponse } from '@/lib/types/core';
 import { NextRequest, NextResponse } from 'next/server';
@@ -8,13 +8,13 @@ import { NextRequest, NextResponse } from 'next/server';
 /**
  * GET /api/reports
  * Fetches reports and associated messages for a channel or all channels.
- * @param request - Query params: channelId (optional), reportId (optional), limit (optional)
+ * @param request - Query params: channelId (optional), reportId (optional), limit (optional), timeframe (optional), mode (optional)
  * @returns {Promise<NextResponse<ReportResponse | Report[] | { error: string }>>}
  * @throws 404 if report not found, 500 for errors.
  *
  * POST /api/reports
  * Generates a new report for a channel and timeframe.
- * @param request - JSON body: { channelId: string, timeframe?: '2h'|'6h', model?: string }
+ * @param request - JSON body: { channelId: string, timeframe?: '2h'|'6h'|'dynamic', mode?: 'dynamic', windowStart?: string, windowEnd?: string, model?: string }
  * @returns {Promise<{ report: Report, messages: DiscordMessage[] } | { error: string }>}
  * @throws 400 if channelId is missing, 500 for errors.
  * @auth None required.
@@ -26,6 +26,8 @@ export async function GET(request: NextRequest) {
         const channelId = searchParams.get('channelId');
         const reportId = searchParams.get('reportId');
         const limitParam = searchParams.get('limit');
+        const timeframe = searchParams.get('timeframe');
+        const mode = searchParams.get('mode');
 
         const reportService = new ReportService(env);
 
@@ -100,9 +102,20 @@ export async function GET(request: NextRequest) {
             });
         }
 
-        const reports = channelId
+        let reports = channelId
             ? await reportService.getAllReportsForChannel(channelId)
             : await reportService.getAllReports(limit);
+
+        // Filter by timeframe/mode if specified
+        if (timeframe && ['2h', '6h', 'dynamic'].includes(timeframe)) {
+            reports = reports.filter(report => report.timeframe === timeframe);
+        } else if (mode === 'dynamic' && FEATURE_FLAGS.SHOW_DYNAMIC_REPORTS_IN_UI) {
+            // Show dynamic reports when explicitly requested via mode parameter
+            reports = reports.filter(report => report.generationTrigger === 'dynamic');
+        } else if (!mode && !timeframe) {
+            // Default behavior: exclude dynamic reports unless explicitly requested
+            reports = reports.filter(report => report.generationTrigger !== 'dynamic');
+        }
 
         // Cache the response for 5 minutes (longer for larger requests)
         const ttl = limit && limit > 20 ? 600 : 300; // 10 minutes for large requests, 5 for small
@@ -118,8 +131,15 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: Request) {
     return withErrorHandling(async env => {
-        const body = await request.json();
-        const { channelId, timeframe = '2h', model } = body;
+        const body = await request.json() as { 
+            channelId?: string; 
+            timeframe?: string; 
+            mode?: string;
+            windowStart?: string;
+            windowEnd?: string;
+            model?: string; 
+        };
+        const { channelId, timeframe = '2h', mode, windowStart, windowEnd, model } = body;
 
         if (!channelId) {
             throw new Error('Missing channelId');
@@ -135,13 +155,41 @@ export async function POST(request: Request) {
         }
 
         try {
-            const { report, messages } = await reportService.createReportAndGetMessages(
-                channelId,
-                timeframe as TimeframeKey
-            );
+            let report, messages;
+
+            // Handle dynamic report generation
+            if (mode === 'dynamic' && FEATURE_FLAGS.DYNAMIC_REPORTS_ENABLED) {
+                if (!windowStart || !windowEnd) {
+                    throw new Error('windowStart and windowEnd are required for dynamic mode');
+                }
+                
+                const startDate = new Date(windowStart);
+                const endDate = new Date(windowEnd);
+                
+                if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+                    throw new Error('Invalid windowStart or windowEnd date format');
+                }
+                
+                if (startDate >= endDate) {
+                    throw new Error('windowStart must be before windowEnd');
+                }
+
+                ({ report, messages } = await reportService.createDynamicReport(channelId, startDate, endDate));
+            } else if (timeframe === 'dynamic' && FEATURE_FLAGS.DYNAMIC_REPORTS_ENABLED) {
+                // For backward compatibility, generate dynamic report for current activity
+                const now = new Date();
+                const twoHoursAgo = new Date(now.getTime() - 2 * 60 * 60 * 1000);
+                ({ report, messages } = await reportService.createDynamicReport(channelId, twoHoursAgo, now));
+            } else {
+                // Traditional static timeframe generation
+                ({ report, messages } = await reportService.createReportAndGetMessages(
+                    channelId,
+                    timeframe as TimeframeKey
+                ));
+            }
 
             if (!report) {
-                throw new Error('No report generated - possibly no messages in timeframe');
+                throw new Error('No report generated - possibly no messages in timeframe/window');
             }
 
             return { report, messages };

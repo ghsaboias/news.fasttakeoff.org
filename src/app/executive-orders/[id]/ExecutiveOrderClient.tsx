@@ -1,15 +1,15 @@
 'use client';
 
 import { Button } from "@/components/ui/button";
+import ReactMarkdown from '@/components/ui/dynamic-markdown';
 import { Loader } from "@/components/ui/loader";
 import { findExecutiveOrderByNumber } from "@/lib/data/executive-orders";
-import { ExecutiveOrder, Section } from "@/lib/types/core";
+import { ExecutiveOrder, Section, SummaryResponse } from "@/lib/types/core";
 import { parseDispositionNotes, type RelatedEOInfo } from "@/lib/utils";
 import { ArrowLeft, ExternalLink, FileText, Info } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import ReactMarkdown from '@/components/ui/dynamic-markdown';
 
 interface EnhancedRelatedEOInfo extends RelatedEOInfo {
     isLoading: boolean;
@@ -72,7 +72,7 @@ export default function ExecutiveOrderClient({
                     throw new Error(`Failed to fetch summary: ${response.status}`);
                 }
 
-                const data = await response.json();
+                const data = await response.json() as SummaryResponse;
                 setAiSummary(data.summary);
 
                 // Cache the summary in localStorage

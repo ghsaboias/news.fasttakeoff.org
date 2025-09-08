@@ -167,33 +167,123 @@
             font-size: 15px;
             line-height: 1.6;
         }
-        .story-image {
-            width: 100%;
-            height: auto;
+        .story-images {
+            margin: 15px 0;
+        }
+        .story-images.no-images {
+            display: none;
+        }
+        .image-container {
             background: #f3f4f6;
             border-radius: 6px;
-            margin: 15px 0;
+            margin: 10px 0;
             overflow: hidden;
             position: relative;
         }
-        .story-image img {
+        .image-container img {
             width: 100%;
             height: auto;
             display: block;
+            object-fit: cover;
         }
-        .story-image.placeholder {
+        .images-grid {
+            display: grid;
+            gap: 10px;
+            margin: 15px 0;
+        }
+        .images-grid.layout-single { grid-template-columns: 1fr; }
+        .images-grid.layout-side-by-side { grid-template-columns: 1fr 1fr; }
+        .images-grid.layout-three { grid-template-columns: repeat(3, 1fr); }
+        .images-grid.layout-stacked { grid-template-columns: 1fr; }
+        
+        .image-controls {
+            background: #f8f9fa;
+            border: 1px solid #e5e7eb;
+            border-radius: 4px;
+            padding: 15px;
+            margin: 10px 0;
+        }
+        .image-controls h4 {
+            margin: 0 0 10px 0;
+            font-size: 14px;
+            color: #374151;
+        }
+        .controls-row {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            margin-bottom: 10px;
+            flex-wrap: wrap;
+        }
+        .control-group {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .control-group label {
+            font-size: 12px;
+            color: #6b7280;
+            min-width: 45px;
+        }
+        .control-group input, .control-group select {
+            padding: 4px 8px;
+            border: 1px solid #d1d5db;
+            border-radius: 3px;
+            font-size: 12px;
+            width: 70px;
+        }
+        .control-group select {
+            width: 120px;
+        }
+        .selected-images {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin: 10px 0;
+            padding: 10px;
+            background: #f9fafb;
+            border: 1px solid #e5e7eb;
+            border-radius: 4px;
+            min-height: 60px;
+        }
+        .selected-image {
+            position: relative;
+            width: 80px;
+            height: 60px;
+            border-radius: 4px;
+            overflow: hidden;
+            border: 2px solid #10b981;
+        }
+        .selected-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .remove-image {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background: #ef4444;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            font-size: 12px;
+            cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
-            color: #6b7280;
-            font-style: italic;
-            cursor: pointer;
-            border: 2px dashed #d1d5db;
-            height: 200px;
         }
-        .story-image.placeholder:hover {
-            border-color: #10b981;
-            background: #f0fdf4;
+        .clear-images {
+            background: #ef4444;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            margin-left: 10px;
         }
         .image-gallery {
             display: grid;
@@ -364,7 +454,8 @@
     </div>
 
     <script>
-        let selectedImages = {};
+        let selectedImages = {}; // Now stores arrays: { 'story-0': [imageData, ...] }
+        let storySettings = {}; // Stores layout and dimensions: { 'story-0': { layout: 'single', width: 400, height: 300 } }
         let newsletterData = null;
         // NEWSLETTER_DATA_PLACEHOLDER
         
@@ -447,6 +538,7 @@
             
             // Reset selections
             selectedImages = {};
+            storySettings = {};
             updateSelections();
         }
         
@@ -455,7 +547,16 @@
             storyDiv.className = `story ${story.category}`;
             storyDiv.dataset.story = `story-${index}`;
             
+            const storyId = `story-${index}`;
             const hasImages = story.availableImages && story.availableImages.length > 0;
+            
+            // Initialize settings for this story
+            storySettings[storyId] = {
+                layout: 'single',
+                width: 600,
+                height: 300
+            };
+            selectedImages[storyId] = [];
             
             storyDiv.innerHTML = `
                 <div class="story-header">
@@ -467,21 +568,51 @@
                     ${story.channelName} • ${story.messageCount} messages • ${story.timeframe}
                 </div>
                 
-                <div class="story-image placeholder" data-target="story-${index}" onclick="toggleGallery('story-${index}')">
-                    <span>Click to select image</span>
+                <div class="image-controls">
+                    <h4>📸 Image Settings</h4>
+                    <div class="controls-row">
+                        <div class="control-group">
+                            <label>Layout:</label>
+                            <select onchange="updateLayout('${storyId}', this.value)">
+                                <option value="single">Single</option>
+                                <option value="side-by-side">Side by Side</option>
+                                <option value="three">Three Column</option>
+                                <option value="stacked">Stacked</option>
+                            </select>
+                        </div>
+                        <div class="control-group">
+                            <label>Width:</label>
+                            <input type="number" value="600" min="100" max="800" onchange="updateDimensions('${storyId}', 'width', this.value)" />
+                        </div>
+                        <div class="control-group">
+                            <label>Height:</label>
+                            <input type="number" value="300" min="100" max="600" onchange="updateDimensions('${storyId}', 'height', this.value)" />
+                        </div>
+                        <button class="clear-images" onclick="clearImages('${storyId}')">Clear All</button>
+                    </div>
+                    
+                    <div class="selected-images" id="selected-${storyId}">
+                        <p style="color: #6b7280; font-style: italic; margin: 0;">No images selected</p>
+                    </div>
                 </div>
                 
-                <button class="gallery-toggle" onclick="toggleGallery('story-${index}')">
-                    Choose Image (${story.availableImages.length} available)
+                <div class="story-images" id="images-${storyId}">
+                    <!-- Selected images will appear here -->
+                </div>
+                
+                <button class="gallery-toggle" onclick="toggleGallery('${storyId}')">
+                    Choose Images (${story.availableImages.length} available)
                 </button>
-                <div class="image-gallery gallery-hidden" id="gallery-story-${index}">
+                <div class="image-gallery gallery-hidden" id="gallery-${storyId}">
                     ${hasImages ? 
-                        story.availableImages.map(img => `
+                        story.availableImages.map((img, imgIndex) => `
                             <img class="image-option" 
                                  src="${img.url}" 
-                                 onclick="selectImage('story-${index}', this)" 
+                                 onclick="addImage('${storyId}', this, ${imgIndex})" 
                                  data-description="${img.description}"
                                  data-author="${img.author}"
+                                 data-filename="${img.filename}"
+                                 data-index="${imgIndex}"
                                  title="${img.description}" />
                         `).join('') :
                         '<p style="color: #6b7280; font-style: italic; padding: 20px; text-align: center;">No images available for this story</p>'
@@ -501,56 +632,176 @@
             gallery.classList.toggle('gallery-hidden');
         }
         
-        function selectImage(storyId, element) {
-            // Remove previous selection for this story
-            const currentGallery = document.getElementById(`gallery-${storyId}`);
-            currentGallery.querySelectorAll('.image-option').forEach(img => {
-                img.classList.remove('selected');
-            });
+        function addImage(storyId, element, imgIndex) {
+            // Ensure arrays exist
+            if (!selectedImages[storyId]) {
+                selectedImages[storyId] = [];
+            }
+            if (!storySettings[storyId]) {
+                storySettings[storyId] = { layout: 'single', width: 600, height: 300 };
+            }
             
-            // Select new image
-            element.classList.add('selected');
-            
-            // Store selection
-            selectedImages[storyId] = {
+            const imageData = {
                 src: element.src,
                 description: element.dataset.description || 'Image',
-                author: element.dataset.author || 'unknown'
+                author: element.dataset.author || 'unknown',
+                filename: element.dataset.filename || 'image',
+                index: imgIndex
             };
             
-            // Update the story image
-            const storyImage = document.querySelector(`[data-target="${storyId}"]`);
-            storyImage.innerHTML = `<img src="${element.src}" alt="${element.dataset.description}" style="width: 100%; height: auto; display: block;" />`;
-            storyImage.classList.remove('placeholder');
+            // Check if already selected
+            const existing = selectedImages[storyId].find(img => img.index === imgIndex);
+            if (existing) {
+                // Remove if already selected
+                selectedImages[storyId] = selectedImages[storyId].filter(img => img.index !== imgIndex);
+                element.classList.remove('selected');
+            } else {
+                // Add to selection
+                selectedImages[storyId].push(imageData);
+                element.classList.add('selected');
+            }
             
-            // Update selections display
+            // Update displays
+            updateSelectedImagesDisplay(storyId);
+            updateStoryImagesDisplay(storyId);
             updateSelections();
+        }
+        
+        function removeImage(storyId, imgIndex) {
+            if (!selectedImages[storyId]) return;
             
-            // Hide gallery
-            toggleGallery(storyId);
+            selectedImages[storyId] = selectedImages[storyId].filter(img => img.index !== imgIndex);
+            
+            // Update gallery selection state
+            const galleryImg = document.querySelector(`#gallery-${storyId} [data-index="${imgIndex}"]`);
+            if (galleryImg) galleryImg.classList.remove('selected');
+            
+            // Update displays
+            updateSelectedImagesDisplay(storyId);
+            updateStoryImagesDisplay(storyId);
+            updateSelections();
+        }
+        
+        function clearImages(storyId) {
+            if (!selectedImages[storyId]) {
+                selectedImages[storyId] = [];
+            } else {
+                selectedImages[storyId] = [];
+            }
+            
+            // Clear gallery selections
+            const gallery = document.getElementById(`gallery-${storyId}`);
+            if (gallery) {
+                gallery.querySelectorAll('.image-option').forEach(img => {
+                    img.classList.remove('selected');
+                });
+            }
+            
+            // Update displays
+            updateSelectedImagesDisplay(storyId);
+            updateStoryImagesDisplay(storyId);
+            updateSelections();
+        }
+        
+        function updateLayout(storyId, layout) {
+            if (!storySettings[storyId]) {
+                storySettings[storyId] = { layout: 'single', width: 600, height: 300 };
+            }
+            storySettings[storyId].layout = layout;
+            updateStoryImagesDisplay(storyId);
+        }
+        
+        function updateDimensions(storyId, dimension, value) {
+            if (!storySettings[storyId]) {
+                storySettings[storyId] = { layout: 'single', width: 600, height: 300 };
+            }
+            storySettings[storyId][dimension] = parseInt(value);
+            updateStoryImagesDisplay(storyId);
+        }
+        
+        function updateSelectedImagesDisplay(storyId) {
+            const container = document.getElementById(`selected-${storyId}`);
+            if (!container) return;
+            
+            const images = selectedImages[storyId] || [];
+            
+            if (images.length === 0) {
+                container.innerHTML = '<p style="color: #6b7280; font-style: italic; margin: 0;">No images selected</p>';
+                return;
+            }
+            
+            container.innerHTML = images.map(img => `
+                <div class="selected-image">
+                    <img src="${img.src}" alt="${img.description}" />
+                    <button class="remove-image" onclick="removeImage('${storyId}', ${img.index})" title="Remove image">×</button>
+                </div>
+            `).join('');
+        }
+        
+        function updateStoryImagesDisplay(storyId) {
+            const container = document.getElementById(`images-${storyId}`);
+            if (!container) return;
+            
+            const images = selectedImages[storyId] || [];
+            const settings = storySettings[storyId] || { layout: 'single', width: 600, height: 300 };
+            
+            if (images.length === 0) {
+                container.className = 'story-images no-images';
+                container.innerHTML = '';
+                return;
+            }
+            
+            container.className = 'story-images';
+            container.innerHTML = `
+                <div class="images-grid layout-${settings.layout}">
+                    ${images.map(img => `
+                        <div class="image-container" style="max-width: ${settings.width}px;">
+                            <img src="${img.src}" 
+                                 alt="${img.description}" 
+                                 style="height: ${settings.height}px;" />
+                        </div>
+                    `).join('')}
+                </div>
+            `;
         }
         
         function updateSelections() {
             const selectionsDiv = document.getElementById('selections');
-            if (Object.keys(selectedImages).length === 0) {
+            let totalImages = 0;
+            let hasSelections = false;
+            
+            for (const [storyId, images] of Object.entries(selectedImages)) {
+                if (images.length > 0) {
+                    hasSelections = true;
+                    totalImages += images.length;
+                }
+            }
+            
+            if (!hasSelections) {
                 selectionsDiv.innerHTML = '<p style="color: #6b7280; font-style: italic;">No images selected yet. Click on images in the stories to choose them.</p>';
                 return;
             }
             
             let html = '';
-            for (const [storyId, image] of Object.entries(selectedImages)) {
+            for (const [storyId, images] of Object.entries(selectedImages)) {
+                if (images.length === 0) continue;
+                
                 const storyTitle = document.querySelector(`[data-story="${storyId}"] .story-title`)?.textContent || 'Unknown Story';
+                const settings = storySettings[storyId];
+                
                 html += `
                     <div class="selection-item">
-                        <img src="${image.src}" alt="${image.description}" />
+                        <div style="display: flex; flex-wrap: wrap; gap: 5px;">
+                            ${images.map(img => `<img src="${img.src}" style="width: 40px; height: 30px; object-fit: cover; border-radius: 3px;" />`).join('')}
+                        </div>
                         <div>
-                            <strong>${storyTitle}</strong><br>
-                            <small>by ${image.author}: ${image.description}</small>
+                            <strong>${storyTitle}</strong> (${images.length} images)<br>
+                            <small>Layout: ${settings.layout}, Size: ${settings.width}×${settings.height}px</small>
                         </div>
                     </div>
                 `;
             }
-            selectionsDiv.innerHTML = html;
+            selectionsDiv.innerHTML = `<p><strong>${totalImages} images selected for newsletter</strong></p>` + html;
         }
         
         function exportNewsletter() {
@@ -559,15 +810,50 @@
                 return;
             }
             
-            // Clone the newsletter without the controls
-            const newsletterClone = document.getElementById('newsletter').cloneNode(true);
+            // Build clean newsletter HTML from scratch
+            let storiesHtml = '';
             
-            // Remove gallery elements and buttons
-            newsletterClone.querySelectorAll('.gallery-toggle').forEach(el => el.remove());
-            newsletterClone.querySelectorAll('.image-gallery').forEach(el => el.remove());
-            newsletterClone.querySelectorAll('.story-meta').forEach(el => el.remove());
+            for (let i = 0; i < newsletterData.stories.length; i++) {
+                const story = newsletterData.stories[i];
+                const storyId = `story-${i}`;
+                const images = selectedImages[storyId] || [];
+                const settings = storySettings[storyId] || { layout: 'single', width: 600, height: 300 };
+                
+                let imagesHtml = '';
+                if (images.length > 0) {
+                    imagesHtml = `
+                        <div class="story-images">
+                            <div class="images-grid layout-${settings.layout}">
+                                ${images.map(img => `
+                                    <div class="image-container" style="max-width: ${settings.width}px;">
+                                        <img src="${img.src}" 
+                                             alt="${img.description}" 
+                                             style="height: ${settings.height}px;" />
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    `;
+                }
+                
+                storiesHtml += `
+                    <div class="story ${story.category}">
+                        <div class="story-header">
+                            <span class="story-emoji">${story.emoji}</span>
+                            <h3 class="story-title">${story.title}</h3>
+                        </div>
+                        <div class="story-location">${story.location}</div>
+                        
+                        ${imagesHtml}
+                        
+                        <div class="story-content">
+                            ${story.content}
+                        </div>
+                    </div>
+                `;
+            }
             
-            // Create final HTML
+            // Create final HTML with updated styles
             const finalHtml = `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -597,8 +883,14 @@
         .story-title { font-weight: 700; font-size: 18px; color: #1f2937; margin: 0; }
         .story-location { color: #6b7280; font-style: italic; font-size: 14px; margin-bottom: 10px; }
         .story-content { color: #374151; font-size: 15px; line-height: 1.6; }
-        .story-image { width: 100%; height: auto; border-radius: 6px; margin: 15px 0; overflow: hidden; }
-        .story-image img { width: 100%; height: auto; display: block; }
+        .story-images { margin: 15px 0; }
+        .images-grid { display: grid; gap: 10px; margin: 15px 0; }
+        .images-grid.layout-single { grid-template-columns: 1fr; }
+        .images-grid.layout-side-by-side { grid-template-columns: 1fr 1fr; }
+        .images-grid.layout-three { grid-template-columns: repeat(3, 1fr); }
+        .images-grid.layout-stacked { grid-template-columns: 1fr; }
+        .image-container { background: #f3f4f6; border-radius: 6px; margin: 10px 0; overflow: hidden; }
+        .image-container img { width: 100%; height: auto; display: block; object-fit: cover; }
         .insight { background: #f3f4f6; border-radius: 6px; padding: 20px; margin: 25px 0; border-left: 4px solid #10b981; }
         .insight-title { font-weight: 600; color: #1f2937; margin-bottom: 10px; }
         .cta { background: #f8fafc; padding: 20px; border-radius: 6px; margin: 25px 0; text-align: center; }
@@ -608,7 +900,51 @@
     </style>
 </head>
 <body>
-    ${newsletterClone.outerHTML}
+    <div class="newsletter">
+        <div class="header">
+            <h1>Fast Takeoff News</h1>
+            <p>AI-Powered Intelligence Briefing</p>
+        </div>
+        
+        <div class="content">
+            <div class="welcome">
+                <p><strong>Hi there,</strong></p>
+                <p>Welcome to Fast Takeoff News! You're now part of a small, exclusive group of early subscribers getting AI-powered news intelligence straight from global sources.</p>
+                <p><strong>What you'll get:</strong> Real-time analysis of breaking news from channels monitoring everything from US politics to Myanmar resistance movements, compiled by AI and verified by human oversight.</p>
+            </div>
+            
+            <div class="brief-header">
+                <h2>Today's Intelligence Brief</h2>
+                <div class="date">${newsletterData.date}</div>
+            </div>
+            
+            ${storiesHtml}
+            
+            <div class="insight">
+                <div class="insight-title">Why this matters:</div>
+                These aren't just headlines - they're intelligence patterns. Notice how multiple stories connect across regions and domains, revealing the interconnected nature of global events.
+            </div>
+            
+            <div class="cta">
+                <p><strong>What's next:</strong> I'm personally curating these briefings and would love your feedback. What type of analysis interests you most? Geopolitical trends? Economic intelligence? Regional conflicts?</p>
+                <p>Just reply to this email - I read every response personally.</p>
+            </div>
+            
+            <div class="signature">
+                <p>Best,<br>
+                <strong>Guilherme</strong><br>
+                Founder, Fast Takeoff News</p>
+            </div>
+            
+            <div class="footer">
+                <p><strong>P.S.</strong> - If you know someone who'd value real-time intelligence analysis, share: <a href="https://news.fasttakeoff.org">news.fasttakeoff.org</a></p>
+                
+                <div class="unsubscribe">
+                    <p><em>You're receiving this because you signed up at news.fasttakeoff.org. Unsubscribe anytime.</em></p>
+                </div>
+            </div>
+        </div>
+    </div>
 </body>
 </html>`;
             
@@ -626,6 +962,7 @@
             // Also log selections to console for debugging
             console.log('Newsletter data:', newsletterData);
             console.log('Selected images:', selectedImages);
+            console.log('Story settings:', storySettings);
         }
     </script>
 </body>

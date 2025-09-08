@@ -7,9 +7,10 @@ import ReportCardSkeleton from "@/components/skeletons/ReportCardSkeleton"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { useGeolocation } from "@/lib/hooks/useGeolocation"
-import { ExecutiveOrder, ExecutiveSummary as ExecutiveSummaryType, Report } from "@/lib/types/core"
+import { FEATURE_FLAGS } from "@/lib/config"
+import { ApiErrorResponse, ExecutiveOrder, ExecutiveSummary as ExecutiveSummaryType, Report } from "@/lib/types/core"
 import Link from "next/link"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 
 interface HomeContentProps {
     initialReports: Report[]
@@ -21,9 +22,45 @@ export default function HomeContent({ initialReports, initialExecutiveOrders, in
     const [email, setEmail] = useState("")
     const [isSubmitting, setIsSubmitting] = useState(false)
     const [submitMessage, setSubmitMessage] = useState("")
+    const [showDynamicReports, setShowDynamicReports] = useState(false)
+    const [allReports, setAllReports] = useState<Report[]>(initialReports)
+    const [filteredReports, setFilteredReports] = useState<Report[]>(initialReports)
 
     // Use the consolidated geolocation hook
     const { isUSBased } = useGeolocation({ assumeNonUSOnError: true })
+
+    // Filter reports based on toggle state
+    useEffect(() => {
+        if (showDynamicReports) {
+            setFilteredReports(allReports.filter(report => report.generationTrigger === 'dynamic'))
+        } else {
+            setFilteredReports(allReports.filter(report => report.generationTrigger !== 'dynamic'))
+        }
+    }, [showDynamicReports, allReports])
+
+    // Fetch dynamic reports when toggle is enabled
+    const fetchDynamicReports = async () => {
+        try {
+            const response = await fetch('/api/reports?mode=dynamic')
+            if (response.ok) {
+                const dynamicReports = await response.json() as Report[]
+                setAllReports([...initialReports, ...dynamicReports.filter((r: Report) => 
+                    !initialReports.some(ir => ir.reportId === r.reportId)
+                )])
+            }
+        } catch (error) {
+            console.error('Failed to fetch dynamic reports:', error)
+        }
+    }
+
+    const handleToggleDynamic = () => {
+        const newState = !showDynamicReports
+        setShowDynamicReports(newState)
+        
+        if (newState && allReports.length === initialReports.length) {
+            fetchDynamicReports()
+        }
+    }
 
     const handleEmailSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
@@ -45,7 +82,7 @@ export default function HomeContent({ initialReports, initialExecutiveOrders, in
                 body: JSON.stringify({ email: email.trim() }),
             })
 
-            const data = await response.json()
+            const data = await response.json() as ApiErrorResponse
 
             if (response.ok) {
                 setSubmitMessage("Successfully subscribed! 🎉")
@@ -170,19 +207,41 @@ export default function HomeContent({ initialReports, initialExecutiveOrders, in
             {/* Reports Section */}
             <section className="mx-6 sm:mx-8">
                 <div className="flex items-center justify-between mb-6">
-                    <h2 className="text-2xl md:text-3xl font-bold text-gray-100">Latest Reports</h2>
+                    <div className="flex items-center gap-4">
+                        <h2 className="text-2xl md:text-3xl font-bold text-gray-100">Latest Reports</h2>
+                        {FEATURE_FLAGS.SHOW_DYNAMIC_REPORTS_IN_UI && (
+                            <button
+                                onClick={handleToggleDynamic}
+                                className={`px-3 py-1 text-xs rounded-full transition-colors ${
+                                    showDynamicReports 
+                                        ? 'bg-emerald-600 text-white' 
+                                        : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                                }`}
+                                title={showDynamicReports ? 'Showing dynamic reports' : 'Showing scheduled reports'}
+                            >
+                                {showDynamicReports ? 'Dynamic' : 'Standard'}
+                            </button>
+                        )}
+                    </div>
                     <Link href="/current-events" className="text-sm font-medium text-emerald-400 hover:text-emerald-300 hover:underline">
                         View all reports →
                     </Link>
                 </div>
                 <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-                    {initialReports.length === 0 ? (
-                        // Show skeletons while loading
-                        Array.from({ length: 4 }).map((_, i) => (
-                            <ReportCardSkeleton key={i} />
-                        ))
-                    ) : initialReports.length > 0 ? (
-                        initialReports.slice(0, 4).map(report => (
+                    {filteredReports.length === 0 ? (
+                        showDynamicReports ? (
+                            <div className="col-span-2 text-center py-8">
+                                <p className="text-gray-400">No dynamic reports available yet.</p>
+                                <p className="text-sm text-gray-500 mt-2">Dynamic reports are generated based on real-time activity.</p>
+                            </div>
+                        ) : (
+                            // Show skeletons while loading
+                            Array.from({ length: 4 }).map((_, i) => (
+                                <ReportCardSkeleton key={i} />
+                            ))
+                        )
+                    ) : filteredReports.length > 0 ? (
+                        filteredReports.slice(0, 4).map(report => (
                             <ReportCard
                                 key={report.reportId}
                                 report={report}

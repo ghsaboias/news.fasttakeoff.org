@@ -1,7 +1,7 @@
 import { withErrorHandling } from '@/lib/api-utils';
 import { CacheManager } from '@/lib/cache-utils';
 import { TIME } from '@/lib/config';
-import { TweetEmbed, TweetEmbedCache } from '@/lib/types/core';
+import { TweetEmbed, TweetEmbedCache, TwitterOEmbedResponse } from '@/lib/types/core';
 import { extractTweetId, isValidTweetUrl, normalizeTweetUrl } from '@/lib/utils/twitter-utils';
 
 /**
@@ -187,20 +187,20 @@ export async function GET(request: Request) {
             return deletedTweetEmbed;
         }
 
-        const oembedData = await response.json();
+        const oembedData = await response.json() as TwitterOEmbedResponse;
 
         // Create our embed object
         const tweetEmbed: TweetEmbed = {
             tweetId,
             url: normalizedUrl,
-            html: sanitizeHtml(oembedData.html || ''), // Sanitize HTML
-            author_name: oembedData.author_name || '',
-            author_url: oembedData.author_url || '',
-            provider_name: oembedData.provider_name || 'X',
-            provider_url: oembedData.provider_url || 'https://x.com',
-            cache_age: oembedData.cache_age,
-            width: oembedData.width,
-            height: oembedData.height,
+            html: sanitizeHtml(oembedData?.html || ''), // Sanitize HTML
+            author_name: oembedData?.author_name || '',
+            author_url: oembedData?.author_url || '',
+            provider_name: oembedData?.provider_name || 'X',
+            provider_url: oembedData?.provider_url || 'https://x.com',
+            cache_age: oembedData?.cache_age,
+            width: oembedData?.width,
+            height: oembedData?.height,
             cachedAt: new Date().toISOString()
         };
 

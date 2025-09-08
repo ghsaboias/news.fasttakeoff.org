@@ -32,12 +32,14 @@ export default function ChannelDetailClient({ reports, channel }: { reports: Rep
                 fetch(`/api/reports?channelId=${channelId}`).then(res => res.ok ? res.json() : []).catch(() => []),
                 fetch(`/api/channels`).then(res => res.ok ? res.json() : []).catch(() => [])
             ]).then(([reportsData, channelsData]) => {
+                const typedReportsData = reportsData as Report[];
+                const typedChannelsData = channelsData as DiscordChannel[];
                 console.log('[ChannelDetailClient] Fetched data:', {
-                    reportsLength: reportsData?.length || 0,
-                    channelsLength: channelsData?.length || 0
+                    reportsLength: typedReportsData?.length || 0,
+                    channelsLength: typedChannelsData?.length || 0
                 });
-                setClientReports(reportsData || []);
-                const foundChannel = channelsData.find((c: DiscordChannel) => c.id === channelId) || null;
+                setClientReports(typedReportsData || []);
+                const foundChannel = typedChannelsData.find((c: DiscordChannel) => c.id === channelId) || null;
                 if (!foundChannel) {
                     console.log('[ChannelDetailClient] Channel not found in fetched data:', channelId);
                 }

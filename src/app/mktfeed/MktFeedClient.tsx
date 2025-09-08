@@ -80,9 +80,10 @@ export default function MktFeedClient() {
         return response.json();
     }, [timeframe]);
 
-    const { data, loading, error, request } = useApi<MktFeedResponse>(fetchData, {
-        manual: true,
-    });
+    const { data, loading, error, request } = useApi<MktFeedResponse>(
+        fetchData as () => Promise<MktFeedResponse>,
+        { manual: true }
+    );
 
     // Fetch latest 15min summary once on mount and refresh on demand
     const fetchSummary = useCallback(async () => {
@@ -92,7 +93,7 @@ export default function MktFeedClient() {
     }, []);
 
     const { data: summaryData, loading: summaryLoading, error: summaryError, request: requestSummary } =
-        useApi<SummaryResponse>(fetchSummary, { manual: true });
+        useApi<SummaryResponse>(fetchSummary as () => Promise<SummaryResponse>, { manual: true });
 
     useEffect(() => {
         requestSummary();

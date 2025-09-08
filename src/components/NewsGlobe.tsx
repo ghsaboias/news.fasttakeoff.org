@@ -193,14 +193,14 @@ const Globe = ({ onSelectReport }: { onSelectReport: (report: NewsMarkerData) =>
                     console.error(`Failed to fetch essential borders: ${bordersResponse.status}`);
                     throw new Error(`Failed to fetch borders: ${bordersResponse.status}`);
                 }
-                const bordersJson = await bordersResponse.json();
+                const bordersJson = await bordersResponse.json() as GeoJsonFeatureCollection;
                 setCountryBordersData(bordersJson);
 
                 // Fetch coastlines data (optional)
                 try {
                     const coastlinesResponse = await fetch('/geojson/ne_110m_coastline.geojson');
                     if (coastlinesResponse.ok) {
-                        const coastlinesJson = await coastlinesResponse.json();
+                        const coastlinesJson = await coastlinesResponse.json() as GeoJsonFeatureCollection;
                         setCoastlinesData(coastlinesJson);
                     } else {
                         if (coastlinesResponse.status === 429) {
@@ -247,7 +247,7 @@ const Globe = ({ onSelectReport }: { onSelectReport: (report: NewsMarkerData) =>
                         );
 
                         if (!geoResponse.ok) {
-                            const errorData = await geoResponse.json().catch(() => ({ error: "Failed to parse error response from geocode API" }));
+                            const errorData = await geoResponse.json().catch(() => ({ error: "Failed to parse error response from geocode API" })) as { error?: string };
                             console.warn( // Use warn as it's non-blocking for other markers
                                 `Error fetching geocoded data for ${report.city} (Report ID: ${report.reportId}): ${geoResponse.status}`,
                                 errorData?.error || geoResponse.statusText

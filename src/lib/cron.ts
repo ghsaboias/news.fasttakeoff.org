@@ -1,11 +1,12 @@
 import { Cloudflare } from '../../worker-configuration';
-import { ExecutiveSummaryService } from './data/executive-summary-service';
 import { TASK_TIMEOUTS } from './config';
+import { ExecutiveSummaryService } from './data/executive-summary-service';
 import { FeedsService } from './data/feeds-service';
 import { MessagesService } from './data/messages-service';
 import { MktNewsService } from './data/mktnews-service';
 import { MktNewsSummaryService } from './data/mktnews-summary-service';
 import { ReportService } from './data/report-service';
+import { WindowEvaluationService } from './data/window-evaluation-service';
 
 interface ScheduledEvent {
     scheduledTime: number;
@@ -65,38 +66,44 @@ async function logRun(
 /**
  * Check if current time coincides with 6h report schedule
  * Returns true if we're at 0:00, 6:00, 12:00, or 18:00
+ * Note: Currently unused as static report generation is disabled
  */
-function is6hReportTime(scheduledTime: number): boolean {
-    const date = new Date(scheduledTime);
-    const hour = date.getHours();
-    return hour % 6 === 0; // 0, 6, 12, 18
-}
+// function is6hReportTime(scheduledTime: number): boolean {
+//     const date = new Date(scheduledTime);
+//     const hour = date.getHours();
+//     return hour % 6 === 0; // 0, 6, 12, 18
+// }
 
 // Type for cron task functions
 type CronTaskFunction = (env: Cloudflare.Env, scheduledTime?: number) => Promise<void>;
 
 // Map cron expressions to their tasks
 const CRON_TASKS: Record<string, CronTaskFunction> = {
+    // DISABLED: Static 2h report generation - replaced by dynamic window evaluation
     // Every 2 hours (0:00, 2:00, 4:00, etc)
-    "0 */2 * * *": async (env: Cloudflare.Env, scheduledTime?: number) => {
+    "0 */2 * * *": async (env: Cloudflare.Env) => {
         // Skip if Discord-dependent processing is disabled
         if ((env as unknown as { DISCORD_DISABLED?: string | boolean }).DISCORD_DISABLED) {
-            console.warn('[CRON] DISCORD_DISABLED is set – skipping REPORTS_2H and EXECUTIVE_SUMMARY');
+            console.warn('[CRON] DISCORD_DISABLED is set – skipping feeds generation');
             return;
         }
+        
+        // Only generate feeds summaries - report generation now handled by dynamic window evaluation
+        const feedsService = new FeedsService(env);
+
+        await logRun('FEEDS_GERAL', () => feedsService.createFreshSummary('geral', ['CNN-Brasil', 'BBC-Brasil', 'G1 - Política', 'G1 - Economia', 'UOL']), {
+            timeoutMs: TASK_TIMEOUTS.FEEDS
+        });
+
+        await logRun('FEEDS_MERCADO', () => feedsService.createFreshSummary('mercado', ['Investing.com Brasil - Empresas', 'Investing.com Brasil - Mercado']), {
+            timeoutMs: TASK_TIMEOUTS.FEEDS
+        });
+        
+        /* COMMENTED OUT - Report generation now handled by dynamic evaluation every 15 minutes
+        
         // Skip 2h report generation if this coincides with 6h report time
         if (scheduledTime && is6hReportTime(scheduledTime)) {
             console.log('[CRON] Skipping 2h report generation - coincides with 6h report time');
-
-            // Still generate feeds summaries even when skipping 2h reports
-            const feedsService = new FeedsService(env);
-            await logRun('FEEDS_GERAL', () => feedsService.createFreshSummary('geral', ['CNN-Brasil', 'BBC-Brasil', 'G1 - Política', 'G1 - Economia', 'UOL']), {
-                timeoutMs: TASK_TIMEOUTS.FEEDS
-            });
-
-            await logRun('FEEDS_MERCADO', () => feedsService.createFreshSummary('mercado', ['Investing.com Brasil - Empresas', 'Investing.com Brasil - Mercado']), {
-                timeoutMs: TASK_TIMEOUTS.FEEDS
-            });
             return;
         }
 
@@ -125,46 +132,47 @@ const CRON_TASKS: Record<string, CronTaskFunction> = {
         } else {
             console.warn('[CRON] Skipping EXECUTIVE_SUMMARY_2H due to failed report generation');
         }
-
-        const feedsService = new FeedsService(env);
-
-        // Generate summaries for both topics
-        await logRun('FEEDS_GERAL', () => feedsService.createFreshSummary('geral', ['CNN-Brasil', 'BBC-Brasil', 'G1 - Política', 'G1 - Economia', 'UOL']), {
-            timeoutMs: TASK_TIMEOUTS.FEEDS
-        });
-
-        await logRun('FEEDS_MERCADO', () => feedsService.createFreshSummary('mercado', ['Investing.com Brasil - Empresas', 'Investing.com Brasil - Mercado']), {
-            timeoutMs: TASK_TIMEOUTS.FEEDS
-        });
+        */
     },
 
+    // DISABLED: Static 6h report generation - replaced by dynamic window evaluation  
     // Every 6 hours (0:00, 6:00, 12:00, 18:00)
     "0 */6 * * *": async (env: Cloudflare.Env) => {
         if ((env as unknown as { DISCORD_DISABLED?: string | boolean }).DISCORD_DISABLED) {
-            console.warn('[CRON] DISCORD_DISABLED is set – skipping REPORTS_6H and EXECUTIVE_SUMMARY');
+            console.warn('[CRON] DISCORD_DISABLED is set – skipping EXECUTIVE_SUMMARY');
             return;
         }
-        const reportService = new ReportService(env);
+        
+        // Only generate executive summary - report generation now handled by dynamic window evaluation
         const executiveSummaryService = new ExecutiveSummaryService(env);
+        await logRun('EXECUTIVE_SUMMARY_6H', () => executiveSummaryService.generateAndCacheSummary(), {
+            timeoutMs: TASK_TIMEOUTS.EXECUTIVE_SUMMARY
+        });
+        
+        /* COMMENTED OUT - Report generation now handled by dynamic evaluation every 15 minutes
+        const reportService = new ReportService(env);
 
         await logRun('REPORTS_6H', () => reportService.generateReports('6h'), {
             timeoutMs: TASK_TIMEOUTS.REPORTS
         });
-
-        await logRun('EXECUTIVE_SUMMARY_6H', () => executiveSummaryService.generateAndCacheSummary(), {
-            timeoutMs: TASK_TIMEOUTS.EXECUTIVE_SUMMARY
-        });
+        */
     },
 
     // Every 15 minutes
     "*/15 * * * *": async (env: Cloudflare.Env) => {
         if ((env as unknown as { DISCORD_DISABLED?: string | boolean }).DISCORD_DISABLED) {
-            console.warn('[CRON] DISCORD_DISABLED is set – skipping MESSAGES update');
+            console.warn('[CRON] DISCORD_DISABLED is set – skipping MESSAGES update and window evaluation');
             return;
         }
         const messagesService = new MessagesService(env);
         await logRun('MESSAGES', () => messagesService.updateMessages(true), {
             timeoutMs: TASK_TIMEOUTS.MESSAGES
+        });
+
+        // Dynamic window evaluation - generate reports based on real-time activity
+        const windowEvaluationService = new WindowEvaluationService(env);
+        await logRun('WINDOW_EVALUATION', () => windowEvaluationService.evaluateAllChannels(), {
+            timeoutMs: 120000 // 2 minutes timeout for evaluation
         });
     },
 
