@@ -18,8 +18,12 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        // We can expand this later to trigger different jobs
-        const trigger = 'HOURLY_MANUAL_TRIGGER';
+        const body = await request.json();
+        const trigger = body.task;
+
+        if (!trigger) {
+            return NextResponse.json({ error: 'Task is required' }, { status: 400 });
+        }
 
         console.log(`[API_TRIGGER] Manually triggering cron: ${trigger}`);
 
