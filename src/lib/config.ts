@@ -165,6 +165,7 @@ export const TIME = {
 
     // Timeframes and cron mapping
     TIMEFRAMES: ['2h', '6h'] as const,
+    DYNAMIC_TIMEFRAMES: ['2h', '6h', 'dynamic'] as const,
     CRON: {
         '2h': 2,
         '6h': 6,
@@ -670,6 +671,15 @@ export const TASK_TIMEOUTS = {
 } as const;
 
 export type TimeframeKey = typeof TIME.TIMEFRAMES[number];
+export type DynamicTimeframeKey = typeof TIME.DYNAMIC_TIMEFRAMES[number];
+
+// Feature flags for gradual migration from fixed to dynamic windows
+export const FEATURE_FLAGS = {
+    DYNAMIC_REPORTS_ENABLED: true,
+    DYNAMIC_REPORTS_PRIMARY: false, // Start false, gradually increase
+    FIXED_REPORTS_FALLBACK: true,
+    SHOW_DYNAMIC_REPORTS_IN_UI: true, // Admin toggle for side-by-side comparison
+};
 
 export const RSS_FEEDS: Record<string, string> = {
     'CNN-Brasil': 'https://www.cnnbrasil.com.br/feed/',

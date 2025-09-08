@@ -219,6 +219,10 @@ export interface Report {
     userGenerated?: boolean;
     messageIds?: string[];
     timeframe?: string;
+    // Dynamic window metadata
+    generationTrigger?: 'scheduled' | 'dynamic';
+    windowStartTime?: string;
+    windowEndTime?: string;
 }
 
 export interface CachedMessages {
@@ -526,4 +530,154 @@ export interface MktNewsSummary {
     version: string;
     /** Number of previous summaries provided as context */
     contextSummaries: number;
+}
+
+// API Response Types
+export interface OpenAIMessage {
+    role: string;
+    content: string;
+}
+
+export interface OpenAIChoice {
+    index: number;
+    message: OpenAIMessage;
+    finish_reason: string;
+}
+
+export interface OpenAIResponse {
+    id: string;
+    object: string;
+    created: number;
+    model: string;
+    choices: OpenAIChoice[];
+    usage: {
+        prompt_tokens: number;
+        completion_tokens: number;
+        total_tokens: number;
+    };
+}
+
+// Discord API Types
+export interface DiscordMessagesResponse {
+    messages: DiscordMessage[];
+}
+
+// Social Media API Types
+export interface FacebookPostResponse {
+    id?: string;
+    error?: {
+        message: string;
+        type: string;
+        code: number;
+    };
+}
+
+export interface FacebookPageResponse {
+    id: string;
+    name: string;
+    can_post: boolean;
+}
+
+export interface InstagramMediaResponse {
+    id?: string;
+    error?: {
+        message: string;
+        type: string;
+        code: number;
+    };
+}
+
+export interface InstagramPublishResponse {
+    id?: string;
+    error?: {
+        message: string;
+        type: string;
+        code: number;
+    };
+}
+
+// Twitter/X API Types
+export interface TwitterOEmbedResponse {
+    html?: string;
+    author_name?: string;
+    author_url?: string;
+    provider_name?: string;
+    provider_url?: string;
+    cache_age?: number;
+    width?: number;
+    height?: number;
+}
+
+// Geolocation API Types
+export interface GeolocationResponse {
+    country?: string;
+    region?: string;
+    city?: string;
+    timezone?: string;
+}
+
+// Graph API Types
+export interface GraphEntitiesResponse {
+    entities: Record<string, {
+        type: 'person' | 'company' | 'fund';
+        name: string;
+        country?: string;
+    }>;
+    relationships: Array<[string, string, string]>;
+}
+
+// Translation API Types
+export interface TranslationResponse {
+    headline?: string;
+    city?: string;
+    body: string;
+}
+
+// Pi Server API Types
+export interface PiServerStatsResponse {
+    totalMessages?: number;
+    uptime?: number;
+}
+
+// Generic API Response Types
+export interface ApiErrorResponse {
+    error?: string;
+}
+
+export interface SummaryResponse {
+    summary: string;
+}
+
+export interface ImageResponse {
+    imageUrl?: string;
+}
+
+// OpenRouter API Types (for image generation)
+export interface OpenRouterImageMessage {
+    role: string;
+    content: string;
+    images: Array<{
+        image_url: {
+            url: string;
+        };
+    }>;
+}
+
+export interface OpenRouterImageChoice {
+    index: number;
+    message: OpenRouterImageMessage;
+    finish_reason: string;
+}
+
+export interface OpenRouterImageResponse {
+    id: string;
+    object: string;
+    created: number;
+    model: string;
+    choices: OpenRouterImageChoice[];
+    usage: {
+        prompt_tokens: number;
+        completion_tokens: number;
+        total_tokens: number;
+    };
 } 
