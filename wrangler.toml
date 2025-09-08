@@ -97,6 +97,11 @@ binding = "DB"
 database_name = "prod-emails"
 database_id = "06082f10-b7ba-4a98-bf03-5c4ac36a6e36"
 
+[[d1_databases]]
+binding = "FAST_TAKEOFF_NEWS_DB"
+database_name = "fast-takeoff-news-db"
+database_id = "7bc73994-101f-430e-bd4f-7149d23808bb"
+
 [[routes]]
 pattern = "news.fasttakeoff.org"
 custom_domain = true
