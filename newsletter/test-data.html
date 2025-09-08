@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Newsletter Data Test</title>
+</head>
+<body>
+    <h1>Newsletter Data Test</h1>
+    <button onclick="testDataLoad()">Test Load Newsletter Data</button>
+    <div id="output"></div>
+
+    <script>
+        async function testDataLoad() {
+            const output = document.getElementById('output');
+            output.innerHTML = '<p>Loading...</p>';
+            
+            try {
+                console.log('Fetching from:', '/newsletter-data.json');
+                const response = await fetch('/newsletter-data.json');
+                console.log('Response status:', response.status);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                console.log('Data loaded:', data);
+                
+                output.innerHTML = `
+                    <h2>✅ Success!</h2>
+                    <p><strong>Stories:</strong> ${data.stories.length}</p>
+                    <p><strong>Generated:</strong> ${data.generatedAt}</p>
+                    <p><strong>Total Images:</strong> ${data.stories.reduce((sum, s) => sum + s.availableImages.length, 0)}</p>
+                    
+                    <h3>Stories with Images:</h3>
+                    <ul>
+                        ${data.stories.filter(s => s.availableImages.length > 0).map(s => 
+                            `<li>${s.channelName}: ${s.availableImages.length} images</li>`
+                        ).join('')}
+                    </ul>
+                `;
+                
+            } catch (error) {
+                console.error('Error:', error);
+                output.innerHTML = `
+                    <h2>❌ Error</h2>
+                    <p>${error.message}</p>
+                    <p>Check the browser console for details.</p>
+                `;
+            }
+        }
+    </script>
+</body>
+</html>
