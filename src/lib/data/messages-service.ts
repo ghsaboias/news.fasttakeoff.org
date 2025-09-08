@@ -174,6 +174,27 @@ export class MessagesService {
             .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
     }
 
+    /**
+     * Get messages within a specific time window (used for dynamic reports)
+     */
+    async getMessagesInTimeWindow(channelId: string, windowStart: Date, windowEnd: Date): Promise<DiscordMessage[]> {
+        const key = `messages:${channelId}`;
+        const cached = await this.cacheManager.get<CachedMessages>('MESSAGES_CACHE', key);
+        if (!cached?.messages || !Array.isArray(cached.messages)) {
+            return [];
+        }
+
+        const startTime = windowStart.getTime();
+        const endTime = windowEnd.getTime();
+
+        return cached.messages
+            .filter(msg => {
+                const msgTime = new Date(msg.timestamp).getTime();
+                return msgTime >= startTime && msgTime <= endTime;
+            })
+            .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+    }
+
     async getMessagesForReport(channelId: string, messageIds: string[]): Promise<DiscordMessage[]> {
         const key = `messages:${channelId}`;
         const cached = await this.cacheManager.get<CachedMessages>('MESSAGES_CACHE', key);
@@ -195,6 +216,14 @@ export class MessagesService {
         since: Date = new Date(Date.now() - TIME.ONE_HOUR_MS)
     ): Promise<CachedMessages | null> {
         return this.getFromCache(channelId, { since });
+    }
+
+    /**
+     * Get messages since a specific date - useful for dynamic window evaluation
+     */
+    async getMessagesSince(channelId: string, since: Date): Promise<DiscordMessage[]> {
+        const cachedData = await this.getCachedMessagesSince(channelId, since);
+        return cachedData?.messages || [];
     }
 
     async cacheMessages(channelId: string, messages: DiscordMessage[], channelName?: string): Promise<void> {
@@ -318,7 +347,7 @@ export class MessagesService {
                                 throw new Error(`[MESSAGES] Discord API error for ${channel.id}: ${response.status} - ${errorBody}`);
                             }
 
-                            const messages = await response.json();
+                            const messages = await response.json() as DiscordMessage[];
                             if (!messages.length) break; // No more messages to fetch
 
                             channelRawCount += messages.length;

@@ -1,6 +1,6 @@
 import { CacheManager } from '@/lib/cache-utils';
 import { CACHE, TIME } from '@/lib/config';
-import { FeedItem, SelectedStory, SummaryInputData, SummaryResult, UnselectedStory } from '@/lib/types/core';
+import { FeedItem, OpenAIResponse, SelectedStory, SummaryInputData, SummaryResult, UnselectedStory } from '@/lib/types/core';
 import { Cloudflare } from '../../../worker-configuration';
 import { getAIAPIKey, getAIProviderConfig } from '../ai-config';
 import { AI } from '../config';
@@ -38,7 +38,7 @@ async function curateArticles(articles: FeedItem[], env: Cloudflare.Env, topicId
         throw new Error(`AI API error: ${response.statusText}`);
     }
 
-    const result = await response.json();
+    const result = await response.json() as OpenAIResponse;
     const llmResponse = JSON.parse(result.choices[0].message.content);
 
     // Process selected stories
@@ -103,7 +103,7 @@ Content: ${story.originalSnippet}
         throw new Error(`AI API error: ${response.statusText}`);
     }
 
-    const result = await response.json();
+    const result = await response.json() as OpenAIResponse;
     return result.choices[0].message.content;
 }
 

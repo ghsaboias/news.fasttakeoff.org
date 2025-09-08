@@ -6,7 +6,7 @@ import { InstagramService } from '../instagram-service';
 import { TwitterService } from '../twitter-service';
 import { EntityExtractor } from '../utils/entity-extraction';
 import { ReportAI, ReportContext } from '../utils/report-ai';
-import { ReportCache } from '../utils/report-cache';
+import { ReportCacheD1 as ReportCache } from '../utils/report-cache-d1';
 import { ChannelsService } from './channels-service';
 import { MessagesService } from './messages-service';
 
@@ -63,6 +63,59 @@ export class ReportService {
             return { report, messages };
         } catch (error) {
             console.error(`[REPORTS] Error generating ${timeframe} report for channel ${channelName}:`, error);
+            throw error;
+        }
+    }
+
+    /**
+     * Create a dynamic report for the specified time window
+     */
+    async createDynamicReport(channelId: string, windowStart: Date, windowEnd: Date): Promise<{ report: Report | null; messages: DiscordMessage[] }> {
+        // If Discord-dependent processing is disabled, avoid generating new reports
+        if ((this.env as unknown as { DISCORD_DISABLED?: string | boolean }).DISCORD_DISABLED) {
+            console.warn('[REPORTS] DISCORD_DISABLED is set – skipping createDynamicReport');
+            return { report: null, messages: [] };
+        }
+
+        const [messages, channelName] = await Promise.all([
+            this.messagesService.getMessagesInTimeWindow(channelId, windowStart, windowEnd),
+            this.channelsService.getChannelName(channelId),
+        ]);
+
+        if (!messages.length) {
+            console.log(`[REPORTS] Channel ${channelId}: No messages in window ${windowStart.toISOString()} to ${windowEnd.toISOString()}`);
+            return { report: null, messages: [] };
+        }
+
+        try {
+            // Get previous dynamic reports for context (different cache key)
+            const previousReports = await ReportCache.getPreviousReports(channelId, 'dynamic', this.env);
+
+            const context: ReportContext = {
+                channelId,
+                channelName,
+                messageCount: messages.length,
+                timeframe: 'dynamic',
+            };
+
+            const report = await ReportAI.generate(messages, previousReports, context, this.env);
+            
+            // Add dynamic window metadata
+            report.generationTrigger = 'dynamic';
+            report.windowStartTime = windowStart.toISOString();
+            report.windowEndTime = windowEnd.toISOString();
+            report.timeframe = 'dynamic';
+
+            // Cache using separate dynamic key
+            const cachedReports = await ReportCache.get(channelId, 'dynamic', this.env) || [];
+            const updatedReports = [report, ...cachedReports.filter(r => r.reportId !== report.reportId)];
+            await ReportCache.store(channelId, 'dynamic', updatedReports, this.env);
+
+            console.log(`[REPORTS] Generated dynamic report for ${channelName}: ${messages.length} messages in ${Math.round((windowEnd.getTime() - windowStart.getTime()) / (1000 * 60))}min window`);
+
+            return { report, messages };
+        } catch (error) {
+            console.error(`[REPORTS] Error generating dynamic report for channel ${channelName}:`, error);
             throw error;
         }
     }

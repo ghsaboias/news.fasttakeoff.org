@@ -1,4 +1,4 @@
-import { CACHE, TIME, TimeframeKey } from '@/lib/config';
+import { CACHE, TIME, DynamicTimeframeKey } from '@/lib/config';
 import { Report } from '@/lib/types/core';
 import { groupAndSortReports } from '@/lib/utils';
 import type { Cloudflare } from '../../../worker-configuration';
@@ -21,6 +21,10 @@ interface ReportRow {
     message_ids: string | null;
     created_at: number;
     expires_at: number;
+    // Dynamic window fields (nullable for backward compatibility)
+    generation_trigger: string | null;
+    window_start_time: string | null;
+    window_end_time: string | null;
 }
 
 export class ReportCacheD1 {
@@ -28,7 +32,7 @@ export class ReportCacheD1 {
      * Store reports array in normalized D1 table
      * Breaks apart the Report[] into individual rows
      */
-    static async store(channelId: string, timeframe: TimeframeKey, reports: Report[], env: Cloudflare.Env): Promise<void> {
+    static async store(channelId: string, timeframe: DynamicTimeframeKey, reports: Report[], env: Cloudflare.Env): Promise<void> {
         if (!env.FAST_TAKEOFF_NEWS_DB) {
             throw new Error('Missing required D1 database: FAST_TAKEOFF_NEWS_DB');
         }
@@ -48,8 +52,9 @@ export class ReportCacheD1 {
                 INSERT INTO reports (
                     report_id, channel_id, channel_name, headline, city, body,
                     generated_at, message_count, last_message_timestamp, user_generated,
-                    timeframe, cache_status, message_ids, created_at, expires_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    timeframe, cache_status, message_ids, created_at, expires_at,
+                    generation_trigger, window_start_time, window_end_time
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             `).bind(
                 report.reportId,
                 report.channelId || channelId,
@@ -65,7 +70,11 @@ export class ReportCacheD1 {
                 report.cacheStatus,
                 JSON.stringify(report.messageIds || []),
                 now,
-                expiresAt
+                expiresAt,
+                // Dynamic window fields
+                report.generationTrigger || null,
+                report.windowStartTime || null,
+                report.windowEndTime || null
             ).run();
         }
     }
@@ -74,7 +83,7 @@ export class ReportCacheD1 {
      * Get reports array for specific channel/timeframe
      * Reconstructs Report[] from normalized rows
      */
-    static async get(channelId: string, timeframe: TimeframeKey, env: Cloudflare.Env): Promise<Report[] | null> {
+    static async get(channelId: string, timeframe: DynamicTimeframeKey, env: Cloudflare.Env): Promise<Report[] | null> {
         if (!env.FAST_TAKEOFF_NEWS_DB) return null;
 
         const result = await env.FAST_TAKEOFF_NEWS_DB.prepare(
@@ -91,7 +100,7 @@ export class ReportCacheD1 {
     /**
      * Get recent reports from the last 24 hours for a channel/timeframe
      */
-    static async getPreviousReports(channelId: string, timeframe: TimeframeKey, env: Cloudflare.Env): Promise<Report[]> {
+    static async getPreviousReports(channelId: string, timeframe: DynamicTimeframeKey, env: Cloudflare.Env): Promise<Report[]> {
         if (!env.FAST_TAKEOFF_NEWS_DB) return [];
 
         const twentyFourHoursAgo = Date.now() - TIME.TWENTY_FOUR_HOURS_MS;
@@ -124,7 +133,7 @@ export class ReportCacheD1 {
             const parts = key.split(':');
             if (parts.length === 3 && parts[0] === 'reports') {
                 const channelId = parts[1];
-                const timeframe = parts[2] as TimeframeKey;
+                const timeframe = parts[2] as DynamicTimeframeKey;
                 const reports = await this.get(channelId, timeframe, env);
                 results.set(key, reports);
             } else {
@@ -189,7 +198,7 @@ export class ReportCacheD1 {
     /**
      * Get all reports for a specific channel
      */
-    static async getAllReportsForChannel(channelId: string, env: Cloudflare.Env, timeframe?: TimeframeKey): Promise<Report[]> {
+    static async getAllReportsForChannel(channelId: string, env: Cloudflare.Env, timeframe?: DynamicTimeframeKey): Promise<Report[]> {
         if (!env.FAST_TAKEOFF_NEWS_DB) {
             console.log('FAST_TAKEOFF_NEWS_DB not available');
             return [];
@@ -361,7 +370,11 @@ export class ReportCacheD1 {
             userGenerated: Boolean(row.user_generated),
             timeframe: row.timeframe ?? undefined,
             cacheStatus: row.cache_status as 'hit' | 'miss',
-            messageIds: row.message_ids ? JSON.parse(row.message_ids) : undefined
+            messageIds: row.message_ids ? JSON.parse(row.message_ids) : undefined,
+            // Dynamic window fields
+            generationTrigger: row.generation_trigger as 'scheduled' | 'dynamic' | undefined,
+            windowStartTime: row.window_start_time ?? undefined,
+            windowEndTime: row.window_end_time ?? undefined
         };
     }
 

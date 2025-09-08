@@ -2,7 +2,7 @@ import { Cloudflare } from '../../../worker-configuration';
 import { getAIAPIKey, getAIProviderConfig } from '../ai-config';
 import { CacheManager } from '../cache-utils';
 import { AI, CACHE, TIME } from '../config';
-import { MktNewsMessage, MktNewsSummary } from '../types/core';
+import { MktNewsMessage, MktNewsSummary, OpenAIResponse } from '../types/core';
 import { MktNewsService } from './mktnews-service';
 
 export class MktNewsSummaryService {
@@ -158,7 +158,7 @@ export class MktNewsSummaryService {
                 throw new Error(`AI API error: ${response.status} - ${response.statusText} - ${errorText}`);
             }
 
-            const data = await response.json();
+            const data = await response.json() as OpenAIResponse;
             return data.choices[0].message.content;
         } catch (error) {
             clearTimeout(timeoutId);

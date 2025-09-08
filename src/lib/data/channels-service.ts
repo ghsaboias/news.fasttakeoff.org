@@ -88,7 +88,7 @@ export class ChannelsService {
                     throw new Error(`Discord API error: ${response.status} - ${errorBody}`);
                 }
 
-                const channels = await response.json();
+                const channels = await response.json() as DiscordChannel[];
                 console.log(`[CHANNELS] Raw channels fetched: ${channels.length}`);
                 return channels;
 

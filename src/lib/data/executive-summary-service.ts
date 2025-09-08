@@ -2,7 +2,7 @@ import { Cloudflare } from '../../../worker-configuration';
 import { getAIAPIKey, getAIProviderConfig } from '../ai-config';
 import { CacheManager } from '../cache-utils';
 import { AI, CACHE, TIME } from '../config';
-import { ExecutiveSummary, Report } from '../types/core';
+import { ExecutiveSummary, OpenAIResponse, Report } from '../types/core';
 
 export class ExecutiveSummaryService {
     private env: Cloudflare.Env;
@@ -279,7 +279,7 @@ export class ExecutiveSummaryService {
                 throw new Error(`AI API error: ${response.status} - ${response.statusText} - ${errorText}`);
             }
 
-            const data = await response.json();
+            const data = await response.json() as OpenAIResponse;
             return data.choices[0].message.content;
         } catch (error) {
             clearTimeout(timeoutId);
