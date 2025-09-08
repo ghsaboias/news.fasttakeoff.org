@@ -262,7 +262,9 @@ export class ReportService {
                 if (report) {
                     const messages = report.messageIds?.length
                         ? await this.messagesService.getMessagesForReport(channelId, report.messageIds)
-                        : await this.messagesService.getMessagesForTimeframe(channelId, tf);
+                        : tf !== 'dynamic' 
+                            ? await this.messagesService.getMessagesForTimeframe(channelId, tf)
+                            : [];
                     return { report, messages };
                 }
             }
