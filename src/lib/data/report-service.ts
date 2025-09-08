@@ -253,7 +253,7 @@ export class ReportService {
         }
 
         // If no timeframe provided, check each timeframe for this channel (more efficient than scanning all reports)
-        const timeframes: TimeframeKey[] = [...TIME.TIMEFRAMES];
+        const timeframes: (TimeframeKey | 'dynamic')[] = [...TIME.TIMEFRAMES, 'dynamic'];
 
         for (const tf of timeframes) {
             const cachedReports = await ReportCache.get(channelId, tf, this.env);
