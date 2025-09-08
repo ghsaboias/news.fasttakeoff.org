@@ -87,6 +87,11 @@
     "vitest": "^2.1.8",
     "wrangler": "^4.7.0"
   },
+  "overrides": {
+    "ansi-styles": "6.2.3",
+    "supports-color": "10.2.2",
+    "chalk": "5.6.2"
+  },
   "browserslist": {
     "production": [
       ">0.5%",

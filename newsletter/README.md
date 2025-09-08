@@ -7,12 +7,12 @@ Dev tool for creating Fast Takeoff News newsletters with image selection.
 1. Install dependencies:
 ```bash
 cd newsletter/
-npm install
+bun install
 ```
 
 2. Start the dev server:
 ```bash
-npm start
+bun start
 ```
 
 3. Open in browser:
