@@ -7,7 +7,7 @@ import { detectTelegramUrls } from "@/lib/utils";
 import { detectTweetUrls } from "@/lib/utils/twitter-utils";
 import Image from "next/image";
 import Link from "next/link";
-import { useState } from "react";
+import React, { useMemo, useState, useCallback } from "react";
 import TweetEmbed from "./DynamicTweetEmbed";
 import MediaPreview from "./MediaPreview";
 import TelegramEmbed from "./TelegramEmbed";
@@ -19,33 +19,58 @@ interface MessageItemProps {
     channelId?: string;
 }
 
-export default function MessageItem({ message, noAccordion = false, channelId }: MessageItemProps) {
-    // Check if this message contains X/Twitter or Telegram URLs
-    const isTwitterPost = message.content ? detectTweetUrls(message.content).length > 0 : false;
-    const isTelegramPost = message.content ? detectTelegramUrls(message.content).length > 0 : false;
-    const hasEmbeddableContent = isTwitterPost || isTelegramPost;
-
+function MessageItem({ message, noAccordion = false, channelId }: MessageItemProps) {
     // State to track if tweet embed failed
     const [tweetEmbedFailed, setTweetEmbedFailed] = useState(false);
 
-    // Check if message is older than 24 hours
-    const messageDate = new Date(message.timestamp);
-    const now = new Date();
-    const isOlderThan24Hours = (now.getTime() - messageDate.getTime()) > TIME.DAY_MS;
+    // Memoize expensive URL detection and embed processing
+    const {
+        isTwitterPost,
+        isTelegramPost,
+        hasEmbeddableContent,
+        isOlderThan24Hours,
+        twitterEmbed,
+        translationEmbed,
+        translationFooter
+    } = useMemo(() => {
+        const isTwitterPost = message.content ? detectTweetUrls(message.content).length > 0 : false;
+        const isTelegramPost = message.content ? detectTelegramUrls(message.content).length > 0 : false;
+        const hasEmbeddableContent = isTwitterPost || isTelegramPost;
+
+        // Check if message is older than 24 hours
+        const messageDate = new Date(message.timestamp);
+        const now = new Date();
+        const isOlderThan24Hours = (now.getTime() - messageDate.getTime()) > TIME.DAY_MS;
+
+        // Find Twitter-related embed data for fallback
+        const twitterEmbed = message.embeds?.find(embed =>
+            embed.url && (embed.url.includes('twitter.com') || embed.url.includes('x.com'))
+        );
+
+        // Find translation info from any embed (for Twitter posts)
+        const translationEmbed = message.embeds?.find(embed =>
+            embed.footer?.text && embed.footer?.text.includes('Translated from: ')
+        );
+        const translationFooter = translationEmbed?.footer?.text;
+
+        return {
+            isTwitterPost,
+            isTelegramPost,
+            hasEmbeddableContent,
+            isOlderThan24Hours,
+            twitterEmbed,
+            translationEmbed,
+            translationFooter
+        };
+    }, [message.content, message.timestamp, message.embeds]);
+
+    // Memoize callback for embed failure
+    const handleTweetEmbedFail = useCallback(() => {
+        setTweetEmbedFailed(true);
+    }, []);
 
     // Show Discord message fallback for Twitter posts when embed fails
     const showDiscordFallback = isTwitterPost && tweetEmbedFailed;
-
-    // Find Twitter-related embed data for fallback
-    const twitterEmbed = message.embeds?.find(embed =>
-        embed.url && (embed.url.includes('twitter.com') || embed.url.includes('x.com'))
-    );
-
-    // Find translation info from any embed (for Twitter posts)
-    const translationEmbed = message.embeds?.find(embed =>
-        embed.footer?.text && embed.footer?.text.includes('Translated from: ')
-    );
-    const translationFooter = translationEmbed?.footer?.text;
 
     const MessageContent = () => (
         <div className={`py-6 border-b border-soft-border-foreground ${showDiscordFallback ? 'px-6' : ''}`}>
@@ -124,7 +149,7 @@ export default function MessageItem({ message, noAccordion = false, channelId }:
                 <TweetEmbed
                     content={message.content}
                     channelId={channelId}
-                    onEmbedFail={() => setTweetEmbedFailed(true)}
+                    onEmbedFail={handleTweetEmbedFail}
                 />
             )}
 
@@ -345,4 +370,6 @@ export default function MessageItem({ message, noAccordion = false, channelId }:
     return (
         <MessageContent />
     );
-} 
+}
+
+export default React.memo(MessageItem); 

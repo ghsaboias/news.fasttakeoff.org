@@ -3,6 +3,7 @@
 import ReactMarkdown from '@/components/ui/dynamic-markdown';
 import { useExecutiveSummary } from '@/lib/hooks/useExecutiveSummary';
 import { ExecutiveSummary as ExecutiveSummaryType } from '@/lib/types/core';
+import React, { useMemo, useCallback } from 'react';
 
 interface ExecutiveSummaryProps {
     className?: string;
@@ -42,11 +43,123 @@ function parseMainSummarySections(summary: string) {
     return sections;
 }
 
-export default function ExecutiveSummary({ className = '', initialSummary }: ExecutiveSummaryProps) {
+function ExecutiveSummary({ className = '', initialSummary }: ExecutiveSummaryProps) {
     const { summary: clientSummary, loading, error, refetch } = useExecutiveSummary();
 
     // Use server-side data if available, otherwise fall back to client-side data
     const summary = initialSummary || clientSummary;
+
+    // Memoize the refetch callback
+    const handleRetry = useCallback(() => {
+        refetch();
+    }, [refetch]);
+
+    // Memoize mini summary sections
+    const miniSummaryContent = useMemo(() => {
+        if (!summary?.miniSummary) return null;
+        
+        const sections = parseMiniSummarySections(summary.miniSummary);
+        let rows: { sections: { heading: string; content: string }[] }[] = [];
+        if (sections.length <= 3) {
+            rows = [{ sections }];
+        } else if (sections.length === 4) {
+            rows = [
+                { sections: sections.slice(0, 2) },
+                { sections: sections.slice(2, 4) },
+            ];
+        } else if (sections.length === 5) {
+            rows = [
+                { sections: sections.slice(0, 3) },
+                { sections: sections.slice(3, 5) },
+            ];
+        }
+        return (
+            <div className="p-4 border-b border-dark-600 bg-dark-800">
+                <div className="flex flex-col gap-6">
+                    {rows.map((row, rowIdx) => (
+                        <div
+                            key={rowIdx}
+                            className={`flex flex-row flex-wrap gap-2 justify-center`}
+                        >
+                            {row.sections.map((section, colIdx) => (
+                                <div
+                                    key={colIdx}
+                                    className={`flex-1 min-w-[260px] max-w-md bg-dark-700 rounded shadow-dark p-4 m-2 border border-dark-600`}
+                                >
+                                    <ReactMarkdown
+                                        components={{
+                                            h2: ({ children }) => <h2 className="text-2xl font-bold text-dark-100 mb-2 text-center">{children}</h2>,
+                                            ul: ({ children }) => <ul className="list-disc space-y-1 mb-4 ml-4">{children}</ul>,
+                                            li: ({ children }) => <li className="mb-1 text-md text-dark-300">{children}</li>,
+                                            strong: ({ children }) => <strong className="font-semibold text-accent">{children}</strong>,
+                                            p: ({ children }) => <p className="mb-4 text-dark-300">{children}</p>,
+                                        }}
+                                    >
+                                        {`${section.heading}\n\n${section.content}`}
+                                    </ReactMarkdown>
+                                </div>
+                            ))}
+                        </div>
+                    ))}
+                </div>
+            </div>
+        );
+    }, [summary?.miniSummary]);
+
+    // Memoize main summary sections
+    const mainSummaryContent = useMemo(() => {
+        if (!summary?.summary) return null;
+        
+        const sections = parseMainSummarySections(summary.summary);
+        let rows: { sections: { heading: string; content: string }[] }[] = [];
+        if (sections.length <= 3) {
+            rows = [{ sections }];
+        } else if (sections.length === 4) {
+            rows = [
+                { sections: sections.slice(0, 2) },
+                { sections: sections.slice(2, 4) },
+            ];
+        } else if (sections.length === 5) {
+            rows = [
+                { sections: sections.slice(0, 3) },
+                { sections: sections.slice(3, 5) },
+            ];
+        } else {
+            // Handle any number of sections > 5 by chunking into rows of 3
+            for (let i = 0; i < sections.length; i += 3) {
+                rows.push({ sections: sections.slice(i, i + 3) });
+            }
+        }
+        return (
+            <div className="flex flex-col gap-6">
+                {rows.map((row, rowIdx) => (
+                    <div
+                        key={rowIdx}
+                        className={`flex flex-row flex-wrap gap-4 justify-center`}
+                    >
+                        {row.sections.map((section, colIdx) => (
+                            <div
+                                key={colIdx}
+                                className={`flex-1 min-w-[260px] max-w-md bg-dark-800 rounded shadow-dark p-4 border border-dark-600`}
+                            >
+                                <ReactMarkdown
+                                    components={{
+                                        h2: ({ children }) => <h2 className="text-2xl font-bold text-dark-100 mb-4 text-center">{children}</h2>,
+                                        ul: ({ children }) => <ul className="list-disc mb-4 ml-4">{children}</ul>,
+                                        li: ({ children }) => <li className="my-4 text-dark-300">{children}</li>,
+                                        strong: ({ children }) => <strong className="font-semibold text-accent">{children}</strong>,
+                                        p: ({ children }) => <p className="mb-4 text-dark-300">{children}</p>,
+                                    }}
+                                >
+                                    {`${section.heading}\n\n${section.content}`}
+                                </ReactMarkdown>
+                            </div>
+                        ))}
+                    </div>
+                ))}
+            </div>
+        );
+    }, [summary?.summary]);
 
     if (loading && !initialSummary) {
         return (
@@ -74,7 +187,7 @@ export default function ExecutiveSummary({ className = '', initialSummary }: Exe
                     <h3 className="text-lg font-medium text-dark-100 mb-2">No Summary Available</h3>
                     <p className="text-dark-400 mb-4">{error.message}</p>
                     <button
-                        onClick={() => refetch()}
+                        onClick={handleRetry}
                         className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-industrial-gradient hover:shadow-industrial focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-industrial-500"
                     >
                         Try Again
@@ -107,54 +220,7 @@ export default function ExecutiveSummary({ className = '', initialSummary }: Exe
             </div>
 
             {/* Mini Executive Summary */}
-            {summary.miniSummary && (() => {
-                const sections = parseMiniSummarySections(summary.miniSummary);
-                let rows: { sections: { heading: string; content: string }[] }[] = [];
-                if (sections.length <= 3) {
-                    rows = [{ sections }];
-                } else if (sections.length === 4) {
-                    rows = [
-                        { sections: sections.slice(0, 2) },
-                        { sections: sections.slice(2, 4) },
-                    ];
-                } else if (sections.length === 5) {
-                    rows = [
-                        { sections: sections.slice(0, 3) },
-                        { sections: sections.slice(3, 5) },
-                    ];
-                }
-                return (
-                    <div className="p-4 border-b border-dark-600 bg-dark-800">
-                        <div className="flex flex-col gap-6">
-                            {rows.map((row, rowIdx) => (
-                                <div
-                                    key={rowIdx}
-                                    className={`flex flex-row flex-wrap gap-2 justify-center`}
-                                >
-                                    {row.sections.map((section, colIdx) => (
-                                        <div
-                                            key={colIdx}
-                                            className={`flex-1 min-w-[260px] max-w-md bg-dark-700 rounded shadow-dark p-4 m-2 border border-dark-600`}
-                                        >
-                                            <ReactMarkdown
-                                                components={{
-                                                    h2: ({ children }) => <h2 className="text-2xl font-bold text-dark-100 mb-2 text-center">{children}</h2>,
-                                                    ul: ({ children }) => <ul className="list-disc space-y-1 mb-4 ml-4">{children}</ul>,
-                                                    li: ({ children }) => <li className="mb-1 text-md text-dark-300">{children}</li>,
-                                                    strong: ({ children }) => <strong className="font-semibold text-accent">{children}</strong>,
-                                                    p: ({ children }) => <p className="mb-4 text-dark-300">{children}</p>,
-                                                }}
-                                            >
-                                                {`${section.heading}\n\n${section.content}`}
-                                            </ReactMarkdown>
-                                        </div>
-                                    ))}
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                );
-            })()}
+            {miniSummaryContent}
 
             {/* Content */}
             <div className="p-6 bg-dark-900">
@@ -172,58 +238,10 @@ export default function ExecutiveSummary({ className = '', initialSummary }: Exe
                         </div>
                     </div>
                 </div>
-                {(() => {
-                    const sections = parseMainSummarySections(summary.summary);
-                    let rows: { sections: { heading: string; content: string }[] }[] = [];
-                    if (sections.length <= 3) {
-                        rows = [{ sections }];
-                    } else if (sections.length === 4) {
-                        rows = [
-                            { sections: sections.slice(0, 2) },
-                            { sections: sections.slice(2, 4) },
-                        ];
-                    } else if (sections.length === 5) {
-                        rows = [
-                            { sections: sections.slice(0, 3) },
-                            { sections: sections.slice(3, 5) },
-                        ];
-                    } else {
-                        // Handle any number of sections > 5 by chunking into rows of 3
-                        for (let i = 0; i < sections.length; i += 3) {
-                            rows.push({ sections: sections.slice(i, i + 3) });
-                        }
-                    }
-                    return (
-                        <div className="flex flex-col gap-6">
-                            {rows.map((row, rowIdx) => (
-                                <div
-                                    key={rowIdx}
-                                    className={`flex flex-row flex-wrap gap-4 justify-center`}
-                                >
-                                    {row.sections.map((section, colIdx) => (
-                                        <div
-                                            key={colIdx}
-                                            className={`flex-1 min-w-[260px] max-w-md bg-dark-800 rounded shadow-dark p-4 border border-dark-600`}
-                                        >
-                                            <ReactMarkdown
-                                                components={{
-                                                    h2: ({ children }) => <h2 className="text-2xl font-bold text-dark-100 mb-4 text-center">{children}</h2>,
-                                                    ul: ({ children }) => <ul className="list-disc mb-4 ml-4">{children}</ul>,
-                                                    li: ({ children }) => <li className="my-4 text-dark-300">{children}</li>,
-                                                    strong: ({ children }) => <strong className="font-semibold text-accent">{children}</strong>,
-                                                    p: ({ children }) => <p className="mb-4 text-dark-300">{children}</p>,
-                                                }}
-                                            >
-                                                {`${section.heading}\n\n${section.content}`}
-                                            </ReactMarkdown>
-                                        </div>
-                                    ))}
-                                </div>
-                            ))}
-                        </div>
-                    );
-                })()}
+                {mainSummaryContent}
             </div>
         </div>
     );
-} 
+}
+
+export default React.memo(ExecutiveSummary); 

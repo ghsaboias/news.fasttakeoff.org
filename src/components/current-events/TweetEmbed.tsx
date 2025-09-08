@@ -3,7 +3,7 @@ import { TIME } from '@/lib/config';
 
 import { TweetEmbed as TweetEmbedType } from '@/lib/types/core';
 import { detectTweetUrls } from '@/lib/utils/twitter-utils';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState, useMemo } from 'react';
 
 // Extend Window interface for Twitter widgets
 declare global {
@@ -32,7 +32,7 @@ const CACHE_DURATION = TIME.THIRTY_MINUTES_MS; // 30 minutes
  * Safe HTML renderer component
  * Uses a ref to render sanitized HTML without dangerouslySetInnerHTML
  */
-function SafeHtmlRenderer({
+const SafeHtmlRenderer = React.memo(function SafeHtmlRenderer({
     html,
     className,
     style
@@ -60,9 +60,9 @@ function SafeHtmlRenderer({
     }, [html]);
 
     return <div ref={containerRef} className={className} style={style} />;
-}
+});
 
-export default function TweetEmbed({ content, channelId, className = '', onEmbedFail }: TweetEmbedProps) {
+function TweetEmbed({ content, channelId, className = '', onEmbedFail }: TweetEmbedProps) {
     const [tweetEmbeds, setTweetEmbeds] = useState<TweetEmbedType[]>([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -116,11 +116,13 @@ export default function TweetEmbed({ content, channelId, className = '', onEmbed
         embedCache.set(cacheKey, { embed, cachedAt: Date.now() });
     }, []);
 
-    useEffect(() => {
-        if (!isVisible) return;
+    // Memoize tweet URL detection
+    const tweetUrls = useMemo(() => {
+        return content ? detectTweetUrls(content) : [];
+    }, [content]);
 
-        const tweetUrls = detectTweetUrls(content);
-        if (tweetUrls.length === 0) return;
+    useEffect(() => {
+        if (!isVisible || tweetUrls.length === 0) return;
 
         const fetchEmbeds = async () => {
             setLoading(true);
@@ -238,7 +240,7 @@ export default function TweetEmbed({ content, channelId, className = '', onEmbed
         };
 
         fetchEmbeds();
-    }, [content, channelId, isVisible, getCachedEmbed, setCachedEmbed, onEmbedFail]);
+    }, [tweetUrls, channelId, isVisible, getCachedEmbed, setCachedEmbed, onEmbedFail]);
 
     // Loading skeleton with lazy loading indicator
     if (!isVisible || loading) {
@@ -287,4 +289,6 @@ export default function TweetEmbed({ content, channelId, className = '', onEmbed
             })}
         </div>
     );
-} 
+}
+
+export default React.memo(TweetEmbed); 

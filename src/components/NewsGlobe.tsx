@@ -7,19 +7,19 @@ import { Canvas, ThreeEvent, useFrame } from '@react-three/fiber';
 import Image from 'next/image';
 import Link from 'next/link';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import * as THREE from 'three';
+import { Color, Vector3, Mesh } from 'three';
 
 // --- Theme Configuration (Simplified from example) ---
 const cyberTheme = {
     colors: {
-        earthBase: new THREE.Color(0x001020),
-        earthEmissive: new THREE.Color(0x003355), // Slightly lighter blue emissive
-        earthSpecular: new THREE.Color(0x88aaff), // Bluish specular
-        ambientLight: new THREE.Color(0x404040),
-        directionalLight: new THREE.Color(0x00aaff),
-        pointLight: new THREE.Color(0x00ffff),    // Cyan point light
-        cyberCyan: new THREE.Color(0x00ffff),        // Bright cyan for borders
-        cyberCyanBright: new THREE.Color(0x88ffff), // Lighter cyan for coastlines
+        earthBase: new Color(0x001020),
+        earthEmissive: new Color(0x003355), // Slightly lighter blue emissive
+        earthSpecular: new Color(0x88aaff), // Bluish specular
+        ambientLight: new Color(0x404040),
+        directionalLight: new Color(0x00aaff),
+        pointLight: new Color(0x00ffff),    // Cyan point light
+        cyberCyan: new Color(0x00ffff),        // Bright cyan for borders
+        cyberCyanBright: new Color(0x88ffff), // Lighter cyan for coastlines
     },
     opacity: {
         earthOpacity: 0.9,
@@ -76,21 +76,31 @@ interface MarkerProps {
     onSelect: (data: NewsMarkerData) => void;
 }
 
-const Marker: React.FC<MarkerProps> = ({ position, data, onSelect }: MarkerProps) => {
+const Marker = React.memo<MarkerProps>(function Marker({ position, data, onSelect }) {
     const [hovered, setHovered] = React.useState(false);
 
-    const handleSphereClick = (event: ThreeEvent<MouseEvent>) => {
+    const handleSphereClick = React.useCallback((event: ThreeEvent<MouseEvent>) => {
         event.stopPropagation();
         onSelect(data);
-    };
+    }, [data, onSelect]);
+
+    const handlePointerOver = React.useCallback((event: ThreeEvent<MouseEvent>) => {
+        event.stopPropagation();
+        setHovered(true);
+    }, []);
+
+    const handlePointerOut = React.useCallback((event: ThreeEvent<MouseEvent>) => {
+        event.stopPropagation();
+        setHovered(false);
+    }, []);
 
     return (
         <group position={position}>
             <Sphere
                 args={[0.03, 16, 16]}
                 onClick={handleSphereClick}
-                onPointerOver={(event: ThreeEvent<MouseEvent>) => { event.stopPropagation(); setHovered(true); }}
-                onPointerOut={(event: ThreeEvent<MouseEvent>) => { event.stopPropagation(); setHovered(false); }}
+                onPointerOver={handlePointerOver}
+                onPointerOut={handlePointerOut}
             >
                 <meshStandardMaterial
                     color={hovered ? cyberTheme.colors.cyberCyanBright : cyberTheme.colors.pointLight}
@@ -101,7 +111,7 @@ const Marker: React.FC<MarkerProps> = ({ position, data, onSelect }: MarkerProps
             </Sphere>
         </group>
     );
-};
+});
 
 // Helper function to convert lat/lon to 3D coordinates
 const latLonToVector3 = (lat: number, lon: number, radius: number): [number, number, number] => {
@@ -119,22 +129,22 @@ const latLonToVector3 = (lat: number, lon: number, radius: number): [number, num
 interface LineFeatureProps {
     geoJson: GeoJsonFeatureCollection;
     radius: number;
-    color: THREE.Color;
+    color: Color;
     opacity: number;
     lineWidth?: number;
 }
 
-const GeoJsonLines: React.FC<LineFeatureProps> = ({ geoJson, radius, color, opacity, lineWidth = 1 }: LineFeatureProps) => {
+const GeoJsonLines = React.memo<LineFeatureProps>(function GeoJsonLines({ geoJson, radius, color, opacity, lineWidth = 1 }) {
     const lines = useMemo(() => {
         if (!geoJson || !geoJson.features) return [];
 
-        const extractedLines: THREE.Vector3[][] = [];
+        const extractedLines: Vector3[][] = [];
         geoJson.features.forEach((feature: GeoJsonFeature) => {
             const { type, coordinates } = feature.geometry;
             const processCoordinates = (coords: number[][]) => { // Process a single line of coordinates
                 return coords.map((coord: number[]) => {
                     const [x, y, z] = latLonToVector3(coord[1], coord[0], radius + 0.001);
-                    return new THREE.Vector3(x, y, z);
+                    return new Vector3(x, y, z);
                 });
             };
 
@@ -173,11 +183,11 @@ const GeoJsonLines: React.FC<LineFeatureProps> = ({ geoJson, radius, color, opac
             ))}
         </group>
     );
-};
+});
 // --- End GeoJSON Line Components ---
 
-const Globe = ({ onSelectReport }: { onSelectReport: (report: NewsMarkerData) => void }): React.ReactNode => {
-    const globeRef = useRef<THREE.Mesh>(null!);
+const Globe = React.memo<{ onSelectReport: (report: NewsMarkerData) => void }>(function Globe({ onSelectReport }) {
+    const globeRef = useRef<Mesh>(null!);
     const [countryBordersData, setCountryBordersData] = useState<GeoJsonFeatureCollection | null>(null);
     const [coastlinesData, setCoastlinesData] = useState<GeoJsonFeatureCollection | null>(null);
     const [newsItems, setNewsItems] = useState<NewsMarkerData[]>([]);
@@ -344,10 +354,18 @@ const Globe = ({ onSelectReport }: { onSelectReport: (report: NewsMarkerData) =>
             <OrbitControls enableZoom={true} enablePan={true} minDistance={2.2} maxDistance={15} />
         </>
     );
-};
+});
 
 const NewsGlobe: React.FC = () => {
     const [selectedReport, setSelectedReport] = useState<NewsMarkerData | null>(null);
+
+    const handleSelectReport = React.useCallback((report: NewsMarkerData) => {
+        setSelectedReport(report);
+    }, []);
+
+    const handleCloseReport = React.useCallback(() => {
+        setSelectedReport(null);
+    }, []);
 
     return (
         <div className="relative h-screen w-full bg-[#000010] overflow-hidden">
@@ -366,7 +384,7 @@ const NewsGlobe: React.FC = () => {
                     style={{ transform: selectedReport ? 'translateX(-25%)' : 'translateX(0)' }}
                 >
                     <Canvas camera={{ position: [0, 0, 5], fov: 50 }}>
-                        <Globe onSelectReport={setSelectedReport} />
+                        <Globe onSelectReport={handleSelectReport} />
                     </Canvas>
                 </div>
 
@@ -385,7 +403,7 @@ const NewsGlobe: React.FC = () => {
                             <div className="relative h-full z-20">
                                 <ReportPanel
                                     report={selectedReport}
-                                    onClose={() => setSelectedReport(null)}
+                                    onClose={handleCloseReport}
                                 />
                             </div>
                         </>

@@ -6,6 +6,7 @@ import LocalDateTime from "@/components/utils/LocalDateTime";
 import { TIME } from "@/lib/config";
 import { Report } from "@/lib/types/core";
 import Link from "next/link";
+import React, { useMemo } from "react";
 import LinkBadge from "./LinkBadge";
 
 interface ReportCardProps {
@@ -13,30 +14,63 @@ interface ReportCardProps {
     clickableChannel?: boolean;
 }
 
-export default function ReportCard({
+function ReportCard({
     report,
     clickableChannel = true,
 }: ReportCardProps) {
-    // Calculate derived values
-    const channelHref = clickableChannel && report.channelId ? `/current-events/${report.channelId}` : undefined;
-    const itemUnitSingular = 'source';
-    const itemCountLinkHref = report.channelId && report.reportId ? `/current-events/${report.channelId}/${report.reportId}` : undefined;
-    const paragraphs = report.body.split('\n\n').filter(Boolean);
-    const itemUnitText = report.messageCount === 1 ? itemUnitSingular : itemUnitSingular ? `${itemUnitSingular}s` : '';
+    // Memoize expensive calculations
+    const {
+        channelHref,
+        itemCountLinkHref,
+        paragraphs,
+        itemUnitText,
+        channelNameWithoutEmoji,
+        timeframeDisplay,
+        itemUnitSingular
+    } = useMemo(() => {
+        const channelHref = clickableChannel && report.channelId ? `/current-events/${report.channelId}` : undefined;
+        const itemUnitSingular = 'source';
+        const itemCountLinkHref = report.channelId && report.reportId ? `/current-events/${report.channelId}/${report.reportId}` : undefined;
+        const paragraphs = report.body.split('\n\n').filter(Boolean);
+        const itemUnitText = report.messageCount === 1 ? itemUnitSingular : itemUnitSingular ? `${itemUnitSingular}s` : '';
 
-    // This regex matches most emoji at the start of a string
-    const emojiRegex = /^(\p{Emoji_Presentation}|\p{Emoji}\uFE0F)/u;
-    // const match = report.channelName?.match(emojiRegex);
-    // const leadingEmoji = match ? match[0] : undefined;
-    const channelNameWithoutEmoji = report.channelName?.replace(emojiRegex, '').trim();
+        // This regex matches most emoji at the start of a string
+        const emojiRegex = /^(\p{Emoji_Presentation}|\p{Emoji}\uFE0F)/u;
+        const channelNameWithoutEmoji = report.channelName?.replace(emojiRegex, '').trim();
 
-    // Helper to convert timeframe string to ms
-    function timeframeToMs(timeframe?: string): number | undefined {
-        if (!timeframe) return undefined;
-        if (timeframe === '2h') return TIME.TWO_HOURS_MS;
-        if (timeframe === '6h') return TIME.SIX_HOURS_MS;
-        return undefined;
-    }
+        // Helper to convert timeframe string to ms
+        function timeframeToMs(timeframe?: string): number | undefined {
+            if (!timeframe) return undefined;
+            if (timeframe === '2h') return TIME.TWO_HOURS_MS;
+            if (timeframe === '6h') return TIME.SIX_HOURS_MS;
+            return undefined;
+        }
+
+        // Calculate timeframe display
+        let timeframeDisplay;
+        if (report.generatedAt && report.timeframe) {
+            const end = new Date(report.generatedAt);
+            const ms = timeframeToMs(report.timeframe);
+            if (ms) {
+                const start = new Date(end.getTime() - ms);
+                timeframeDisplay = { start: start.toISOString(), end: end.toISOString() };
+            } else {
+                timeframeDisplay = null;
+            }
+        } else {
+            timeframeDisplay = null;
+        }
+
+        return {
+            channelHref,
+            itemCountLinkHref,
+            paragraphs,
+            itemUnitText,
+            channelNameWithoutEmoji,
+            timeframeDisplay,
+            itemUnitSingular
+        };
+    }, [report.channelId, report.reportId, report.body, report.messageCount, report.channelName, report.generatedAt, report.timeframe, clickableChannel]);
 
     return (
         <Card className="flex flex-col gap-4">
@@ -48,20 +82,12 @@ export default function ReportCard({
                 </CardTitle>
                 <div className="flex justify-between items-center">
                     <p className="text-md font-medium line-clamp-1">
-                        {report.city} - {report.generatedAt && report.timeframe ? (
-                            (() => {
-                                const end = new Date(report.generatedAt);
-                                const ms = timeframeToMs(report.timeframe);
-                                if (!ms) return 'Recent';
-                                const start = new Date(end.getTime() - ms);
-                                return (
-                                    <>
-                                        <LocalDateTime dateString={start.toISOString()} options={{ dateStyle: 'medium', timeStyle: 'short' }} />
-                                        {" - "}
-                                        <LocalDateTime dateString={end.toISOString()} options={{ timeStyle: 'short' }} />
-                                    </>
-                                );
-                            })()
+                        {report.city} - {timeframeDisplay ? (
+                            <>
+                                <LocalDateTime dateString={timeframeDisplay.start} options={{ dateStyle: 'medium', hour: '2-digit', minute: '2-digit', hour12: true }} />
+                                {" - "}
+                                <LocalDateTime dateString={timeframeDisplay.end} options={{ hour: '2-digit', minute: '2-digit', hour12: true }} />
+                            </>
                         ) : (
                             'Recent'
                         )}
@@ -119,3 +145,5 @@ export default function ReportCard({
         </Card >
     )
 }
+
+export default React.memo(ReportCard);

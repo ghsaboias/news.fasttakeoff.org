@@ -10,7 +10,7 @@ import { useGeolocation } from "@/lib/hooks/useGeolocation"
 import { FEATURE_FLAGS } from "@/lib/config"
 import { ApiErrorResponse, ExecutiveOrder, ExecutiveSummary as ExecutiveSummaryType, Report } from "@/lib/types/core"
 import Link from "next/link"
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback, useMemo } from "react"
 
 interface HomeContentProps {
     initialReports: Report[]
@@ -29,17 +29,22 @@ export default function HomeContent({ initialReports, initialExecutiveOrders, in
     // Use the consolidated geolocation hook
     const { isUSBased } = useGeolocation({ assumeNonUSOnError: true })
 
-    // Filter reports based on toggle state
-    useEffect(() => {
+    // Memoize expensive report filtering
+    const filteredReportsComputed = useMemo(() => {
         if (showDynamicReports) {
-            setFilteredReports(allReports.filter(report => report.generationTrigger === 'dynamic'))
+            return allReports.filter(report => report.generationTrigger === 'dynamic');
         } else {
-            setFilteredReports(allReports.filter(report => report.generationTrigger !== 'dynamic'))
+            return allReports.filter(report => report.generationTrigger !== 'dynamic');
         }
-    }, [showDynamicReports, allReports])
+    }, [showDynamicReports, allReports]);
 
-    // Fetch dynamic reports when toggle is enabled
-    const fetchDynamicReports = async () => {
+    // Update filtered reports when computed value changes
+    useEffect(() => {
+        setFilteredReports(filteredReportsComputed);
+    }, [filteredReportsComputed]);
+
+    // Memoize dynamic report fetching function
+    const fetchDynamicReports = useCallback(async () => {
         try {
             const response = await fetch('/api/reports?mode=dynamic')
             if (response.ok) {
@@ -51,18 +56,18 @@ export default function HomeContent({ initialReports, initialExecutiveOrders, in
         } catch (error) {
             console.error('Failed to fetch dynamic reports:', error)
         }
-    }
+    }, [initialReports])
 
-    const handleToggleDynamic = () => {
+    const handleToggleDynamic = useCallback(() => {
         const newState = !showDynamicReports
         setShowDynamicReports(newState)
         
         if (newState && allReports.length === initialReports.length) {
             fetchDynamicReports()
         }
-    }
+    }, [showDynamicReports, allReports.length, initialReports.length, fetchDynamicReports])
 
-    const handleEmailSubmit = async (e: React.FormEvent) => {
+    const handleEmailSubmit = useCallback(async (e: React.FormEvent) => {
         e.preventDefault()
 
         if (!email.trim()) {
@@ -96,7 +101,7 @@ export default function HomeContent({ initialReports, initialExecutiveOrders, in
         } finally {
             setIsSubmitting(false)
         }
-    }
+    }, [email])
 
     return (
         <div className="flex flex-col justify-center bg-gradient-to-b from-gray-950 via-gray-900 to-black min-h-screen">
