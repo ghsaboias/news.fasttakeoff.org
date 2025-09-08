@@ -48,6 +48,9 @@ next-env.d.ts
 
 repo_summary.txt
 
+# Claude Code configuration
+.claude/
+
 deployment.md
 
 .repomix-output.txt
