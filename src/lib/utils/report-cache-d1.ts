@@ -121,6 +121,33 @@ export class ReportCacheD1 {
     }
 
     /**
+     * Phase 1: Get contextually relevant previous reports regardless of timeframe
+     */
+    static async getRecentReportsForContext(channelId: string, env: Cloudflare.Env): Promise<Report[]> {
+        if (!env.FAST_TAKEOFF_NEWS_DB) return [];
+
+        // Get last 3 reports from past 4 hours, any generation method
+        const fourHoursAgo = Date.now() - (4 * 60 * 60 * 1000);
+
+        const result = await env.FAST_TAKEOFF_NEWS_DB.prepare(`
+            SELECT * FROM reports
+            WHERE channel_id = ?
+            AND generated_at > ?
+            AND expires_at > ?
+            ORDER BY generated_at DESC
+            LIMIT 3
+        `).bind(
+            channelId,
+            new Date(fourHoursAgo).toISOString(),
+            Date.now()
+        ).all();
+
+        if (!result.success || !result.results.length) return [];
+
+        return result.results.map((row) => this.rowToReport(row as unknown as ReportRow));
+    }
+
+    /**
      * Batch get multiple channel/timeframe combinations
      */
     static async batchGet(keys: string[], env: Cloudflare.Env): Promise<Map<string, Report[] | null>> {
@@ -168,10 +195,10 @@ export class ReportCacheD1 {
         }
 
         try {
-            // Get all non-expired reports
+            // Get all non-expired reports, excluding debug/homepage cache entries
             const query = limit && limit <= 50 
-                ? 'SELECT * FROM reports WHERE expires_at > ? ORDER BY generated_at DESC LIMIT ?'
-                : 'SELECT * FROM reports WHERE expires_at > ? ORDER BY generated_at DESC';
+                ? 'SELECT * FROM reports WHERE expires_at > ? AND channel_id != \'homepage\' AND cache_status NOT LIKE \'homepage-cache%\' ORDER BY generated_at DESC LIMIT ?'
+                : 'SELECT * FROM reports WHERE expires_at > ? AND channel_id != \'homepage\' AND cache_status NOT LIKE \'homepage-cache%\' ORDER BY generated_at DESC';
             
             const bindings = limit && limit <= 50 ? [Date.now(), limit * 2] : [Date.now()];
             

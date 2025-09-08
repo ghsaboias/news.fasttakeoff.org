@@ -4,7 +4,7 @@ import { DiscordMessage, Report } from '@/lib/types/core';
 /**
  * Formats a date into human-readable format: "Jun 14th, 2025, 3:45 PM UTC"
  */
-function formatHumanReadableTimestamp(date: Date): string {
+export function formatHumanReadableTimestamp(date: Date): string {
     const day = date.getUTCDate();
     const ordinalSuffix = (day: number) => {
         if (day > 3 && day < 21) return 'th';

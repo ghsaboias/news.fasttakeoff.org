@@ -3,7 +3,7 @@ import { AI } from '@/lib/config';
 import { DiscordMessage, OpenAIResponse, Report } from '@/lib/types/core';
 import { v4 as uuidv4 } from 'uuid';
 import { Cloudflare } from '../../../worker-configuration';
-import { createPrompt, isReportTruncated } from './report-utils';
+import { createPrompt, isReportTruncated, formatPreviousReportForContext, formatSingleMessage, formatHumanReadableTimestamp } from './report-utils';
 
 export interface ReportContext {
     channelId: string;
@@ -132,5 +132,86 @@ export class ReportAI {
             }
             throw error;
         }
+    }
+
+    /**
+     * Phase 1: Generate report with basic window context
+     */
+    static async generateWithWindowContext(
+        messages: DiscordMessage[],
+        previousReports: Report[],
+        enhancedContext: ReportContext & { windowStart: string; windowEnd: string; windowDuration: string },
+        env: Cloudflare.Env
+    ): Promise<Report> {
+        // ✅ PHASE 1: Create prompt with window context
+        const promptData = this.createWindowAwarePrompt(messages, previousReports, enhancedContext);
+
+        let attempts = 0;
+        const maxAttempts = AI.REPORT_GENERATION.MAX_ATTEMPTS;
+
+        while (attempts < maxAttempts) {
+            try {
+                const report = await this.makeAIRequest(promptData.prompt, messages, enhancedContext, env);
+
+                console.log(`[REPORTS] Generated dynamic report for channel ${enhancedContext.channelName} - ${enhancedContext.windowDuration} window with ${enhancedContext.messageCount} messages.`);
+                return report;
+            } catch (error) {
+                attempts++;
+                if (attempts === maxAttempts) throw error;
+                console.log(`[REPORTS] Retrying window-aware AI request for channel ${enhancedContext.channelName} (${attempts}/${maxAttempts})`);
+                await new Promise(resolve => setTimeout(resolve, 1000));
+            }
+        }
+        throw new Error('Unreachable code');
+    }
+
+    /**
+     * Phase 1: Create prompt with window context placeholders filled
+     */
+    private static createWindowAwarePrompt(
+        messages: DiscordMessage[],
+        previousReports: Report[],
+        context: ReportContext & { windowStart: string; windowEnd: string; windowDuration: string }
+    ): { prompt: string; tokenCount: number } {
+        const tokenPerChar = AI.REPORT_GENERATION.TOKEN_PER_CHAR;
+        const overheadTokens = AI.REPORT_GENERATION.OVERHEAD_TOKENS;
+        const outputBuffer = AI.REPORT_GENERATION.OUTPUT_BUFFER;
+
+        // Use existing context formatting (no changes needed there yet)
+        const previousReportContext = formatPreviousReportForContext(previousReports);
+        const previousReportTokens = Math.ceil(previousReportContext.length * tokenPerChar);
+
+        const maxTokens = AI.REPORT_GENERATION.MAX_CONTEXT_TOKENS - overheadTokens - outputBuffer - previousReportTokens;
+
+        let totalTokens = overheadTokens + previousReportTokens;
+        const formattedMessages: string[] = [];
+
+        for (const message of messages) {
+            const formatted = formatSingleMessage(message);
+            const estimatedTokens = Math.ceil(formatted.length * tokenPerChar);
+
+            if (totalTokens + estimatedTokens > maxTokens) {
+                console.log(`[PROMPT] Token limit reached (${totalTokens}/${maxTokens}), slicing older messages`);
+                break;
+            }
+
+            formattedMessages.push(formatted);
+            totalTokens += estimatedTokens;
+        }
+
+        const formattedText = formattedMessages.join('\n\n');
+        const currentDate = formatHumanReadableTimestamp(new Date());
+
+        // ✅ PHASE 1 CHANGE: Fill window context placeholders
+        const prompt = AI.REPORT_GENERATION.PROMPT_TEMPLATE
+            .replace('{currentDate}', currentDate)
+            .replace('{windowStart}', new Date(context.windowStart).toLocaleString('en-US', { timeZone: 'UTC' }))
+            .replace('{windowEnd}', new Date(context.windowEnd).toLocaleString('en-US', { timeZone: 'UTC' }))
+            .replace('{windowDuration}', context.windowDuration)
+            .replace('{sources}', formattedText)
+            .replace('{previousReportContext}', previousReportContext);
+
+        const finalTokenEstimate = Math.ceil(prompt.length * tokenPerChar);
+        return { prompt, tokenCount: finalTokenEstimate };
     }
 }

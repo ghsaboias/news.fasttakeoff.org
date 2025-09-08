@@ -55,6 +55,9 @@ export class ReportService {
             };
 
             const report = await ReportAI.generate(messages, previousReports, context, this.env);
+            
+            // Mark as scheduled generation (traditional cron-based reports)
+            report.generationTrigger = 'scheduled';
 
             const cachedReports = await ReportCache.get(channelId, timeframe, this.env) || [];
             const updatedReports = [report, ...cachedReports.filter(r => r.reportId !== report.reportId)];
@@ -88,8 +91,12 @@ export class ReportService {
         }
 
         try {
-            // Get previous dynamic reports for context (different cache key)
-            const previousReports = await ReportCache.getPreviousReports(channelId, 'dynamic', this.env);
+            // ✅ PHASE 1 CHANGE: Use new context-aware previous reports
+            const previousReports = await ReportCache.getRecentReportsForContext(channelId, this.env);
+
+            // ✅ PHASE 1 CHANGE: Calculate window duration for context
+            const windowDurationMs = windowEnd.getTime() - windowStart.getTime();
+            const windowDurationText = this.formatDuration(windowDurationMs);
 
             const context: ReportContext = {
                 channelId,
@@ -98,26 +105,42 @@ export class ReportService {
                 timeframe: 'dynamic',
             };
 
-            const report = await ReportAI.generate(messages, previousReports, context, this.env);
-            
-            // Add dynamic window metadata
+            // ✅ PHASE 1 CHANGE: Enhanced context for prompt
+            const enhancedContext = {
+                ...context,
+                windowStart: windowStart.toISOString(),
+                windowEnd: windowEnd.toISOString(),
+                windowDuration: windowDurationText,
+            };
+
+            const report = await ReportAI.generateWithWindowContext(messages, previousReports, enhancedContext, this.env);
+
+            // Store with dynamic metadata
             report.generationTrigger = 'dynamic';
             report.windowStartTime = windowStart.toISOString();
             report.windowEndTime = windowEnd.toISOString();
-            report.timeframe = 'dynamic';
 
-            // Cache using separate dynamic key
             const cachedReports = await ReportCache.get(channelId, 'dynamic', this.env) || [];
             const updatedReports = [report, ...cachedReports.filter(r => r.reportId !== report.reportId)];
             await ReportCache.store(channelId, 'dynamic', updatedReports, this.env);
-
-            console.log(`[REPORTS] Generated dynamic report for ${channelName}: ${messages.length} messages in ${Math.round((windowEnd.getTime() - windowStart.getTime()) / (1000 * 60))}min window`);
 
             return { report, messages };
         } catch (error) {
             console.error(`[REPORTS] Error generating dynamic report for channel ${channelName}:`, error);
             throw error;
         }
+    }
+
+    // ✅ PHASE 1 ADDITION: Simple duration formatter
+    private formatDuration(durationMs: number): string {
+        const minutes = Math.floor(durationMs / (1000 * 60));
+        if (minutes < 60) return `${minutes} minutes`;
+
+        const hours = Math.floor(minutes / 60);
+        const remainingMinutes = minutes % 60;
+
+        if (remainingMinutes === 0) return `${hours} hours`;
+        return `${hours} hours ${remainingMinutes} minutes`;
     }
 
     /**
