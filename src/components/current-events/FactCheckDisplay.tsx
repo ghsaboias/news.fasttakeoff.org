@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader } from "@/components/ui/loader";
 import { useApi } from "@/lib/hooks";
-import { FactCheckResult } from "@/lib/types/core";
+import { ApiErrorResponse, FactCheckResult } from "@/lib/types/core";
 import { AlertTriangle, CheckCircle, Info, XCircle } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
 import LinkPreview from "./LinkPreview";
@@ -92,7 +92,7 @@ export default function FactCheckDisplay({ reportId, className, onDemandTrigger 
             });
 
             if (!response.ok) {
-                const errorData = await response.json();
+                const errorData = await response.json() as ApiErrorResponse;
                 throw new Error(errorData.error || 'Failed to perform fact-check');
             }
 

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { TranslationResponse } from '../types/core';
 
 interface TranslatedContent {
     headline?: string;
@@ -81,7 +82,7 @@ export function useTranslateReport(
                 throw new Error('Failed to translate report');
             }
 
-            const { translatedContent: newTranslatedContent } = await response.json();
+            const newTranslatedContent = await response.json() as TranslationResponse;
             setTranslatedContent(newTranslatedContent);
 
             if (onSuccessRef.current) {

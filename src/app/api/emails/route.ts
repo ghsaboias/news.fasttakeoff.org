@@ -17,7 +17,8 @@ import { NextRequest, NextResponse } from 'next/server';
  */
 export async function POST(request: NextRequest) {
     try {
-        const { email } = await request.json();
+        const body = await request.json() as { email?: string };
+        const { email } = body;
 
         if (!email || typeof email !== 'string') {
             return NextResponse.json(

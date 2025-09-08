@@ -54,7 +54,7 @@ export default function EntitiesClient() {
             const response = await fetch('/api/entities');
             if (!response.ok) throw new Error('Failed to fetch entities');
 
-            const data = await response.json();
+            const data = await response.json() as { entities: EntityWithReports[] };
 
             // Entities now come with reportIds from the API
             const aggregatedEntities = data.entities.map((entity: EntityWithReports) => ({

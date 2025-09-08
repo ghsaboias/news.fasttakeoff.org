@@ -66,7 +66,8 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
     return withErrorHandling(async (env) => {
-        const { reportId } = await request.json();
+        const body = await request.json() as { reportId?: string };
+        const { reportId } = body;
 
         if (!reportId) {
             return NextResponse.json(

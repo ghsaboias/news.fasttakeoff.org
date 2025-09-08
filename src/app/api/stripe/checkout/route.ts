@@ -58,7 +58,7 @@ export async function POST(req: Request) {
             body: params.toString(),
         });
 
-        const session = await response.json();
+        const session = await response.json() as { error?: { message?: string }; url?: string };
 
         if (!response.ok) {
             console.error('Stripe API error:', session);

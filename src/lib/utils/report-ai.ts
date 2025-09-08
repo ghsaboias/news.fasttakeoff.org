@@ -1,6 +1,6 @@
 import { getAIAPIKey, getAIProviderConfig } from '@/lib/ai-config';
 import { AI } from '@/lib/config';
-import { DiscordMessage, Report } from '@/lib/types/core';
+import { DiscordMessage, OpenAIResponse, Report } from '@/lib/types/core';
 import { v4 as uuidv4 } from 'uuid';
 import { Cloudflare } from '../../../worker-configuration';
 import { createPrompt, isReportTruncated } from './report-utils';
@@ -84,7 +84,7 @@ export class ReportAI {
                 throw new Error(`AI API error: ${response.status} - ${response.statusText} - ${errorText}`);
             }
 
-            const data = await response.json();
+            const data = await response.json() as OpenAIResponse;
             const llmResponse = JSON.parse(data.choices[0].message.content);
 
             // Validate required fields - handle both lowercase and capitalized field names

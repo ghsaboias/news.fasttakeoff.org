@@ -1,7 +1,7 @@
 import { Cloudflare } from '../../worker-configuration';
 import { TIME, URLs } from './config';
-import { Report } from './types/core';
 import { OpenRouterImageService } from './openrouter-image-service';
+import { InstagramMediaResponse, InstagramPublishResponse, Report } from './types/core';
 import { getOrCreateBackgroundUrl } from './utils/background-image-cache';
 const WEBSITE_URL = URLs.WEBSITE_URL;
 
@@ -228,7 +228,7 @@ export class InstagramService {
 
             const imageBuffer = await screenshotResponse.arrayBuffer();
             console.log(`[INSTAGRAM] Screenshot generated in ${Date.now() - screenshotStartTime}ms, size: ${imageBuffer.byteLength} bytes`);
-            
+
             // Save locally for testing
             try {
                 const fs = await import('fs');
@@ -366,7 +366,7 @@ export class InstagramService {
                 throw new Error(`Failed to create media: ${createMediaResponse.status}. ${errorText}`);
             }
 
-            const createMediaResult = await createMediaResponse.json();
+            const createMediaResult = await createMediaResponse.json() as InstagramMediaResponse;
             if (!createMediaResult.id) {
                 throw new Error(createMediaResult.error?.message || 'Failed to create media container');
             }
@@ -390,7 +390,7 @@ export class InstagramService {
                 throw new Error(`Failed to publish media: ${publishResponse.status}. ${errorText}`);
             }
 
-            const publishResult = await publishResponse.json();
+            const publishResult = await publishResponse.json() as InstagramPublishResponse;
             if (publishResult.id) {
                 console.log(`[INSTAGRAM] Successfully posted report ${report.reportId}. Media ID: ${publishResult.id}`);
             } else {

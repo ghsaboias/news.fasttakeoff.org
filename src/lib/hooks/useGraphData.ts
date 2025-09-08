@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { GraphEntitiesResponse } from '../types/core';
 
 interface Entity {
     type: 'person' | 'company' | 'fund';
@@ -28,7 +29,7 @@ export function useGraphData() {
                 console.log('Fetching graph data...');
                 const response = await fetch('/data/graph.json');
                 if (!response.ok) throw new Error('Failed to load network data');
-                const data = await response.json();
+                const data = await response.json() as GraphEntitiesResponse;
                 console.log('Graph data fetched successfully:', data);
                 const relationships = data.relationships.map(([from, to, type]: [string, string, string]) => ({ from, to, type }));
                 setGraphData({ entities: data.entities, relationships });

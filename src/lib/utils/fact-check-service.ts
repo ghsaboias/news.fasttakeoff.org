@@ -1,6 +1,6 @@
 import { CacheManager } from '@/lib/cache-utils';
 import { AI, TIME } from '@/lib/config';
-import { FactCheckResult, Report } from '@/lib/types/core';
+import { FactCheckResult, OpenAIResponse, Report } from '@/lib/types/core';
 import { Cloudflare } from '../../../worker-configuration';
 import { getAIAPIKey, getAIProviderConfig } from '../ai-config';
 
@@ -278,7 +278,7 @@ export class PerplexityFactCheckService {
         }
 
         console.log('Parsing response JSON...');
-        const data = await response.json();
+        const data = await response.json() as OpenAIResponse;
         console.log('Perplexity API response data:', JSON.stringify(data, null, 2));
 
         if (!data.choices || !data.choices[0] || !data.choices[0].message) {

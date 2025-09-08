@@ -13,7 +13,8 @@ import { NextRequest, NextResponse } from 'next/server';
  */
 export async function POST(request: NextRequest) {
     return withErrorHandling(async (env) => {
-        const { headline } = await request.json();
+        const body = await request.json() as { headline?: string };
+        const { headline } = body;
 
         if (!headline || typeof headline !== 'string') {
             return NextResponse.json({ error: 'Missing or invalid headline' }, { status: 400 });

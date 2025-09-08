@@ -196,7 +196,7 @@ export default function TweetEmbed({ content, channelId, className = '', onEmbed
                 urlsToFetch.forEach((url, index) => {
                     if (newEmbeds[index]) {
                         const cacheKey = `${url}-${channelId || 'no-channel'}`;
-                        setCachedEmbed(cacheKey, newEmbeds[index]);
+                        setCachedEmbed(cacheKey, newEmbeds[index] as TweetEmbedType);
                     }
                 });
 

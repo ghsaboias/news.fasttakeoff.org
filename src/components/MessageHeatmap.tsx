@@ -53,7 +53,8 @@ function MessageHeatmap() {
         UPDATE_INTERVAL: 300000, // 5 minutes in ms
     }), [])
 
-    const { data, loading, error } = useApi<HeatmapResponse>(fetchHeatmapData, {
+    const { data, loading, error } = useApi<HeatmapResponse>(
+        fetchHeatmapData as () => Promise<HeatmapResponse>, {
         pollInterval: CONSTANTS.UPDATE_INTERVAL,
     });
 

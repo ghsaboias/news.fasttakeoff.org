@@ -1,6 +1,6 @@
 import { Cloudflare } from '../../worker-configuration';
 import { URLs } from './config';
-import { Report } from './types/core';
+import { FacebookPageResponse, FacebookPostResponse, Report } from './types/core';
 
 const WEBSITE_URL = URLs.WEBSITE_URL;
 
@@ -141,7 +141,7 @@ export class FacebookService {
                 throw new Error(`Failed to post to Facebook: ${response.status} - ${errorText}`);
             }
 
-            const result = await response.json();
+            const result = await response.json() as FacebookPostResponse;
 
             if (result.id) {
                 console.log(`[FACEBOOK] Successfully posted report ${report.reportId}. Post ID: ${result.id}`);
@@ -171,7 +171,7 @@ export class FacebookService {
                 return false;
             }
 
-            const result = await response.json();
+            const result = await response.json() as FacebookPageResponse;
             console.log(`[FACEBOOK] Connection test successful. Page: ${result.name}, Can post: ${result.can_post}`);
 
             return result.can_post === true;

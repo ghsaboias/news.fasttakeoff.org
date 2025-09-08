@@ -11,10 +11,10 @@ export function cn(...inputs: ClassValue[]) {
 
 // Intl options helpers
 type IntlKey = keyof Intl.DateTimeFormatOptions;
-const DATE_KEYS = new Set<IntlKey>(['weekday','era','year','month','day','timeZone','calendar','timeZoneName']);
-const TIME_KEYS = new Set<IntlKey>(['hour','minute','second','hour12','timeZone','timeZoneName']);
+const DATE_KEYS = new Set<IntlKey>(['weekday', 'era', 'year', 'month', 'day', 'timeZone', 'calendar', 'timeZoneName']);
+const TIME_KEYS = new Set<IntlKey>(['hour', 'minute', 'second', 'hour12', 'timeZone', 'timeZoneName']);
 const DATETIME_KEYS = new Set<IntlKey>([
-  'weekday','era','year','month','day','hour','minute','second','hour12','timeZone','timeZoneName','calendar'
+  'weekday', 'era', 'year', 'month', 'day', 'hour', 'minute', 'second', 'hour12', 'timeZone', 'timeZoneName', 'calendar'
 ]);
 
 function sanitizeIntlOptions(

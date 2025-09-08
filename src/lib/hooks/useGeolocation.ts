@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { GeolocationResponse } from '../types/core';
 
 interface UseGeolocationOptions {
     /** Initial value before geo data is loaded. Defaults to null for loading state */
@@ -28,7 +29,7 @@ export function useGeolocation(options: UseGeolocationOptions = {}) {
                     throw new Error(`Geo API error: ${response.status}`);
                 }
 
-                const data = await response.json();
+                const data = await response.json() as GeolocationResponse;
                 // Treat 'XX' (unknown/local) as potentially US for local dev convenience
                 setIsUSBased(data.country === 'US');
             } catch (err) {

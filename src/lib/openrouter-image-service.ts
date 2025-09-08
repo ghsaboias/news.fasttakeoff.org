@@ -1,4 +1,5 @@
 import { Cloudflare } from '../../worker-configuration';
+import { OpenRouterImageResponse } from './types/core';
 
 export class OpenRouterImageService {
     private readonly apiKey: string;
@@ -55,7 +56,7 @@ export class OpenRouterImageService {
                 throw new Error(`OpenRouter API error: ${response.status} - ${errorText}`);
             }
 
-            const result = await response.json();
+            const result = await response.json() as OpenRouterImageResponse;
             console.log(`[OPENROUTER] Full API response:`, JSON.stringify(result, null, 2));
 
             if (!result.choices || !result.choices[0]?.message?.images?.[0]) {

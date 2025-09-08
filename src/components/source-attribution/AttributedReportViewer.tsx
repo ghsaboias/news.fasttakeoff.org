@@ -31,7 +31,7 @@ const fetchAttributions = async (reportId: string, channelId: string): Promise<R
         throw new Error(`Failed to fetch attributions: ${response.status}`);
     }
 
-    const data = await response.json();
+    const data = await response.json() as ReportSourceAttribution;
 
     if (data && data.attributions && Array.isArray(data.attributions)) {
         return data;

@@ -42,7 +42,7 @@ const fetchSummary = async (selectedKey: string, topicId?: string): Promise<Summ
 
     const response = await fetch(endpoint);
     if (!response.ok) {
-        const errorData = await response.json();
+        const errorData = await response.json() as { error?: string };
         throw new Error(errorData.error || 'Failed to fetch summary');
     }
     return response.json();

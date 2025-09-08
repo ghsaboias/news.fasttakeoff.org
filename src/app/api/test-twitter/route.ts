@@ -4,9 +4,9 @@ import { Report } from '@/lib/types/core';
 
 export async function POST(request: Request) {
     return withErrorHandling(async (env) => {
-        const body = await request.json();
-        const report = body?.report as Report | undefined;
-        const withImage = Boolean(body?.withImage);
+        const body = await request.json() as { report?: Report; withImage?: boolean };
+        const { report } = body;
+        const withImage = Boolean(body.withImage);
 
         if (!report) {
             throw new Error('Report data is required');

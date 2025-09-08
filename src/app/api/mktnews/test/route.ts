@@ -1,5 +1,6 @@
 import { withErrorHandling } from '@/lib/api-utils';
 import { MktNewsService } from '@/lib/data/mktnews-service';
+import { PiServerStatsResponse } from '@/lib/types/core';
 
 /**
  * POST /api/mktnews/test
@@ -43,8 +44,8 @@ export async function POST() {
                     signal: AbortSignal.timeout(5000)
                 });
                 if (response.ok) {
-                    const stats = await response.json();
-                    logs.push(`[TEST] Pi server accessible: ${stats.totalMessages} messages, uptime: ${Math.round(stats.uptime)}s`);
+                    const stats = await response.json() as PiServerStatsResponse;
+                    logs.push(`[TEST] Pi server accessible: ${stats?.totalMessages || 'unknown'} messages, uptime: ${stats?.uptime ? Math.round(stats.uptime) : 'unknown'}s`);
                 } else {
                     logs.push(`[TEST] Pi server responded with status: ${response.status}`);
                 }

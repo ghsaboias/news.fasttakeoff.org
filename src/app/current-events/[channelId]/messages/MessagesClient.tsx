@@ -30,7 +30,7 @@ export default function MessagesClient({
             try {
                 const response = await fetch(`/api/messages?channelId=${channelId}`);
                 if (!response.ok) throw new Error('Failed to fetch messages');
-                const data = await response.json();
+                const data = await response.json() as { channel: DiscordChannel; messages: { messages: DiscordMessage[]; count: number } };
                 setChannel(data.channel);
                 setAllMessages(data.messages.messages);
                 setDisplayedMessages(data.messages.messages.slice(0, MESSAGES_PER_PAGE));
