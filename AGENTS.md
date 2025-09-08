@@ -40,3 +40,17 @@
 ## Security & Configuration
 - Store secrets in `.env.local`/`.dev.vars`; never commit secrets. Cloudflare bindings are in `wrangler.toml` (KV, R2, D1, crons).
 - After changing env/bindings, run `npm run cf-typegen` and re-verify `npm run preview:patch` locally.
+
+**AI Rule Map**
+- **Core Flows:** `.cursor/rules/report-generation-flow.mdc`, `.cursor/rules/brazil-news-summary-flow.mdc`, `.cursor/rules/sitemap-generation-flow.mdc`, `.cursor/rules/source-attribution-flow.mdc`
+- **Infra Patterns:** `.cursor/rules/cache-namespace-patterns.mdc`, `.cursor/rules/cloudflare-worker-patterns.mdc`, `.cursor/rules/r2-storage-patterns.mdc`, `.cursor/rules/wrangler.mdc`
+- **Visualizations:** `.cursor/rules/news-globe-visualization.mdc`, `.cursor/rules/message-heatmap-visualization.mdc`, `.cursor/rules/power-network-visualization.mdc`
+- **Distribution:** `.cursor/rules/instagram-posting-flow.mdc`
+- **Dev & Testing:** `.cursor/rules/development-workflow.mdc`, `.cursor/rules/testing-infrastructure.mdc`, `.cursor/rules/time-resilient-patterns.mdc`
+- **Market Feed:** `.cursor/rules/market-feed-implementation.mdc`
+
+Quick Rules
+- After major code changes, run "npm run lint" and "npx tsc --noEmit" and fix any errors/issues
+- Never use the "any" type
+- Never leave variables unused
+- Wrangler commands never use ":", that's old syntax. npx wrangler kv:key list is now npx wrangler kv key list

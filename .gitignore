@@ -91,3 +91,5 @@ analysis-results/
 .logs/
 test-image*.jpg
 test-curl-oauth.sh
+
+newsletter/node_modules/

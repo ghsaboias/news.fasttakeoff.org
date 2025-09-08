@@ -262,6 +262,42 @@ interface ReportSourceAttribution {
 - Cache keys: `attribution:{reportId}`
 - Supports cache invalidation for specific reports
 
+### 6. News Feeds (RSS)
+
+Aggregates multiple RSS sources (Brazil + global) into a single, sortable stream and exposes a simple UI and API.
+
+#### Functionality
+
+- Pulls items from configured RSS sources in `src/lib/config.ts` → `RSS_FEEDS`.
+- Global feeds added (examples): Bloomberg Markets/Economics, Axios, Yahoo Finance; Brazil sources already present.
+- Region filtering via `RSS_FEED_REGIONS` mapping (BR, US) used by the aggregator/API and the UI toggle.
+- Light caching (~3 minutes) in `FEEDS_CACHE` for the aggregated API.
+
+#### UI
+
+- Page: `/feeds` — reverse‑chronological list with source label, time, snippet, thumbnail.
+- Filters: All / US / Brazil — updates URL (`?region=US|BR`) without page reload.
+- Discoverability: linked in the header as “Feeds”.
+
+#### API
+
+- `GET /api/news/feeds`
+  - Query params:
+    - `feeds`: optional CSV of feed IDs (exact names from `RSS_FEEDS`)
+    - `perFeedLimit`: 1–50 (default 20)
+    - `limit`: 1–200 overall (default 100)
+    - `region`: `US` or `BR` (optional)
+  - Response: array of items with `{ sourceId, sourceUrl, title, link, pubDate, contentSnippet?, enclosureUrl?, categories? }` sorted by `pubDate` desc.
+
+#### Configuration
+
+- Add feeds: edit `src/lib/config.ts` `RSS_FEEDS`.
+- Classify region: edit `RSS_FEED_REGIONS` (`'US' | 'BR'`).
+
+#### Tests
+
+- Unit: `tests/unit/feeds-aggregator.test.ts` checks sorting and `region=BR` filtering using mocks (no network).
+
 ## Development and Testing
 
 ### Environment Setup
