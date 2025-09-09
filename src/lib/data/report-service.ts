@@ -63,6 +63,12 @@ export class ReportService {
             const updatedReports = [report, ...cachedReports.filter(r => r.reportId !== report.reportId)];
             await ReportCache.store(channelId, timeframe, updatedReports, this.env);
 
+            // Phase 2: Cache individual report immediately (cache-on-generation)
+            await ReportCache.storeIndividualReport(report, this.env);
+            
+            // Phase 2: Invalidate cascade caches
+            await this.invalidateCascadeCaches();
+
             return { report, messages };
         } catch (error) {
             console.error(`[REPORTS] Error generating ${timeframe} report for channel ${channelName}:`, error);
@@ -123,6 +129,12 @@ export class ReportService {
             const cachedReports = await ReportCache.get(channelId, 'dynamic', this.env) || [];
             const updatedReports = [report, ...cachedReports.filter(r => r.reportId !== report.reportId)];
             await ReportCache.store(channelId, 'dynamic', updatedReports, this.env);
+
+            // Phase 2: Cache individual report immediately (cache-on-generation)
+            await ReportCache.storeIndividualReport(report, this.env);
+            
+            // Phase 2: Invalidate cascade caches
+            await this.invalidateCascadeCaches();
 
             return { report, messages };
         } catch (error) {
@@ -293,6 +305,78 @@ export class ReportService {
 
     async getLatestReportPerChannel(): Promise<Report[]> {
         return ReportCache.getLatestReportPerChannelId(this.env);
+    }
+
+    /**
+     * Get latest report per channel with KV-first aggregated cache strategy
+     */
+    async getLatestReportPerChannelWithCache(): Promise<Report[]> {
+        // Try KV aggregated cache first
+        const cached = await ReportCache.getCurrentEventsCache(this.env);
+        if (cached) {
+            return cached;
+        }
+
+        // Cache miss: fetch from D1
+        const reports = await ReportCache.getLatestReportPerChannelId(this.env);
+        
+        // Warm the cache for next request
+        if (reports.length > 0) {
+            await ReportCache.storeCurrentEventsCache(reports, this.env);
+        }
+
+        return reports;
+    }
+
+    /**
+     * Get individual report by ID with KV-first strategy
+     */
+    async getReportById(reportId: string): Promise<Report | null> {
+        // Try KV cache first
+        const cached = await ReportCache.getIndividualReport(reportId, this.env);
+        if (cached) {
+            return cached;
+        }
+
+        // Cache miss: search through D1 by scanning channels
+        console.log(`[REPORTS] Searching D1 for report ${reportId}`);
+        
+        // Get all channels to search through
+        const channels = await this.channelsService.getChannels();
+        
+        // Search through channels to find the report
+        for (const channel of channels) {
+            const reports = await ReportCache.getAllReportsForChannel(channel.id, this.env);
+            const report = reports.find(r => r.reportId === reportId);
+            
+            if (report) {
+                // Cache the found report for future requests
+                await ReportCache.storeIndividualReport(report, this.env);
+                return report;
+            }
+        }
+
+        console.log(`[REPORTS] Report ${reportId} not found in any channel`);
+        return null;
+    }
+
+    /**
+     * Invalidate cascade caches after new report generation
+     */
+    private async invalidateCascadeCaches(): Promise<void> {
+        try {
+            // Invalidate current-events aggregated cache
+            await ReportCache.invalidateCurrentEventsCache(this.env);
+            
+            // Invalidate homepage cache
+            if (this.env.REPORTS_CACHE) {
+                await this.env.REPORTS_CACHE.delete('homepage:latest-reports');
+                await this.env.REPORTS_CACHE.delete('homepage:backup-reports');
+                console.log('[REPORTS] Invalidated homepage caches');
+            }
+        } catch (error) {
+            console.error('[REPORTS] Failed to invalidate cascade caches:', error);
+        }
     }
 
     private async _generateAndCacheReportsForTimeframes(timeframesToProcess: TimeframeKey[], extractEntities: boolean = false): Promise<Report[]> {

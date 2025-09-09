@@ -427,6 +427,118 @@ export class ReportCacheD1 {
     }
 
     /**
+     * Store current-events aggregated cache (53 reports - latest per channel)
+     */
+    static async storeCurrentEventsCache(reports: Report[], env: Cloudflare.Env): Promise<void> {
+        if (!env.REPORTS_CACHE) return;
+
+        try {
+            const timestamp = Math.floor(Date.now() / (15 * 60 * 1000)) * (15 * 60 * 1000); // Round to 15-minute intervals
+            const cacheKey = `current-events:aggregated:${timestamp}`;
+            
+            await env.REPORTS_CACHE.put(
+                cacheKey,
+                JSON.stringify(reports),
+                { expirationTtl: 900 } // 15 minutes TTL
+            );
+
+            console.log(`[REPORTS] Cached ${reports.length} reports for current-events aggregated cache`);
+        } catch (error) {
+            console.error('[REPORTS] Failed to cache current-events aggregated cache:', error);
+        }
+    }
+
+    /**
+     * Get current-events aggregated cache (53 reports - latest per channel)
+     */
+    static async getCurrentEventsCache(env: Cloudflare.Env): Promise<Report[] | null> {
+        if (!env.REPORTS_CACHE) return null;
+
+        try {
+            const timestamp = Math.floor(Date.now() / (15 * 60 * 1000)) * (15 * 60 * 1000);
+            const cacheKey = `current-events:aggregated:${timestamp}`;
+            
+            const cached = await env.REPORTS_CACHE.get(cacheKey);
+            if (cached) {
+                const reports = JSON.parse(cached);
+                if (Array.isArray(reports) && reports.length > 0) {
+                    console.log(`[REPORTS] Current-events cache hit: ${reports.length} reports`);
+                    return reports;
+                }
+            }
+
+            console.log('[REPORTS] Current-events cache miss');
+            return null;
+        } catch (error) {
+            console.warn('[REPORTS] Failed to get current-events cache:', error);
+            return null;
+        }
+    }
+
+    /**
+     * Store individual report on generation (cache-on-generation strategy)
+     */
+    static async storeIndividualReport(report: Report, env: Cloudflare.Env): Promise<void> {
+        if (!env.REPORTS_CACHE) return;
+
+        try {
+            const cacheKey = `report:${report.reportId}:full`;
+            
+            await env.REPORTS_CACHE.put(
+                cacheKey,
+                JSON.stringify(report),
+                { expirationTtl: 14400 } // 4 hours TTL
+            );
+
+            console.log(`[REPORTS] Cached individual report: ${report.reportId}`);
+        } catch (error) {
+            console.error(`[REPORTS] Failed to cache individual report ${report.reportId}:`, error);
+        }
+    }
+
+    /**
+     * Get individual report by ID with KV-first strategy
+     */
+    static async getIndividualReport(reportId: string, env: Cloudflare.Env): Promise<Report | null> {
+        if (!env.REPORTS_CACHE) return null;
+
+        try {
+            const cacheKey = `report:${reportId}:full`;
+            const cached = await env.REPORTS_CACHE.get(cacheKey);
+            
+            if (cached) {
+                const report = JSON.parse(cached);
+                console.log(`[REPORTS] Individual report cache hit: ${reportId}`);
+                return report;
+            }
+
+            console.log(`[REPORTS] Individual report cache miss: ${reportId}`);
+            return null;
+        } catch (error) {
+            console.warn(`[REPORTS] Failed to get individual report ${reportId} from cache:`, error);
+            return null;
+        }
+    }
+
+    /**
+     * Invalidate current-events aggregated cache (call after new report generation)
+     */
+    static async invalidateCurrentEventsCache(env: Cloudflare.Env): Promise<void> {
+        if (!env.REPORTS_CACHE) return;
+
+        try {
+            // Get current timestamp key to delete active cache
+            const timestamp = Math.floor(Date.now() / (15 * 60 * 1000)) * (15 * 60 * 1000);
+            const cacheKey = `current-events:aggregated:${timestamp}`;
+            
+            await env.REPORTS_CACHE.delete(cacheKey);
+            console.log('[REPORTS] Invalidated current-events aggregated cache');
+        } catch (error) {
+            console.error('[REPORTS] Failed to invalidate current-events cache:', error);
+        }
+    }
+
+    /**
      * Cleanup expired reports (can be called periodically)
      */
     static async cleanup(env: Cloudflare.Env): Promise<number> {

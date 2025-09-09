@@ -70,9 +70,8 @@ export async function generateMetadata({ params }: { params: Promise<{ channelId
 
         const reportService = new ReportService(env);
 
-        // Get the specific report for SEO optimization
-        const reports = await reportService.getAllReportsForChannel(channelId) || [];
-        const report = reports.find(r => r.reportId === reportId);
+        // Get the specific report for SEO optimization using KV-first strategy
+        const report = await reportService.getReportById(reportId);
         const channels = await getChannels(env);
         const channel = channels.find(c => c.id === channelId);
 
@@ -168,9 +167,8 @@ export default async function ReportDetailPage({ params }: { params: Promise<{ c
 
     const reportService = new ReportService(env);
 
-    // Get the specific report for structured data
-    const reports = await reportService.getAllReportsForChannel(channelId) || [];
-    const report = reports.find(r => r.reportId === reportId);
+    // Get the specific report using KV-first strategy
+    const report = await reportService.getReportById(reportId);
     const channels = await getChannels(env);
     const channel = channels.find(c => c.id === channelId);
 
