@@ -109,12 +109,9 @@ export async function GET(request: NextRequest) {
         // Filter by timeframe/mode if specified
         if (timeframe && ['2h', '6h', 'dynamic'].includes(timeframe)) {
             reports = reports.filter(report => report.timeframe === timeframe);
-        } else if (mode === 'dynamic' && FEATURE_FLAGS.SHOW_DYNAMIC_REPORTS_IN_UI) {
-            // Show dynamic reports when explicitly requested via mode parameter
-            reports = reports.filter(report => report.generationTrigger === 'dynamic');
-        } else if (!mode && !timeframe) {
-            // Default behavior: exclude dynamic reports unless explicitly requested
-            reports = reports.filter(report => report.generationTrigger !== 'dynamic');
+        } else if (mode === 'scheduled') {
+            // Show only scheduled reports when explicitly requested
+            reports = reports.filter(report => report.generationTrigger === 'scheduled');
         }
 
         // Cache the response for 5 minutes (longer for larger requests)
