@@ -3,6 +3,7 @@ import { getAIAPIKey, getAIProviderConfig } from '../ai-config';
 import { CacheManager } from '../cache-utils';
 import { AI, CACHE, TIME } from '../config';
 import { ExecutiveSummary, OpenAIResponse, Report } from '../types/core';
+import { ReportCacheD1, ReportRow } from '../utils/report-cache-d1';
 
 export class ExecutiveSummaryService {
     private env: Cloudflare.Env;
@@ -117,22 +118,10 @@ export class ExecutiveSummaryService {
                 return [];
             }
 
-            // Transform D1 results to Report objects
-            const allReports: Report[] = result.results.map((row: Record<string, unknown>) => ({
-                reportId: row.id,
-                headline: row.headline,
-                body: row.body,
-                channelId: row.channel_id,
-                channelName: row.channel_name,
-                city: row.city,
-                country: row.country,
-                generatedAt: row.generated_at,
-                generationTrigger: row.generation_trigger,
-                windowStartTime: row.window_start_time,
-                windowEndTime: row.window_end_time,
-                messageCount: row.message_count,
-                messageIds: row.message_ids ? JSON.parse(row.message_ids) : []
-            }));
+            // Transform D1 results to Report objects using the established pattern
+            const allReports: Report[] = result.results.map((row) => 
+                ReportCacheD1.rowToReport(row as unknown as ReportRow)
+            );
 
             console.log(`[EXECUTIVE_SUMMARY] Found ${allReports.length} reports from last 6 hours`);
             return allReports;

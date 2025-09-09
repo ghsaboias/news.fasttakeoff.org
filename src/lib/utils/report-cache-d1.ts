@@ -4,7 +4,7 @@ import { groupAndSortReports } from '@/lib/utils';
 import type { Cloudflare } from '../../../worker-configuration';
 
 // Type for D1 row results
-interface ReportRow {
+export interface ReportRow {
     id: number;
     report_id: string;
     channel_id: string | null;
@@ -368,7 +368,7 @@ export class ReportCacheD1 {
     /**
      * Convert database row to Report object
      */
-    private static rowToReport(row: ReportRow): Report {
+    static rowToReport(row: ReportRow): Report {
         return {
             reportId: row.report_id,
             channelId: row.channel_id || undefined,
