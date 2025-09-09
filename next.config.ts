@@ -13,6 +13,7 @@ if (process.env.NODE_ENV === 'development' && process.env.OPENNEXT_DEV === '1') 
 }
 
 const nextConfig: NextConfig = {
+  productionBrowserSourceMaps: false,
   images: {
     remotePatterns: [
       {
