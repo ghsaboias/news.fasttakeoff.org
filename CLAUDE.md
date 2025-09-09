@@ -81,9 +81,15 @@ During major events (war outbreak, breaking news):
 For newsletter rendering, use headless Chrome to generate screenshots of HTML files, then read and analyze the generated images.
 
 ## Cron Job Monitoring
-Current implementation uses KV (`CRON_STATUS_CACHE`) for live status monitoring via SSE dashboard. 
+Current implementation uses KV (`CRON_STATUS_CACHE`) for live status monitoring via SSE dashboard at `/admin`.
 
-**Future enhancement idea:** Cloudflare Analytics Engine integration for long-term metrics, trend analysis, and professional analytics dashboards. Would enable queries like "average duration by task type per day" and historical performance tracking.
+**API Endpoints:**
+- `/api/admin/live-metrics` - SSE stream for real-time status updates (✅ Used by dashboard)
+- `/api/admin/cron-analytics` - Historical analytics and reporting (❌ Built but not consumed by UI yet)
+
+**Future enhancements:** 
+- Add analytics dashboard UI to consume the cron-analytics endpoint for historical trends
+- Cloudflare Analytics Engine integration for long-term metrics and professional analytics dashboards
 
 **AI Rule Map**
 - **Core Flows:** `.cursor/rules/report-generation-flow.mdc`, `.cursor/rules/brazil-news-summary-flow.mdc`, `.cursor/rules/sitemap-generation-flow.mdc`, `.cursor/rules/source-attribution-flow.mdc`
