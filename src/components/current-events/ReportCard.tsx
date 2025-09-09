@@ -48,7 +48,13 @@ function ReportCard({
 
         // Calculate timeframe display
         let timeframeDisplay;
-        if (report.generatedAt && report.timeframe) {
+        if (report.timeframe === 'dynamic' && report.windowStartTime && report.windowEndTime) {
+            // For dynamic reports, use the actual window times
+            timeframeDisplay = { 
+                start: report.windowStartTime, 
+                end: report.windowEndTime 
+            };
+        } else if (report.generatedAt && report.timeframe) {
             const end = new Date(report.generatedAt);
             const ms = timeframeToMs(report.timeframe);
             if (ms) {
@@ -70,7 +76,7 @@ function ReportCard({
             timeframeDisplay,
             itemUnitSingular
         };
-    }, [report.channelId, report.reportId, report.body, report.messageCount, report.channelName, report.generatedAt, report.timeframe, clickableChannel]);
+    }, [report.channelId, report.reportId, report.body, report.messageCount, report.channelName, report.generatedAt, report.timeframe, report.windowStartTime, report.windowEndTime, clickableChannel]);
 
     return (
         <Card className="flex flex-col gap-4">

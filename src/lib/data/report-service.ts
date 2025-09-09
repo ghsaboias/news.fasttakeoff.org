@@ -295,10 +295,12 @@ export class ReportService {
         const channels = await this.channelsService.getChannels();
         const channelIds = channels.map(c => c.id);
 
-        // Build all possible cache keys for all channels and timeframes
+        // Build all possible cache keys for all channels and timeframes (including dynamic)
         const allKeys: string[] = [];
+        const timeframes: (TimeframeKey | 'dynamic')[] = [...TIME.TIMEFRAMES, 'dynamic'];
+        
         for (const channelId of channelIds) {
-            for (const timeframe of TIME.TIMEFRAMES) {
+            for (const timeframe of timeframes) {
                 allKeys.push(`reports:${channelId}:${timeframe}`);
             }
         }
@@ -313,7 +315,7 @@ export class ReportService {
             let latestReport: Report | null = null;
             let latestTimestamp = 0;
 
-            for (const timeframe of TIME.TIMEFRAMES) {
+            for (const timeframe of timeframes) {
                 const key = `reports:${channelId}:${timeframe}`;
                 const reports = batchResults.get(key);
 
