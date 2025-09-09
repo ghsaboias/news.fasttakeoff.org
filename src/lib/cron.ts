@@ -79,16 +79,16 @@ type CronTaskFunction = (env: Cloudflare.Env, scheduledTime?: number) => Promise
 
 // Map cron expressions to their tasks
 const CRON_TASKS: Record<string, CronTaskFunction> = {
-    // DISABLED: Static 2h report generation - replaced by dynamic window evaluation
+    // Post top dynamic report to social media every 2 hours
     // Every 2 hours (0:00, 2:00, 4:00, etc)
     "0 */2 * * *": async (env: Cloudflare.Env) => {
         // Skip if Discord-dependent processing is disabled
         if ((env as unknown as { DISCORD_DISABLED?: string | boolean }).DISCORD_DISABLED) {
-            console.warn('[CRON] DISCORD_DISABLED is set – skipping feeds generation');
+            console.warn('[CRON] DISCORD_DISABLED is set – skipping feeds generation and social media posting');
             return;
         }
         
-        // Only generate feeds summaries - report generation now handled by dynamic window evaluation
+        // Generate feeds summaries
         const feedsService = new FeedsService(env);
 
         await logRun('FEEDS_GERAL', () => feedsService.createFreshSummary('geral', ['CNN-Brasil', 'BBC-Brasil', 'G1 - Política', 'G1 - Economia', 'UOL']), {
@@ -98,8 +98,14 @@ const CRON_TASKS: Record<string, CronTaskFunction> = {
         await logRun('FEEDS_MERCADO', () => feedsService.createFreshSummary('mercado', ['Investing.com Brasil - Empresas', 'Investing.com Brasil - Mercado']), {
             timeoutMs: TASK_TIMEOUTS.FEEDS
         });
+
+        // Post top dynamic report from last 2 hours to social media
+        const reportService = new ReportService(env);
+        await logRun('SOCIAL_MEDIA_POST', () => reportService.postTopDynamicReport(2), {
+            timeoutMs: TASK_TIMEOUTS.REPORTS
+        });
         
-        /* COMMENTED OUT - Report generation now handled by dynamic evaluation every 15 minutes
+        /* LEGACY CODE - Report generation now handled by dynamic evaluation every 15 minutes
         
         // Skip 2h report generation if this coincides with 6h report time
         if (scheduledTime && is6hReportTime(scheduledTime)) {

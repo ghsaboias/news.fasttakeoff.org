@@ -6,7 +6,7 @@ import { InstagramService } from '../instagram-service';
 import { TwitterService } from '../twitter-service';
 import { EntityExtractor } from '../utils/entity-extraction';
 import { ReportAI, ReportContext } from '../utils/report-ai';
-import { ReportCacheD1 as ReportCache } from '../utils/report-cache-d1';
+import { ReportCacheD1 as ReportCache, ReportRow } from '../utils/report-cache-d1';
 import { ChannelsService } from './channels-service';
 import { MessagesService } from './messages-service';
 
@@ -545,5 +545,41 @@ export class ReportService {
         const generatedReports = await this._generateAndCacheReportsForTimeframes(timeframesToProcess, extractEntities);
         console.log(`[REPORTS] Generated ${generatedReports.length} reports without social media posting.`);
         console.log('[REPORTS] Manual run (no social media) finished.');
+    }
+
+    /**
+     * Query recent dynamic reports and post the top one to social media
+     * This replaces the old 2h report generation for social media posting
+     */
+    async postTopDynamicReport(lookbackHours: number = 2): Promise<void> {
+        try {
+            // Query D1 for dynamic reports from the last N hours
+            const query = `
+                SELECT * FROM reports 
+                WHERE generation_trigger = 'dynamic' 
+                  AND generated_at >= datetime('now', '-${lookbackHours} hours')
+                ORDER BY message_count DESC 
+                LIMIT 1
+            `;
+            
+            const result = await this.env.FAST_TAKEOFF_NEWS_DB.prepare(query).first<ReportRow>();
+            
+            if (!result) {
+                console.log(`[REPORTS] No dynamic reports found in the last ${lookbackHours} hours`);
+                return;
+            }
+
+            // Convert D1 row to Report object using existing pattern
+            const topReport = ReportCache.rowToReport(result);
+            
+            console.log(`[REPORTS] Found top dynamic report: ${topReport.channelName} with ${topReport.messageCount} sources from ${topReport.generatedAt}`);
+            
+            // Use existing social media posting logic
+            await this._postTopReportToSocialMedia([topReport]);
+            
+        } catch (error) {
+            console.error('[REPORTS] Error in postTopDynamicReport:', error);
+            throw error;
+        }
     }
 }
