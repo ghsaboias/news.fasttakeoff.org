@@ -4,7 +4,6 @@ compatibility_date = "2025-03-11"
 compatibility_flags = [
     "nodejs_compat",
 ]
-upload_source_maps = true
 
 [triggers]
 # Every 2 hours (0:00, 2:00, 4:00, etc) for 2h reports
