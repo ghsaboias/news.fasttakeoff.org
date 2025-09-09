@@ -192,6 +192,22 @@ export class ReportCacheD1 {
             } catch (error) {
                 console.warn('[REPORTS] Homepage cache failed, falling back:', error);
             }
+
+            // Cache miss: fetch from D1, warm cache, and return
+            try {
+                const reports = await this.fetchOptimizedHomepageReports(env, limit);
+                
+                // Warm the cache for subsequent requests
+                if (reports.length > 0) {
+                    await this.storeHomepageReports(reports, env);
+                    console.log(`[REPORTS] Warmed homepage cache with ${reports.length} reports`);
+                }
+                
+                return reports.slice(0, limit);
+            } catch (error) {
+                console.error('[REPORTS] Failed to fetch and cache homepage reports:', error);
+                // Continue to fallback logic below
+            }
         }
 
         try {
@@ -220,6 +236,36 @@ export class ReportCacheD1 {
             console.error('[REPORTS] Database query failed:', error);
             return [];
         }
+    }
+
+    /**
+     * Optimized D1 query specifically for homepage needs
+     */
+    private static async fetchOptimizedHomepageReports(env: Cloudflare.Env, limit: number): Promise<Report[]> {
+        // Get recent reports (last 24 hours) sorted by generated_at, then apply groupAndSortReports
+        const oneDayAgo = Date.now() - (24 * 60 * 60 * 1000);
+        
+        const result = await env.FAST_TAKEOFF_NEWS_DB.prepare(`
+            SELECT * FROM reports 
+            WHERE expires_at > ? 
+            AND generated_at > ? 
+            AND channel_id != 'homepage' 
+            AND cache_status NOT LIKE 'homepage-cache%'
+            ORDER BY generated_at DESC 
+            LIMIT ?
+        `).bind(Date.now(), new Date(oneDayAgo).toISOString(), limit * 3).all();
+
+        if (!result.success || !result.results.length) {
+            console.log('[REPORTS] No recent reports found for homepage');
+            return [];
+        }
+
+        const reports = result.results.map((row) => this.rowToReport(row as unknown as ReportRow));
+        
+        // Use the same groupAndSortReports logic for consistency
+        const sortedReports = groupAndSortReports(reports);
+        
+        return sortedReports.slice(0, Math.max(limit, 10)); // Ensure we get at least 10 for caching
     }
 
     /**
@@ -284,75 +330,30 @@ export class ReportCacheD1 {
     }
 
     /**
-     * Store homepage reports cache - these are stored as a special report with a known report_id
+     * Store homepage reports cache in KV for fast access
      */
     static async storeHomepageReports(reports: Report[], env: Cloudflare.Env): Promise<void> {
-        if (!env.FAST_TAKEOFF_NEWS_DB) return;
+        if (!env.REPORTS_CACHE) return;
 
         try {
             const topReports = reports.slice(0, 10); // Store top 10 reports
-            const now = Date.now();
-            const expiresAt = now + (CACHE.TTL.REPORTS * 1000);
-
-            // Delete existing homepage cache entries
-            await env.FAST_TAKEOFF_NEWS_DB.prepare(
-                'DELETE FROM reports WHERE report_id IN (?, ?)'
-            ).bind('homepage:latest-reports', 'homepage:backup-reports').run();
-
-            // Store primary homepage cache
-            await env.FAST_TAKEOFF_NEWS_DB.prepare(`
-                INSERT INTO reports (
-                    report_id, channel_id, channel_name, headline, city, body,
-                    generated_at, message_count, last_message_timestamp, user_generated,
-                    timeframe, cache_status, message_ids, created_at, expires_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            `).bind(
+            
+            // Store in KV for fast homepage access (no TTL - manual invalidation only)
+            await env.REPORTS_CACHE.put(
                 'homepage:latest-reports',
-                'homepage',
-                'Homepage Cache',
-                'Homepage Latest Reports',
-                'Cache',
-                JSON.stringify(topReports), // Store the array in the body field
-                new Date().toISOString(),
-                topReports.length,
-                null,
-                false,
-                'homepage',
-                'homepage-cache',
-                '[]',
-                now,
-                expiresAt
-            ).run();
+                JSON.stringify(topReports)
+            );
 
             // Store backup cache with shorter TTL
-            const backupExpiresAt = now + 3600000; // 1 hour
-            await env.FAST_TAKEOFF_NEWS_DB.prepare(`
-                INSERT INTO reports (
-                    report_id, channel_id, channel_name, headline, city, body,
-                    generated_at, message_count, last_message_timestamp, user_generated,
-                    timeframe, cache_status, message_ids, created_at, expires_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            `).bind(
+            await env.REPORTS_CACHE.put(
                 'homepage:backup-reports',
-                'homepage',
-                'Homepage Cache',
-                'Homepage Backup Reports',
-                'Cache',
                 JSON.stringify(topReports),
-                new Date().toISOString(),
-                topReports.length,
-                null,
-                false,
-                'homepage',
-                'homepage-cache-backup',
-                '[]',
-                now,
-                backupExpiresAt
-            ).run();
+                { expirationTtl: 3600 } // 1 hour backup
+            );
 
-            console.log(`[REPORTS] Cached ${topReports.length} reports for homepage (primary + backup)`);
+            console.log(`[REPORTS] Cached ${topReports.length} reports for homepage in KV (no TTL, manual invalidation)`);
         } catch (error) {
-            console.error('[REPORTS] Failed to cache homepage reports:', error);
+            console.error('[REPORTS] Failed to cache homepage reports in KV:', error);
         }
     }
 

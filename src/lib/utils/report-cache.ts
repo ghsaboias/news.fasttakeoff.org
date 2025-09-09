@@ -148,14 +148,14 @@ export class ReportCache {
             const key = 'homepage:latest-reports';
             const topReports = reports.slice(0, 10); // Store top 10 reports
 
-            // Use longer TTL for homepage cache to ensure availability
-            await cacheManager.put('REPORTS_CACHE', key, topReports, CACHE.TTL.REPORTS);
+            // No TTL for primary homepage cache - use direct KV call without expiration
+            await env.REPORTS_CACHE.put(key, JSON.stringify(topReports));
 
             // Also cache a backup with shorter TTL for immediate availability
             const backupKey = 'homepage:backup-reports';
             await cacheManager.put('REPORTS_CACHE', backupKey, topReports, 3600); // 1 hour backup
 
-            console.log(`[REPORTS] Cached ${topReports.length} reports for homepage (primary + backup)`);
+            console.log(`[REPORTS] Cached ${topReports.length} reports for homepage (no TTL, manual invalidation)`);
         } catch (error) {
             console.error('[REPORTS] Failed to cache homepage reports:', error);
         }
