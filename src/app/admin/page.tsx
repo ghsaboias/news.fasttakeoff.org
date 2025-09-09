@@ -1,6 +1,13 @@
+import { currentUser } from '@clerk/nextjs/server';
+import { redirect } from 'next/navigation';
 import CronMonitorDashboard from '@/components/CronMonitorDashboard';
 
 export default async function AdminPage() {
+  const user = await currentUser();
+  
+  if (!user || user.emailAddresses[0]?.emailAddress !== 'iamguilherme1@gmail.com') {
+    redirect('/');
+  }
 
   return (
     <div className="min-h-screen bg-background">
