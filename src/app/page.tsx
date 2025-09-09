@@ -8,7 +8,6 @@ import { Suspense } from "react";
 
 // Aggressive caching for breaking news - balance freshness vs performance
 export const revalidate = 180; // 3 minutes
-export const dynamic = 'force-dynamic';
 
 export async function generateMetadata() {
   return {
