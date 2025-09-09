@@ -95,37 +95,44 @@ export class ExecutiveSummaryService {
     }
 
     /**
-     * Get all reports from the last 24 hours for summary generation
+     * Get all reports from the last 6 hours for summary generation
      */
     private async getAllReportsForSummary(): Promise<Report[]> {
-        const allReports: Report[] = [];
         const sixHoursAgo = new Date(Date.now() - TIME.SIX_HOURS_MS);
 
         try {
-            // Get all cached reports from the REPORTS_CACHE
-            const cacheKeys = await this.env.REPORTS_CACHE.list();
+            // Query D1 database for reports from the last 6 hours
+            const query = `
+                SELECT * FROM reports 
+                WHERE generated_at >= ? 
+                ORDER BY generated_at DESC
+            `;
+            
+            const result = await this.env.FAST_TAKEOFF_NEWS_DB.prepare(query)
+                .bind(sixHoursAgo.toISOString())
+                .all();
 
-            for (const key of cacheKeys.keys) {
-                if (key.name.startsWith('reports:') && key.name.includes('2h')) {
-                    try {
-                        const cachedReports = await this.cache.get<Report[]>('REPORTS_CACHE', key.name);
-                        if (cachedReports && Array.isArray(cachedReports)) {
-                            // Filter reports from the last 6 hours
-                            const recentReports = cachedReports.filter(report =>
-                                new Date(report.generatedAt || '').getTime() >= sixHoursAgo.getTime()
-                            );
-                            allReports.push(...recentReports);
-                        }
-                    } catch (error) {
-                        console.warn(`[EXECUTIVE_SUMMARY] Failed to fetch reports from ${key.name}:`, error);
-                    }
-                }
+            if (!result.success || !result.results) {
+                console.error('[EXECUTIVE_SUMMARY] Failed to fetch reports from D1:', result.error);
+                return [];
             }
 
-            // Sort by generation time (newest first)
-            allReports.sort((a, b) =>
-                new Date(b.generatedAt || '').getTime() - new Date(a.generatedAt || '').getTime()
-            );
+            // Transform D1 results to Report objects
+            const allReports: Report[] = result.results.map((row: Record<string, unknown>) => ({
+                reportId: row.id,
+                headline: row.headline,
+                body: row.body,
+                channelId: row.channel_id,
+                channelName: row.channel_name,
+                city: row.city,
+                country: row.country,
+                generatedAt: row.generated_at,
+                generationTrigger: row.generation_trigger,
+                windowStartTime: row.window_start_time,
+                windowEndTime: row.window_end_time,
+                messageCount: row.message_count,
+                messageIds: row.message_ids ? JSON.parse(row.message_ids) : []
+            }));
 
             console.log(`[EXECUTIVE_SUMMARY] Found ${allReports.length} reports from last 6 hours`);
             return allReports;
