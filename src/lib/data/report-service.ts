@@ -292,53 +292,7 @@ export class ReportService {
     }
 
     async getLatestReportPerChannel(): Promise<Report[]> {
-        const channels = await this.channelsService.getChannels();
-        const channelIds = channels.map(c => c.id);
-
-        // Build all possible cache keys for all channels and timeframes (including dynamic)
-        const allKeys: string[] = [];
-        const timeframes: (TimeframeKey | 'dynamic')[] = [...TIME.TIMEFRAMES, 'dynamic'];
-        
-        for (const channelId of channelIds) {
-            for (const timeframe of timeframes) {
-                allKeys.push(`reports:${channelId}:${timeframe}`);
-            }
-        }
-
-        // Batch fetch all reports in parallel
-        const batchResults = await ReportCache.batchGet(allKeys, this.env);
-
-        // For each channel, find the latest report across all timeframes
-        const latestReports: Report[] = [];
-
-        for (const channelId of channelIds) {
-            let latestReport: Report | null = null;
-            let latestTimestamp = 0;
-
-            for (const timeframe of timeframes) {
-                const key = `reports:${channelId}:${timeframe}`;
-                const reports = batchResults.get(key);
-
-                if (reports && reports.length > 0) {
-                    const mostRecent = reports[0]; // Reports are stored sorted by date
-                    const timestamp = new Date(mostRecent.generatedAt || 0).getTime();
-
-                    if (timestamp > latestTimestamp) {
-                        latestReport = mostRecent;
-                        latestTimestamp = timestamp;
-                    }
-                }
-            }
-
-            if (latestReport) {
-                latestReports.push(latestReport);
-            }
-        }
-
-        // Sort by generation time (most recent first)
-        return latestReports.sort((a, b) =>
-            new Date(b.generatedAt || 0).getTime() - new Date(a.generatedAt || 0).getTime()
-        );
+        return ReportCache.getLatestReportPerChannelId(this.env);
     }
 
     private async _generateAndCacheReportsForTimeframes(timeframesToProcess: TimeframeKey[], extractEntities: boolean = false): Promise<Report[]> {

@@ -249,6 +249,41 @@ export class ReportCacheD1 {
     }
 
     /**
+     * Get the latest report for each channel ID
+     */
+    static async getLatestReportPerChannelId(env: Cloudflare.Env): Promise<Report[]> {
+        if (!env.FAST_TAKEOFF_NEWS_DB) {
+            console.log('FAST_TAKEOFF_NEWS_DB not available');
+            return [];
+        }
+
+        try {
+            const query = `
+                SELECT * FROM reports 
+                WHERE (channel_id, generated_at) IN (
+                    SELECT channel_id, MAX(generated_at) 
+                    FROM reports 
+                    WHERE expires_at > ? AND channel_id IS NOT NULL 
+                    GROUP BY channel_id
+                ) 
+                ORDER BY generated_at DESC
+            `;
+            
+            const result = await env.FAST_TAKEOFF_NEWS_DB.prepare(query).bind(Date.now()).all();
+
+            if (!result.success) {
+                console.error('[REPORTS] Database query failed:', result.error);
+                return [];
+            }
+
+            return result.results.map((row) => this.rowToReport(row as unknown as ReportRow));
+        } catch (error) {
+            console.error('[REPORTS] Database query failed:', error);
+            return [];
+        }
+    }
+
+    /**
      * Store homepage reports cache - these are stored as a special report with a known report_id
      */
     static async storeHomepageReports(reports: Report[], env: Cloudflare.Env): Promise<void> {

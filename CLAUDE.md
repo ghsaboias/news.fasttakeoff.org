@@ -12,7 +12,7 @@
 ## Build, Test, and Development
 - `bun run dev`: Next dev server at `localhost:3000`.
 - `bun run build`: Next production build.
-- `bun run preview:patch`: Build OpenNext worker, patch scheduled handler, run `wrangler dev`.
+- `bun run preview:patch:test`: Build OpenNext worker, patch scheduled handler, run `wrangler dev --test-scheduled` (use this for local testing).
 - `bun run deploy`: Build, patch worker, deploy to Cloudflare.
 - `bun run lint`: ESLint (Next + TypeScript rules).
 - `bun run test` / `bun run test:unit`: Run all/unit tests; `bun run test:watch` to watch.
