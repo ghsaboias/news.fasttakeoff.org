@@ -4,7 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Activity, AlertTriangle, CheckCircle, Clock, RefreshCw, XCircle } from 'lucide-react';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 interface CronStatus {
   type: string;
@@ -32,12 +32,12 @@ export default function CronMonitorDashboard() {
     connected: false,
     reconnectAttempts: 0
   });
-  const [eventSource, setEventSource] = useState<EventSource | null>(null);
+  const eventSourceRef = useRef<EventSource | null>(null);
 
   const connectToSSE = useCallback(() => {
     // Close existing connection
-    if (eventSource) {
-      eventSource.close();
+    if (eventSourceRef.current) {
+      eventSourceRef.current.close();
     }
 
     const es = new EventSource('/api/admin/live-metrics');
@@ -82,18 +82,18 @@ export default function CronMonitorDashboard() {
       console.error('SSE error event:', event);
     });
 
-    setEventSource(es);
-  }, [eventSource]);
+    eventSourceRef.current = es;
+  }, []);
 
   useEffect(() => {
     connectToSSE();
 
     return () => {
-      if (eventSource) {
-        eventSource.close();
+      if (eventSourceRef.current) {
+        eventSourceRef.current.close();
       }
     };
-  }, [connectToSSE, eventSource]);
+  }, [connectToSSE]);
 
   const getStatusColor = (status: CronStatus) => {
     if (status.outcome === 'running') {
@@ -182,12 +182,7 @@ export default function CronMonitorDashboard() {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => {
-                  if (eventSource) {
-                    eventSource.close();
-                  }
-                  connectToSSE();
-                }}
+                onClick={connectToSSE}
                 disabled={connectionStatus.connected}
               >
                 <RefreshCw className="w-4 h-4 mr-1" />
