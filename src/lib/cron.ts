@@ -1,4 +1,5 @@
 import { Cloudflare } from '../../worker-configuration';
+import type { ExecutionContext } from '../../worker-configuration';
 import { TASK_TIMEOUTS } from './config';
 import { ExecutiveSummaryService } from './data/executive-summary-service';
 import { FeedsService } from './data/feeds-service';
@@ -14,19 +15,43 @@ interface ScheduledEvent {
     waitUntil: (promise: Promise<unknown>) => void;
 }
 
+
 /**
  * Helper to run a task with structured logging and timeout protection.
+ * Enhanced with structured JSON logging for tail worker consumption.
  */
 async function logRun(
     task: string,
     fn: () => Promise<unknown>,
-    options: { failFast?: boolean; timeoutMs?: number } = {}
+    options: { failFast?: boolean; timeoutMs?: number; env?: Cloudflare.Env; ctx?: ExecutionContext } = {}
 ): Promise<void> {
-    const { failFast = true, timeoutMs = 300000 } = options; // Default 5 minutes
-    console.log(`[task=${task}] START`);
-    const start = Date.now();
+    const { failFast = true, timeoutMs = 300000, env, ctx } = options;
 
-    // Add memory usage tracking
+    console.log(`[task=${task}] START`);
+    
+    // Structured logging for monitoring
+    console.log(JSON.stringify({
+        type: 'cron_start',
+        task,
+        timestamp: Date.now(),
+        timeoutMs
+    }));
+
+    // Write running status to KV for live monitoring
+    if (env && ctx) {
+        ctx.waitUntil(
+            env.CRON_STATUS_CACHE.put(`status_${task}`, JSON.stringify({
+                type: task,
+                outcome: 'running',
+                duration: 0,
+                timestamp: new Date().toISOString(),
+                errorCount: 0,
+                startedAt: Date.now()
+            }), { expirationTtl: 86400 })
+        );
+    }
+
+    const start = Date.now();
     const memoryBefore = (performance as { memory?: { usedJSHeapSize?: number } }).memory?.usedJSHeapSize || 0;
 
     try {
@@ -43,17 +68,85 @@ async function logRun(
         const duration = Date.now() - start;
         const memoryAfter = (performance as { memory?: { usedJSHeapSize?: number } }).memory?.usedJSHeapSize || 0;
         const memoryDelta = memoryAfter - memoryBefore;
+        const timestamp = new Date().toISOString();
 
         console.log(`[task=${task}] OK (${duration}ms, memory: ${(memoryDelta / 1024 / 1024).toFixed(2)}MB)`);
+        
+        // Success logging with structured data
+        console.log(JSON.stringify({
+            type: 'cron_success',
+            task,
+            duration,
+            memoryDelta,
+            memoryDeltaMB: (memoryDelta / 1024 / 1024).toFixed(2),
+            timestamp: Date.now()
+        }));
+
+        // Write status to KV for live monitoring
+        if (env && ctx) {
+            ctx.waitUntil(
+                env.CRON_STATUS_CACHE.put(`status_${task}`, JSON.stringify({
+                    type: task,
+                    outcome: 'ok',
+                    duration,
+                    timestamp,
+                    errorCount: 0,
+                    cpuTime: duration, // Approximation
+                    taskDetails: {
+                        task,
+                        duration,
+                        memoryDelta
+                    }
+                }), { expirationTtl: 86400 }) // 24 hours
+            );
+        }
 
         // Warn if task takes too long
         if (duration > 60000) { // 1 minute
             console.warn(`[task=${task}] SLOW_TASK - took ${duration}ms`);
+            console.warn(JSON.stringify({
+                type: 'cron_slow',
+                task,
+                duration,
+                threshold: 60000,
+                timestamp: Date.now()
+            }));
         }
 
     } catch (error) {
         const duration = Date.now() - start;
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        const timestamp = new Date().toISOString();
+
         console.error(`[task=${task}] ERROR after ${duration}ms:`, error);
+        
+        // Error logging with structured data
+        console.error(JSON.stringify({
+            type: 'cron_error',
+            task,
+            error: errorMessage,
+            duration,
+            timestamp: Date.now()
+        }));
+
+        // Write error status to KV for live monitoring
+        if (env && ctx) {
+            ctx.waitUntil(
+                env.CRON_STATUS_CACHE.put(`status_${task}`, JSON.stringify({
+                    type: task,
+                    outcome: 'exception',
+                    duration,
+                    timestamp,
+                    errorCount: 1,
+                    cpuTime: duration,
+                    taskDetails: {
+                        task,
+                        duration,
+                        error: errorMessage
+                    }
+                }), { expirationTtl: 86400 })
+            );
+        }
 
         if (failFast) {
             throw error;
@@ -75,13 +168,13 @@ async function logRun(
 // }
 
 // Type for cron task functions
-type CronTaskFunction = (env: Cloudflare.Env, scheduledTime?: number) => Promise<void>;
+type CronTaskFunction = (env: Cloudflare.Env, scheduledTime?: number, ctx?: ExecutionContext) => Promise<void>;
 
 // Map cron expressions to their tasks
 const CRON_TASKS: Record<string, CronTaskFunction> = {
     // Post top dynamic report to social media every 2 hours
     // Every 2 hours (0:00, 2:00, 4:00, etc)
-    "0 */2 * * *": async (env: Cloudflare.Env) => {
+    "0 */2 * * *": async (env: Cloudflare.Env, scheduledTime?: number, ctx?: ExecutionContext) => {
         // Skip if Discord-dependent processing is disabled
         if ((env as unknown as { DISCORD_DISABLED?: string | boolean }).DISCORD_DISABLED) {
             console.warn('[CRON] DISCORD_DISABLED is set – skipping feeds generation and social media posting');
@@ -92,17 +185,23 @@ const CRON_TASKS: Record<string, CronTaskFunction> = {
         const feedsService = new FeedsService(env);
 
         await logRun('FEEDS_GERAL', () => feedsService.createFreshSummary('geral', ['CNN-Brasil', 'BBC-Brasil', 'G1 - Política', 'G1 - Economia', 'UOL']), {
-            timeoutMs: TASK_TIMEOUTS.FEEDS
+            timeoutMs: TASK_TIMEOUTS.FEEDS,
+            env,
+            ctx
         });
 
         await logRun('FEEDS_MERCADO', () => feedsService.createFreshSummary('mercado', ['Investing.com Brasil - Empresas', 'Investing.com Brasil - Mercado']), {
-            timeoutMs: TASK_TIMEOUTS.FEEDS
+            timeoutMs: TASK_TIMEOUTS.FEEDS,
+            env,
+            ctx
         });
 
         // Post top dynamic report from last 2 hours to social media
         const reportService = new ReportService(env);
         await logRun('SOCIAL_MEDIA_POST', () => reportService.postTopDynamicReport(2), {
-            timeoutMs: TASK_TIMEOUTS.REPORTS
+            timeoutMs: TASK_TIMEOUTS.REPORTS,
+            env,
+            ctx
         });
         
         /* LEGACY CODE - Report generation now handled by dynamic evaluation every 15 minutes
@@ -143,7 +242,7 @@ const CRON_TASKS: Record<string, CronTaskFunction> = {
 
     // DISABLED: Static 6h report generation - replaced by dynamic window evaluation  
     // Every 6 hours (0:00, 6:00, 12:00, 18:00)
-    "0 */6 * * *": async (env: Cloudflare.Env) => {
+    "0 */6 * * *": async (env: Cloudflare.Env, scheduledTime?: number, ctx?: ExecutionContext) => {
         if ((env as unknown as { DISCORD_DISABLED?: string | boolean }).DISCORD_DISABLED) {
             console.warn('[CRON] DISCORD_DISABLED is set – skipping EXECUTIVE_SUMMARY');
             return;
@@ -152,7 +251,9 @@ const CRON_TASKS: Record<string, CronTaskFunction> = {
         // Only generate executive summary - report generation now handled by dynamic window evaluation
         const executiveSummaryService = new ExecutiveSummaryService(env);
         await logRun('EXECUTIVE_SUMMARY_6H', () => executiveSummaryService.generateAndCacheSummary(), {
-            timeoutMs: TASK_TIMEOUTS.EXECUTIVE_SUMMARY
+            timeoutMs: TASK_TIMEOUTS.EXECUTIVE_SUMMARY,
+            env,
+            ctx
         });
         
         /* COMMENTED OUT - Report generation now handled by dynamic evaluation every 15 minutes
@@ -165,39 +266,47 @@ const CRON_TASKS: Record<string, CronTaskFunction> = {
     },
 
     // Every 15 minutes
-    "*/15 * * * *": async (env: Cloudflare.Env) => {
+    "*/15 * * * *": async (env: Cloudflare.Env, scheduledTime?: number, ctx?: ExecutionContext) => {
         if ((env as unknown as { DISCORD_DISABLED?: string | boolean }).DISCORD_DISABLED) {
             console.warn('[CRON] DISCORD_DISABLED is set – skipping MESSAGES update and window evaluation');
             return;
         }
         const messagesService = new MessagesService(env);
         await logRun('MESSAGES', () => messagesService.updateMessages(true), {
-            timeoutMs: TASK_TIMEOUTS.MESSAGES
+            timeoutMs: TASK_TIMEOUTS.MESSAGES,
+            env,
+            ctx
         });
 
         // Dynamic window evaluation - generate reports based on real-time activity
         const windowEvaluationService = new WindowEvaluationService(env);
         await logRun('WINDOW_EVALUATION', () => windowEvaluationService.evaluateAllChannels(), {
-            timeoutMs: 120000 // 2 minutes timeout for evaluation
+            timeoutMs: 120000, // 2 minutes timeout for evaluation
+            env,
+            ctx
         });
     },
 
     // Every 1 hour
-    "0 * * * *": async (env: Cloudflare.Env) => {
+    "0 * * * *": async (env: Cloudflare.Env, scheduledTime?: number, ctx?: ExecutionContext) => {
         const mktNewsSummaryService = new MktNewsSummaryService(env);
         await logRun('MKTNEWS_SUMMARY', () => mktNewsSummaryService.generateAndCacheSummary(60), {
-            timeoutMs: TASK_TIMEOUTS.MKTNEWS_SUMMARY
+            timeoutMs: TASK_TIMEOUTS.MKTNEWS_SUMMARY,
+            env,
+            ctx
         });
 
         const mktNewsService = new MktNewsService(env);
         await logRun('MKTNEWS', () => mktNewsService.updateMessages(), {
-            timeoutMs: TASK_TIMEOUTS.MKTNEWS
+            timeoutMs: TASK_TIMEOUTS.MKTNEWS,
+            env,
+            ctx
         });
     }
 };
 
 // Handle manual triggers
-async function handleManualTrigger(trigger: string, env: Cloudflare.Env): Promise<void> {
+async function handleManualTrigger(trigger: string, env: Cloudflare.Env, ctx?: ExecutionContext): Promise<void> {
     const reportService = new ReportService(env);
     const messagesService = new MessagesService(env);
     const executiveSummaryService = new ExecutiveSummaryService(env);
@@ -205,41 +314,59 @@ async function handleManualTrigger(trigger: string, env: Cloudflare.Env): Promis
 
     const MANUAL_TRIGGERS: Record<string, () => Promise<void>> = {
         'MESSAGES': () => logRun('MESSAGES', () => messagesService.updateMessages(true), {
-            timeoutMs: TASK_TIMEOUTS.MESSAGES
+            timeoutMs: TASK_TIMEOUTS.MESSAGES,
+            env,
+            ctx
         }),
 
         'REPORTS_2H': () => logRun('REPORTS_2H', () => reportService.generateReports('2h'), {
-            timeoutMs: TASK_TIMEOUTS.REPORTS
+            timeoutMs: TASK_TIMEOUTS.REPORTS,
+            env,
+            ctx
         }),
 
         'REPORTS_6H': () => logRun('REPORTS_6H', () => reportService.generateReports('6h'), {
-            timeoutMs: TASK_TIMEOUTS.REPORTS
+            timeoutMs: TASK_TIMEOUTS.REPORTS,
+            env,
+            ctx
         }),
 
         'REPORTS_NO_SOCIAL': () => logRun('REPORTS_NO_SOCIAL',
             () => reportService.generateReportsWithoutSocialMedia(['2h']), {
-            timeoutMs: TASK_TIMEOUTS.REPORTS
+            timeoutMs: TASK_TIMEOUTS.REPORTS,
+            env,
+            ctx
         }),
 
         'EXECUTIVE_SUMMARY': () => logRun('EXECUTIVE_SUMMARY',
             () => executiveSummaryService.generateAndCacheSummary(), {
-            timeoutMs: TASK_TIMEOUTS.EXECUTIVE_SUMMARY
+            timeoutMs: TASK_TIMEOUTS.EXECUTIVE_SUMMARY,
+            env,
+            ctx
         }),
 
         'FEEDS_GERAL': () => logRun('FEEDS_GERAL', () => feedsService.createFreshSummary('geral', ['CNN-Brasil', 'BBC-Brasil', 'G1 - Política', 'G1 - Economia', 'UOL']), {
-            timeoutMs: TASK_TIMEOUTS.FEEDS
+            timeoutMs: TASK_TIMEOUTS.FEEDS,
+            env,
+            ctx
         }),
 
         'FEEDS_MERCADO': () => logRun('FEEDS_MERCADO', () => feedsService.createFreshSummary('mercado', ['Investing.com Brasil - Empresas', 'Investing.com Brasil - Mercado']), {
-            timeoutMs: TASK_TIMEOUTS.FEEDS
+            timeoutMs: TASK_TIMEOUTS.FEEDS,
+            env,
+            ctx
         }),
 
         'MKTNEWS': () => logRun('MKTNEWS', () => (new MktNewsService(env)).updateMessages(), {
-            timeoutMs: TASK_TIMEOUTS.MKTNEWS
+            timeoutMs: TASK_TIMEOUTS.MKTNEWS,
+            env,
+            ctx
         }),
 
         'MKTNEWS_SUMMARY': () => logRun('MKTNEWS_SUMMARY', () => (new MktNewsSummaryService(env)).generateAndCacheSummary(60), {
-            timeoutMs: TASK_TIMEOUTS.MKTNEWS_SUMMARY
+            timeoutMs: TASK_TIMEOUTS.MKTNEWS_SUMMARY,
+            env,
+            ctx
         })
     };
 
@@ -251,20 +378,20 @@ async function handleManualTrigger(trigger: string, env: Cloudflare.Env): Promis
     }
 }
 
-export async function scheduled(event: ScheduledEvent, env: Cloudflare.Env): Promise<void> {
+export async function scheduled(event: ScheduledEvent, env: Cloudflare.Env, ctx: ExecutionContext): Promise<void> {
     console.log(`[CRON] Handling scheduled event: ${event.cron}`);
 
     // Check if this is a scheduled cron task
     const scheduledTask = CRON_TASKS[event.cron];
     if (scheduledTask) {
-        const p = scheduledTask(env, event.scheduledTime);
+        const p = scheduledTask(env, event.scheduledTime, ctx);
         event.waitUntil(p);
         await p;
         return;
     }
 
     // If not a scheduled task, try handling as manual trigger
-    const p = handleManualTrigger(event.cron, env);
+    const p = handleManualTrigger(event.cron, env, ctx);
     event.waitUntil(p);
     await p;
 }

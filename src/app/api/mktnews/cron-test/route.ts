@@ -42,7 +42,13 @@ export async function POST() {
             };
 
             // Call the scheduled function with our mock event
-            await scheduled(mockEvent, env);
+            const ctx = {
+                waitUntil: (promise: Promise<unknown>) => promise,
+                passThroughOnException: () => { },
+                props: {}
+            };
+
+            await scheduled(mockEvent, env, ctx);
 
             logs.push('[CRON_TEST] MktNews cron job completed successfully');
 

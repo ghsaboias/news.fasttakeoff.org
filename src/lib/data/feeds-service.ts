@@ -9,102 +9,144 @@ import { getFeedItems } from './rss-service';
 
 // First stage: Curation
 async function curateArticles(articles: FeedItem[], env: Cloudflare.Env, topicId?: string): Promise<{ selectedStories: SelectedStory[], unselectedStories: UnselectedStory[] }> {
-    const articlesText = formatArticlesForPrompt(articles);
-    let prompt: string;
-    if (topicId === 'mercado') {
-        prompt = AI.BRAZIL_NEWS.CURATE_PROMPT_MERCADO.replace('{articles}', articlesText);
-    } else {
-        prompt = AI.BRAZIL_NEWS.CURATE_PROMPT_GERAL.replace('{articles}', articlesText);
+    const maxAttempts = 3;
+    let attempts = 0;
+    
+    while (attempts < maxAttempts) {
+        try {
+            const articlesText = formatArticlesForPrompt(articles);
+            let prompt: string;
+            if (topicId === 'mercado') {
+                prompt = AI.BRAZIL_NEWS.CURATE_PROMPT_MERCADO.replace('{articles}', articlesText);
+            } else {
+                prompt = AI.BRAZIL_NEWS.CURATE_PROMPT_GERAL.replace('{articles}', articlesText);
+            }
+
+            // Get AI config and make the call
+            const aiConfig = getAIProviderConfig();
+            const apiKey = getAIAPIKey(env as unknown as { [key: string]: string | undefined });
+            const response = await fetch(aiConfig.endpoint, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${apiKey}`,
+                },
+                body: JSON.stringify({
+                    model: aiConfig.model,
+                    messages: [{ role: 'user', content: prompt }],
+                    temperature: 0.7,
+                    response_format: { type: "json_object" }
+                }),
+            });
+
+            if (!response.ok) {
+                throw new Error(`AI API error: ${response.statusText}`);
+            }
+
+            const result = await response.json() as OpenAIResponse;
+            const content = result.choices[0].message.content;
+            
+            let llmResponse;
+            try {
+                llmResponse = JSON.parse(content);
+            } catch (parseError) {
+                console.error(`[FEEDS_CURATION] Failed to parse AI JSON response (attempt ${attempts + 1}/${maxAttempts}):`, parseError);
+                throw new Error('Invalid JSON format received from curation AI');
+            }
+
+            // Process selected stories
+            const selectedStories: SelectedStory[] = llmResponse.selectedStories.map((story: SelectedStory) => {
+                const originalArticle = articles.find(a => a.title === story.title);
+                return {
+                    title: story.title,
+                    importance: story.importance,
+                    reasoning: story.reasoning,
+                    originalSnippet: originalArticle?.contentSnippet || '',
+                    pubDate: originalArticle?.pubDate || '',
+                };
+            });
+
+            // Process unselected stories
+            const unselectedStories: UnselectedStory[] = llmResponse.unselectedStories.map((story: UnselectedStory) => {
+                const originalArticle = articles.find(a => a.title === story.title);
+                return {
+                    title: story.title,
+                    originalSnippet: originalArticle?.contentSnippet || '',
+                    pubDate: originalArticle?.pubDate || '',
+                };
+            });
+
+            return { selectedStories, unselectedStories };
+            
+        } catch (error) {
+            attempts++;
+            if (attempts === maxAttempts) {
+                console.error(`[FEEDS_CURATION] Failed after ${maxAttempts} attempts for topic: ${topicId || 'default'}:`, error);
+                throw error;
+            }
+            console.log(`[FEEDS_CURATION] Retrying curation request for topic: ${topicId || 'default'} (${attempts}/${maxAttempts})`);
+            await new Promise(resolve => setTimeout(resolve, 1000));
+        }
     }
-
-    // Get AI config and make the call
-    const aiConfig = getAIProviderConfig();
-    const apiKey = getAIAPIKey(env as unknown as { [key: string]: string | undefined });
-    const response = await fetch(aiConfig.endpoint, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${apiKey}`,
-        },
-        body: JSON.stringify({
-            model: aiConfig.model,
-            messages: [{ role: 'user', content: prompt }],
-            temperature: 0.7,
-            response_format: { type: "json_object" }
-        }),
-    });
-
-    if (!response.ok) {
-        throw new Error(`AI API error: ${response.statusText}`);
-    }
-
-    const result = await response.json() as OpenAIResponse;
-    const llmResponse = JSON.parse(result.choices[0].message.content);
-
-    // Process selected stories
-    const selectedStories: SelectedStory[] = llmResponse.selectedStories.map((story: SelectedStory) => {
-        const originalArticle = articles.find(a => a.title === story.title);
-        return {
-            title: story.title,
-            importance: story.importance,
-            reasoning: story.reasoning,
-            originalSnippet: originalArticle?.contentSnippet || '',
-            pubDate: originalArticle?.pubDate || '',
-        };
-    });
-
-    // Process unselected stories
-    const unselectedStories: UnselectedStory[] = llmResponse.unselectedStories.map((story: UnselectedStory) => {
-        const originalArticle = articles.find(a => a.title === story.title);
-        return {
-            title: story.title,
-            originalSnippet: originalArticle?.contentSnippet || '',
-            pubDate: originalArticle?.pubDate || '',
-        };
-    });
-
-    return { selectedStories, unselectedStories };
+    throw new Error('Unreachable code');
 }
 
 // Second stage: Summarization
 async function createSummary(selectedStories: SelectedStory[], env: Cloudflare.Env, topicId?: string): Promise<string> {
-    const storiesText = selectedStories.map(story => `
+    const maxAttempts = 3;
+    let attempts = 0;
+    
+    while (attempts < maxAttempts) {
+        try {
+            const storiesText = selectedStories.map(story => `
 Title: ${story.title}
 Importance: ${story.importance}/10
 Published: ${story.pubDate}
 Content: ${story.originalSnippet}
 `).join('\n');
 
-    let prompt: string;
-    if (topicId === 'mercado') {
-        prompt = AI.BRAZIL_NEWS.SUMMARIZE_PROMPT_MERCADO.replace('{articles}', storiesText);
-    } else {
-        prompt = AI.BRAZIL_NEWS.SUMMARIZE_PROMPT_GERAL.replace('{articles}', storiesText);
+            let prompt: string;
+            if (topicId === 'mercado') {
+                prompt = AI.BRAZIL_NEWS.SUMMARIZE_PROMPT_MERCADO.replace('{articles}', storiesText);
+            } else {
+                prompt = AI.BRAZIL_NEWS.SUMMARIZE_PROMPT_GERAL.replace('{articles}', storiesText);
+            }
+
+            // Get AI config and make the call
+            const aiConfig = getAIProviderConfig();
+            const apiKey = getAIAPIKey(env as unknown as { [key: string]: string | undefined });
+            const response = await fetch(aiConfig.endpoint, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${apiKey}`,
+                },
+                body: JSON.stringify({
+                    model: aiConfig.model,
+                    messages: [{ role: 'user', content: prompt }],
+                    temperature: 0.5, // Lower temperature for more consistent summaries
+                    response_format: { type: "text" } // We want formatted text, not JSON
+                }),
+            });
+
+            if (!response.ok) {
+                throw new Error(`AI API error: ${response.statusText}`);
+            }
+
+            const result = await response.json() as OpenAIResponse;
+            return result.choices[0].message.content;
+            
+        } catch (error) {
+            attempts++;
+            if (attempts === maxAttempts) {
+                console.error(`[FEEDS_SUMMARY] Failed after ${maxAttempts} attempts for topic: ${topicId || 'default'}:`, error);
+                throw error;
+            }
+            console.log(`[FEEDS_SUMMARY] Retrying summary request for topic: ${topicId || 'default'} (${attempts}/${maxAttempts})`);
+            await new Promise(resolve => setTimeout(resolve, 1000));
+        }
     }
-
-    // Get AI config and make the call
-    const aiConfig = getAIProviderConfig();
-    const apiKey = getAIAPIKey(env as unknown as { [key: string]: string | undefined });
-    const response = await fetch(aiConfig.endpoint, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${apiKey}`,
-        },
-        body: JSON.stringify({
-            model: aiConfig.model,
-            messages: [{ role: 'user', content: prompt }],
-            temperature: 0.5, // Lower temperature for more consistent summaries
-            response_format: { type: "text" } // We want formatted text, not JSON
-        }),
-    });
-
-    if (!response.ok) {
-        throw new Error(`AI API error: ${response.statusText}`);
-    }
-
-    const result = await response.json() as OpenAIResponse;
-    return result.choices[0].message.content;
+    throw new Error('Unreachable code');
 }
 
 function formatArticlesForPrompt(articles: FeedItem[]): string {

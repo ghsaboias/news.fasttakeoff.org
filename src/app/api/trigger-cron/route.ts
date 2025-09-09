@@ -18,7 +18,7 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        const body = await request.json();
+        const body = await request.json() as { task: string };
         const trigger = body.task;
 
         if (!trigger) {
@@ -33,8 +33,15 @@ export async function POST(request: Request) {
             waitUntil: () => { },
         };
 
-        // Call the scheduled function with the environment bindings provided by the wrapper
-        await scheduled(pseudoEvent, env);
+        // Call the scheduled function with the environment bindings provided by the wrapper  
+        // Create a mock ExecutionContext for monitoring
+        const ctx = {
+            waitUntil: (promise: Promise<unknown>) => promise,
+            passThroughOnException: () => { },
+            props: {}
+        };
+
+        await scheduled(pseudoEvent, env, ctx);
 
         return NextResponse.json({ success: true, message: `Successfully triggered: ${trigger}` });
     }, 'Failed to trigger cron job');

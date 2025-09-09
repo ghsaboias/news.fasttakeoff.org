@@ -28,7 +28,8 @@
     "**/*.ts",
     "**/*.tsx",
     ".next/types/**/*.ts",
-    "cloudflare-env.old.d.ts"
+    "cloudflare-env.old.d.ts",
+    "worker-configuration.d.ts"
   ],
   "exclude": ["node_modules"]
 }

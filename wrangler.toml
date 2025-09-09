@@ -123,5 +123,10 @@ DISCORD_DISABLED = ""
 [placement]
 mode = "smart"
 
+[[kv_namespaces]]
+binding = "CRON_STATUS_CACHE"
+id = "eacaace760d94418a094e8b52adef9fa"
+preview_id = "c91e48fa87764e778583960662982017"
+
 [observability.logs]
 enabled = true
