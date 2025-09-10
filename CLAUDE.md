@@ -106,6 +106,9 @@ Quick Rules
 - Never leave variables unused
 - Wrangler commands never use ":", that's old syntax. npx wrangler kv:key list is now npx wrangler kv key list
 
+## Known Issues
+- **Homepage stale data (Sep 2025):** Added `force-dynamic` back due to Cloudflare edge cache serving 12h+ old reports. ISR revalidation failing - investigate `getCacheContext()` in edge environment for proper SEO-friendly fix.
+
 ## Data Architecture & Debugging
 
 ### Database Schema
