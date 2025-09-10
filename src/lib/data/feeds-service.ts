@@ -6,9 +6,55 @@ import { getAIAPIKey, getAIProviderConfig } from '../ai-config';
 import { AI } from '../config';
 import { getFeedItems } from './rss-service';
 
+// Utility functions for batching
+function chunkArray<T>(array: T[], size: number): T[][] {
+    const chunks: T[][] = [];
+    for (let i = 0; i < array.length; i += size) {
+        chunks.push(array.slice(i, i + size));
+    }
+    return chunks;
+}
 
-// First stage: Curation
+function mergeCurationResults(batchResults: Array<{ selectedStories: SelectedStory[], unselectedStories: UnselectedStory[] }>): { selectedStories: SelectedStory[], unselectedStories: UnselectedStory[] } {
+    return {
+        selectedStories: batchResults.flatMap(result => result.selectedStories),
+        unselectedStories: batchResults.flatMap(result => result.unselectedStories)
+    };
+}
+
+// First stage: Curation with batching support
 async function curateArticles(articles: FeedItem[], env: Cloudflare.Env, topicId?: string): Promise<{ selectedStories: SelectedStory[], unselectedStories: UnselectedStory[] }> {
+    const BATCH_SIZE = 40; // Safe token limit: ~28K tokens per batch
+    
+    // If articles exceed batch size, process in parallel batches
+    if (articles.length > BATCH_SIZE) {
+        console.log(`[FEEDS_CURATION] Processing ${articles.length} articles in batches of ${BATCH_SIZE}`);
+        const batches = chunkArray(articles, BATCH_SIZE);
+        console.log(`[FEEDS_CURATION] Created ${batches.length} batches for parallel processing`);
+        
+        try {
+            const batchResults = await Promise.all(
+                batches.map((batch, index) => {
+                    console.log(`[FEEDS_CURATION] Starting batch ${index + 1}/${batches.length} with ${batch.length} articles`);
+                    return curateArticlesBatch(batch, env, topicId);
+                })
+            );
+            
+            console.log(`[FEEDS_CURATION] Successfully processed all ${batches.length} batches, merging results`);
+            return mergeCurationResults(batchResults);
+        } catch (error) {
+            console.error(`[FEEDS_CURATION] Batch processing failed:`, error);
+            throw error;
+        }
+    }
+    
+    // For small article counts, use single batch processing
+    console.log(`[FEEDS_CURATION] Processing ${articles.length} articles in single batch`);
+    return curateArticlesBatch(articles, env, topicId);
+}
+
+// Single batch curation (extracted from original curateArticles logic)
+async function curateArticlesBatch(articles: FeedItem[], env: Cloudflare.Env, topicId?: string): Promise<{ selectedStories: SelectedStory[], unselectedStories: UnselectedStory[] }> {
     const maxAttempts = 3;
     let attempts = 0;
     
@@ -46,6 +92,14 @@ async function curateArticles(articles: FeedItem[], env: Cloudflare.Env, topicId
             const result = await response.json() as OpenAIResponse;
             const content = result.choices[0].message.content;
             
+            // Log token usage for analysis
+            console.log(`[FEEDS_CURATION] Token usage for ${articles.length} articles:`, {
+                inputTokens: result.usage?.prompt_tokens || 'unknown',
+                outputTokens: result.usage?.completion_tokens || 'unknown', 
+                totalTokens: result.usage?.total_tokens || 'unknown',
+                outputLength: content.length
+            });
+            
             let llmResponse;
             try {
                 llmResponse = JSON.parse(content);
@@ -75,6 +129,9 @@ async function curateArticles(articles: FeedItem[], env: Cloudflare.Env, topicId
                     pubDate: originalArticle?.pubDate || '',
                 };
             });
+
+            // Log selection results
+            console.log(`[FEEDS_CURATION] Selection results: ${selectedStories.length} selected, ${unselectedStories.length} unselected from ${articles.length} articles`);
 
             return { selectedStories, unselectedStories };
             
