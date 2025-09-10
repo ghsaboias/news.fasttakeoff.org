@@ -35,13 +35,20 @@ export async function POST(request: Request) {
 
         // Call the scheduled function with the environment bindings provided by the wrapper  
         // Create a mock ExecutionContext for monitoring
+        const waitUntilPromises: Promise<unknown>[] = [];
         const ctx = {
-            waitUntil: (promise: Promise<unknown>) => promise,
+            waitUntil: (promise: Promise<unknown>) => {
+                waitUntilPromises.push(promise);
+                return promise;
+            },
             passThroughOnException: () => { },
             props: {}
         };
 
         await scheduled(pseudoEvent, env, ctx);
+        
+        // Wait for all waitUntil promises to complete (for proper status updates)
+        await Promise.allSettled(waitUntilPromises);
 
         return NextResponse.json({ success: true, message: `Successfully triggered: ${trigger}` });
     }, 'Failed to trigger cron job');

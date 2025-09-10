@@ -95,8 +95,8 @@ async function logRun(
                 }
             };
 
-            // Update aggregated status cache
-            ctx.waitUntil(updateAggregatedCronStatus(env, task, statusData));
+            // Update aggregated status cache (direct await for final status)
+            await updateAggregatedCronStatus(env, task, statusData);
         }
 
         // Warn if task takes too long
@@ -143,8 +143,8 @@ async function logRun(
                 }
             };
 
-            // Update aggregated status cache
-            ctx.waitUntil(updateAggregatedCronStatus(env, task, errorStatusData));
+            // Update aggregated status cache (direct await for final status)
+            await updateAggregatedCronStatus(env, task, errorStatusData);
         }
 
         if (failFast) {
