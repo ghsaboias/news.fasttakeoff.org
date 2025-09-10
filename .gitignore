@@ -96,3 +96,6 @@ test-image*.jpg
 test-curl-oauth.sh
 
 newsletter/node_modules/
+
+# Google Search Console analysis (internal docs)
+GOOGLE_SEARCH_CONSOLE.md
