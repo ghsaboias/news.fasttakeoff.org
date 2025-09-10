@@ -17,74 +17,33 @@ interface CronStatusData {
 }
 
 /**
- * Bootstrap aggregated cron status by reading existing individual entries
- * and creating a single aggregated entry for performance optimization
+ * Initialize aggregated cron status with default placeholder values
  */
-async function bootstrapAggregatedStatus(env: Cloudflare.Env, cronTypes: string[]): Promise<void> {
+async function initializeAggregatedStatus(env: Cloudflare.Env, cronTypes: string[]): Promise<void> {
   try {
-    console.log('[SSE] Starting bootstrap process for aggregated status');
+    console.log('[SSE] Initializing aggregated status with default values');
     const aggregatedStatuses: Record<string, CronStatusData> = {};
 
-    // Read individual status entries with timeout protection
+    // Create placeholder for all cron types
     for (const cronType of cronTypes) {
-      try {
-        const rawStatus = await Promise.race([
-          env.CRON_STATUS_CACHE.get(`status_${cronType}`),
-          new Promise((_, reject) => setTimeout(() => reject(new Error('KV_TIMEOUT')), 1000))
-        ]);
-
-        if (rawStatus && typeof rawStatus === 'string') {
-          const status = JSON.parse(rawStatus);
-          aggregatedStatuses[cronType] = {
-            type: cronType,
-            outcome: status.outcome,
-            duration: status.duration,
-            timestamp: status.timestamp,
-            errorCount: status.errorCount || 0,
-            cpuTime: status.cpuTime,
-            taskDetails: status.taskDetails
-          };
-          console.log(`[SSE] Bootstrapped status for ${cronType}: ${status.outcome}`);
-        } else {
-          // Create placeholder for jobs that haven't run yet
-          aggregatedStatuses[cronType] = {
-            type: cronType,
-            outcome: 'unknown',
-            duration: 0,
-            timestamp: 'Never run',
-            errorCount: 0
-          };
-          console.log(`[SSE] Created placeholder status for ${cronType}`);
-        }
-      } catch (error) {
-        const errorMsg = error instanceof Error ? error.message : String(error);
-        console.warn(`[SSE] Failed to bootstrap ${cronType}:`, errorMsg);
-        
-        // Create error placeholder
-        aggregatedStatuses[cronType] = {
-          type: cronType,
-          outcome: 'unknown',
-          duration: 0,
-          timestamp: 'Never run',
-          errorCount: 0
-        };
-      }
+      aggregatedStatuses[cronType] = {
+        type: cronType,
+        outcome: 'unknown',
+        duration: 0,
+        timestamp: 'Never run',
+        errorCount: 0
+      };
     }
 
     // Write the aggregated status to KV
-    try {
-      await env.CRON_STATUS_CACHE.put(
-        'cron_statuses_aggregated',
-        JSON.stringify(aggregatedStatuses),
-        { expirationTtl: 86400 } // 24 hours
-      );
-      console.log(`[SSE] Successfully bootstrapped aggregated status for ${Object.keys(aggregatedStatuses).length} cron types`);
-    } catch (putError) {
-      console.error('[SSE] Failed to write bootstrapped aggregated status:', putError);
-      throw putError;
-    }
+    await env.CRON_STATUS_CACHE.put(
+      'cron_statuses_aggregated',
+      JSON.stringify(aggregatedStatuses),
+      { expirationTtl: 86400 } // 24 hours
+    );
+    console.log(`[SSE] Successfully initialized aggregated status for ${Object.keys(aggregatedStatuses).length} cron types`);
   } catch (error) {
-    console.error('[SSE] Bootstrap process failed:', error);
+    console.error('[SSE] Failed to initialize aggregated status:', error);
     throw error;
   }
 }
@@ -115,26 +74,26 @@ export async function GET() {
         try {
           const cronTypes = ['FEEDS_GERAL', 'FEEDS_MERCADO', 'SOCIAL_MEDIA_POST', 'EXECUTIVE_SUMMARY_6H', 'MESSAGES', 'WINDOW_EVALUATION', 'MKTNEWS_SUMMARY', 'MKTNEWS'];
           
-          // Try to get aggregated statuses first (performance optimization)
+          // Get aggregated statuses from KV cache
           let statuses = [];
           try {
             let aggregatedRaw = await Promise.race([
               env.CRON_STATUS_CACHE.get('cron_statuses_aggregated'),
-              new Promise((_, reject) => setTimeout(() => reject(new Error('KV_TIMEOUT')), 2000)) // Reduced timeout
+              new Promise((_, reject) => setTimeout(() => reject(new Error('KV_TIMEOUT')), 2000))
             ]);
             
-            // If no aggregated data exists, bootstrap it from individual entries
+            // If no aggregated data exists, initialize with defaults
             if (!aggregatedRaw) {
-              console.log('[SSE] No aggregated data found, bootstrapping from individual entries');
-              await bootstrapAggregatedStatus(env, cronTypes);
-              // Try again after bootstrapping
+              console.log('[SSE] No aggregated data found, initializing with defaults');
+              await initializeAggregatedStatus(env, cronTypes);
+              // Try again after initialization
               try {
                 aggregatedRaw = await Promise.race([
                   env.CRON_STATUS_CACHE.get('cron_statuses_aggregated'),
                   new Promise((_, reject) => setTimeout(() => reject(new Error('KV_TIMEOUT')), 1000))
                 ]);
               } catch (retryError) {
-                console.warn('[SSE] Bootstrap retry failed:', retryError);
+                console.warn('[SSE] Initialization retry failed:', retryError);
               }
             }
             
@@ -162,54 +121,18 @@ export async function GET() {
               return;
             }
           } catch (error) {
-            console.warn('[SSE] Aggregated status fetch failed, falling back to individual queries:', error);
+            console.warn('[SSE] Aggregated status fetch failed:', error);
           }
           
-          // Fallback: fetch individual statuses (for backward compatibility)
-          console.log('[SSE] Using fallback individual KV queries');
-          for (const cronType of cronTypes) {
-            try {
-              const rawStatus = await Promise.race([
-                env.CRON_STATUS_CACHE.get(`status_${cronType}`),
-                new Promise((_, reject) => setTimeout(() => reject(new Error('KV_TIMEOUT')), 2000)) // Reduced timeout
-              ]);
-              
-              let status = null;
-              if (rawStatus && typeof rawStatus === 'string') {
-                try {
-                  status = JSON.parse(rawStatus);
-                } catch (parseError) {
-                  console.error(`[SSE] Failed to parse ${cronType} status:`, parseError);
-                }
-              }
-              
-              if (status) {
-                statuses.push({ type: cronType, ...status });
-              } else {
-                statuses.push({ 
-                  type: cronType, 
-                  outcome: 'unknown',
-                  timestamp: 'Never run',
-                  duration: 0,
-                  errorCount: 0 
-                });
-              }
-              
-            } catch (error) {
-              const errorMsg = error instanceof Error ? error.message : String(error);
-              if (errorMsg !== 'KV_TIMEOUT') {
-                console.error(`[SSE] Error fetching ${cronType} status:`, errorMsg);
-              }
-              statuses.push({ 
-                type: cronType, 
-                outcome: 'error',
-                timestamp: new Date().toISOString(),
-                duration: 0,
-                errorCount: 1,
-                error: errorMsg
-              });
-            }
-          }
+          // If all else fails, create default statuses
+          console.log('[SSE] Creating default statuses as fallback');
+          statuses = cronTypes.map(cronType => ({ 
+            type: cronType, 
+            outcome: 'unknown',
+            timestamp: 'Never run',
+            duration: 0,
+            errorCount: 0 
+          }));
 
           sendEvent('cron_status', statuses);
         } catch (error) {

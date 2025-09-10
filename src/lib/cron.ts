@@ -37,18 +37,15 @@ async function logRun(
         timeoutMs
     }));
 
-    // Write running status to KV for live monitoring
+    // Write running status to aggregated cache for live monitoring
     if (env && ctx) {
-        ctx.waitUntil(
-            env.CRON_STATUS_CACHE.put(`status_${task}`, JSON.stringify({
-                type: task,
-                outcome: 'running',
-                duration: 0,
-                timestamp: new Date().toISOString(),
-                errorCount: 0,
-                startedAt: Date.now()
-            }), { expirationTtl: 86400 })
-        );
+        ctx.waitUntil(updateAggregatedCronStatus(env, task, {
+            type: task,
+            outcome: 'running',
+            duration: 0,
+            timestamp: new Date().toISOString(),
+            errorCount: 0
+        }));
     }
 
     const start = Date.now();
@@ -98,11 +95,7 @@ async function logRun(
                 }
             };
 
-            ctx.waitUntil(
-                env.CRON_STATUS_CACHE.put(`status_${task}`, JSON.stringify(statusData), { expirationTtl: 86400 }) // 24 hours
-            );
-
-            // Update aggregated status for faster admin dashboard
+            // Update aggregated status cache
             ctx.waitUntil(updateAggregatedCronStatus(env, task, statusData));
         }
 
@@ -150,11 +143,7 @@ async function logRun(
                 }
             };
 
-            ctx.waitUntil(
-                env.CRON_STATUS_CACHE.put(`status_${task}`, JSON.stringify(errorStatusData), { expirationTtl: 86400 })
-            );
-
-            // Update aggregated status for faster admin dashboard
+            // Update aggregated status cache
             ctx.waitUntil(updateAggregatedCronStatus(env, task, errorStatusData));
         }
 
@@ -408,33 +397,58 @@ interface CronStatusData {
 }
 
 async function updateAggregatedCronStatus(env: Cloudflare.Env, updatedTask: string, statusData: CronStatusData): Promise<void> {
+    console.log(`[CRON] Starting aggregated status update for task: ${updatedTask}`);
+    
     try {
-        // Get current aggregated status
-        const currentAggregatedRaw = await env.CRON_STATUS_CACHE.get('cron_statuses_aggregated');
+        // Get current aggregated status with timeout
+        console.log(`[CRON] Reading current aggregated status from KV`);
+        const currentAggregatedRaw = await Promise.race([
+            env.CRON_STATUS_CACHE.get('cron_statuses_aggregated'),
+            new Promise<never>((_, reject) => setTimeout(() => reject(new Error('KV_GET_TIMEOUT')), 5000))
+        ]);
+        
         let aggregatedStatuses: Record<string, CronStatusData> = {};
         
         if (currentAggregatedRaw) {
             try {
-                aggregatedStatuses = JSON.parse(currentAggregatedRaw);
+                aggregatedStatuses = JSON.parse(currentAggregatedRaw as string);
+                console.log(`[CRON] Parsed existing aggregated status with ${Object.keys(aggregatedStatuses).length} tasks`);
             } catch (parseError) {
                 console.warn('[CRON] Failed to parse existing aggregated status:', parseError);
                 aggregatedStatuses = {};
             }
+        } else {
+            console.log(`[CRON] No existing aggregated status found, starting fresh`);
         }
 
         // Update the specific task status
         aggregatedStatuses[updatedTask] = statusData;
+        console.log(`[CRON] Updated task ${updatedTask} status to: ${statusData.outcome}`);
 
-        // Write back the updated aggregated status
-        await env.CRON_STATUS_CACHE.put(
-            'cron_statuses_aggregated', 
-            JSON.stringify(aggregatedStatuses), 
-            { expirationTtl: 86400 } // 24 hours
-        );
+        // Write back the updated aggregated status with timeout
+        console.log(`[CRON] Writing updated aggregated status to KV`);
+        await Promise.race([
+            env.CRON_STATUS_CACHE.put(
+                'cron_statuses_aggregated', 
+                JSON.stringify(aggregatedStatuses), 
+                { expirationTtl: 86400 } // 24 hours
+            ),
+            new Promise((_, reject) => setTimeout(() => reject(new Error('KV_PUT_TIMEOUT')), 5000))
+        ]);
 
-        console.log(`[CRON] Updated aggregated status for task: ${updatedTask}`);
+        console.log(`[CRON] ✅ Successfully updated aggregated status for task: ${updatedTask}`);
     } catch (error) {
-        console.error(`[CRON] Failed to update aggregated status for ${updatedTask}:`, error);
+        const errorMsg = error instanceof Error ? error.message : String(error);
+        console.error(`[CRON] ❌ Failed to update aggregated status for ${updatedTask}:`, errorMsg);
+        
+        // Log additional debug info
+        console.error(`[CRON] Error details:`, {
+            task: updatedTask,
+            statusData,
+            error: errorMsg,
+            timestamp: new Date().toISOString()
+        });
+        
         // Don't throw - this is a performance optimization, not critical functionality
     }
 }
