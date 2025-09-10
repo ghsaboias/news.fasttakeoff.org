@@ -1,5 +1,6 @@
 import { withErrorHandling } from '@/lib/api-utils';
 import { TwitterService } from '@/lib/twitter-service';
+import { OpenRouterImageService } from '@/lib/openrouter-image-service';
 import { Report } from '@/lib/types/core';
 
 export async function POST(request: Request) {
@@ -22,7 +23,8 @@ export async function POST(request: Request) {
             headlineChars: report.headline?.length ?? 0,
         });
 
-        const twitterService = new TwitterService(env);
+        const imageService = new OpenRouterImageService(env);
+        const twitterService = new TwitterService(env, imageService);
 
         try {
             const tweetId = await twitterService.postTweet(report as Report, withImage);

@@ -54,7 +54,10 @@ export class TwitterService {
     private oauthAccessToken: string;
     private oauthAccessTokenSecret: string;
 
-    constructor(env: Cloudflare.Env) {
+    constructor(
+        env: Cloudflare.Env,
+        imageService: OpenRouterImageService
+    ) {
         // Detect build environment
         const isBuildTime = process.env.NODE_ENV === 'production' && process.env.NEXT_PHASE === 'phase-production-build';
 
@@ -65,7 +68,7 @@ export class TwitterService {
             this.clientId = '';
             this.clientSecret = '';
             this.env = env;
-            this.imageService = new OpenRouterImageService(env);
+            this.imageService = imageService;
             this.oauthConsumerKey = '';
             this.oauthConsumerSecret = '';
             this.oauthAccessToken = '';
@@ -85,7 +88,7 @@ export class TwitterService {
         this.clientId = env.TWITTER_CLIENT_ID;
         this.clientSecret = env.TWITTER_CLIENT_SECRET;
         this.env = env;
-        this.imageService = new OpenRouterImageService(env);
+        this.imageService = imageService;
 
         // OAuth 1.0a credentials for media upload (same keys as working script)
         this.oauthConsumerKey = env.TWITTER_API_KEY || '';
