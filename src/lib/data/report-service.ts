@@ -19,14 +19,22 @@ export class ReportService {
     private cacheManager: CacheManager;
     private env: Cloudflare.Env;
 
-    constructor(env: Cloudflare.Env) {
+    constructor(
+        messagesService: MessagesService,
+        channelsService: ChannelsService,
+        instagramService: InstagramService,
+        facebookService: FacebookService,
+        twitterService: TwitterService,
+        cacheManager: CacheManager,
+        env: Cloudflare.Env
+    ) {
+        this.messagesService = messagesService;
+        this.channelsService = channelsService;
+        this.instagramService = instagramService;
+        this.facebookService = facebookService;
+        this.twitterService = twitterService;
+        this.cacheManager = cacheManager;
         this.env = env;
-        this.messagesService = new MessagesService(env);
-        this.channelsService = new ChannelsService(env);
-        this.instagramService = new InstagramService(env);
-        this.facebookService = new FacebookService(env);
-        this.twitterService = new TwitterService(env);
-        this.cacheManager = new CacheManager(env);
     }
 
 

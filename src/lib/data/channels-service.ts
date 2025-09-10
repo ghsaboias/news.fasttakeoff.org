@@ -1,8 +1,7 @@
 import { API, CACHE, DISCORD } from '@/lib/config';
-import { DiscordChannel, DiscordMessage } from '@/lib/types/core';
+import { CachedMessages, DiscordChannel, DiscordMessage } from '@/lib/types/core';
 import { Cloudflare } from '../../../worker-configuration';
 import { CacheManager } from '../cache-utils';
-import { MessagesService } from './messages-service';
 
 export class ChannelsService {
     private env: Cloudflare.Env;
@@ -10,9 +9,9 @@ export class ChannelsService {
     apiCallCount = 0;
     callStartTime = Date.now();
 
-    constructor(env: Cloudflare.Env) {
+    constructor(cacheManager: CacheManager, env: Cloudflare.Env) {
         this.env = env;
-        this.cache = new CacheManager(env);
+        this.cache = cacheManager;
     }
 
     filterChannels(channels: DiscordChannel[]): DiscordChannel[] {
@@ -153,13 +152,14 @@ export class ChannelsService {
             return { channel: null, messages: { count: 0, messages: [] } };
         }
 
-        const messagesService = new MessagesService(this.env);
-        const cachedMessages = await messagesService.getAllCachedMessagesForChannel(channelId);
+        // Access cached messages directly through cache manager
+        const cacheKey = `messages:${channelId}`;
+        const cachedMessages = await this.cache.get<CachedMessages>('MESSAGES_CACHE', cacheKey);
 
         return {
             channel,
             messages: {
-                count: cachedMessages?.messages.length || 0,
+                count: cachedMessages?.messages?.length || 0,
                 messages: cachedMessages?.messages || []
             }
         };
@@ -172,23 +172,3 @@ export class ChannelsService {
     }
 }
 
-export async function getChannels(env: Cloudflare.Env): Promise<DiscordChannel[]> {
-    const client = new ChannelsService(env);
-    return client.getChannels();
-}
-
-export async function getChannelDetails(
-    env: Cloudflare.Env,
-    channelId: string
-): Promise<{
-    channel: DiscordChannel | null;
-    messages: { count: number; messages: DiscordMessage[] };
-}> {
-    const client = new ChannelsService(env);
-    return client.getChannelDetails(channelId);
-}
-
-export async function getChannelName(env: Cloudflare.Env, channelId: string): Promise<string> {
-    const client = new ChannelsService(env);
-    return client.getChannelName(channelId);
-}

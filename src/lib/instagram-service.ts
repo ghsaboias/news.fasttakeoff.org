@@ -40,7 +40,7 @@ export class InstagramService {
     private readonly env: Cloudflare.Env;
     private readonly imageService: OpenRouterImageService;
 
-    constructor(env: Cloudflare.Env) {
+    constructor(env: Cloudflare.Env, imageService: OpenRouterImageService) {
         // Detect build environment
         const isBuildTime = process.env.NODE_ENV === 'production' && process.env.NEXT_PHASE === 'phase-production-build';
 
@@ -48,13 +48,13 @@ export class InstagramService {
             console.log('[INSTAGRAM] Build environment detected, skipping validation');
             this.accessToken = '';
             this.env = env;
-            this.imageService = new OpenRouterImageService(env);
+            this.imageService = imageService;
             return;
         }
 
         this.accessToken = env.INSTAGRAM_ACCESS_TOKEN || '';
         this.env = env;
-        this.imageService = new OpenRouterImageService(env);
+        this.imageService = imageService;
         if (!this.accessToken) {
             console.warn('[INSTAGRAM] No access token found in environment');
         }

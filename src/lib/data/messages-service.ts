@@ -2,20 +2,24 @@ import { API, CACHE, DISCORD, TIME } from '@/lib/config';
 import { CachedMessages, DiscordMessage } from '@/lib/types/core';
 import { Cloudflare } from '../../../worker-configuration';
 import { CacheManager } from '../cache-utils';
-import { ChannelsService, getChannelName } from './channels-service';
+import { ChannelsService } from './channels-service';
 
 export class MessagesService {
     public env: Cloudflare.Env;
     private cacheManager: CacheManager;
     private channelsService: ChannelsService;
 
-    constructor(env: Cloudflare.Env) {
+    constructor(
+        cacheManager: CacheManager,
+        channelsService: ChannelsService,
+        env: Cloudflare.Env
+    ) {
         this.env = env;
         if (!env.MESSAGES_CACHE) {
             throw new Error('Missing required KV namespace: MESSAGES_CACHE');
         }
-        this.cacheManager = new CacheManager(env);
-        this.channelsService = new ChannelsService(env);
+        this.cacheManager = cacheManager;
+        this.channelsService = channelsService;
     }
 
     private messageFilter = {
@@ -120,7 +124,7 @@ export class MessagesService {
         }
 
         const messages = await this.fetchBotMessagesFromAPI(channelId, since);
-        const channelName = await getChannelName(this.env, channelId);
+        const channelName = await this.channelsService.getChannelName(channelId);
         await this.cacheMessages(channelId, messages, channelName);
         return messages.slice(0, limit);
     }
@@ -219,7 +223,7 @@ export class MessagesService {
             return;
         }
         const uniqueMessages = this.messageFilter.uniqueByContent(messages);
-        const name = channelName || await getChannelName(this.env, channelId);
+        const name = channelName || await this.channelsService.getChannelName(channelId);
         const data: CachedMessages = {
             messages: uniqueMessages,
             cachedAt: new Date().toISOString(),
