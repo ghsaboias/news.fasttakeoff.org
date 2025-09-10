@@ -163,13 +163,7 @@ export const TIME = {
     SIX_HOURS_MS: 6 * 60 * 60 * 1000,
     TWENTY_FOUR_HOURS_MS: 24 * 60 * 60 * 1000,
 
-    // Timeframes and cron mapping
-    TIMEFRAMES: ['2h', '6h'] as const,
-    DYNAMIC_TIMEFRAMES: ['2h', '6h', 'dynamic'] as const,
-    CRON: {
-        '2h': 2,
-        '6h': 6,
-    },
+    // Legacy static timeframes removed - now using dynamic windows only
 
     // Helper converters
     minutesToMs: (n: number): number => n * 60 * 1000,
@@ -681,15 +675,15 @@ export const TASK_TIMEOUTS = {
   FEEDS: 240000,           // 4 minutes
 } as const;
 
-export type TimeframeKey = typeof TIME.TIMEFRAMES[number];
-export type DynamicTimeframeKey = typeof TIME.DYNAMIC_TIMEFRAMES[number];
+// Legacy types removed - use dynamic windows with explicit start/end times
 
 // Feature flags for gradual migration from fixed to dynamic windows
 export const FEATURE_FLAGS = {
     DYNAMIC_REPORTS_ENABLED: true,
     DYNAMIC_REPORTS_PRIMARY: false, // Start false, gradually increase
     FIXED_REPORTS_FALLBACK: true,
-    SHOW_DYNAMIC_REPORTS_IN_UI: true, // Admin toggle for side-by-side comparison
+    SHOW_DYNAMIC_REPORTS_IN_UI: false, // Dynamic reports are now the standard - toggle no longer needed
+    SKIP_SOCIAL_POSTING: false, // Set to true to skip social media posting in cron jobs
 };
 
 export const RSS_FEEDS: Record<string, string> = {

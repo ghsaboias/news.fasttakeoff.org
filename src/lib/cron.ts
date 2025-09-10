@@ -1,6 +1,6 @@
 import { Cloudflare } from '../../worker-configuration';
 import type { ExecutionContext } from '../../worker-configuration';
-import { TASK_TIMEOUTS } from './config';
+import { TASK_TIMEOUTS, FEATURE_FLAGS } from './config';
 import { ExecutiveSummaryService } from './data/executive-summary-service';
 import { FeedsService } from './data/feeds-service';
 import { MessagesService } from './data/messages-service';
@@ -195,48 +195,18 @@ const CRON_TASKS: Record<string, CronTaskFunction> = {
             ctx
         });
 
-        // Post top dynamic report from last 2 hours to social media
-        const reportService = new ReportService(env);
-        await logRun('SOCIAL_MEDIA_POST', () => reportService.postTopDynamicReport(2), {
-            timeoutMs: TASK_TIMEOUTS.REPORTS,
-            env,
-            ctx
-        });
-        
-        /* LEGACY CODE - Report generation now handled by dynamic evaluation every 15 minutes
-        
-        // Skip 2h report generation if this coincides with 6h report time
-        if (scheduledTime && is6hReportTime(scheduledTime)) {
-            console.log('[CRON] Skipping 2h report generation - coincides with 6h report time');
-            return;
-        }
-
-        const reportService = new ReportService(env);
-        const executiveSummaryService = new ExecutiveSummaryService(env);
-
-        // Track whether report generation succeeds
-        let reportsSuccessful = false;
-        try {
-            await logRun('REPORTS_2H', () => reportService.generateReports('2h'), {
-                timeoutMs: TASK_TIMEOUTS.REPORTS
-            });
-            reportsSuccessful = true;
-            console.log('[CRON] REPORTS_2H completed successfully, proceeding with executive summary');
-        } catch (error) {
-            console.error('[CRON] REPORTS_2H failed, skipping executive summary generation:', error);
-            // Re-throw to maintain existing error handling behavior
-            throw error;
-        }
-
-        // Generate executive summary only if reports were created successfully
-        if (reportsSuccessful) {
-            await logRun('EXECUTIVE_SUMMARY_2H', () => executiveSummaryService.generateAndCacheSummary(), {
-                timeoutMs: TASK_TIMEOUTS.EXECUTIVE_SUMMARY
+        // Post top dynamic report to social media (finds most engaging report from recent time period)
+        if (!FEATURE_FLAGS.SKIP_SOCIAL_POSTING) {
+            const reportService = new ReportService(env);
+            await logRun('SOCIAL_MEDIA_POST', () => reportService.postTopDynamicReport(), {
+                timeoutMs: TASK_TIMEOUTS.REPORTS,
+                env,
+                ctx
             });
         } else {
-            console.warn('[CRON] Skipping EXECUTIVE_SUMMARY_2H due to failed report generation');
+            console.log('[CRON] Social media posting skipped (SKIP_SOCIAL_POSTING flag enabled)');
         }
-        */
+        
     },
 
     // DISABLED: Static 6h report generation - replaced by dynamic window evaluation  
@@ -255,13 +225,6 @@ const CRON_TASKS: Record<string, CronTaskFunction> = {
             ctx
         });
         
-        /* COMMENTED OUT - Report generation now handled by dynamic evaluation every 15 minutes
-        const reportService = new ReportService(env);
-
-        await logRun('REPORTS_6H', () => reportService.generateReports('6h'), {
-            timeoutMs: TASK_TIMEOUTS.REPORTS
-        });
-        */
     },
 
     // Every 15 minutes
@@ -306,10 +269,10 @@ const CRON_TASKS: Record<string, CronTaskFunction> = {
 
 // Handle manual triggers
 async function handleManualTrigger(trigger: string, env: Cloudflare.Env, ctx?: ExecutionContext): Promise<void> {
-    const reportService = new ReportService(env);
     const messagesService = new MessagesService(env);
     const executiveSummaryService = new ExecutiveSummaryService(env);
     const feedsService = new FeedsService(env);
+    const windowEvaluationService = new WindowEvaluationService(env);
 
     const MANUAL_TRIGGERS: Record<string, () => Promise<void>> = {
         'MESSAGES': () => logRun('MESSAGES', () => messagesService.updateMessages(true), {
@@ -318,20 +281,7 @@ async function handleManualTrigger(trigger: string, env: Cloudflare.Env, ctx?: E
             ctx
         }),
 
-        'REPORTS_2H': () => logRun('REPORTS_2H', () => reportService.generateReports('2h'), {
-            timeoutMs: TASK_TIMEOUTS.REPORTS,
-            env,
-            ctx
-        }),
-
-        'REPORTS_6H': () => logRun('REPORTS_6H', () => reportService.generateReports('6h'), {
-            timeoutMs: TASK_TIMEOUTS.REPORTS,
-            env,
-            ctx
-        }),
-
-        'REPORTS_NO_SOCIAL': () => logRun('REPORTS_NO_SOCIAL',
-            () => reportService.generateReportsWithoutSocialMedia(['2h']), {
+        'WINDOW_EVALUATION': () => logRun('WINDOW_EVALUATION', () => windowEvaluationService.evaluateAllChannels(), {
             timeoutMs: TASK_TIMEOUTS.REPORTS,
             env,
             ctx
