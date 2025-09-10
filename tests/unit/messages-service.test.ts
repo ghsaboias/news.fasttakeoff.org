@@ -1,4 +1,5 @@
 import { MessagesService } from '@/lib/data/messages-service';
+import { ServiceFactory } from '@/lib/services/ServiceFactory';
 import { beforeEach, describe, expect, it, Mock, vi } from 'vitest';
 import { createMessagesWithTimeRelation, createTestData } from '../fixtures/testDataFactory';
 import { createMockEnv } from '../setup';
@@ -13,7 +14,12 @@ describe('MessagesService', () => {
     // Create fresh test data for each test to ensure current timestamps
     testData = createTestData();
     mockEnv = createMockEnv();
-    messagesService = new MessagesService(mockEnv);
+    
+    // Reset ServiceFactory singleton to ensure test isolation
+    ServiceFactory.reset();
+    
+    const factory = ServiceFactory.getInstance(mockEnv);
+    messagesService = factory.getMessagesService();
     mockFetch = global.fetch as Mock;
   });
 
@@ -30,7 +36,10 @@ describe('MessagesService', () => {
       const envWithoutCache = { ...mockEnv };
       delete envWithoutCache.MESSAGES_CACHE;
 
-      expect(() => new MessagesService(envWithoutCache)).toThrow('Missing required KV namespace: MESSAGES_CACHE');
+      // Reset factory to ensure we use the new environment
+      ServiceFactory.reset();
+      
+      expect(() => ServiceFactory.getInstance(envWithoutCache).getMessagesService()).toThrow('Missing required KV namespace: MESSAGES_CACHE');
     });
   });
 
@@ -128,7 +137,11 @@ describe('MessagesService', () => {
     it('should handle missing token', async () => {
       const envWithoutToken = { ...mockEnv };
       delete envWithoutToken.DISCORD_TOKEN;
-      const service = new MessagesService(envWithoutToken);
+      
+      // Reset factory to ensure we use the new environment
+      ServiceFactory.reset();
+      const factory = ServiceFactory.getInstance(envWithoutToken);
+      const service = factory.getMessagesService();
 
       await expect(service.fetchBotMessagesFromAPI('channel-id'))
         .rejects.toThrow('DISCORD_TOKEN is not set');
@@ -190,7 +203,10 @@ describe('MessagesService', () => {
       const envWithoutCache = { ...mockEnv };
       delete envWithoutCache.MESSAGES_CACHE;
 
-      expect(() => new MessagesService(envWithoutCache))
+      // Reset factory to ensure we use the new environment
+      ServiceFactory.reset();
+
+      expect(() => ServiceFactory.getInstance(envWithoutCache).getMessagesService())
         .toThrow('Missing required KV namespace: MESSAGES_CACHE');
     });
   });
