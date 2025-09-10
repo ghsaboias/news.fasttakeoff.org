@@ -1,5 +1,4 @@
 import { Cloudflare } from '../../../worker-configuration';
-import { FEATURE_FLAGS } from '../config';
 import { ReportService } from './report-service';
 import { MessagesService } from './messages-service';
 
@@ -260,13 +259,8 @@ export class WindowEvaluationService {
       console.log(`[WINDOW_EVAL] Generating report for ${channelName}: ${messageCount} messages in ${Math.round(lookbackMinutes)}min (thresholds: ${thresholds.minMessages} msgs, ${thresholds.maxIntervalMinutes}min max)`);
       
       try {
-        // Generate report using dynamic path when enabled
-        if (FEATURE_FLAGS.DYNAMIC_REPORTS_ENABLED) {
-          await this.reportService.createDynamicReport(channelId, since, now);
-        } else {
-          // Fallback to existing static timeframe logic
-          await this.reportService.createReportAndGetMessages(channelId, '2h');
-        }
+        // Generate dynamic report based on message activity window
+        await this.reportService.createDynamicReport(channelId, since, now);
         await this.setLastGenerationTime(channelId);
         evaluationMetrics.reportsGenerated++;
         return {

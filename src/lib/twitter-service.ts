@@ -148,14 +148,22 @@ export class TwitterService {
 
     /**
      * Determines if this report qualifies as a "big event" for threaded posting.
-     * Rule: timeframe is 2h and messageCount > 20
+     * Updated rule: Based on activity density - high message count in short time window
      */
     private isBigEvent(report: Report): boolean {
-        const timeframe = (report.timeframe || '').toLowerCase();
         const count = typeof report.messageCount === 'number' ? report.messageCount : 0;
-        if (timeframe === '2h') return count > 20;
-        if (timeframe === '6h') return count > 50;
-        return false;
+        
+        // Calculate window duration from timestamps if available
+        if (report.windowStartTime && report.windowEndTime) {
+            const windowMs = new Date(report.windowEndTime).getTime() - new Date(report.windowStartTime).getTime();
+            const windowHours = windowMs / (1000 * 60 * 60);
+            
+            // High activity: >20 messages in ≤3 hours OR >50 messages in any dynamic window
+            return (count > 20 && windowHours <= 3) || count > 50;
+        }
+        
+        // Fallback for reports without window metadata
+        return count > 25;
     }
 
     /**

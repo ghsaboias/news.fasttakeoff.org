@@ -1,4 +1,4 @@
-import { CACHE, TIME, DynamicTimeframeKey } from '@/lib/config';
+import { CACHE, TIME } from '@/lib/config';
 import { Report, ReportRow } from '@/lib/types/core';
 import { groupAndSortReports } from '@/lib/utils';
 import type { Cloudflare } from '../../../worker-configuration';
@@ -8,7 +8,7 @@ export class ReportCacheD1 {
      * Store reports array in normalized D1 table
      * Breaks apart the Report[] into individual rows
      */
-    static async store(channelId: string, timeframe: DynamicTimeframeKey, reports: Report[], env: Cloudflare.Env): Promise<void> {
+    static async store(channelId: string, timeframe: string, reports: Report[], env: Cloudflare.Env): Promise<void> {
         if (!env.FAST_TAKEOFF_NEWS_DB) {
             throw new Error('Missing required D1 database: FAST_TAKEOFF_NEWS_DB');
         }
@@ -59,7 +59,7 @@ export class ReportCacheD1 {
      * Get reports array for specific channel/timeframe
      * Reconstructs Report[] from normalized rows
      */
-    static async get(channelId: string, timeframe: DynamicTimeframeKey, env: Cloudflare.Env): Promise<Report[] | null> {
+    static async get(channelId: string, timeframe: string, env: Cloudflare.Env): Promise<Report[] | null> {
         if (!env.FAST_TAKEOFF_NEWS_DB) return null;
 
         const result = await env.FAST_TAKEOFF_NEWS_DB.prepare(
@@ -76,7 +76,7 @@ export class ReportCacheD1 {
     /**
      * Get recent reports from the last 24 hours for a channel/timeframe
      */
-    static async getPreviousReports(channelId: string, timeframe: DynamicTimeframeKey, env: Cloudflare.Env): Promise<Report[]> {
+    static async getPreviousReports(channelId: string, timeframe: string, env: Cloudflare.Env): Promise<Report[]> {
         if (!env.FAST_TAKEOFF_NEWS_DB) return [];
 
         const twentyFourHoursAgo = Date.now() - TIME.TWENTY_FOUR_HOURS_MS;
@@ -136,7 +136,7 @@ export class ReportCacheD1 {
             const parts = key.split(':');
             if (parts.length === 3 && parts[0] === 'reports') {
                 const channelId = parts[1];
-                const timeframe = parts[2] as DynamicTimeframeKey;
+                const timeframe = parts[2] as string;
                 const reports = await this.get(channelId, timeframe, env);
                 results.set(key, reports);
             } else {
@@ -247,7 +247,7 @@ export class ReportCacheD1 {
     /**
      * Get all reports for a specific channel
      */
-    static async getAllReportsForChannel(channelId: string, env: Cloudflare.Env, timeframe?: DynamicTimeframeKey): Promise<Report[]> {
+    static async getAllReportsForChannel(channelId: string, env: Cloudflare.Env, timeframe?: string): Promise<Report[]> {
         if (!env.FAST_TAKEOFF_NEWS_DB) {
             console.log('FAST_TAKEOFF_NEWS_DB not available');
             return [];

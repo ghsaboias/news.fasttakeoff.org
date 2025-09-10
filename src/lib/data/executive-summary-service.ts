@@ -79,7 +79,7 @@ export class ExecutiveSummaryService {
                 miniSummary: miniSummary,
                 generatedAt: new Date().toISOString(),
                 reportCount: allReports.length,
-                timeframe: '6h',
+                timeframe: 'recent activity',
                 version: '1.0'
             };
 

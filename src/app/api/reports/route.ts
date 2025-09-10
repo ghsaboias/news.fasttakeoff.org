@@ -1,6 +1,5 @@
 import { withErrorHandling } from '@/lib/api-utils';
 import { CacheManager } from '@/lib/cache-utils';
-import { TimeframeKey, FEATURE_FLAGS } from '@/lib/config';
 import { ReportService } from '@/lib/data/report-service';
 import { Report, ReportResponse } from '@/lib/types/core';
 import { NextRequest, NextResponse } from 'next/server';
@@ -155,7 +154,7 @@ export async function POST(request: Request) {
             let report, messages;
 
             // Handle dynamic report generation
-            if (mode === 'dynamic' && FEATURE_FLAGS.DYNAMIC_REPORTS_ENABLED) {
+            if (mode === 'dynamic') {
                 if (!windowStart || !windowEnd) {
                     throw new Error('windowStart and windowEnd are required for dynamic mode');
                 }
@@ -172,17 +171,17 @@ export async function POST(request: Request) {
                 }
 
                 ({ report, messages } = await reportService.createDynamicReport(channelId, startDate, endDate));
-            } else if (timeframe === 'dynamic' && FEATURE_FLAGS.DYNAMIC_REPORTS_ENABLED) {
+            } else if (timeframe === 'dynamic') {
                 // For backward compatibility, generate dynamic report for current activity
                 const now = new Date();
                 const twoHoursAgo = new Date(now.getTime() - 2 * 60 * 60 * 1000);
                 ({ report, messages } = await reportService.createDynamicReport(channelId, twoHoursAgo, now));
             } else {
-                // Traditional static timeframe generation
-                ({ report, messages } = await reportService.createReportAndGetMessages(
-                    channelId,
-                    timeframe as TimeframeKey
-                ));
+                // Legacy timeframe support - convert to dynamic window
+                const now = new Date();
+                const hours = timeframe === '2h' ? 2 : timeframe === '6h' ? 6 : 2;
+                const startTime = new Date(now.getTime() - hours * 60 * 60 * 1000);
+                ({ report, messages } = await reportService.createDynamicReport(channelId, startTime, now));
             }
 
             if (!report) {

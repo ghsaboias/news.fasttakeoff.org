@@ -68,7 +68,7 @@ export default async function AdminPage() {
                 MESSAGES
               </button>
               <button className="p-3 text-sm bg-secondary hover:bg-secondary-hover text-secondary-foreground rounded border border-border transition-colors">
-                REPORTS_2H
+                WINDOW_EVAL
               </button>
               <button className="p-3 text-sm bg-secondary hover:bg-secondary-hover text-secondary-foreground rounded border border-border transition-colors">
                 EXECUTIVE_SUMMARY

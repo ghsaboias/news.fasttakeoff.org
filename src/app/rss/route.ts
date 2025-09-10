@@ -1,31 +1,58 @@
-import { TIME, TimeframeKey } from '@/lib/config'
+import { TIME } from '@/lib/config'
 import { getChannels } from '@/lib/data/channels-service'
-import { ReportService } from '@/lib/data/report-service'
 import { getCacheContext } from '@/lib/utils'
 import { NextResponse } from 'next/server'
+
+interface RSSFeedReport {
+  reportId: string;
+  generatedAt: string;
+  messageCount: number | null;
+  headline: string;
+  body: string;
+  channelId: string | null;
+  channelName: string;
+  city?: string;
+}
 
 export async function GET() {
   try {
     const { env } = await getCacheContext()
-    const reportService = new ReportService(env)
     const channels = await getChannels(env)
 
-    // Get recent reports from all channels
-    const allReports = []
+    // Get recent reports from all channels using D1 database
+    const allReports: RSSFeedReport[] = []
     const oneDayAgo = new Date(Date.now() - TIME.DAY_MS)
-    const timeframes: TimeframeKey[] = [...TIME.TIMEFRAMES] // Get all configured timeframes
 
     for (const channel of channels) {
       try {
-        // Fetch reports for each timeframe
-        for (const timeframe of timeframes) {
-          const reports = await reportService.getAllReportsForChannel(channel.id, timeframe)
-          if (reports) {
-            const recentReports = reports
-              .filter(report => new Date(report.generatedAt) >= oneDayAgo)
-              .map(report => ({ ...report, channelName: channel.name }))
-            allReports.push(...recentReports)
-          }
+        // Query D1 for recent reports from this channel
+        const query = `
+          SELECT * FROM reports 
+          WHERE channel_id = ? 
+            AND generated_at >= datetime(?)
+          ORDER BY generated_at DESC
+          LIMIT 50
+        `
+        const results = await env.FAST_TAKEOFF_NEWS_DB
+          .prepare(query)
+          .bind(channel.id, oneDayAgo.toISOString())
+          .all()
+          
+        if (results.results?.length) {
+          const recentReports = results.results
+            .map((row: Record<string, unknown>) => ({ 
+              ...row, 
+              channelName: channel.name,
+              // Convert D1 row to Report format
+              reportId: row.report_id as string,
+              generatedAt: row.generated_at as string,
+              messageCount: row.message_count as number | null,
+              headline: row.headline as string,
+              body: row.body as string,
+              channelId: row.channel_id as string | null,
+              city: row.city as string
+            }))
+          allReports.push(...recentReports)
         }
       } catch (error) {
         console.error(`Error fetching reports for channel ${channel.id}:`, error)
@@ -43,7 +70,7 @@ export async function GET() {
     )
 
     // Sort by newest first
-    uniqueReports.sort((a, b) => new Date(b.generatedAt).getTime() - new Date(a.generatedAt).getTime())
+    uniqueReports.sort((a: RSSFeedReport, b: RSSFeedReport) => new Date(b.generatedAt).getTime() - new Date(a.generatedAt).getTime())
 
     // Take top 50 for feed
     const feedReports = uniqueReports.slice(0, 50)
@@ -66,7 +93,7 @@ export async function GET() {
     <ttl>120</ttl>
     <atom:link href="${baseUrl}/rss" rel="self" type="application/rss+xml" />
     
-${feedReports.map(report => {
+${feedReports.map((report: RSSFeedReport) => {
       const pubDate = new Date(report.generatedAt).toUTCString()
       const headline = report.headline || `Breaking: ${report.channelName} Report`
       const description = report.body.substring(0, 300) + '...'

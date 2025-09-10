@@ -22,18 +22,10 @@ describe('Configuration', () => {
   });
 
   describe('TIME configuration', () => {
-    it('should have consistent timeframe values', () => {
-      expect(TIME.TIMEFRAMES).toContain('2h');
-      expect(TIME.TIMEFRAMES).toContain('6h');
-
+    it('should have consistent time constants', () => {
       expect(TIME.TWO_HOURS_MS).toBe(2 * 60 * 60 * 1000);
       expect(TIME.SIX_HOURS_MS).toBe(6 * 60 * 60 * 1000);
       expect(TIME.ONE_HOUR_MS).toBe(60 * 60 * 1000);
-    });
-
-    it('should have valid cron configuration', () => {
-      expect(TIME.CRON['2h']).toBe(2);
-      expect(TIME.CRON['6h']).toBe(6);
     });
   });
 

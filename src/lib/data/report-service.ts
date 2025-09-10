@@ -1,6 +1,6 @@
-import { TIME, TimeframeKey } from '@/lib/config';
 import { DiscordMessage, EntityExtractionResult, Report, ReportRow } from '@/lib/types/core';
 import { Cloudflare } from '../../../worker-configuration';
+import { CacheManager } from '../cache-utils';
 import { FacebookService } from '../facebook-service';
 import { InstagramService } from '../instagram-service';
 import { TwitterService } from '../twitter-service';
@@ -16,6 +16,7 @@ export class ReportService {
     private instagramService: InstagramService;
     private facebookService: FacebookService;
     private twitterService: TwitterService;
+    private cacheManager: CacheManager;
     private env: Cloudflare.Env;
 
     constructor(env: Cloudflare.Env) {
@@ -25,55 +26,21 @@ export class ReportService {
         this.instagramService = new InstagramService(env);
         this.facebookService = new FacebookService(env);
         this.twitterService = new TwitterService(env);
+        this.cacheManager = new CacheManager(env);
     }
 
-    async createReportAndGetMessages(channelId: string, timeframe: TimeframeKey): Promise<{ report: Report | null; messages: DiscordMessage[] }> {
-        // If Discord-dependent processing is disabled, avoid generating new reports
-        if (this.env.DISCORD_DISABLED) {
-            console.warn('[REPORTS] DISCORD_DISABLED is set – skipping createReportAndGetMessages');
-            return { report: null, messages: [] };
-        }
-        // Get the current most recent report for this timeframe
-        const previousReports = await ReportCache.getPreviousReports(channelId, timeframe, this.env);
-
-        const [messages, channelName] = await Promise.all([
-            this.messagesService.getMessagesForTimeframe(channelId, timeframe),
-            this.channelsService.getChannelName(channelId),
-        ]);
-
-        if (!messages.length) {
-            console.log(`[REPORTS] Channel ${channelId}: No messages in last ${timeframe}`);
-            return { report: null, messages: [] };
-        }
-
-        try {
-            const context: ReportContext = {
-                channelId,
-                channelName,
-                messageCount: messages.length,
-                timeframe,
-            };
-
-            const report = await ReportAI.generate(messages, previousReports, context, this.env);
-            
-            // Mark as scheduled generation (traditional cron-based reports)
-            report.generationTrigger = 'scheduled';
-
-            const cachedReports = await ReportCache.get(channelId, timeframe, this.env) || [];
-            const updatedReports = [report, ...cachedReports.filter(r => r.reportId !== report.reportId)];
-            await ReportCache.store(channelId, timeframe, updatedReports, this.env);
-
-            // Phase 2: Cache individual report immediately (cache-on-generation)
-            await ReportCache.storeIndividualReport(report, this.env);
-            
-            // Phase 2: Invalidate cascade caches
-            await this.invalidateCascadeCaches();
-
-            return { report, messages };
-        } catch (error) {
-            console.error(`[REPORTS] Error generating ${timeframe} report for channel ${channelName}:`, error);
-            throw error;
-        }
+    /**
+     * Backward compatibility wrapper for createReportAndGetMessages
+     * Now defaults to a 2-hour dynamic window
+     */
+    async createReportAndGetMessages(channelId: string, timeframeLegacy?: string): Promise<{ report: Report | null; messages: DiscordMessage[] }> {
+        // Convert legacy 2h/6h timeframes to dynamic windows
+        const hoursBack = timeframeLegacy === '6h' ? 6 : 2; // Default to 2h
+        const windowEnd = new Date();
+        const windowStart = new Date(windowEnd.getTime() - (hoursBack * 60 * 60 * 1000));
+        
+        console.log(`[REPORTS] Legacy createReportAndGetMessages(${timeframeLegacy}) -> createDynamicReport(${hoursBack}h window)`);
+        return this.createDynamicReport(channelId, windowStart, windowEnd);
     }
 
     /**
@@ -230,77 +197,127 @@ export class ReportService {
         }));
     }
 
-    async getLastReportAndMessages(channelId: string, timeframe: TimeframeKey = '2h'): Promise<{ report: Report | null; messages: DiscordMessage[] }> {
-        const cachedReports = await ReportCache.get(channelId, timeframe, this.env);
-        const messages = await this.messagesService.getMessagesForTimeframe(channelId, timeframe);
+    // REMOVED: getLastReportAndMessages(timeframe) - use time-based queries on D1 database instead
 
-        if (cachedReports?.length) {
-            const latestReport = cachedReports[0];
-            const age = (Date.now() - new Date(latestReport.generatedAt || '').getTime()) / 1000;
-
-            if (age < TIME.ONE_HOUR_MS / 1000) {
-                return { report: { ...latestReport, cacheStatus: 'hit' }, messages };
-            }
-        }
-
-        // No valid cached report exists; return null report with available messages
-        return { report: null, messages };
-    }
-
-    async getReportAndMessages(channelId: string, reportId: string, timeframe?: TimeframeKey): Promise<{ report: Report | null; messages: DiscordMessage[] }> {
-        // This read path continues to work from cache even if Discord is disabled
-        // If timeframe is provided, use it directly
-        if (timeframe) {
-            const cachedReports = await ReportCache.get(channelId, timeframe, this.env);
-            if (cachedReports) {
-                const report = cachedReports.find(r => r.reportId === reportId);
-                if (report) {
-                    const messages = report.messageIds?.length
-                        ? await this.messagesService.getMessagesForReport(channelId, report.messageIds)
-                        : await this.messagesService.getMessagesForTimeframe(channelId, timeframe);
-                    return { report, messages };
-                }
-            }
-            return { report: null, messages: [] };
-        }
-
-        // If no timeframe provided, check each timeframe for this channel (more efficient than scanning all reports)
-        const timeframes: (TimeframeKey | 'dynamic')[] = [...TIME.TIMEFRAMES, 'dynamic'];
-
-        for (const tf of timeframes) {
-            const cachedReports = await ReportCache.get(channelId, tf, this.env);
-            if (cachedReports) {
-                const report = cachedReports.find(r => r.reportId === reportId);
-                if (report) {
-                    const messages = report.messageIds?.length
-                        ? await this.messagesService.getMessagesForReport(channelId, report.messageIds)
-                        : tf !== 'dynamic' 
-                            ? await this.messagesService.getMessagesForTimeframe(channelId, tf)
-                            : [];
-                    return { report, messages };
-                }
-            }
-        }
-
-        return { report: null, messages: [] };
-    }
+    // REMOVED: getReportAndMessages with TimeframeKey - use D1 database queries by reportId instead
 
     async getReport(reportId: string): Promise<Report | null> {
         const cachedReports = await ReportCache.getAllReports(this.env);
         return cachedReports?.find(r => r.reportId === reportId) || null;
     }
 
-    async getReportTimeframe(reportId: string): Promise<TimeframeKey | undefined> {
-        const report = await this.getReport(reportId);
-        return report?.timeframe as TimeframeKey;
-    }
+    // REMOVED: getReportTimeframe() - timeframes no longer used, check report.generationTrigger instead
 
     async getAllReports(limit?: number): Promise<Report[]> {
         return ReportCache.getAllReports(this.env, limit);
     }
 
-    async getAllReportsForChannel(channelId: string, timeframe?: TimeframeKey): Promise<Report[]> {
-        return ReportCache.getAllReportsForChannel(channelId, this.env, timeframe);
+    /**
+     * Get all reports for a specific channel using D1 database
+     * Replacement for legacy getAllReportsForChannel(channelId, timeframe)
+     */
+    async getAllReportsForChannel(channelId: string, limit: number = 50): Promise<Report[]> {
+        try {
+            const query = `
+                SELECT * FROM reports 
+                WHERE channel_id = ? 
+                ORDER BY generated_at DESC 
+                LIMIT ?
+            `;
+            
+            const result = await this.env.FAST_TAKEOFF_NEWS_DB
+                .prepare(query)
+                .bind(channelId, limit)
+                .all();
+            
+            if (!result.results?.length) return [];
+            
+            // Convert D1 rows to Report format
+            return result.results.map((row: Record<string, unknown>) => ({
+                reportId: row.report_id as string,
+                headline: row.headline as string,
+                body: row.body as string,
+                city: (row.city as string) || '',
+                generatedAt: row.generated_at as string,
+                channelId: row.channel_id as string | undefined,
+                channelName: row.channel_name as string | undefined,
+                messageCount: row.message_count as number | undefined,
+                messageIds: row.message_ids ? JSON.parse(row.message_ids as string) : [],
+                timeframe: row.timeframe as string | undefined,
+                generationTrigger: (row.generation_trigger as 'dynamic' | 'scheduled') || 'dynamic',
+                windowStartTime: row.window_start_time as string | undefined,
+                windowEndTime: row.window_end_time as string | undefined
+            }));
+        } catch (error) {
+            console.error(`[REPORTS] Error fetching reports for channel ${channelId}:`, error);
+            return [];
+        }
+    }
+
+    /**
+     * Get a specific report with its associated messages
+     * Replacement for legacy getReportAndMessages(channelId, reportId, timeframe)
+     */
+    async getReportAndMessages(channelId: string, reportId: string): Promise<{ report: Report | null; messages: DiscordMessage[] }> {
+        try {
+            // First try to get report from KV cache
+            const cacheKey = `report:${reportId}:full`;
+            const cachedReport = await this.cacheManager.get('REPORTS_CACHE', cacheKey);
+            console.log(`[REPORTS] Individual report cache ${cachedReport ? 'hit' : 'miss'}: ${reportId}`);
+            
+            if (cachedReport) {
+                const report = cachedReport as Report;
+                // Get associated messages
+                let messages: DiscordMessage[] = [];
+                if (report.messageIds?.length) {
+                    messages = await this.messagesService.getMessagesForReport(channelId, report.messageIds);
+                }
+                return { report, messages };
+            }
+            
+            // Fallback to D1 database
+            const reportQuery = `
+                SELECT * FROM reports 
+                WHERE channel_id = ? AND id = ? 
+                LIMIT 1
+            `;
+            
+            const reportResult = await this.env.FAST_TAKEOFF_NEWS_DB
+                .prepare(reportQuery)
+                .bind(channelId, reportId)
+                .first();
+            
+            if (!reportResult) {
+                return { report: null, messages: [] };
+            }
+            
+            // Convert D1 row to Report format
+            const report: Report = {
+                reportId: reportResult.id as string,
+                headline: reportResult.headline as string,
+                body: reportResult.body as string,
+                city: reportResult.city as string || '',
+                generatedAt: reportResult.generated_at as string,
+                channelId: reportResult.channel_id as string,
+                channelName: reportResult.channel_name as string,
+                messageCount: reportResult.message_count as number,
+                messageIds: reportResult.message_ids ? JSON.parse(reportResult.message_ids as string) : [],
+                generationTrigger: (reportResult.generation_trigger as 'dynamic' | 'scheduled') || 'dynamic',
+                windowStartTime: reportResult.window_start_time as string,
+                windowEndTime: reportResult.window_end_time as string
+            };
+            
+            // Get associated messages
+            let messages: DiscordMessage[] = [];
+            if (report.messageIds?.length) {
+                messages = await this.messagesService.getMessagesForReport(channelId, report.messageIds);
+            }
+            
+            return { report, messages };
+        } catch (error) {
+            console.error(`[REPORTS] Error fetching report ${reportId} for channel ${channelId}:`, error);
+            return { report: null, messages: [] };
+        }
     }
 
     async getLatestReportPerChannel(): Promise<Report[]> {
@@ -379,95 +396,7 @@ export class ReportService {
         }
     }
 
-    private async _generateAndCacheReportsForTimeframes(timeframesToProcess: TimeframeKey[], extractEntities: boolean = false): Promise<Report[]> {
-        const generatedReports: Report[] = [];
-
-        // Process each timeframe sequentially
-        for (const timeframe of timeframesToProcess) {
-            console.log(`[REPORTS] Processing timeframe: ${timeframe}`);
-            const messageKeys = await this.messagesService.listMessageKeys();
-            const allChannelIds = messageKeys.map(key => key.name.replace('messages:', ''));
-            const batchSize = 5;
-
-            // Pre-fetch all channel names to avoid repeated API calls
-            const allDiscordChannels = await this.channelsService.getChannels();
-            const channelNameMap = new Map<string, string>();
-            for (const channel of allDiscordChannels) {
-                channelNameMap.set(channel.id, channel.name);
-            }
-
-            for (let i = 0; i < allChannelIds.length; i += batchSize) {
-                const channelBatch = allChannelIds.slice(i, i + batchSize);
-                console.log(`[REPORTS] Processing batch of ${channelBatch.length} channels for timeframe ${timeframe}. Start index: ${i}`);
-
-                const reportCacheKeys = channelBatch.map(channelId => `reports:${channelId}:${timeframe}`);
-                const cachedReportsMap = await ReportCache.batchGet(reportCacheKeys, this.env);
-
-                const batchPromises = channelBatch.map(async (channelId) => {
-                    try {
-                        const channelName = channelNameMap.get(channelId) || `Channel_${channelId}`;
-                        const previousReports = await ReportCache.getPreviousReports(channelId, timeframe, this.env);
-                        const messages = await this.messagesService.getMessagesForTimeframe(channelId, timeframe);
-
-                        if (messages.length === 0) {
-                            return null;
-                        }
-
-                        const context: ReportContext = {
-                            channelId,
-                            channelName,
-                            messageCount: messages.length,
-                            timeframe
-                        };
-
-                        const report = await ReportAI.generate(messages, previousReports, context, this.env);
-
-                        if (report) {
-                            const cachedReports = cachedReportsMap.get(`reports:${channelId}:${timeframe}`) || [];
-                            const updatedReports = [report, ...cachedReports.filter(r => r.reportId !== report.reportId)];
-                            await ReportCache.store(channelId, timeframe, updatedReports, this.env);
-
-                            // Ping search engines for batch-generated reports
-                            // const newUrls = [
-                            //     `https://news.fasttakeoff.org/current-events/${channelId}/${report.reportId}`,
-                            //     `https://news.fasttakeoff.org/current-events/${channelId}`
-                            // ];
-                            // pingSearchEngines(newUrls).catch(() => { }); // Fire and forget
-
-                            return report;
-                        }
-                        return null;
-                    } catch (error) {
-                        console.error(`[REPORTS] Critical error processing channel ${channelId} in batch for timeframe ${timeframe}:`, error);
-                        return null;
-                    }
-                });
-
-                const reportsFromBatch = (await Promise.all(batchPromises)).filter((report): report is Report => report !== null);
-                generatedReports.push(...reportsFromBatch);
-
-                if (reportsFromBatch.length > 0) {
-                    console.log(`[REPORTS] Generated ${reportsFromBatch.length} in batch ${i}.`);
-                }
-            }
-        }
-        console.log(`[REPORTS] Generated ${generatedReports.length} total reports.`);
-
-        // Cache top reports for homepage if we generated any reports
-        if (generatedReports.length > 0) {
-            const topReports = generatedReports
-                .sort((a, b) => (b.messageCount || 0) - (a.messageCount || 0))
-                .slice(0, 10);
-            await ReportCache.storeHomepageReports(topReports, this.env);
-        }
-
-        // Extract entities for all generated reports in parallel (don't block completion)
-        if (extractEntities) {
-            this._extractEntitiesForReports(generatedReports);
-        }
-
-        return generatedReports;
-    }
+    // REMOVED: _generateAndCacheReportsForTimeframes - replaced by dynamic window evaluation
 
     private async _postTopReportToSocialMedia(generatedReports: Report[]): Promise<void> {
         if (generatedReports.length > 0) {
@@ -504,48 +433,9 @@ export class ReportService {
     /**
      * Generates reports for a specific timeframe with social media posting
      */
-    async generateReports(timeframe: TimeframeKey): Promise<void> {
-        const reports = await this._generateAndCacheReportsForTimeframes([timeframe], false); // Set extractEntities to false
-        await this._postTopReportToSocialMedia(reports);
-        console.log(`[REPORTS] Generated ${reports.length} reports for timeframe ${timeframe}`);
-    }
-
-    /**
-     * Manual trigger method: Generates reports for specified timeframes or all configured timeframes.
-     */
-    async generateReportsForManualTrigger(manualTimeframes: TimeframeKey[] | 'ALL', extractEntities: boolean = false): Promise<void> {
-        const timeframesToProcess: TimeframeKey[] = manualTimeframes === 'ALL'
-            ? [...TIME.TIMEFRAMES]
-            : Array.isArray(manualTimeframes) ? manualTimeframes : [];
-
-        if (timeframesToProcess.length === 0) {
-            console.warn('[REPORTS] No timeframes specified or resolved for manual run. Exiting.');
-            return;
-        }
-
-        const generatedReports = await this._generateAndCacheReportsForTimeframes(timeframesToProcess, extractEntities);
-        await this._postTopReportToSocialMedia(generatedReports);
-        console.log('[REPORTS] Manual run finished.');
-    }
-
-    /**
-     * Manual trigger method: Generates reports without social media posting.
-     * Useful for testing or when social media posting is not desired.
-     */
-    async generateReportsWithoutSocialMedia(manualTimeframes: TimeframeKey[] | 'ALL', extractEntities: boolean = false): Promise<void> {
-        const timeframesToProcess: TimeframeKey[] = manualTimeframes === 'ALL'
-            ? [...TIME.TIMEFRAMES]
-            : Array.isArray(manualTimeframes) ? manualTimeframes : [];
-
-        if (timeframesToProcess.length === 0) {
-            console.warn('[REPORTS] No timeframes specified or resolved for manual run. Exiting.');
-            return;
-        }
-
-        const generatedReports = await this._generateAndCacheReportsForTimeframes(timeframesToProcess, extractEntities);
-        console.log(`[REPORTS] Generated ${generatedReports.length} reports without social media posting.`);
-        console.log('[REPORTS] Manual run (no social media) finished.');
-    }
+    // REMOVED: generateReports(timeframe) - replaced by dynamic window evaluation
+    // REMOVED: generateReportsForManualTrigger(timeframes) - replaced by dynamic window evaluation  
+    // REMOVED: generateReportsWithoutSocialMedia(timeframes) - replaced by dynamic window evaluation
 
     /**
      * Query recent dynamic reports and post the top one to social media

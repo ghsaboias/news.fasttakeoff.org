@@ -135,8 +135,8 @@ describe('MessagesService', () => {
     });
   });
 
-  describe('getMessagesForTimeframe', () => {
-    it('should return messages within timeframe from cache', async () => {
+  describe('getMessagesInTimeWindow', () => {
+    it('should return messages within time window from cache', async () => {
       const channelId = testData.channels[0].id;
       const cachedData = {
         messages: testData.messages,
@@ -148,7 +148,9 @@ describe('MessagesService', () => {
 
       mockEnv.MESSAGES_CACHE.get.mockResolvedValue(cachedData);
 
-      const result = await messagesService.getMessagesForTimeframe(channelId, '2h');
+      const now = new Date();
+      const twoHoursAgo = new Date(now.getTime() - 2 * 60 * 60 * 1000);
+      const result = await messagesService.getMessagesInTimeWindow(channelId, twoHoursAgo, now);
 
       expect(result).toHaveLength(2); // Both messages are within 2 hours
       expect(result[0].timestamp).toBe(testData.messages[1].timestamp); // Sorted newest first
@@ -157,7 +159,9 @@ describe('MessagesService', () => {
     it('should return empty array when no cached messages', async () => {
       mockEnv.MESSAGES_CACHE.get.mockResolvedValue(null);
 
-      const result = await messagesService.getMessagesForTimeframe('channel-id', '2h');
+      const now = new Date();
+      const twoHoursAgo = new Date(now.getTime() - 2 * 60 * 60 * 1000);
+      const result = await messagesService.getMessagesInTimeWindow('channel-id', twoHoursAgo, now);
 
       expect(result).toEqual([]);
     });

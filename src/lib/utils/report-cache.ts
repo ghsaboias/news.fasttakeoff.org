@@ -1,11 +1,11 @@
-import { CACHE, TIME, TimeframeKey } from '@/lib/config';
+import { CACHE, TIME } from '@/lib/config';
 import { Report } from '@/lib/types/core';
 import { groupAndSortReports } from '@/lib/utils';
 import { Cloudflare } from '../../../worker-configuration';
 import { CacheManager } from '../cache-utils';
 
 export class ReportCache {
-    static async store(channelId: string, timeframe: TimeframeKey, reports: Report[], env: Cloudflare.Env): Promise<void> {
+    static async store(channelId: string, timeframe: string, reports: Report[], env: Cloudflare.Env): Promise<void> {
         if (!env.REPORTS_CACHE) {
             throw new Error('Missing required KV namespace: REPORTS_CACHE');
         }
@@ -15,14 +15,14 @@ export class ReportCache {
         await cacheManager.put('REPORTS_CACHE', key, cleanedReports, CACHE.TTL.REPORTS);
     }
 
-    static async get(channelId: string, timeframe: TimeframeKey, env: Cloudflare.Env): Promise<Report[] | null> {
+    static async get(channelId: string, timeframe: string, env: Cloudflare.Env): Promise<Report[] | null> {
         if (!env.REPORTS_CACHE) return null;
         const cacheManager = new CacheManager(env);
         const key = `reports:${channelId}:${timeframe}`;
         return cacheManager.get<Report[]>('REPORTS_CACHE', key);
     }
 
-    static async getPreviousReports(channelId: string, timeframe: TimeframeKey, env: Cloudflare.Env): Promise<Report[]> {
+    static async getPreviousReports(channelId: string, timeframe: string, env: Cloudflare.Env): Promise<Report[]> {
         const allCachedReports = await this.get(channelId, timeframe, env) || [];
 
         if (allCachedReports.length === 0) {
@@ -118,7 +118,7 @@ export class ReportCache {
         }
     }
 
-    static async getAllReportsForChannel(channelId: string, env: Cloudflare.Env, timeframe?: TimeframeKey): Promise<Report[]> {
+    static async getAllReportsForChannel(channelId: string, env: Cloudflare.Env, timeframe?: string): Promise<Report[]> {
         if (!env.REPORTS_CACHE) {
             console.log('REPORTS_CACHE namespace not available');
             return [];

@@ -1,4 +1,4 @@
-import { API, CACHE, DISCORD, TIME, TimeframeKey } from '@/lib/config';
+import { API, CACHE, DISCORD, TIME } from '@/lib/config';
 import { CachedMessages, DiscordMessage } from '@/lib/types/core';
 import { Cloudflare } from '../../../worker-configuration';
 import { CacheManager } from '../cache-utils';
@@ -159,20 +159,7 @@ export class MessagesService {
         return cached;
     }
 
-    async getMessagesForTimeframe(channelId: string, timeframe: TimeframeKey): Promise<DiscordMessage[]> {
-        const key = `messages:${channelId}`;
-        const cached = await this.cacheManager.get<CachedMessages>('MESSAGES_CACHE', key);
-        if (!cached?.messages || !Array.isArray(cached.messages)) {
-            return [];
-        }
-
-        const timeframeMs = timeframe === '2h' ? TIME.TWO_HOURS_MS : TIME.SIX_HOURS_MS;
-        const cutoffTime = Date.now() - timeframeMs;
-
-        return cached.messages
-            .filter(msg => new Date(msg.timestamp).getTime() > cutoffTime)
-            .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
-    }
+    // REMOVED: getMessagesForTimeframe(timeframe) - use getMessagesInTimeWindow(windowStart, windowEnd) instead
 
     /**
      * Get messages within a specific time window (used for dynamic reports)

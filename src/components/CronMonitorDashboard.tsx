@@ -141,9 +141,9 @@ export default function CronMonitorDashboard() {
       case '1h':
         return 'MktNews + Cache Maintenance';
       case '2h':
-        return 'Feeds + Social Media';
+        return 'Feeds + Social Media (Legacy)';
       case '6h':
-        return 'Executive Summary';
+        return 'Executive Summary Only';
       case 'FEEDS_GERAL':
         return 'General News Feeds Processing';
       case 'FEEDS_MERCADO':
