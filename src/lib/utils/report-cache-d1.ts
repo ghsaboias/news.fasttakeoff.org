@@ -1,31 +1,7 @@
 import { CACHE, TIME, DynamicTimeframeKey } from '@/lib/config';
-import { Report } from '@/lib/types/core';
+import { Report, ReportRow } from '@/lib/types/core';
 import { groupAndSortReports } from '@/lib/utils';
 import type { Cloudflare } from '../../../worker-configuration';
-
-// Type for D1 row results
-export interface ReportRow {
-    id: number;
-    report_id: string;
-    channel_id: string | null;
-    channel_name: string | null;
-    headline: string;
-    city: string;
-    body: string;
-    generated_at: string;
-    message_count: number | null;
-    last_message_timestamp: string | null;
-    user_generated: number; // SQLite stores booleans as integers
-    timeframe: string | null;
-    cache_status: string | null;
-    message_ids: string | null;
-    created_at: number;
-    expires_at: number;
-    // Dynamic window fields (nullable for backward compatibility)
-    generation_trigger: string | null;
-    window_start_time: string | null;
-    window_end_time: string | null;
-}
 
 export class ReportCacheD1 {
     /**
@@ -88,13 +64,13 @@ export class ReportCacheD1 {
 
         const result = await env.FAST_TAKEOFF_NEWS_DB.prepare(
             'SELECT * FROM reports WHERE channel_id = ? AND timeframe = ? AND expires_at > ? ORDER BY generated_at DESC'
-        ).bind(channelId, timeframe, Date.now()).all();
+        ).bind(channelId, timeframe, Date.now()).all<ReportRow>();
 
         if (!result.success || !result.results.length) {
             return null;
         }
 
-        return result.results.map((row) => this.rowToReport(row as unknown as ReportRow));
+        return result.results.map((row) => this.rowToReport(row));
     }
 
     /**
@@ -111,13 +87,13 @@ export class ReportCacheD1 {
             AND generated_at > ? AND expires_at > ?
             ORDER BY generated_at DESC 
             LIMIT 1
-        `).bind(channelId, timeframe, new Date(twentyFourHoursAgo).toISOString(), Date.now()).all();
+        `).bind(channelId, timeframe, new Date(twentyFourHoursAgo).toISOString(), Date.now()).all<ReportRow>();
 
         if (!result.success || !result.results.length) {
             return [];
         }
 
-        return result.results.map((row) => this.rowToReport(row as unknown as ReportRow));
+        return result.results.map((row) => this.rowToReport(row));
     }
 
     /**
@@ -140,11 +116,11 @@ export class ReportCacheD1 {
             channelId,
             new Date(fourHoursAgo).toISOString(),
             Date.now()
-        ).all();
+        ).all<ReportRow>();
 
         if (!result.success || !result.results.length) return [];
 
-        return result.results.map((row) => this.rowToReport(row as unknown as ReportRow));
+        return result.results.map((row) => this.rowToReport(row));
     }
 
     /**
@@ -218,14 +194,14 @@ export class ReportCacheD1 {
             
             const bindings = limit && limit <= 50 ? [Date.now(), limit * 2] : [Date.now()];
             
-            const result = await env.FAST_TAKEOFF_NEWS_DB.prepare(query).bind(...bindings).all();
+            const result = await env.FAST_TAKEOFF_NEWS_DB.prepare(query).bind(...bindings).all<ReportRow>();
 
             if (!result.success) {
                 console.error('[REPORTS] Database query failed:', result.error);
                 return [];
             }
 
-            const reports = result.results.map((row) => this.rowToReport(row as unknown as ReportRow));
+            const reports = result.results.map((row) => this.rowToReport(row));
             
             // Use the original groupAndSortReports logic to prioritize today's reports by message count
             const sortedReports = groupAndSortReports(reports);
@@ -253,14 +229,14 @@ export class ReportCacheD1 {
             AND cache_status NOT LIKE 'homepage-cache%'
             ORDER BY generated_at DESC 
             LIMIT ?
-        `).bind(Date.now(), new Date(oneDayAgo).toISOString(), limit * 3).all();
+        `).bind(Date.now(), new Date(oneDayAgo).toISOString(), limit * 3).all<ReportRow>();
 
         if (!result.success || !result.results.length) {
             console.log('[REPORTS] No recent reports found for homepage');
             return [];
         }
 
-        const reports = result.results.map((row) => this.rowToReport(row as unknown as ReportRow));
+        const reports = result.results.map((row) => this.rowToReport(row));
         
         // Use the same groupAndSortReports logic for consistency
         const sortedReports = groupAndSortReports(reports);
@@ -285,13 +261,13 @@ export class ReportCacheD1 {
             bindings = [channelId, timeframe, Date.now()];
         }
 
-        const result = await env.FAST_TAKEOFF_NEWS_DB.prepare(query).bind(...bindings).all();
+        const result = await env.FAST_TAKEOFF_NEWS_DB.prepare(query).bind(...bindings).all<ReportRow>();
 
         if (!result.success || !result.results.length) {
             return [];
         }
 
-        return result.results.map((row) => this.rowToReport(row as unknown as ReportRow));
+        return result.results.map((row) => this.rowToReport(row));
     }
 
     /**
@@ -315,14 +291,14 @@ export class ReportCacheD1 {
                 ORDER BY generated_at DESC
             `;
             
-            const result = await env.FAST_TAKEOFF_NEWS_DB.prepare(query).bind(Date.now()).all();
+            const result = await env.FAST_TAKEOFF_NEWS_DB.prepare(query).bind(Date.now()).all<ReportRow>();
 
             if (!result.success) {
                 console.error('[REPORTS] Database query failed:', result.error);
                 return [];
             }
 
-            return result.results.map((row) => this.rowToReport(row as unknown as ReportRow));
+            return result.results.map((row) => this.rowToReport(row));
         } catch (error) {
             console.error('[REPORTS] Database query failed:', error);
             return [];

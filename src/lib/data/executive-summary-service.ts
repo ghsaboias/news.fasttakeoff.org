@@ -2,8 +2,8 @@ import { Cloudflare } from '../../../worker-configuration';
 import { getAIAPIKey, getAIProviderConfig } from '../ai-config';
 import { CacheManager } from '../cache-utils';
 import { AI, CACHE, TIME } from '../config';
-import { ExecutiveSummary, OpenAIResponse, Report } from '../types/core';
-import { ReportCacheD1, ReportRow } from '../utils/report-cache-d1';
+import { ExecutiveSummary, OpenAIResponse, Report, ReportRow } from '../types/core';
+import { ReportCacheD1 } from '../utils/report-cache-d1';
 
 export class ExecutiveSummaryService {
     private env: Cloudflare.Env;
@@ -111,7 +111,7 @@ export class ExecutiveSummaryService {
             
             const result = await this.env.FAST_TAKEOFF_NEWS_DB.prepare(query)
                 .bind(sixHoursAgo.toISOString())
-                .all();
+                .all<ReportRow>();
 
             if (!result.success || !result.results) {
                 console.error('[EXECUTIVE_SUMMARY] Failed to fetch reports from D1:', result.error);
@@ -120,7 +120,7 @@ export class ExecutiveSummaryService {
 
             // Transform D1 results to Report objects using the established pattern
             const allReports: Report[] = result.results.map((row) => 
-                ReportCacheD1.rowToReport(row as unknown as ReportRow)
+                ReportCacheD1.rowToReport(row)
             );
 
             console.log(`[EXECUTIVE_SUMMARY] Found ${allReports.length} reports from last 6 hours`);

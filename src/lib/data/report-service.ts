@@ -1,12 +1,12 @@
 import { TIME, TimeframeKey } from '@/lib/config';
-import { DiscordMessage, EntityExtractionResult, Report } from '@/lib/types/core';
+import { DiscordMessage, EntityExtractionResult, Report, ReportRow } from '@/lib/types/core';
 import { Cloudflare } from '../../../worker-configuration';
 import { FacebookService } from '../facebook-service';
 import { InstagramService } from '../instagram-service';
 import { TwitterService } from '../twitter-service';
 import { EntityExtractor } from '../utils/entity-extraction';
 import { ReportAI, ReportContext } from '../utils/report-ai';
-import { ReportCacheD1 as ReportCache, ReportRow } from '../utils/report-cache-d1';
+import { ReportCacheD1 as ReportCache } from '../utils/report-cache-d1';
 import { ChannelsService } from './channels-service';
 import { MessagesService } from './messages-service';
 

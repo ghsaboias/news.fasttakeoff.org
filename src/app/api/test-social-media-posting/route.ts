@@ -1,6 +1,6 @@
 import { withErrorHandling } from '@/lib/api-utils';
 import { ReportService } from '@/lib/data/report-service';
-import { ReportRow } from '@/lib/utils/report-cache-d1';
+import { ReportRow } from '@/lib/types/core';
 
 export async function POST(request: Request) {
     return withErrorHandling(
