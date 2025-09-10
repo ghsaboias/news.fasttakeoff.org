@@ -3,7 +3,7 @@ import { Cloudflare, KVNamespace } from '../../worker-configuration';
 import { TIME, URLs } from './config';
 import { OpenRouterImageService } from './openrouter-image-service';
 import { getOrCreateBackgroundUrl } from './utils/background-image-cache';
-import { countTwitterCharacters, truncateForTwitter } from './utils/twitter-utils';
+import { countTwitterCharacters, truncateForTwitter, fixHeadlineCapitalization } from './utils/twitter-utils';
 
 const TWITTER_API_URL = 'https://api.twitter.com/2/tweets';
 // OAuth1-signed v2 tweets endpoint (api.x.com recommended for OAuth1 usage)
@@ -135,6 +135,15 @@ export class TwitterService {
         if (!hashtag) return baseText;
         const candidate = `${baseText} ${hashtag}`;
         return countTwitterCharacters(candidate) <= 280 ? candidate : baseText;
+    }
+
+    /**
+     * Fixes headline capitalization and formats for Twitter posting
+     */
+    private async prepareHeadlineForTwitter(report: Report): Promise<string> {
+        const fixedHeadline = await fixHeadlineCapitalization(report.headline, this.env);
+        const locationTag = this.buildLocationHashtag(report);
+        return this.appendHashtagIfFits(fixedHeadline, locationTag);
     }
 
     /**
@@ -833,11 +842,10 @@ export class TwitterService {
     }
 
     /**
-     * Posts a single tweet with headline and URL
+     * Posts a single tweet with headline only (no link)
      */
     async postSingleTweet(report: Report): Promise<string> {
-        const locationTag = this.buildLocationHashtag(report);
-        const text = this.appendHashtagIfFits(report.headline, locationTag);
+        const text = await this.prepareHeadlineForTwitter(report);
 
         // First, attempt OAuth2 (bearer) text post if a valid token is available.
         // If the token is missing/expired or Twitter rejects the auth (401/403 Unsupported Authentication),
@@ -849,9 +857,17 @@ export class TwitterService {
             }
 
             console.log(`[TWITTER] Posting single tweet via OAuth2 (${countTwitterCharacters(text)} chars): "${text.substring(0, 50)}..."`);
-            const response = await this.postSingleTweetInternal(text, accessToken);
-            console.log(`[TWITTER] Successfully posted single tweet for report ${report.reportId}. Tweet ID: ${response.data.id}`);
-            return response.data.id;
+            const mainTweetResponse = await this.postSingleTweetInternal(text, accessToken);
+            const mainTweetId = mainTweetResponse.data.id;
+            console.log(`[TWITTER] Successfully posted main tweet for report ${report.reportId}. Tweet ID: ${mainTweetId}`);
+
+            // Post reply with link
+            const reportUrl = `${URLs.WEBSITE_URL}/current-events/${report.channelId}/${report.reportId}`;
+            const replyText = `Read the full report:\n\n${reportUrl}`;
+            console.log(`[TWITTER] Posting reply with link (${countTwitterCharacters(replyText)} chars)`);
+            await this.postSingleTweetInternal(replyText, accessToken, mainTweetId);
+
+            return mainTweetId;
         } catch (e) {
             const msg = e instanceof Error ? e.message : String(e);
             const authError = /unsupported authentication|401|403|NO_OAUTH2_TOKEN/i.test(msg);
@@ -861,9 +877,17 @@ export class TwitterService {
             }
             console.warn('[TWITTER] OAuth2 text path failed due to auth. Falling back to OAuth1...');
             try {
-                const oauth1Resp = await this.postTweetOAuth1(text);
-                console.log(`[TWITTER] Successfully posted single tweet via OAuth1 for report ${report.reportId}. Tweet ID: ${oauth1Resp.data.id}`);
-                return oauth1Resp.data.id;
+                const mainTweetResponse = await this.postTweetOAuth1(text);
+                const mainTweetId = mainTweetResponse.data.id;
+                console.log(`[TWITTER] Successfully posted main tweet via OAuth1 for report ${report.reportId}. Tweet ID: ${mainTweetId}`);
+
+                // Post reply with link
+                const reportUrl = `${URLs.WEBSITE_URL}/current-events/${report.channelId}/${report.reportId}`;
+                const replyText = `Read the full report:\n\n${reportUrl}`;
+                console.log(`[TWITTER] Posting reply with link via OAuth1 (${countTwitterCharacters(replyText)} chars)`);
+                await this.postTweetOAuth1(replyText, mainTweetId);
+
+                return mainTweetId;
             } catch (e2) {
                 console.error('[TWITTER] OAuth1 fallback failed:', e2 instanceof Error ? e2.message : String(e2));
                 // Surface the original error context with fallback info
@@ -928,9 +952,8 @@ export class TwitterService {
         try {
             const reportUrl = `${URLs.WEBSITE_URL}/current-events/${report.channelId}/${report.reportId}`;
 
-            // Tweet 1: Headline + optional location hashtag
-            const locationTag = this.buildLocationHashtag(report);
-            const tweet1Text = this.appendHashtagIfFits(report.headline, locationTag);
+            // Tweet 1: Headline only (no link)
+            const tweet1Text = await this.prepareHeadlineForTwitter(report);
 
             console.log(`[TWITTER] Posting first tweet (${countTwitterCharacters(tweet1Text)} chars): "${tweet1Text.substring(0, 50)}..."`);
             const tweet1Response = await this.postSingleTweetInternal(tweet1Text, accessToken);
@@ -976,16 +999,22 @@ export class TwitterService {
             const imageBuffer = await imageResponse.arrayBuffer();
             const mediaId = await this.uploadMedia(imageBuffer);
 
-            // Step 3: Post tweet with media
-            const locationTag = this.buildLocationHashtag(report);
-            const text = this.appendHashtagIfFits(report.headline, locationTag);
+            // Step 3: Post tweet with media (headline only, no link)
+            const text = await this.prepareHeadlineForTwitter(report);
 
             console.log(`[TWITTER] Posting single tweet with image via OAuth1 (${countTwitterCharacters(text)} chars): "${text.substring(0, 50)}..."`);
 
-            const response = await this.postTweetOAuth1(text, undefined, [mediaId]);
+            const mainTweetResponse = await this.postTweetOAuth1(text, undefined, [mediaId]);
+            const mainTweetId = mainTweetResponse.data.id;
 
-            console.log(`[TWITTER] Successfully posted single tweet with image for report ${report.reportId}. Tweet ID: ${response.data.id}`);
-            return response.data.id;
+            // Post reply with link
+            const reportUrl = `${URLs.WEBSITE_URL}/current-events/${report.channelId}/${report.reportId}`;
+            const replyText = `Read the full report:\n\n${reportUrl}`;
+            console.log(`[TWITTER] Posting reply with link via OAuth1 (${countTwitterCharacters(replyText)} chars)`);
+            await this.postTweetOAuth1(replyText, mainTweetId);
+
+            console.log(`[TWITTER] Successfully posted single tweet with image for report ${report.reportId}. Tweet ID: ${mainTweetId}`);
+            return mainTweetId;
 
         } catch (error: unknown) {
             console.error('[TWITTER] Failed to post single tweet with image:', error instanceof Error ? error.message : String(error));
@@ -1011,9 +1040,8 @@ export class TwitterService {
 
             const reportUrl = `${URLs.WEBSITE_URL}/current-events/${report.channelId}/${report.reportId}`;
 
-            // Tweet 1: Headline + optional location hashtag + image
-            const locationTag = this.buildLocationHashtag(report);
-            const tweet1Text = this.appendHashtagIfFits(report.headline, locationTag);
+            // Tweet 1: Headline only + image (no link)
+            const tweet1Text = await this.prepareHeadlineForTwitter(report);
 
             console.log(`[TWITTER] Posting first tweet with image via OAuth1 (${countTwitterCharacters(tweet1Text)} chars): "${tweet1Text.substring(0, 50)}..."`);
             const tweet1Response = await this.postTweetOAuth1(tweet1Text, undefined, [mediaId]);
@@ -1041,6 +1069,43 @@ export class TwitterService {
             console.error('[TWITTER] Failed to post threaded tweet with image:', error instanceof Error ? error.message : String(error));
             throw error;
         }
+    }
+
+    /**
+     * Prepares tweet content without posting (for testing)
+     */
+    async prepareTweetContent(report: Report, withImage: boolean = false): Promise<{
+        mainTweet: string;
+        replyTweet: string;
+        originalHeadline: string;
+        fixedHeadline: string;
+        bigEvent: boolean;
+        format: string;
+    }> {
+        const bigEvent = this.isBigEvent(report);
+        const reportUrl = `${URLs.WEBSITE_URL}/current-events/${report.channelId}/${report.reportId}`;
+        
+        // Test capitalization fix
+        const originalHeadline = report.headline;
+        const fixedHeadline = await fixHeadlineCapitalization(report.headline, this.env);
+        const mainTweet = await this.prepareHeadlineForTwitter(report);
+        
+        // Prepare reply with link
+        const replyTweet = `Read the full report:\n\n${reportUrl}`;
+        
+        // Determine format
+        let format = 'single';
+        if (bigEvent) format = 'threaded';
+        if (withImage) format += '_with_image';
+        
+        return {
+            mainTweet,
+            replyTweet,
+            originalHeadline,
+            fixedHeadline,
+            bigEvent,
+            format
+        };
     }
 
     /**

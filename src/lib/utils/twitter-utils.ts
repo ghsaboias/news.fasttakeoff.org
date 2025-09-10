@@ -2,6 +2,8 @@
  * Utility functions for Twitter-related operations
  */
 
+import { Cloudflare } from '../../../worker-configuration';
+
 /**
  * Counts characters in tweet text, accounting for URL shortening
  * Twitter counts URLs as 23 characters regardless of actual length
@@ -111,4 +113,68 @@ export function extractSourceLanguage(footerText?: string): string | null {
  */
 export function isTranslatedContent(footerText?: string): boolean {
     return extractSourceLanguage(footerText) !== null;
+}
+
+/**
+ * Converts ALL CAPS headline to proper capitalization using LLM
+ * @param headline - The ALL CAPS headline
+ * @param env - Cloudflare environment for API keys
+ * @returns Promise<string> - Properly capitalized headline
+ */
+export async function fixHeadlineCapitalization(headline: string, env: Cloudflare.Env): Promise<string> {
+    // If it's not all caps, return as-is
+    if (headline !== headline.toUpperCase()) {
+        return headline;
+    }
+
+    try {
+        const { getAIAPIKey, getAIProviderConfig } = await import('@/lib/ai-config');
+        
+        const aiConfig = getAIProviderConfig();
+        const apiKey = getAIAPIKey(env as unknown as { [key: string]: string | undefined });
+        const apiUrl = aiConfig.endpoint;
+
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 10000);
+
+        try {
+            const response = await fetch(apiUrl, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${apiKey}`,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    model: aiConfig.model,
+                    messages: [
+                        { 
+                            role: 'system', 
+                            content: 'Convert to sentence case. Do not use title case.' 
+                        },
+                        { role: 'user', content: headline }
+                    ],
+                    temperature: 0.1,
+                    max_tokens: 100,
+                }),
+                signal: controller.signal,
+            });
+
+            clearTimeout(timeoutId);
+
+            if (!response.ok) {
+                throw new Error(`AI API error: ${response.status}`);
+            }
+
+            const data = await response.json() as { choices: Array<{ message: { content: string } }> };
+            const fixedHeadline = data.choices[0].message.content.trim();
+            
+            return fixedHeadline || headline;
+        } catch (error) {
+            clearTimeout(timeoutId);
+            throw error;
+        }
+    } catch (error) {
+        console.error('[TWITTER] Failed to fix headline capitalization:', error);
+        return headline; // Fallback to original
+    }
 } 
