@@ -3,10 +3,9 @@ import type { ExecutionContext } from '../../worker-configuration';
 import { TASK_TIMEOUTS, FEATURE_FLAGS } from './config';
 import { ExecutiveSummaryService } from './data/executive-summary-service';
 import { FeedsService } from './data/feeds-service';
-import { MessagesService } from './data/messages-service';
 import { MktNewsService } from './data/mktnews-service';
 import { MktNewsSummaryService } from './data/mktnews-summary-service';
-import { ReportService } from './data/report-service';
+import { ServiceFactory } from './services/ServiceFactory';
 import { WindowEvaluationService } from './data/window-evaluation-service';
 
 interface ScheduledEvent {
@@ -197,7 +196,8 @@ const CRON_TASKS: Record<string, CronTaskFunction> = {
 
         // Post top dynamic report to social media (finds most engaging report from recent time period)
         if (!FEATURE_FLAGS.SKIP_SOCIAL_POSTING) {
-            const reportService = new ReportService(env);
+            const factory = ServiceFactory.getInstance(env);
+            const reportService = factory.createReportService();
             await logRun('SOCIAL_MEDIA_POST', () => reportService.postTopDynamicReport(), {
                 timeoutMs: TASK_TIMEOUTS.REPORTS,
                 env,
@@ -233,7 +233,8 @@ const CRON_TASKS: Record<string, CronTaskFunction> = {
             console.warn('[CRON] DISCORD_DISABLED is set – skipping MESSAGES update and window evaluation');
             return;
         }
-        const messagesService = new MessagesService(env);
+        const factory = ServiceFactory.getInstance(env);
+        const messagesService = factory.getMessagesService();
         await logRun('MESSAGES', () => messagesService.updateMessages(true), {
             timeoutMs: TASK_TIMEOUTS.MESSAGES,
             env,
@@ -269,7 +270,8 @@ const CRON_TASKS: Record<string, CronTaskFunction> = {
 
 // Handle manual triggers
 async function handleManualTrigger(trigger: string, env: Cloudflare.Env, ctx?: ExecutionContext): Promise<void> {
-    const messagesService = new MessagesService(env);
+    const factory = ServiceFactory.getInstance(env);
+    const messagesService = factory.getMessagesService();
     const executiveSummaryService = new ExecutiveSummaryService(env);
     const feedsService = new FeedsService(env);
     const windowEvaluationService = new WindowEvaluationService(env);
