@@ -1,15 +1,15 @@
 import { Cloudflare } from '../../../worker-configuration';
 import { TIME } from '../config';
 import { DiscordChannel } from '../types/core';
-import { ReportService } from './report-service';
+import { ServiceFactory } from '../services/ServiceFactory';
 
 export class SitemapService {
     private env: Cloudflare.Env;
-    private reportService: ReportService;
+    private factory: ServiceFactory;
 
     constructor(env: Cloudflare.Env) {
         this.env = env;
-        this.reportService = new ReportService(env);
+        this.factory = ServiceFactory.getInstance(env);
     }
 
     /**
@@ -70,7 +70,8 @@ export class SitemapService {
                         });
 
                         // Get reports for this channel
-                        const reports = await this.reportService.getAllReportsForChannel(channel.id);
+                        const reportService = this.factory.createReportService();
+                        const reports = await reportService.getAllReportsForChannel(channel.id);
 
                         if (reports && reports.length > 0) {
                             // Add all reports (keeping indefinitely now)

@@ -1,5 +1,5 @@
 import { Cloudflare } from '../../../worker-configuration';
-import { ReportService } from './report-service';
+import { ServiceFactory } from '../services/ServiceFactory';
 import { MessagesService } from './messages-service';
 
 interface ChannelMetrics {
@@ -33,13 +33,13 @@ interface EvaluationMetrics {
 
 export class WindowEvaluationService {
   private env: Cloudflare.Env;
-  private reportService: ReportService;
+  private factory: ServiceFactory;
   private messagesService: MessagesService;
 
   constructor(env: Cloudflare.Env) {
     this.env = env;
-    this.reportService = new ReportService(env);
-    this.messagesService = new MessagesService(env);
+    this.factory = ServiceFactory.getInstance(env);
+    this.messagesService = this.factory.getMessagesService();
   }
 
   /**
@@ -260,7 +260,8 @@ export class WindowEvaluationService {
       
       try {
         // Generate dynamic report based on message activity window
-        await this.reportService.createDynamicReport(channelId, since, now);
+        const reportService = this.factory.createReportService();
+        await reportService.createDynamicReport(channelId, since, now);
         await this.setLastGenerationTime(channelId);
         evaluationMetrics.reportsGenerated++;
         return {

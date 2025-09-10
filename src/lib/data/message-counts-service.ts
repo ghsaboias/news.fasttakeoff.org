@@ -2,6 +2,7 @@ import { ChannelMessageCounts, DiscordMessage } from '@/lib/types/core';
 import { Cloudflare } from '../../../worker-configuration';
 import { CacheManager } from '../cache-utils';
 import { TIME } from '../config';
+import { ServiceFactory } from '../services/ServiceFactory';
 import { MessagesService } from './messages-service';
 
 export class MessageCountsService {
@@ -12,7 +13,8 @@ export class MessageCountsService {
     constructor(env: Cloudflare.Env) {
         this.env = env;
         this.cacheManager = new CacheManager(env);
-        this.messagesService = new MessagesService(env);
+        const factory = ServiceFactory.getInstance(env);
+        this.messagesService = factory.getMessagesService();
     }
 
     /**
