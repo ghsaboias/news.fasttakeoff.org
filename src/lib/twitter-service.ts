@@ -153,17 +153,8 @@ export class TwitterService {
     private isBigEvent(report: Report): boolean {
         const count = typeof report.messageCount === 'number' ? report.messageCount : 0;
         
-        // Calculate window duration from timestamps if available
-        if (report.windowStartTime && report.windowEndTime) {
-            const windowMs = new Date(report.windowEndTime).getTime() - new Date(report.windowStartTime).getTime();
-            const windowHours = windowMs / (1000 * 60 * 60);
-            
-            // High activity: >20 messages in ≤3 hours OR >50 messages in any dynamic window
-            return (count > 20 && windowHours <= 3) || count > 50;
-        }
-        
-        // Fallback for reports without window metadata
-        return count > 25;
+        // Simple threshold: 10+ messages triggers threading
+        return count >= 10;
     }
 
     /**
@@ -869,10 +860,11 @@ export class TwitterService {
             const mainTweetId = mainTweetResponse.data.id;
             console.log(`[TWITTER] Successfully posted main tweet for report ${report.reportId}. Tweet ID: ${mainTweetId}`);
 
-            // Post reply with link
+            // Post reply with first paragraph + link
             const reportUrl = `${URLs.WEBSITE_URL}/current-events/${report.channelId}/${report.reportId}`;
-            const replyText = `Read the full report:\n\n${reportUrl}`;
-            console.log(`[TWITTER] Posting reply with link (${countTwitterCharacters(replyText)} chars)`);
+            const firstParagraph = this.extractFirstParagraph(report.body, reportUrl);
+            const replyText = firstParagraph ? this.formatSecondTweet(firstParagraph, reportUrl) : `Read the full report:\n\n${reportUrl}`;
+            console.log(`[TWITTER] Posting reply with content (${countTwitterCharacters(replyText)} chars)`);
             await this.postSingleTweetInternal(replyText, accessToken, mainTweetId);
 
             return mainTweetId;
@@ -889,10 +881,11 @@ export class TwitterService {
                 const mainTweetId = mainTweetResponse.data.id;
                 console.log(`[TWITTER] Successfully posted main tweet via OAuth1 for report ${report.reportId}. Tweet ID: ${mainTweetId}`);
 
-                // Post reply with link
+                // Post reply with first paragraph + link
                 const reportUrl = `${URLs.WEBSITE_URL}/current-events/${report.channelId}/${report.reportId}`;
-                const replyText = `Read the full report:\n\n${reportUrl}`;
-                console.log(`[TWITTER] Posting reply with link via OAuth1 (${countTwitterCharacters(replyText)} chars)`);
+                const firstParagraph = this.extractFirstParagraph(report.body, reportUrl);
+                const replyText = firstParagraph ? this.formatSecondTweet(firstParagraph, reportUrl) : `Read the full report:\n\n${reportUrl}`;
+                console.log(`[TWITTER] Posting reply with content via OAuth1 (${countTwitterCharacters(replyText)} chars)`);
                 await this.postTweetOAuth1(replyText, mainTweetId);
 
                 return mainTweetId;
@@ -1015,10 +1008,11 @@ export class TwitterService {
             const mainTweetResponse = await this.postTweetOAuth1(text, undefined, [mediaId]);
             const mainTweetId = mainTweetResponse.data.id;
 
-            // Post reply with link
+            // Post reply with first paragraph + link
             const reportUrl = `${URLs.WEBSITE_URL}/current-events/${report.channelId}/${report.reportId}`;
-            const replyText = `Read the full report:\n\n${reportUrl}`;
-            console.log(`[TWITTER] Posting reply with link via OAuth1 (${countTwitterCharacters(replyText)} chars)`);
+            const firstParagraph = this.extractFirstParagraph(report.body, reportUrl);
+            const replyText = firstParagraph ? this.formatSecondTweet(firstParagraph, reportUrl) : `Read the full report:\n\n${reportUrl}`;
+            console.log(`[TWITTER] Posting reply with content via OAuth1 (${countTwitterCharacters(replyText)} chars)`);
             await this.postTweetOAuth1(replyText, mainTweetId);
 
             console.log(`[TWITTER] Successfully posted single tweet with image for report ${report.reportId}. Tweet ID: ${mainTweetId}`);
@@ -1098,8 +1092,9 @@ export class TwitterService {
         const fixedHeadline = await fixHeadlineCapitalization(report.headline, this.env);
         const mainTweet = await this.prepareHeadlineForTwitter(report);
         
-        // Prepare reply with link
-        const replyTweet = `Read the full report:\n\n${reportUrl}`;
+        // Prepare reply with first paragraph + link
+        const firstParagraph = this.extractFirstParagraph(report.body, reportUrl);
+        const replyTweet = firstParagraph ? this.formatSecondTweet(firstParagraph, reportUrl) : `Read the full report:\n\n${reportUrl}`;
         
         // Determine format
         let format = 'single';
