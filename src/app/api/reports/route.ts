@@ -148,7 +148,7 @@ export async function POST(request: Request) {
         if (model) {
             // Override the model for this request by modifying the environment
             // This is a bit hacky but works for testing purposes
-            (env as unknown as { [key: string]: string | undefined }).AI_MODEL_OVERRIDE = model;
+            env.AI_MODEL_OVERRIDE = model;
         }
 
         try {
@@ -193,7 +193,7 @@ export async function POST(request: Request) {
         } finally {
             // Clean up the override
             if (model) {
-                delete (env as unknown as { [key: string]: string | undefined }).AI_MODEL_OVERRIDE;
+                delete env.AI_MODEL_OVERRIDE;
             }
         }
     }, 'Failed to generate report');

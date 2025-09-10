@@ -147,7 +147,7 @@ export class PerplexityFactCheckService {
         content?: string; // For unstructured responses
     }> {
         const perplexityConfig = getAIProviderConfig('perplexity');
-        const apiKey = getAIAPIKey(this.env as unknown as { [key: string]: string | undefined }, 'perplexity');
+        const apiKey = getAIAPIKey(this.env, 'perplexity');
         const requestBody: {
             model: string;
             messages: Array<{ role: string; content: string }>;

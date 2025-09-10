@@ -239,7 +239,7 @@ export class ExecutiveSummaryService {
      */
     private async makeAIRequest(prompt: string): Promise<string> {
         const aiConfig = getAIProviderConfig();
-        const apiKey = getAIAPIKey(this.env as unknown as { [key: string]: string | undefined });
+        const apiKey = getAIAPIKey(this.env);
         const apiUrl = aiConfig.endpoint;
 
         // Create timeout controller - 60 seconds for executive summary requests

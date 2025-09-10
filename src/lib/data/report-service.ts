@@ -29,7 +29,7 @@ export class ReportService {
 
     async createReportAndGetMessages(channelId: string, timeframe: TimeframeKey): Promise<{ report: Report | null; messages: DiscordMessage[] }> {
         // If Discord-dependent processing is disabled, avoid generating new reports
-        if ((this.env as unknown as { DISCORD_DISABLED?: string | boolean }).DISCORD_DISABLED) {
+        if (this.env.DISCORD_DISABLED) {
             console.warn('[REPORTS] DISCORD_DISABLED is set – skipping createReportAndGetMessages');
             return { report: null, messages: [] };
         }
@@ -81,7 +81,7 @@ export class ReportService {
      */
     async createDynamicReport(channelId: string, windowStart: Date, windowEnd: Date): Promise<{ report: Report | null; messages: DiscordMessage[] }> {
         // If Discord-dependent processing is disabled, avoid generating new reports
-        if ((this.env as unknown as { DISCORD_DISABLED?: string | boolean }).DISCORD_DISABLED) {
+        if (this.env.DISCORD_DISABLED) {
             console.warn('[REPORTS] DISCORD_DISABLED is set – skipping createDynamicReport');
             return { report: null, messages: [] };
         }

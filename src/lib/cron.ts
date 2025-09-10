@@ -186,7 +186,7 @@ const CRON_TASKS: Record<string, CronTaskFunction> = {
     // Every 2 hours (0:00, 2:00, 4:00, etc)
     "0 */2 * * *": async (env: Cloudflare.Env, scheduledTime?: number, ctx?: ExecutionContext) => {
         // Skip if Discord-dependent processing is disabled
-        if ((env as unknown as { DISCORD_DISABLED?: string | boolean }).DISCORD_DISABLED) {
+        if (env.DISCORD_DISABLED) {
             console.warn('[CRON] DISCORD_DISABLED is set – skipping feeds generation and social media posting');
             return;
         }
@@ -253,7 +253,7 @@ const CRON_TASKS: Record<string, CronTaskFunction> = {
     // DISABLED: Static 6h report generation - replaced by dynamic window evaluation  
     // Every 6 hours (0:00, 6:00, 12:00, 18:00)
     "0 */6 * * *": async (env: Cloudflare.Env, scheduledTime?: number, ctx?: ExecutionContext) => {
-        if ((env as unknown as { DISCORD_DISABLED?: string | boolean }).DISCORD_DISABLED) {
+        if (env.DISCORD_DISABLED) {
             console.warn('[CRON] DISCORD_DISABLED is set – skipping EXECUTIVE_SUMMARY');
             return;
         }
@@ -277,7 +277,7 @@ const CRON_TASKS: Record<string, CronTaskFunction> = {
 
     // Every 15 minutes
     "*/15 * * * *": async (env: Cloudflare.Env, scheduledTime?: number, ctx?: ExecutionContext) => {
-        if ((env as unknown as { DISCORD_DISABLED?: string | boolean }).DISCORD_DISABLED) {
+        if (env.DISCORD_DISABLED) {
             console.warn('[CRON] DISCORD_DISABLED is set – skipping MESSAGES update and window evaluation');
             return;
         }

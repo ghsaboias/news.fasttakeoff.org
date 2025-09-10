@@ -131,7 +131,7 @@ export async function fixHeadlineCapitalization(headline: string, env: Cloudflar
         const { getAIAPIKey, getAIProviderConfig } = await import('@/lib/ai-config');
         
         const aiConfig = getAIProviderConfig();
-        const apiKey = getAIAPIKey(env as unknown as { [key: string]: string | undefined });
+        const apiKey = getAIAPIKey(env);
         const apiUrl = aiConfig.endpoint;
 
         const controller = new AbortController();

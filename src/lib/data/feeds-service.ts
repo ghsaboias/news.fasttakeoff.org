@@ -24,7 +24,7 @@ async function curateArticles(articles: FeedItem[], env: Cloudflare.Env, topicId
 
             // Get AI config and make the call
             const aiConfig = getAIProviderConfig();
-            const apiKey = getAIAPIKey(env as unknown as { [key: string]: string | undefined });
+            const apiKey = getAIAPIKey(env);
             const response = await fetch(aiConfig.endpoint, {
                 method: 'POST',
                 headers: {
@@ -114,7 +114,7 @@ Content: ${story.originalSnippet}
 
             // Get AI config and make the call
             const aiConfig = getAIProviderConfig();
-            const apiKey = getAIAPIKey(env as unknown as { [key: string]: string | undefined });
+            const apiKey = getAIAPIKey(env);
             const response = await fetch(aiConfig.endpoint, {
                 method: 'POST',
                 headers: {

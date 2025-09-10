@@ -46,11 +46,11 @@ export class ReportAI {
         env: Cloudflare.Env
     ): Promise<Report> {
         const aiConfig = getAIProviderConfig();
-        const apiKey = getAIAPIKey(env as unknown as { [key: string]: string | undefined });
+        const apiKey = getAIAPIKey(env);
         const apiUrl = aiConfig.endpoint;
 
         // Check for model override in environment (for testing)
-        const modelOverride = (env as unknown as { [key: string]: string | undefined }).AI_MODEL_OVERRIDE;
+        const modelOverride = env.AI_MODEL_OVERRIDE;
         const modelToUse = modelOverride || aiConfig.model;
 
         // Create timeout controller - 30 seconds for AI requests

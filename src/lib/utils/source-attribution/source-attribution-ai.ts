@@ -85,7 +85,7 @@ ${formatted}
 
     private static async makeAIRequest(prompt: string, env: Cloudflare.Env): Promise<Partial<SourceAttribution>[]> {
         const aiConfig = getAIProviderConfig();
-        const apiKey = getAIAPIKey(env as unknown as { [key: string]: string | undefined });
+        const apiKey = getAIAPIKey(env);
         const apiUrl = aiConfig.endpoint;
 
         const response = await fetch(apiUrl, {

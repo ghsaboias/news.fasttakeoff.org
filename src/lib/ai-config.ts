@@ -1,4 +1,5 @@
 import { AI_PROVIDERS, AIProviderConfig, AIProviderModel } from './config';
+import { Cloudflare } from '../../worker-configuration';
 
 /**
  * Retrieves the configuration for a specific AI provider, or the active one by default.
@@ -35,11 +36,34 @@ export function getAIProviderConfig(modelOverrideId?: string): AIProviderConfig 
  * @returns The API key for the requested provider.
  * @throws Error if the API key environment variable is not set for the specified provider.
  */
-export function getAIAPIKey(env?: { [key: string]: string | undefined }, providerName: string = 'openrouter'): string {
+export function getAIAPIKey(env?: Cloudflare.Env, providerName: string = 'openrouter'): string {
     const config = getAIProviderConfig(providerName);
     const apiKeyEnvVar = config.apiKeyEnvVar;
 
-    const apiKey = (env && env[apiKeyEnvVar]) || process.env[apiKeyEnvVar];
+    // Type-safe access to environment variables
+    let apiKey: string | undefined;
+    if (env) {
+        switch (apiKeyEnvVar) {
+            case 'GROQ_API_KEY':
+                apiKey = env.GROQ_API_KEY;
+                break;
+            case 'OPENROUTER_API_KEY':
+                apiKey = env.OPENROUTER_API_KEY;
+                break;
+            case 'PERPLEXITY_API_KEY':
+                apiKey = env.PERPLEXITY_API_KEY;
+                break;
+            case 'OPENAI_API_KEY':
+                apiKey = env.OPENAI_API_KEY;
+                break;
+            case 'GEMINI_API_KEY':
+                apiKey = env.GEMINI_API_KEY;
+                break;
+        }
+    }
+    
+    // Fallback to process.env if not found in Cloudflare env
+    apiKey = apiKey || process.env[apiKeyEnvVar];
 
     if (!apiKey) {
         throw new Error(`Missing API key environment variable "${apiKeyEnvVar}" for AI provider "${providerName}". Set it in .env.local or Cloudflare environment variables.`);

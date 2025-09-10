@@ -52,6 +52,7 @@ export declare namespace Cloudflare {
 		FACEBOOK_APP_SECRET: string;
 		FACEBOOK_PAGE_ID: string;
 		FACEBOOK_PAGE_ACCESS_TOKEN: string;
+		AI_MODEL_OVERRIDE?: string;
 		CRON_SECRET: string;
 		LINKEDIN_CLIENT_ID: string;
 		LINKEDIN_CLIENT_SECRET: string;

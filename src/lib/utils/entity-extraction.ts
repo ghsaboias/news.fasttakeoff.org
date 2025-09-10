@@ -71,10 +71,10 @@ export class EntityExtractor {
         env: Cloudflare.Env
     ): Promise<{ entities: ExtractedEntity[] }> {
         const aiConfig = getAIProviderConfig();
-        const apiKey = getAIAPIKey(env as unknown as { [key: string]: string | undefined });
+        const apiKey = getAIAPIKey(env);
 
         // Check for model override in environment (for testing)
-        const modelOverride = (env as unknown as { [key: string]: string | undefined }).AI_MODEL_OVERRIDE;
+        const modelOverride = env.AI_MODEL_OVERRIDE;
         const modelToUse = modelOverride || aiConfig.model;
 
         // Truncate text if it's too long for the context window
