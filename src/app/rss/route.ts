@@ -1,5 +1,5 @@
 import { TIME } from '@/lib/config'
-import { getChannels } from '@/lib/data/channels-service'
+import { ServiceFactory } from '@/lib/services/ServiceFactory'
 import { getCacheContext } from '@/lib/utils'
 import { NextResponse } from 'next/server'
 
@@ -17,7 +17,9 @@ interface RSSFeedReport {
 export async function GET() {
   try {
     const { env } = await getCacheContext()
-    const channels = await getChannels(env)
+    const factory = ServiceFactory.getInstance(env)
+    const channelsService = factory.createChannelsService()
+    const channels = await channelsService.getChannels()
 
     // Get recent reports from all channels using D1 database
     const allReports: RSSFeedReport[] = []

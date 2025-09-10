@@ -1,5 +1,4 @@
-import { getChannels } from '@/lib/data/channels-service';
-import { ReportService } from '@/lib/data/report-service';
+import { ServiceFactory } from '@/lib/services/ServiceFactory';
 import { getCacheContext } from '@/lib/utils';
 import { notFound } from 'next/navigation';
 import ReportClient from './ReportClient';
@@ -16,8 +15,10 @@ export async function generateStaticParams() {
         const { env } = await getCacheContext();
         if (!env) return [];
 
-        const reportService = new ReportService(env);
-        const channels = await getChannels(env);
+        const factory = ServiceFactory.getInstance(env);
+        const reportService = factory.createReportService();
+        const channelsService = factory.createChannelsService();
+        const channels = await channelsService.getChannels();
 
         // Collect all reports with their timestamps
         const allReports: Array<{ channelId: string; reportId: string; generatedAt: string }> = [];
@@ -68,11 +69,13 @@ export async function generateMetadata({ params }: { params: Promise<{ channelId
             };
         }
 
-        const reportService = new ReportService(env);
+        const factory = ServiceFactory.getInstance(env);
+        const reportService = factory.createReportService();
+        const channelsService = factory.createChannelsService();
 
         // Get the specific report for SEO optimization using KV-first strategy
         const report = await reportService.getReportById(reportId);
-        const channels = await getChannels(env);
+        const channels = await channelsService.getChannels();
         const channel = channels.find(c => c.id === channelId);
 
         if (!report || !channel) {
@@ -165,11 +168,13 @@ export default async function ReportDetailPage({ params }: { params: Promise<{ c
         return <ReportClient />;
     }
 
-    const reportService = new ReportService(env);
+    const factory = ServiceFactory.getInstance(env);
+    const reportService = factory.createReportService();
+    const channelsService = factory.createChannelsService();
 
     // Get the specific report using KV-first strategy
     const report = await reportService.getReportById(reportId);
-    const channels = await getChannels(env);
+    const channels = await channelsService.getChannels();
     const channel = channels.find(c => c.id === channelId);
 
     if (!report || !channel) {

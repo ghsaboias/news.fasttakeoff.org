@@ -1,6 +1,5 @@
 import { TIME } from '@/lib/config'
-import { getChannels } from '@/lib/data/channels-service'
-import { ReportService } from '@/lib/data/report-service'
+import { ServiceFactory } from '@/lib/services/ServiceFactory'
 import { getCacheContext } from '@/lib/utils'
 
 function escapeXml(str: string): string {
@@ -19,8 +18,10 @@ function escapeXml(str: string): string {
 export async function GET() {
     try {
         const { env } = await getCacheContext()
-        const reportService = new ReportService(env)
-        const channels = await getChannels(env)
+        const factory = ServiceFactory.getInstance(env)
+        const reportService = factory.createReportService()
+        const channelsService = factory.createChannelsService()
+        const channels = await channelsService.getChannels()
 
         const twoDaysAgo = new Date(Date.now() - TIME.daysToMs(2))
         const recentReports = []

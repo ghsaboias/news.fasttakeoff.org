@@ -1,7 +1,7 @@
 import HomeContent from "@/components/HomeContent";
 import { CacheManager } from "@/lib/cache-utils";
 import { ExecutiveSummaryService } from "@/lib/data/executive-summary-service";
-import { ReportService } from "@/lib/data/report-service";
+import { ServiceFactory } from "@/lib/services/ServiceFactory";
 import { ExecutiveOrder, ExecutiveSummary, Report } from "@/lib/types/core";
 import { getCacheContext } from "@/lib/utils";
 import { Suspense } from "react";
@@ -55,7 +55,8 @@ async function getServerSideData() {
       (async () => {
         try {
           const reportStartTime = Date.now();
-          const reportService = new ReportService(env);
+          const factory = ServiceFactory.getInstance(env);
+          const reportService = factory.createReportService();
           const result = await reportService.getAllReports(4);
           console.log(`[PERF] Reports fetch took ${Date.now() - reportStartTime}ms`);
           return result;

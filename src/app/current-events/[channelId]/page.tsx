@@ -1,5 +1,4 @@
-import { getChannels } from '@/lib/data/channels-service';
-import { ReportService } from '@/lib/data/report-service';
+import { ServiceFactory } from '@/lib/services/ServiceFactory';
 import { DiscordChannel, Report } from '@/lib/types/core';
 import { getCacheContext } from '@/lib/utils';
 import { notFound } from 'next/navigation';
@@ -21,7 +20,9 @@ export async function generateStaticParams() {
         const { env } = await getCacheContext();
         if (!env) return [];
 
-        const channels = await getChannels(env);
+        const factory = ServiceFactory.getInstance(env);
+        const channelsService = factory.createChannelsService();
+        const channels = await channelsService.getChannels();
         // Generate top 10 most active channels
         return channels.slice(0, 10).map(channel => ({
             channelId: channel.id
@@ -49,7 +50,9 @@ export async function generateMetadata({ params }: { params: Promise<{ channelId
             };
         }
 
-        const channels: DiscordChannel[] = await getChannels(env);
+        const factory = ServiceFactory.getInstance(env);
+        const channelsService = factory.createChannelsService();
+        const channels: DiscordChannel[] = await channelsService.getChannels();
         const currentChannel = channels.find((c) => c.id === channelId);
 
         return {
@@ -113,9 +116,11 @@ export default async function ChannelDetailPage({ params }: { params: Promise<{ 
         return <ChannelDetailClient reports={[]} channel={null} />;
     }
 
-    const reportService = new ReportService(env);
+    const factory = ServiceFactory.getInstance(env);
+    const reportService = factory.createReportService();
+    const channelsService = factory.createChannelsService();
 
-    const channels: DiscordChannel[] = await getChannels(env);
+    const channels: DiscordChannel[] = await channelsService.getChannels();
     const currentChannel = channels.find((c) => c.id === channelId) || null;
 
     if (!currentChannel) {

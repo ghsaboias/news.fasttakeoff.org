@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { ReportService } from '@/lib/data/report-service';
+import { ServiceFactory } from '@/lib/services/ServiceFactory';
 import { getCacheContext } from '@/lib/utils';
 import type { Metadata } from 'next';
 
@@ -12,7 +12,8 @@ export const dynamic = 'force-dynamic';
 
 export default async function Page() {
   const { env } = await getCacheContext();
-  const reportService = new ReportService(env);
+  const factory = ServiceFactory.getInstance(env);
+  const reportService = factory.createReportService();
   const reports = await reportService.getAllReports(8);
 
   return (

@@ -1,4 +1,4 @@
-import { ReportService } from '@/lib/data/report-service';
+import { ServiceFactory } from '@/lib/services/ServiceFactory';
 import { getCacheContext } from '@/lib/utils';
 import dynamic from 'next/dynamic';
 
@@ -62,7 +62,8 @@ async function getServerSideData() {
             return [];
         }
 
-        const reportService = new ReportService(env);
+        const factory = ServiceFactory.getInstance(env);
+        const reportService = factory.createReportService();
         const reports = await reportService.getLatestReportPerChannelWithCache();
         return reports || [];
     } catch (error) {

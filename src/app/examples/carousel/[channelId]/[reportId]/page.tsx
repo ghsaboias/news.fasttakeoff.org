@@ -1,4 +1,4 @@
-import { ReportService } from '@/lib/data/report-service';
+import { ServiceFactory } from '@/lib/services/ServiceFactory';
 import CarouselPreview from '../../CarouselPreview';
 import { getCacheContext } from '@/lib/utils';
 import type { Metadata } from 'next';
@@ -17,7 +17,8 @@ type Params = {
 export default async function Page({ params }: Params) {
   const { channelId, reportId } = await params;
   const { env } = await getCacheContext();
-  const reportService = new ReportService(env);
+  const factory = ServiceFactory.getInstance(env);
+  const reportService = factory.createReportService();
   const { report } = await reportService.getReportAndMessages(channelId, reportId);
 
   if (!report) {
