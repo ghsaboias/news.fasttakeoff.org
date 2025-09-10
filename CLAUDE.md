@@ -71,6 +71,7 @@ During major events (war outbreak, breaking news):
 ## Commit & PR Guidelines
 - **Commits**: Conventional prefixes used in history: `feat:`, `fix:`, `refactor:`, etc. Example: `feat: add node panel minimization`.
 - **PRs**: Include scope/intent, linked issues, screenshots for UI, and a test plan. Ensure `bun run test` and `bun run lint` pass. Note any env/KV changes (`wrangler.toml`).
+- **Git Integration**: Repository has automatic deployment on push to master. Commits trigger Cloudflare Pages builds and deployments.
 
 ## Security & Configuration
 - Store secrets in `.env.local`/`.dev.vars`; never commit secrets. Cloudflare bindings are in `wrangler.toml` (KV, R2, D1, crons).
