@@ -247,19 +247,14 @@ export class ReportCacheD1 {
     /**
      * Get all reports for a specific channel
      */
-    static async getAllReportsForChannel(channelId: string, env: Cloudflare.Env, timeframe?: string): Promise<Report[]> {
+    static async getAllReportsForChannel(channelId: string, env: Cloudflare.Env): Promise<Report[]> {
         if (!env.FAST_TAKEOFF_NEWS_DB) {
             console.log('FAST_TAKEOFF_NEWS_DB not available');
             return [];
         }
 
-        let query = 'SELECT * FROM reports WHERE channel_id = ? AND expires_at > ? ORDER BY generated_at DESC';
-        let bindings: (string | number)[] = [channelId, Date.now()];
-
-        if (timeframe) {
-            query = 'SELECT * FROM reports WHERE channel_id = ? AND timeframe = ? AND expires_at > ? ORDER BY generated_at DESC';
-            bindings = [channelId, timeframe, Date.now()];
-        }
+        const query = 'SELECT * FROM reports WHERE channel_id = ? AND expires_at > ? ORDER BY generated_at DESC';
+        const bindings: (string | number)[] = [channelId, Date.now()];
 
         const result = await env.FAST_TAKEOFF_NEWS_DB.prepare(query).bind(...bindings).all<ReportRow>();
 

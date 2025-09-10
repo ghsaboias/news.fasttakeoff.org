@@ -157,13 +157,11 @@ export const TIME = {
     FIFTEEN_MINUTES_MS: 15 * 60 * 1000,
     THIRTY_MINUTES_MS: 30 * 60 * 1000,
 
-    // Backward compatible aliases
+    // Common aliases
     ONE_HOUR_MS: 60 * 60 * 1000,
     TWO_HOURS_MS: 2 * 60 * 60 * 1000,
     SIX_HOURS_MS: 6 * 60 * 60 * 1000,
     TWENTY_FOUR_HOURS_MS: 24 * 60 * 60 * 1000,
-
-    // Legacy static timeframes removed - now using dynamic windows only
 
     // Helper converters
     minutesToMs: (n: number): number => n * 60 * 1000,

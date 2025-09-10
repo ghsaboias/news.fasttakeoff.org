@@ -2221,7 +2221,6 @@ Response format (JSON):
 }`,
     },
 }
-export type TimeframeKey = typeof TIME.TIMEFRAMES[number]
 export RSS_FEEDS: Record<string, string> = {
     'CNN-Brasil': 'https://www.cnnbrasil.com.br/feed/',
     'BBC-Brasil': 'https://feeds.bbci.co.uk/portuguese/rss.xml',
@@ -2307,7 +2306,7 @@ Imports: @/lib/config, @/lib/types/core, ../../../worker-configuration, ../cache
 export class MessagesService
   fetchBotMessagesFromAPI(channelId: string, sinceOverride?: Date): Promise<DiscordMessage[]>
   getMessages(channelId: string, options: { since?: Date; limit?: number } = {}): Promise<DiscordMessage[]>
-  getMessagesForTimeframe(channelId: string, timeframe: TimeframeKey): Promise<DiscordMessage[]>
+  getMessagesInTimeWindow(channelId: string, windowStart: Date, windowEnd: Date): Promise<DiscordMessage[]>
   getMessagesForReport(channelId: string, messageIds: string[]): Promise<DiscordMessage[]>
   getAllCachedMessagesForChannel(channelId: string): Promise<CachedMessages | null>
   getCachedMessagesSince(channelId: string, since: Date = new Date(Date.now() - TIME.ONE_HOUR_MS)): Promise<CachedMessages | null>
@@ -2321,7 +2320,7 @@ export class MessagesService
 ```typescript
 Imports: @/lib/config, @/lib/types/core, ../../../worker-configuration, ../facebook-service, ../instagram-service, ../twitter-service, ../utils/entity-extraction, ../utils/fact-check-service, ../utils/report-ai, ../utils/report-cache, ./channels-service, ./messages-service
 export class ReportService
-  createReportAndGetMessages(channelId: string, timeframe: TimeframeKey): Promise<{ report: Report | null; messages: DiscordMessage[]; }>
+  createDynamicReport(channelId: string, windowStart: Date, windowEnd: Date): Promise<{ report: Report | null; messages: DiscordMessage[]; }>
 /**
 Get reports with their cached entities for UI display
 */
@@ -2330,12 +2329,10 @@ Get reports with their cached entities for UI display
 Get latest reports per channel with their entities
 */
   getLatestReportPerChannelWithEntities(): Promise<(Report & { entities?: EntityExtractionResult | null; })[]>
-  getLastReportAndMessages(channelId: string, timeframe: TimeframeKey = '2h'): Promise<{ report: Report | null; messages: DiscordMessage[]; }>
-  getReportAndMessages(channelId: string, reportId: string, timeframe?: TimeframeKey): Promise<{ report: Report | null; messages: DiscordMessage[]; }>
+  getReportAndMessages(channelId: string, reportId: string): Promise<{ report: Report | null; messages: DiscordMessage[]; }>
   getReport(reportId: string): Promise<Report | null>
-  getReportTimeframe(reportId: string): Promise<"2h" | "6h" | undefined>
   getAllReports(limit?: number): Promise<Report[]>
-  getAllReportsForChannel(channelId: string, timeframe?: TimeframeKey): Promise<Report[]>
+  getAllReportsForChannel(channelId: string, limit?: number): Promise<Report[]>
   getLatestReportPerChannel(): Promise<Report[]>
 /**
 Production method: Generates reports for timeframes active based on the current UTC hour.
@@ -2346,12 +2343,12 @@ Smart scheduling: 2h reports every 2 hours (2am, 4am, 8am, 10am, 2pm, 4pm, 8pm, 
 /**
 Manual trigger method: Generates reports for specified timeframes or all configured timeframes.
 */
-  generateReportsForManualTrigger(manualTimeframes: TimeframeKey[] | 'ALL', extractEntities: boolean = false): Promise<void>
+  generateReportsForManualTrigger(channelIds: string[], extractEntities: boolean = false): Promise<void>
 /**
 Manual trigger method: Generates reports without social media posting.
 Useful for testing or when social media posting is not desired.
 */
-  generateReportsWithoutSocialMedia(manualTimeframes: TimeframeKey[] | 'ALL', extractEntities: boolean = false): Promise<void>
+  generateReportsWithoutSocialMedia(channelIds: string[], extractEntities: boolean = false): Promise<void>
 ```
 
 ## src/lib/data/rss-service.ts
@@ -3304,12 +3301,12 @@ export class ReportAI
 ```typescript
 Imports: @/lib/config, @/lib/types/core, @/lib/utils, ../../../worker-configuration, ../cache-utils
 export class ReportCache
-  store(channelId: string, timeframe: TimeframeKey, reports: Report[], env: Cloudflare.Env): Promise<void>
-  get(channelId: string, timeframe: TimeframeKey, env: Cloudflare.Env): Promise<Report[] | null>
-  getPreviousReports(channelId: string, timeframe: TimeframeKey, env: Cloudflare.Env): Promise<Report[]>
+  store(channelId: string, timeframe: string, reports: Report[], env: Cloudflare.Env): Promise<void>
+  get(channelId: string, timeframe: string, env: Cloudflare.Env): Promise<Report[] | null>
+  getPreviousReports(channelId: string, timeframe: string, env: Cloudflare.Env): Promise<Report[]>
   batchGet(keys: string[], env: Cloudflare.Env): Promise<Map<string, Report[] | null>>
   getAllReports(env: Cloudflare.Env, limit?: number): Promise<Report[]>
-  getAllReportsForChannel(channelId: string, env: Cloudflare.Env, timeframe?: TimeframeKey): Promise<Report[]>
+  getAllReportsForChannel(channelId: string, env: Cloudflare.Env): Promise<Report[]>
   storeHomepageReports(reports: Report[], env: Cloudflare.Env): Promise<void>
   getHomepageReports(env: Cloudflare.Env): Promise<Report[] | null>
 ```

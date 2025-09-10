@@ -118,15 +118,10 @@ export class ReportCache {
         }
     }
 
-    static async getAllReportsForChannel(channelId: string, env: Cloudflare.Env, timeframe?: string): Promise<Report[]> {
+    static async getAllReportsForChannel(channelId: string, env: Cloudflare.Env): Promise<Report[]> {
         if (!env.REPORTS_CACHE) {
             console.log('REPORTS_CACHE namespace not available');
             return [];
-        }
-
-        if (timeframe) {
-            const reports = await this.get(channelId, timeframe, env);
-            return reports || [];
         }
 
         const cacheManager = new CacheManager(env);

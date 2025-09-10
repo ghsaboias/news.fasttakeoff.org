@@ -29,19 +29,6 @@ export class ReportService {
         this.cacheManager = new CacheManager(env);
     }
 
-    /**
-     * Backward compatibility wrapper for createReportAndGetMessages
-     * Now defaults to a 2-hour dynamic window
-     */
-    async createReportAndGetMessages(channelId: string, timeframeLegacy?: string): Promise<{ report: Report | null; messages: DiscordMessage[] }> {
-        // Convert legacy 2h/6h timeframes to dynamic windows
-        const hoursBack = timeframeLegacy === '6h' ? 6 : 2; // Default to 2h
-        const windowEnd = new Date();
-        const windowStart = new Date(windowEnd.getTime() - (hoursBack * 60 * 60 * 1000));
-        
-        console.log(`[REPORTS] Legacy createReportAndGetMessages(${timeframeLegacy}) -> createDynamicReport(${hoursBack}h window)`);
-        return this.createDynamicReport(channelId, windowStart, windowEnd);
-    }
 
     /**
      * Create a dynamic report for the specified time window

@@ -154,32 +154,30 @@ export async function POST(request: Request) {
             let report, messages;
 
             // Handle dynamic report generation
-            if (mode === 'dynamic') {
+            if (mode === 'dynamic' || timeframe === 'dynamic') {
                 if (!windowStart || !windowEnd) {
-                    throw new Error('windowStart and windowEnd are required for dynamic mode');
-                }
-                
-                const startDate = new Date(windowStart);
-                const endDate = new Date(windowEnd);
-                
-                if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
-                    throw new Error('Invalid windowStart or windowEnd date format');
-                }
-                
-                if (startDate >= endDate) {
-                    throw new Error('windowStart must be before windowEnd');
-                }
+                    // Default to 2-hour window if no window specified
+                    const now = new Date();
+                    const twoHoursAgo = new Date(now.getTime() - 2 * 60 * 60 * 1000);
+                    ({ report, messages } = await reportService.createDynamicReport(channelId, twoHoursAgo, now));
+                } else {
+                    const startDate = new Date(windowStart);
+                    const endDate = new Date(windowEnd);
+                    
+                    if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+                        throw new Error('Invalid windowStart or windowEnd date format');
+                    }
+                    
+                    if (startDate >= endDate) {
+                        throw new Error('windowStart must be before windowEnd');
+                    }
 
-                ({ report, messages } = await reportService.createDynamicReport(channelId, startDate, endDate));
-            } else if (timeframe === 'dynamic') {
-                // For backward compatibility, generate dynamic report for current activity
-                const now = new Date();
-                const twoHoursAgo = new Date(now.getTime() - 2 * 60 * 60 * 1000);
-                ({ report, messages } = await reportService.createDynamicReport(channelId, twoHoursAgo, now));
+                    ({ report, messages } = await reportService.createDynamicReport(channelId, startDate, endDate));
+                }
             } else {
-                // Legacy timeframe support - convert to dynamic window
+                // All requests now use dynamic reports - convert legacy timeframes to windows
                 const now = new Date();
-                const hours = timeframe === '2h' ? 2 : timeframe === '6h' ? 6 : 2;
+                const hours = timeframe === '6h' ? 6 : 2; // Default to 2h
                 const startTime = new Date(now.getTime() - hours * 60 * 60 * 1000);
                 ({ report, messages } = await reportService.createDynamicReport(channelId, startTime, now));
             }

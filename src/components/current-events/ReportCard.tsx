@@ -3,7 +3,6 @@
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import LocalDateTime from "@/components/utils/LocalDateTime";
-import { TIME } from "@/lib/config";
 import { Report } from "@/lib/types/core";
 import Link from "next/link";
 import React, { useMemo } from "react";
@@ -38,32 +37,16 @@ function ReportCard({
         const emojiRegex = /^(\p{Emoji_Presentation}|\p{Emoji}\uFE0F)/u;
         const channelNameWithoutEmoji = report.channelName?.replace(emojiRegex, '').trim();
 
-        // Helper to convert timeframe string to ms
-        function timeframeToMs(timeframe?: string): number | undefined {
-            if (!timeframe) return undefined;
-            if (timeframe === '2h') return TIME.TWO_HOURS_MS;
-            if (timeframe === '6h') return TIME.SIX_HOURS_MS;
-            return undefined;
-        }
-
-        // Calculate timeframe display
+        // Calculate timeframe display - use dynamic window times when available
         let timeframeDisplay;
-        if (report.timeframe === 'dynamic' && report.windowStartTime && report.windowEndTime) {
-            // For dynamic reports, use the actual window times
+        if (report.windowStartTime && report.windowEndTime) {
+            // Use actual window times from dynamic reports
             timeframeDisplay = { 
                 start: report.windowStartTime, 
                 end: report.windowEndTime 
             };
-        } else if (report.generatedAt && report.timeframe) {
-            const end = new Date(report.generatedAt);
-            const ms = timeframeToMs(report.timeframe);
-            if (ms) {
-                const start = new Date(end.getTime() - ms);
-                timeframeDisplay = { start: start.toISOString(), end: end.toISOString() };
-            } else {
-                timeframeDisplay = null;
-            }
         } else {
+            // Fallback for reports without window times
             timeframeDisplay = null;
         }
 
@@ -76,7 +59,7 @@ function ReportCard({
             timeframeDisplay,
             itemUnitSingular
         };
-    }, [report.channelId, report.reportId, report.body, report.messageCount, report.channelName, report.generatedAt, report.timeframe, report.windowStartTime, report.windowEndTime, clickableChannel]);
+    }, [report.channelId, report.reportId, report.body, report.messageCount, report.channelName, report.windowStartTime, report.windowEndTime, clickableChannel]);
 
     return (
         <Card className="flex flex-col gap-4">
