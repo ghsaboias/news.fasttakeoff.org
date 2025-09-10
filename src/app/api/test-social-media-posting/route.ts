@@ -1,5 +1,5 @@
 import { withErrorHandling } from '@/lib/api-utils';
-import { ReportService } from '@/lib/data/report-service';
+import { ServiceFactory } from '@/lib/services/ServiceFactory';
 import { ReportRow } from '@/lib/types/core';
 
 export async function POST(request: Request) {
@@ -10,7 +10,8 @@ export async function POST(request: Request) {
             
             console.log('[TEST_SOCIAL_MEDIA] Starting test of social media posting logic');
             
-            const reportService = new ReportService(env);
+            const factory = ServiceFactory.getInstance(env);
+            const reportService = factory.createReportService();
             
             // Test the query logic
             const query = `

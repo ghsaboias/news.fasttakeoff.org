@@ -1,6 +1,6 @@
 import { withErrorHandling } from '@/lib/api-utils';
 import { TIME } from '@/lib/config';
-import { ReportService } from '@/lib/data/report-service';
+import { ServiceFactory } from '@/lib/services/ServiceFactory';
 import { EnhancedReport } from '@/lib/types/core';
 import { groupAndSortReports } from '@/lib/utils';
 import { EntityExtractor } from '@/lib/utils/entity-extraction';
@@ -17,7 +17,8 @@ import { NextResponse } from 'next/server';
 export async function POST() {
     return withErrorHandling(async (env) => {
         // Initialize services
-        const reportService = new ReportService(env);
+        const factory = ServiceFactory.getInstance(env);
+        const reportService = factory.createReportService();
 
         // Get all reports with their entities
         const reportsWithEntities = await reportService.getReportsWithEntities();

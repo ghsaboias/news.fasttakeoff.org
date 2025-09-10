@@ -1,6 +1,6 @@
 import { withErrorHandling } from '@/lib/api-utils';
 import { CacheManager } from '@/lib/cache-utils';
-import { ReportService } from '@/lib/data/report-service';
+import { ServiceFactory } from '@/lib/services/ServiceFactory';
 import { FactCheckResult } from '@/lib/types/core';
 import { PerplexityFactCheckService } from '@/lib/utils/fact-check-service';
 import { NextRequest, NextResponse } from 'next/server';
@@ -88,7 +88,8 @@ export async function POST(request: NextRequest) {
             }
 
             // Get the report to fact-check
-            const reportService = new ReportService(env);
+            const factory = ServiceFactory.getInstance(env);
+            const reportService = factory.createReportService();
             const report = await reportService.getReport(reportId);
 
             if (!report) {

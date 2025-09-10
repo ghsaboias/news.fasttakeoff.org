@@ -1,5 +1,5 @@
 import { withErrorHandling } from '@/lib/api-utils';
-import { ReportService } from '@/lib/data/report-service';
+import { ServiceFactory } from '@/lib/services/ServiceFactory';
 import { SourceAttributionService } from '@/lib/utils/source-attribution';
 import { Cloudflare } from '../../../../worker-configuration';
 
@@ -28,7 +28,8 @@ export async function GET(request: Request) {
 
         // Get the report using the same efficient method as the regular reports API
         console.log(`[SOURCE_ATTRIBUTION] Starting attribution fetch for reportId: ${reportId}, channelId: ${channelId}`);
-        const reportService = new ReportService(env);
+        const factory = ServiceFactory.getInstance(env);
+        const reportService = factory.createReportService();
 
         const { report, messages: sourceMessages } = await reportService.getReportAndMessages(
             channelId,

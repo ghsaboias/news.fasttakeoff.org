@@ -1,6 +1,6 @@
 import { CacheManager } from '@/lib/cache-utils';
 import { TIME } from '@/lib/config';
-import { ChannelsService } from '@/lib/data/channels-service';
+import { ServiceFactory } from '@/lib/services/ServiceFactory';
 import { CachedMessages } from '@/lib/types/core';
 import { getCacheContext } from '@/lib/utils';
 import { NextResponse } from 'next/server';
@@ -122,7 +122,8 @@ export async function GET() {
         const now = new Date();
 
         // Get all channels
-        const channelsService = new ChannelsService(env);
+        const factory = ServiceFactory.getInstance(env);
+        const channelsService = factory.createChannelsService();
         const channels = await channelsService.getChannels();
 
         if (channels.length === 0) {

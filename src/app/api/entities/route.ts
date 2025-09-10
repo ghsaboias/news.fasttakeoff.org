@@ -13,7 +13,7 @@
  * @auth None required.
  */
 import { withErrorHandling } from '@/lib/api-utils';
-import { ReportService } from '@/lib/data/report-service';
+import { ServiceFactory } from '@/lib/services/ServiceFactory';
 import { ExtractedEntity, GraphLink, GraphNode } from '@/lib/types/core';
 import { EntityExtractor } from '@/lib/utils/entity-extraction';
 import { NextResponse } from 'next/server';
@@ -110,7 +110,8 @@ export async function GET(request: Request) {
             );
         }
 
-        const reportService = new ReportService(env);
+        const factory = ServiceFactory.getInstance(env);
+        const reportService = factory.createReportService();
         const reportsWithEntities = await reportService.getReportsWithEntities(100);
 
         if (format === 'graph') {

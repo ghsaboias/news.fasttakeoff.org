@@ -1,6 +1,6 @@
 import { withErrorHandling } from '@/lib/api-utils';
 import { CacheManager } from '@/lib/cache-utils';
-import { ReportService } from '@/lib/data/report-service';
+import { ServiceFactory } from '@/lib/services/ServiceFactory';
 import { Report, ReportResponse } from '@/lib/types/core';
 import { NextRequest, NextResponse } from 'next/server';
 
@@ -28,7 +28,8 @@ export async function GET(request: NextRequest) {
         const timeframe = searchParams.get('timeframe');
         const mode = searchParams.get('mode');
 
-        const reportService = new ReportService(env);
+        const factory = ServiceFactory.getInstance(env);
+        const reportService = factory.createReportService();
 
         if (channelId && reportId) {
             try {
@@ -141,7 +142,8 @@ export async function POST(request: Request) {
             throw new Error('Missing channelId');
         }
 
-        const reportService = new ReportService(env);
+        const factory = ServiceFactory.getInstance(env);
+        const reportService = factory.createReportService();
 
         // If model is specified, we need to temporarily override the AI config
         if (model) {

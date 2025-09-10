@@ -1,5 +1,5 @@
 import { withErrorHandling } from '@/lib/api-utils';
-import { getChannelDetails } from '@/lib/data/channels-service';
+import { ServiceFactory } from '@/lib/services/ServiceFactory';
 import { NextResponse } from 'next/server';
 
 /**
@@ -19,7 +19,9 @@ export async function GET(request: Request) {
             throw new Error('Missing channelId parameter');
         }
 
-        const channel = await getChannelDetails(env, channelId);
+        const factory = ServiceFactory.getInstance(env);
+        const channelsService = factory.createChannelsService();
+        const channel = await channelsService.getChannelDetails(channelId);
         return NextResponse.json(channel, {
             headers: {
                 'Cache-Control': 'public, s-maxage=180, stale-while-revalidate=300',

@@ -1,5 +1,5 @@
 import { withErrorHandling } from '@/lib/api-utils';
-import { getChannels } from '@/lib/data/channels-service';
+import { ServiceFactory } from '@/lib/services/ServiceFactory';
 import { NextResponse } from 'next/server';
 
 /**
@@ -12,7 +12,9 @@ import { NextResponse } from 'next/server';
 export async function GET() {
     return withErrorHandling(
         async (env) => {
-            const channels = await getChannels(env);
+            const factory = ServiceFactory.getInstance(env);
+            const channelsService = factory.createChannelsService();
+            const channels = await channelsService.getChannels();
             return NextResponse.json(channels, {
                 headers: {
                     'Cache-Control': 'public, s-maxage=600, stale-while-revalidate=1200',

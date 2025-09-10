@@ -1,6 +1,6 @@
 import { withErrorHandling } from '@/lib/api-utils';
 import { NextResponse } from 'next/server';
-import { ReportService } from '@/lib/data/report-service';
+import { ServiceFactory } from '@/lib/services/ServiceFactory';
 import { DiscordMessage, Report } from '@/lib/types/core';
 
 type NewsletterImage = {
@@ -155,7 +155,8 @@ export async function GET(request: Request) {
     const limit = Math.max(1, Math.min(parseInt(limitParam || '10', 10) || 10, 20));
     const includeDebug = searchParams.get('debug') === '1';
 
-    const reportService = new ReportService(env);
+    const factory = ServiceFactory.getInstance(env);
+    const reportService = factory.createReportService();
 
     // Try to leverage homepage caching when possible via getAllReports(limit)
     const reports: Report[] = await reportService.getAllReports(limit);
