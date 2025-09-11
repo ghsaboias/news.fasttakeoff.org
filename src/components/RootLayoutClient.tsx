@@ -3,6 +3,7 @@
 import AuthProvider from '@/components/auth/AuthProvider';
 import Footer from '@/components/Footer';
 import Header from '@/components/Header';
+import ScrollPopup from '@/components/ScrollPopup';
 import { UI } from '@/lib/config';
 import { usePathname } from 'next/navigation';
 import React from 'react';
@@ -30,6 +31,9 @@ export default function RootLayoutClient({ children }: RootLayoutClientProps) {
             <div style={{ minHeight: showHeaderAndFooter ? '80px' : '0px' }}>
                 {showHeaderAndFooter && <Footer />}
             </div>
+
+            {/* Scroll popup appears on all pages */}
+            <ScrollPopup scrollThreshold={25} />
         </AuthProvider>
     );
 } 

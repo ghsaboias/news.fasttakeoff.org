@@ -4,12 +4,9 @@ import ReportCard from "@/components/current-events/ReportCard"
 import OrderCard from "@/components/executive-orders/OrderCard"
 import ExecutiveSummary from "@/components/ExecutiveSummary"
 import ReportCardSkeleton from "@/components/skeletons/ReportCardSkeleton"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import { useGeolocation } from "@/lib/hooks/useGeolocation"
-import { ApiErrorResponse, ExecutiveOrder, ExecutiveSummary as ExecutiveSummaryType, Report } from "@/lib/types/core"
+import { ExecutiveOrder, ExecutiveSummary as ExecutiveSummaryType, Report } from "@/lib/types/core"
 import Link from "next/link"
-import { useState, useCallback } from "react"
 
 interface HomeContentProps {
     initialReports: Report[]
@@ -18,122 +15,11 @@ interface HomeContentProps {
 }
 
 export default function HomeContent({ initialReports, initialExecutiveOrders, initialExecutiveSummary }: HomeContentProps) {
-    const [email, setEmail] = useState("")
-    const [isSubmitting, setIsSubmitting] = useState(false)
-    const [submitMessage, setSubmitMessage] = useState("")
-
     // Use the consolidated geolocation hook
     const { isUSBased } = useGeolocation({ assumeNonUSOnError: true })
 
-
-
-
-    const handleEmailSubmit = useCallback(async (e: React.FormEvent) => {
-        e.preventDefault()
-
-        if (!email.trim()) {
-            setSubmitMessage("Please enter your email address")
-            return
-        }
-
-        setIsSubmitting(true)
-        setSubmitMessage("")
-
-        try {
-            const response = await fetch('/api/emails', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ email: email.trim() }),
-            })
-
-            const data = await response.json() as ApiErrorResponse
-
-            if (response.ok) {
-                setSubmitMessage("Successfully subscribed! 🎉")
-                setEmail("")
-            } else {
-                setSubmitMessage(data.error || "Failed to subscribe")
-            }
-        } catch (error) {
-            console.error('Error submitting email:', error)
-            setSubmitMessage("Something went wrong. Please try again.")
-        } finally {
-            setIsSubmitting(false)
-        }
-    }, [email])
-
     return (
-        <div className="flex flex-col justify-center bg-gradient-to-b from-gray-950 via-gray-900 to-black min-h-screen">
-            {/* Hero Section - Industrial dark theme */}
-            <section className="hero-section bg-gradient-to-br from-gray-950 via-gray-900 to-black backdrop-blur-lg mx-2 sm:mx-4 my-2 sm:my-4 min-h-[calc(100vh-4rem-1rem)] sm:min-h-[calc(100vh-4rem-2rem)] flex items-center rounded-2xl border border-gray-700/50 shadow-2xl shadow-black/60 relative overflow-hidden">
-                {/* Industrial texture overlay */}
-                <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(255,255,255,0.02)_0%,transparent_50%)] opacity-60"></div>
-                <div className="absolute inset-0 bg-[linear-gradient(45deg,transparent_49%,rgba(255,255,255,0.01)_50%,transparent_51%)] bg-[length:20px_20px] opacity-30"></div>
-
-                <div className="flex flex-col items-center gap-4 sm:gap-6 py-8 sm:py-12 px-6 w-full relative z-10">
-                    {/* Headlines & Value Props - Industrial color scheme */}
-                    <div className="flex flex-col items-center gap-4 text-center max-w-3xl">
-                        <h1 className="hero-title text-5xl md:text-7xl font-bold bg-gradient-to-r from-emerald-400 via-teal-400 to-green-400 bg-clip-text text-transparent leading-tight drop-shadow-lg">
-                            AI-Powered News Intelligence
-                        </h1>
-                    </div>
-                    <div className="bg-gradient-to-br from-gray-800 via-gray-900 to-black rounded-xl shadow-2xl border border-gray-600/50 p-4 sm:p-6 backdrop-blur-sm w-full max-w-2xl flex flex-col items-center gap-4 sm:gap-6">
-
-                        <p className="text-xl md:text-2xl text-gray-300 max-w-2xl font-light">
-                            Get breaking news analysis and real-time intelligence from global sources.
-                        </p>
-                        {/* Email Capture Form - Industrial dark styling */}
-                        <form onSubmit={handleEmailSubmit} className="w-full">
-                            <div>
-
-                                <div className="space-y-3 sm:space-y-4">
-                                    <Input
-                                        type="email"
-                                        placeholder="your.email@email.com"
-                                        value={email}
-                                        onChange={(e) => setEmail(e.target.value)}
-                                        disabled={isSubmitting}
-                                        required
-                                        className="h-10 sm:h-12 text-base sm:text-lg bg-gray-800 border-gray-600 text-gray-100 placeholder-gray-500 focus:border-emerald-500 focus:ring-emerald-500 focus:bg-gray-700"
-                                    />
-
-                                    <Button
-                                        type="submit"
-                                        disabled={isSubmitting}
-                                        className="w-full h-10 sm:h-12 text-base sm:text-lg font-semibold bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white shadow-lg hover:shadow-xl transition-all duration-200 border border-emerald-500/30"
-                                    >
-                                        {isSubmitting ? "Setting up your briefings..." : "Get Free Daily Briefings →"}
-                                    </Button>
-
-                                    {submitMessage && (
-                                        <p className={`text-sm text-center ${submitMessage.includes('🎉') ? 'text-green-400' : 'text-red-400'}`}>
-                                            {submitMessage}
-                                        </p>
-                                    )}
-
-                                    <p className="text-sm text-gray-300 text-center">
-                                        🔒 Your email is secure. We respect your privacy and never share your data.
-                                    </p>
-                                </div>
-                            </div>
-                        </form>
-                    </div>
-
-                    {/* Secondary CTA for Account Creation - Industrial styling */}
-                    <div className="text-center">
-                        <p className="text-gray-200 mb-3">
-                            Want advanced features and premium insights?
-                        </p>
-                        <Link href="/sign-up">
-                            <Button variant="outline" className="border-emerald-500/50 text-emerald-300 hover:bg-emerald-500/10 hover:text-emerald-200 backdrop-blur-sm bg-gray-900/50">
-                                Create Free Account
-                            </Button>
-                        </Link>
-                    </div>
-                </div>
-            </section>
+        <div className="flex flex-col justify-center bg-gradient-to-b from-gray-950 via-gray-900 to-black min-h-screen pt-8">
 
             {/* Executive Summary Section - New prominent section */}
             <section>

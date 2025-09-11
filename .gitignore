@@ -97,3 +97,6 @@ newsletter/node_modules/
 
 # Google Search Console analysis (internal docs)
 GOOGLE_SEARCH_CONSOLE.md
+
+# Email setup documentation (internal docs)
+EMAIL_SETUP.md
