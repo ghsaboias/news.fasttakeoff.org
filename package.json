@@ -13,7 +13,6 @@
     "preview:patch:test": "opennextjs-cloudflare build && node patch-worker.js && wrangler dev --test-scheduled",
     "preview:patch:test:clean": "rm -rf .wrangler/state && opennextjs-cloudflare build && node patch-worker.js && wrangler dev --test-scheduled",
     "deploy": "opennextjs-cloudflare build && node patch-worker.js && wrangler deploy",
-    "cf-typegen": "wrangler types --env-interface CloudflareEnv cloudflare-env.d.ts",
     "build:worker": "opennextjs-cloudflare build",
     "dev:worker": "wrangler dev --port 8771",
     "watch:build": "npx watch 'npm run build:worker' -- src",

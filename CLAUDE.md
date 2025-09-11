@@ -75,11 +75,11 @@ During major events (war outbreak, breaking news):
 
 ## Security & Configuration
 - Store secrets in `.env.local`/`.dev.vars`; never commit secrets. Cloudflare bindings are in `wrangler.toml` (KV, R2, D1, crons).
-- After changing env/bindings, run `bun run cf-typegen` and re-verify `bun run preview:patch` locally.
+- After changing env/bindings, run `npx wrangler types` to regenerate `worker-configuration.d.ts` and re-verify `bun run preview:patch` locally.
 
 
 ## Screenshot Generation
-For newsletter rendering, use headless Chrome to generate screenshots of HTML files, then read and analyze the generated images.
+For newsletter workflow: take screenshots of rendered HTML newsletter files to help analyze and review the newsletter layout and content.
 
 ## Cron Job Monitoring
 Current implementation uses KV (`CRON_STATUS_CACHE`) for live status monitoring via SSE dashboard at `/admin`.
@@ -92,13 +92,6 @@ Current implementation uses KV (`CRON_STATUS_CACHE`) for live status monitoring 
 - Add analytics dashboard UI to consume the cron-analytics endpoint for historical trends
 - Cloudflare Analytics Engine integration for long-term metrics and professional analytics dashboards
 
-**AI Rule Map**
-- **Core Flows:** `.cursor/rules/report-generation-flow.mdc`, `.cursor/rules/brazil-news-summary-flow.mdc`, `.cursor/rules/sitemap-generation-flow.mdc`, `.cursor/rules/source-attribution-flow.mdc`
-- **Infra Patterns:** `.cursor/rules/cache-namespace-patterns.mdc`, `.cursor/rules/cloudflare-worker-patterns.mdc`, `.cursor/rules/r2-storage-patterns.mdc`, `.cursor/rules/wrangler.mdc`
-- **Visualizations:** `.cursor/rules/news-globe-visualization.mdc`, `.cursor/rules/message-heatmap-visualization.mdc`, `.cursor/rules/power-network-visualization.mdc`
-- **Distribution:** `.cursor/rules/instagram-posting-flow.mdc`
-- **Dev & Testing:** `.cursor/rules/development-workflow.mdc`, `.cursor/rules/testing-infrastructure.mdc`, `.cursor/rules/time-resilient-patterns.mdc`
-- **Market Feed:** `.cursor/rules/market-feed-implementation.mdc`
 
 Quick Rules
 - After major code changes, run "bun run lint" and "npx tsc --noEmit" and fix any errors/issues
@@ -112,7 +105,7 @@ Quick Rules
 ## Data Architecture & Debugging
 
 ### Database Schema
-- **Reports table columns**: `id`, `headline` (not `title`), `channel_id`, `channel_name`, `generation_trigger`, `window_start_time`, `window_end_time`, `message_count`, `message_ids` (JSON array), etc.
+- **Reports table columns**: `id` (INTEGER PK), `report_id` (TEXT), `headline` (not `title`), `channel_id`, `channel_name`, `generation_trigger`, `window_start_time`, `window_end_time`, `message_count`, `message_ids` (TEXT), `generated_at` (TEXT), `body`, `city`, `user_generated`, `timeframe`, `cache_status`, etc.
 - **Message storage**: Messages stored in KV as `messages:{channel_id}` (not individual message IDs)
 - **Local vs production**: Local KV often has stale/partial data; recent dynamic reports may not be cached locally
 
@@ -126,7 +119,7 @@ Quick Rules
 - View evaluation metrics in `REPORTS_CACHE` under keys like `window_eval_metrics:2025-09-08`
 - Monitor overlap prevention via console logs: `[WINDOW_EVAL] Skipping report for channelId: X% overlap with recent report`
 - Dynamic reports have `generation_trigger = 'dynamic'` in database vs `'scheduled'` for fixed intervals
-- List available message channels: `npx wrangler kv key list --namespace-id a51ee099a3cb42eca2e143005e0b2558` (use namespace ID instead of --binding flag)
+- List available message channels: `npx wrangler kv key list --namespace-id a51ee099a3cb42eca2e143005e0b2558 --remote` (use --remote flag to access production data)
 
 ### Prompt Quality Analysis Workflow
 **Test/Iterate/Verify Flow for Dynamic Report Generation:**
@@ -158,7 +151,7 @@ curl -X POST "http://localhost:8787/api/reports" -H "Content-Type: application/j
 node -e "const now = new Date(); const twoHoursAgo = new Date(now.getTime() - 2 * 60 * 60 * 1000); console.log(JSON.stringify({windowStart: twoHoursAgo.toISOString(), windowEnd: now.toISOString()}))"
 
 # Check previous context
-npx wrangler d1 execute FAST_TAKEOFF_NEWS_DB --local --command "SELECT id, headline, generated_at FROM reports WHERE channel_id = 'X' ORDER BY generated_at DESC LIMIT 3"
+npx wrangler d1 execute FAST_TAKEOFF_NEWS_DB --remote --command "SELECT report_id, headline, channel_name, generated_at FROM reports WHERE channel_id = 'X' ORDER BY generated_at DESC LIMIT 3"
 ```
 
 **Key Files**: `src/lib/config.ts` (PROMPT_TEMPLATE), `src/lib/utils/report-ai.ts` (createWindowAwarePrompt)
