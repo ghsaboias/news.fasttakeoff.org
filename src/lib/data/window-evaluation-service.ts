@@ -74,7 +74,7 @@ export class WindowEvaluationService {
         COUNT(*) as total_reports,
         MAX(generated_at) as last_generated_at
       FROM reports 
-      WHERE generated_at >= datetime('now', '-7 days')
+      WHERE datetime(generated_at) >= datetime('now', '-7 days')
         AND message_count > 0
       GROUP BY channel_id, channel_name
       HAVING total_reports >= 3

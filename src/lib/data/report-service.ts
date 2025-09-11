@@ -442,7 +442,7 @@ export class ReportService {
             const query = `
                 SELECT * FROM reports 
                 WHERE generation_trigger = 'dynamic' 
-                  AND generated_at >= datetime('now', '-${lookbackHours} hours')
+                  AND datetime(generated_at) >= datetime('now', '-${lookbackHours} hours')
                 ORDER BY message_count DESC 
                 LIMIT 1
             `;

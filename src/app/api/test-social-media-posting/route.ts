@@ -17,7 +17,7 @@ export async function POST(request: Request) {
             const query = `
                 SELECT * FROM reports 
                 WHERE generation_trigger = 'dynamic' 
-                  AND generated_at >= datetime('now', '-2 hours')
+                  AND datetime(generated_at) >= datetime('now', '-2 hours')
                 ORDER BY message_count DESC 
                 LIMIT 1
             `;
