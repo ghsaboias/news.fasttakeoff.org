@@ -24,10 +24,10 @@ export interface NewsletterData {
 
 export interface CloudflareEmailBindings {
   NEWSLETTER_EMAIL?: {
-    send(message: any): Promise<void>;
+    send(message: unknown): Promise<void>;
   };
   NOTIFICATIONS_EMAIL?: {
-    send(message: any): Promise<void>;
+    send(message: unknown): Promise<void>;
   };
 }
 
@@ -60,7 +60,7 @@ export class CloudflareEmailService {
   /**
    * Create email message using runtime imports
    */
-  private async createEmailMessage(options: EmailOptions): Promise<any> {
+  private async createEmailMessage(options: EmailOptions): Promise<unknown> {
     // Import EmailMessage constructor at runtime
     const EmailMessageConstructor = await this.getEmailMessageConstructor();
     
@@ -79,7 +79,7 @@ export class CloudflareEmailService {
   /**
    * Get EmailMessage constructor via runtime import
    */
-  private async getEmailMessageConstructor(): Promise<any> {
+  private async getEmailMessageConstructor(): Promise<new (from: string, to: string, raw: string) => unknown> {
     try {
       // Use eval to prevent webpack from processing this at build time
       const importCloudflareEmail = new Function('return import("cloudflare:email")');

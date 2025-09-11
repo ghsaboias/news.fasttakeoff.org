@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerEmailService } from '@/lib/data/email-service-server';
+import { withErrorHandling } from '@/lib/api-utils';
 
 // Removed edge runtime to enable Cloudflare Email Workers compatibility
 // Email Workers require full Cloudflare Workers runtime, not Next.js edge runtime
@@ -14,12 +15,10 @@ interface SubscriptionRequest {
 }
 
 export async function POST(request: NextRequest) {
-  try {
-    // Get environment and database from request context
-    const env = (request as unknown as { cf?: { env: unknown } }).cf?.env || process.env;
-    const db = env?.DB; // Your existing D1 database binding
+  return withErrorHandling(async (env) => {
+    const db = env.DB;
     
-    if (!env || !db) {
+    if (!db) {
       return NextResponse.json(
         { error: 'Database not available' },
         { status: 500 }
@@ -143,36 +142,12 @@ export async function POST(request: NextRequest) {
       { status: 201 }
     );
 
-  } catch (error) {
-    console.error('Newsletter subscription error:', error);
-    
-    // Try to send error notification to admins
-    try {
-      const env = (request as unknown as { cf?: { env: unknown } }).cf?.env || process.env;
-      if (env) {
-        const emailService = createServerEmailService(env);
-        await emailService.sendErrorAlert(
-          error instanceof Error ? error : new Error('Unknown subscription error'),
-          'Newsletter subscription failed'
-        );
-      }
-    } catch (notificationError) {
-      console.error('Failed to send error notification:', notificationError);
-    }
-
-    return NextResponse.json(
-      { 
-        error: 'Subscription failed',
-        details: error instanceof Error ? error.message : 'Unknown error'
-      },
-      { status: 500 }
-    );
-  }
+  }, 'Newsletter subscription failed');
 }
 
 // Get subscription status
 export async function GET(request: NextRequest) {
-  try {
+  return withErrorHandling(async (env) => {
     const { searchParams } = new URL(request.url);
     const email = searchParams.get('email');
 
@@ -183,8 +158,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const env = (request as unknown as { cf?: { env: unknown } }).cf?.env || process.env;
-    const db = env?.DB;
+    const db = env.DB;
 
     if (!db) {
       return NextResponse.json(
@@ -212,15 +186,9 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       subscription: {
         ...subscription,
-        topics: subscription.topics ? JSON.parse(subscription.topics) : null
+        topics: subscription.topics ? JSON.parse(subscription.topics as string) : null
       }
     });
 
-  } catch (error) {
-    console.error('Get subscription error:', error);
-    return NextResponse.json(
-      { error: 'Failed to get subscription status' },
-      { status: 500 }
-    );
-  }
+  }, 'Get subscription failed');
 }

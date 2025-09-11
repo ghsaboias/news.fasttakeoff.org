@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerEmailService } from '@/lib/data/email-service-server';
+import { withErrorHandling } from '@/lib/api-utils';
 
 // Removed edge runtime to enable Cloudflare Email Workers compatibility
 // Email Workers require full Cloudflare Workers runtime, not Next.js edge runtime
@@ -11,9 +12,8 @@ interface UnsubscribeRequest {
 }
 
 export async function POST(request: NextRequest) {
-  try {
-    const env = (request as unknown as { cf?: { env: unknown } }).cf?.env || process.env;
-    const db = env?.FAST_TAKEOFF_NEWS_DB;
+  return withErrorHandling(async (env) => {
+    const db = env.FAST_TAKEOFF_NEWS_DB;
     
     if (!db) {
       return NextResponse.json(
@@ -136,7 +136,7 @@ export async function POST(request: NextRequest) {
       `;
 
       await emailService.sendEmail({
-        to: subscription.email,
+        to: subscription.email as string,
         subject: 'Unsubscribed from Fast Takeoff News',
         html: confirmationHtml,
         from: {
@@ -154,21 +154,12 @@ export async function POST(request: NextRequest) {
       { 
         success: true, 
         message: 'Successfully unsubscribed from newsletter',
-        email: subscription.email
+        email: subscription.email as string
       },
       { status: 200 }
     );
 
-  } catch (error) {
-    console.error('Unsubscribe error:', error);
-    return NextResponse.json(
-      { 
-        error: 'Failed to unsubscribe',
-        details: error instanceof Error ? error.message : 'Unknown error'
-      },
-      { status: 500 }
-    );
-  }
+  }, 'Unsubscribe failed');
 }
 
 // Handle GET request for token-based unsubscribe (from email links)
