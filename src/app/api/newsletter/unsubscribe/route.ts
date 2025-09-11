@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServerEmailService } from '@/lib/data/email-service-server';
 import { withErrorHandling } from '@/lib/api-utils';
 
 // Removed edge runtime to enable Cloudflare Email Workers compatibility
@@ -100,55 +99,8 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Send confirmation email
-    try {
-      const emailService = createServerEmailService(env);
-      
-      const confirmationHtml = `
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <meta charset="UTF-8">
-            <title>Unsubscribed from Fast Takeoff News</title>
-            <style>
-                body { font-family: system-ui, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; }
-                .header { text-align: center; padding: 24px; background: #f8f9fa; border-radius: 8px; }
-                .content { padding: 24px 0; }
-                .footer { margin-top: 32px; padding-top: 24px; border-top: 1px solid #e2e8f0; font-size: 14px; color: #666; }
-            </style>
-        </head>
-        <body>
-            <div class="header">
-                <h1>Successfully Unsubscribed</h1>
-            </div>
-            <div class="content">
-                <p>Hi${subscription.name ? ` ${subscription.name}` : ''},</p>
-                <p>You have been successfully unsubscribed from Fast Takeoff News newsletters.</p>
-                <p>We're sorry to see you go! If you change your mind, you can always subscribe again at <a href="https://news.fasttakeoff.org">news.fasttakeoff.org</a>.</p>
-                ${reason ? `<p><strong>Your feedback:</strong> ${reason}</p>` : ''}
-            </div>
-            <div class="footer">
-                <p>This confirmation was sent to: ${subscription.email}</p>
-                <p>If you have any questions, please contact us at <a href="mailto:support@fasttakeoff.org">support@fasttakeoff.org</a></p>
-            </div>
-        </body>
-        </html>
-      `;
-
-      await emailService.sendEmail({
-        to: subscription.email as string,
-        subject: 'Unsubscribed from Fast Takeoff News',
-        html: confirmationHtml,
-        from: {
-          name: 'Fast Takeoff News',
-          address: 'newsletter@news.fasttakeoff.org'
-        }
-      }, 'NEWSLETTER_EMAIL');
-
-    } catch (emailError) {
-      console.error('Failed to send unsubscribe confirmation:', emailError);
-      // Don't fail the unsubscribe if email fails
-    }
+    // TODO: Send confirmation email with Resend
+    // Confirmation email sending temporarily disabled during email service migration
 
     return NextResponse.json(
       { 

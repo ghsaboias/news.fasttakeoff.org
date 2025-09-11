@@ -64,8 +64,6 @@ export declare namespace Cloudflare {
 		INSTAGRAM_IMAGES: R2Bucket;
 		DB: D1Database;
 		FAST_TAKEOFF_NEWS_DB: D1Database;
-		NEWSLETTER_EMAIL: SendEmail;
-		NOTIFICATIONS_EMAIL: SendEmail;
 		ASSETS: Fetcher;
 	}
 }

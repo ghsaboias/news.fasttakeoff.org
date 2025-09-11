@@ -5,10 +5,7 @@ compatibility_flags = [
     "nodejs_compat",
 ]
 
-# Email binding configurations for transactional emails
-send_email = [
-    {name = "NEWSLETTER_EMAIL", destination_address = "newsletter@fasttakeoff.org"}
-]
+# Email bindings removed - switching to Resend for email sending
 
 [triggers]
 # Dynamic report system based on channel activity patterns

@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServerEmailService } from '@/lib/data/email-service-server';
 import { withErrorHandling } from '@/lib/api-utils';
 
 // Removed edge runtime to enable Cloudflare Email Workers compatibility
@@ -79,55 +78,8 @@ export async function POST(request: NextRequest) {
       )
       .run();
 
-    // Send welcome email
-    const emailService = createServerEmailService(env);
-    
-    const welcomeHtml = `
-      <!DOCTYPE html>
-      <html>
-      <head>
-          <meta charset="UTF-8">
-          <title>Welcome to Fast Takeoff News</title>
-          <style>
-              body { font-family: system-ui, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; }
-              .header { background: #f8f9fa; padding: 24px; border-radius: 8px; text-align: center; }
-              .content { padding: 24px 0; }
-              .button { display: inline-block; background: #3182ce; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; }
-              .footer { margin-top: 32px; padding-top: 24px; border-top: 1px solid #e2e8f0; font-size: 14px; color: #666; }
-          </style>
-      </head>
-      <body>
-          <div class="header">
-              <h1>Welcome to Fast Takeoff News! 🚀</h1>
-          </div>
-          <div class="content">
-              <p>Hi${name ? ` ${name}` : ''},</p>
-              <p>Thank you for subscribing to our newsletter! You'll receive the latest insights on AI progress, emerging technologies, and fast takeoff scenarios.</p>
-              <p><strong>Your preferences:</strong></p>
-              <ul>
-                  <li>Frequency: ${preferences?.frequency || 'daily'}</li>
-                  ${preferences?.topics ? `<li>Topics: ${preferences.topics.join(', ')}</li>` : ''}
-              </ul>
-              <p>
-                  <a href="https://news.fasttakeoff.org" class="button">Visit Fast Takeoff News</a>
-              </p>
-          </div>
-          <div class="footer">
-              <p>You can update your preferences or unsubscribe at any time by visiting our <a href="https://news.fasttakeoff.org/newsletter/manage?token=${subscriptionData.verification_token}">preference center</a>.</p>
-          </div>
-      </body>
-      </html>
-    `;
-
-    await emailService.sendEmail({
-      to: email,
-      subject: 'Welcome to Fast Takeoff News! 🚀',
-      html: welcomeHtml,
-      from: {
-        name: 'Fast Takeoff News',
-        address: 'newsletter@news.fasttakeoff.org'
-      }
-    }, 'NEWSLETTER_EMAIL');
+    // TODO: Send welcome email with Resend
+    // Welcome email sending temporarily disabled during email service migration
 
     return NextResponse.json(
       { 
