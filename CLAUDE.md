@@ -73,6 +73,11 @@ During major events (war outbreak, breaking news):
 - **PRs**: Include scope/intent, linked issues, screenshots for UI, and a test plan. Ensure `bun run test` and `bun run lint` pass. Note any env/KV changes (`wrangler.toml`).
 - **Git Integration**: Repository has automatic deployment on push to master. Commits trigger Cloudflare Pages builds and deployments.
 
+## Deployment Process
+- **DO NOT use `bun run deploy` manually** - this is for emergency/manual deployments only
+- **Normal deployment**: `git push origin master` - automatic deployment happens via Cloudflare Pages
+- **Manual deployment** (emergency only): `bun run deploy` - bypasses git and deploys current working directory
+
 ## Security & Configuration
 - Store secrets in `.env.local`/`.dev.vars`; never commit secrets. Cloudflare bindings are in `wrangler.toml` (KV, R2, D1, crons).
 - After changing env/bindings, run `npx wrangler types` to regenerate `worker-configuration.d.ts` and re-verify `bun run preview:patch` locally.
