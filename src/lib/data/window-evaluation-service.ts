@@ -69,14 +69,14 @@ export class WindowEvaluationService {
     const query = `
       SELECT 
         channel_id,
-        channel_name,
+        MAX(channel_name) as channel_name,
         AVG(message_count) as avg_messages_per_report,
         COUNT(*) as total_reports,
         MAX(generated_at) as last_generated_at
       FROM reports 
       WHERE datetime(generated_at) >= datetime('now', '-7 days')
         AND message_count > 0
-      GROUP BY channel_id, channel_name
+      GROUP BY channel_id
       HAVING total_reports >= 3
       ORDER BY avg_messages_per_report DESC
     `;

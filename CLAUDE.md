@@ -115,7 +115,7 @@ Quick Rules
 - **Channel mapping**: Use D1 to map channel IDs to names, then fetch messages from KV by channel ID
 
 ### Dynamic Report Debugging
-- Check channel metrics: `npx wrangler d1 execute FAST_TAKEOFF_NEWS_DB --remote --command "SELECT channel_name, AVG(message_count) as avg_msgs, COUNT(*) as reports FROM reports WHERE generated_at >= datetime('now', '-7 days') GROUP BY channel_id, channel_name ORDER BY avg_msgs DESC"`
+- Check channel metrics: `npx wrangler d1 execute FAST_TAKEOFF_NEWS_DB --remote --command "SELECT channel_id, MAX(channel_name) as channel_name, AVG(message_count) as avg_msgs, COUNT(*) as reports FROM reports WHERE generated_at >= datetime('now', '-7 days') GROUP BY channel_id ORDER BY avg_msgs DESC"`
 - View evaluation metrics in `REPORTS_CACHE` under keys like `window_eval_metrics:2025-09-08`
 - Monitor overlap prevention via console logs: `[WINDOW_EVAL] Skipping report for channelId: X% overlap with recent report`
 - Dynamic reports have `generation_trigger = 'dynamic'` in database vs `'scheduled'` for fixed intervals
