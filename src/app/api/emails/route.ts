@@ -96,8 +96,19 @@ export async function POST(request: NextRequest) {
 }
 
 // Optional: GET endpoint to retrieve email subscriptions (for admin use)
-export async function GET() {
+export async function GET(request: NextRequest) {
     try {
+        // Check API key authentication
+        const authHeader = request.headers.get('authorization');
+        const apiKey = authHeader?.replace('Bearer ', '');
+        
+        if (!apiKey || apiKey !== process.env.ADMIN_API_KEY) {
+            return NextResponse.json(
+                { error: 'Unauthorized - Valid API key required' },
+                { status: 401 }
+            );
+        }
+
         const { env } = await getCacheContext();
         if (!env.FAST_TAKEOFF_NEWS_DB) {
             return NextResponse.json(
