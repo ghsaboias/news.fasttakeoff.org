@@ -3,6 +3,7 @@ import { CacheManager } from '@/lib/cache-utils';
 import { ServiceFactory } from '@/lib/services/ServiceFactory';
 import { Report, ReportResponse } from '@/lib/types/core';
 import { NextRequest, NextResponse } from 'next/server';
+import { Cloudflare } from '../../../../worker-configuration';
 
 /**
  * GET /api/reports
@@ -149,7 +150,7 @@ export async function POST(request: Request) {
         if (model) {
             // Override the model for this request by modifying the environment
             // This is a bit hacky but works for testing purposes
-            env.AI_MODEL_OVERRIDE = model;
+            (env as Cloudflare.Env & { AI_MODEL_OVERRIDE?: string }).AI_MODEL_OVERRIDE = model;
         }
 
         try {
@@ -192,7 +193,7 @@ export async function POST(request: Request) {
         } finally {
             // Clean up the override
             if (model) {
-                delete env.AI_MODEL_OVERRIDE;
+                delete (env as Cloudflare.Env & { AI_MODEL_OVERRIDE?: string }).AI_MODEL_OVERRIDE;
             }
         }
     }, 'Failed to generate report');
