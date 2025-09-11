@@ -55,13 +55,15 @@ export class EmailService {
     createMimeMessage: () => MimeMessage;
   }> {
     try {
-      // Dynamic import of Cloudflare-specific EmailMessage
-      const { EmailMessage } = await import('cloudflare:email');
+      // Use eval to prevent webpack from processing this at build time
+      const importCloudflareEmail = new Function('return import("cloudflare:email")');
+      const { EmailMessage } = await importCloudflareEmail();
       
       let createMimeMessage;
       try {
-        // Try to use mimetext first
-        const mimetext = await import('mimetext');
+        // Try to use mimetext first with eval to avoid webpack processing
+        const importMimetext = new Function('return import("mimetext")');
+        const mimetext = await importMimetext();
         createMimeMessage = mimetext.createMimeMessage;
       } catch (mimetextError) {
         // Fallback to edge-compatible email builder
