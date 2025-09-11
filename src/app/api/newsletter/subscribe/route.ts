@@ -16,7 +16,7 @@ interface SubscriptionRequest {
 
 export async function POST(request: NextRequest) {
   return withErrorHandling(async (env) => {
-    const db = env.DB;
+    const db = env.FAST_TAKEOFF_NEWS_DB;
     
     if (!db) {
       return NextResponse.json(
@@ -158,7 +158,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const db = env.DB;
+    const db = env.FAST_TAKEOFF_NEWS_DB;
 
     if (!db) {
       return NextResponse.json(
