@@ -100,3 +100,6 @@ GOOGLE_SEARCH_CONSOLE.md
 
 # Email setup documentation (internal docs)
 EMAIL_SETUP.md
+
+# Newsletter generated data (regenerated frequently)
+newsletter-data.json

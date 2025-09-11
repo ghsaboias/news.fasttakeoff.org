@@ -102,5 +102,5 @@ app.get('/api/health', (req, res) => {
 const PORT = 3001;
 app.listen(PORT, () => {
   console.log(`📰 Newsletter dev server running on http://localhost:${PORT}`);
-  console.log(`🎨 Open: http://localhost:${PORT}/newsletter-builder.html`);
+  console.log(`🎨 Open: http://localhost:${PORT}/`);
 });
