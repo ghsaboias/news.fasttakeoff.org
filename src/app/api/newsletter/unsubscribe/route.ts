@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createEmailService } from '@/lib/data/email-service';
 
-export const runtime = 'edge';
+// Removed edge runtime to enable Cloudflare Email Workers compatibility
+// Email Workers require full Cloudflare Workers runtime, not Next.js edge runtime
 
 interface UnsubscribeRequest {
   token?: string;

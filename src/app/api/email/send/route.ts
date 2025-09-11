@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createEmailService } from '@/lib/data/email-service';
+import { createServerEmailService } from '@/lib/data/email-service-server';
 
-export const runtime = 'edge';
+// Removed edge runtime to enable Cloudflare Email Workers compatibility
+// Email Workers require full Cloudflare Workers runtime, not Next.js edge runtime
 
 interface EmailRequest {
   to: string;
@@ -45,7 +46,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Create email service
-    const emailService = createEmailService(env);
+    const emailService = createServerEmailService(env);
 
     if (type === 'newsletter') {
       // For newsletter type, expect structured data

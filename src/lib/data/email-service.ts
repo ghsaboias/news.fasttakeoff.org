@@ -1,5 +1,20 @@
-import { EmailMessage } from "cloudflare:email";
-import { createMimeMessage } from "mimetext";
+// Use dynamic import for Cloudflare-specific modules to avoid build issues
+// These modules are only available at runtime in Cloudflare Workers environment
+
+// Type definition for EmailMessage (matches Cloudflare Workers EmailMessage)
+export interface EmailMessage {
+  constructor(from: string, to: string, raw: string): EmailMessage;
+}
+
+// Type for the mimetext message builder
+export interface MimeMessage {
+  setSender(sender: { name: string; addr: string }): void;
+  setRecipient(recipient: string): void;
+  setSubject(subject: string): void;
+  setHeader(header: string, value: string): void;
+  addMessage(message: { contentType: string; data: string }): void;
+  asRaw(): string;
+}
 
 export interface CloudflareEnv {
   NEWSLETTER_EMAIL?: {
@@ -33,6 +48,38 @@ export class EmailService {
   constructor(private env: CloudflareEnv) {}
 
   /**
+   * Dynamically import Cloudflare Email modules (runtime only)
+   */
+  private async importEmailModules(): Promise<{
+    EmailMessage: new (from: string, to: string, raw: string) => EmailMessage;
+    createMimeMessage: () => MimeMessage;
+  }> {
+    try {
+      // Dynamic import of Cloudflare-specific EmailMessage
+      const { EmailMessage } = await import('cloudflare:email');
+      
+      let createMimeMessage;
+      try {
+        // Try to use mimetext first
+        const mimetext = await import('mimetext');
+        createMimeMessage = mimetext.createMimeMessage;
+      } catch (mimetextError) {
+        // Fallback to edge-compatible email builder
+        console.warn('mimetext not available, using edge-compatible email builder:', mimetextError);
+        const { createEdgeMimeMessage } = await import('@/lib/utils/edge-email-builder');
+        createMimeMessage = createEdgeMimeMessage;
+      }
+
+      return { 
+        EmailMessage: EmailMessage as any,
+        createMimeMessage: createMimeMessage as any
+      };
+    } catch (error) {
+      throw new Error(`Failed to import email modules - ensure running in Cloudflare Workers environment: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  /**
    * Send a transactional email using Cloudflare Email Workers
    */
   async sendEmail(options: EmailOptions, bindingName: keyof CloudflareEnv = 'NOTIFICATIONS_EMAIL'): Promise<void> {
@@ -40,6 +87,9 @@ export class EmailService {
     if (!binding) {
       throw new Error(`Email binding ${bindingName} not configured`);
     }
+
+    // Import modules dynamically
+    const { EmailMessage, createMimeMessage } = await this.importEmailModules();
 
     // Create MIME message
     const msg = createMimeMessage();
