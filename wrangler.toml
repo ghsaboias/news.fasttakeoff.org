@@ -130,16 +130,9 @@ id = "eacaace760d94418a094e8b52adef9fa"
 preview_id = "c91e48fa87764e778583960662982017"
 
 # Email binding configurations for transactional emails
-[[send_email]]
-name = "NEWSLETTER_EMAIL"
-destination_address = "newsletter@fasttakeoff.org"
-
-[[send_email]]
-name = "NOTIFICATIONS_EMAIL" 
-allowed_destination_addresses = [
-    "admin@fasttakeoff.org",
-    "alerts@fasttakeoff.org",
-    "support@fasttakeoff.org"
+send_email = [
+    {name = "NEWSLETTER_EMAIL", destination_address = "newsletter@fasttakeoff.org"},
+    {name = "NOTIFICATIONS_EMAIL", allowed_destination_addresses = ["admin@fasttakeoff.org", "alerts@fasttakeoff.org", "support@fasttakeoff.org"]}
 ]
 
 [observability.logs]
