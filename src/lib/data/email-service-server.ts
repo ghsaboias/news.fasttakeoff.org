@@ -41,7 +41,7 @@ export class CloudflareEmailService {
    * Send a transactional email using Cloudflare Email Workers
    * This method uses lazy loading to avoid build-time issues
    */
-  async sendEmail(options: EmailOptions, bindingName: keyof CloudflareEmailBindings = 'NOTIFICATIONS_EMAIL'): Promise<void> {
+  async sendEmail(options: EmailOptions, bindingName: keyof CloudflareEmailBindings = 'NEWSLETTER_EMAIL'): Promise<void> {
     const binding = this.env[bindingName];
     if (!binding) {
       throw new Error(`Email binding ${bindingName} not configured`);
@@ -250,7 +250,7 @@ export class CloudflareEmailService {
       subject: `[Fast Takeoff News] ${subject}`,
       from: {
         name: 'Fast Takeoff News System',
-        address: 'notifications@news.fasttakeoff.org'
+        address: 'newsletter@fasttakeoff.org'
       }
     };
 
@@ -260,7 +260,7 @@ export class CloudflareEmailService {
       emailOptions.text = message;
     }
 
-    await this.sendEmail(emailOptions, 'NOTIFICATIONS_EMAIL');
+    await this.sendEmail(emailOptions, 'NEWSLETTER_EMAIL');
   }
 
   /**
