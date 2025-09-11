@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
         // Get Cloudflare environment
         const { env } = await getCacheContext();
 
-        if (!env.DB) {
+        if (!env.FAST_TAKEOFF_NEWS_DB) {
             console.error('D1 database not available');
             return NextResponse.json(
                 { error: 'Database not available' },
@@ -48,8 +48,8 @@ export async function POST(request: NextRequest) {
         }
 
         // Check if email already exists
-        const existingEmail = await env.DB.prepare(
-            'SELECT id FROM email_subscribers WHERE email = ?'
+        const existingEmail = await env.FAST_TAKEOFF_NEWS_DB.prepare(
+            'SELECT id FROM newsletter_subscriptions WHERE email = ?'
         ).bind(email.toLowerCase()).first();
 
         if (existingEmail) {
@@ -59,13 +59,15 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        // Insert new email subscription
-        const result = await env.DB.prepare(
-            'INSERT INTO email_subscribers (email, subscribed_at, status) VALUES (?, ?, ?)'
+        // Insert new email subscription (using newsletter_subscriptions table structure)
+        const result = await env.FAST_TAKEOFF_NEWS_DB.prepare(
+            'INSERT INTO newsletter_subscriptions (email, frequency, status, subscribed_at, verification_token) VALUES (?, ?, ?, ?, ?)'
         ).bind(
             email.toLowerCase(),
+            'daily', // default frequency
+            'active',
             new Date().toISOString(),
-            'active'
+            crypto.randomUUID() // generate verification token
         ).run();
 
         if (!result.success) {
@@ -97,15 +99,15 @@ export async function POST(request: NextRequest) {
 export async function GET() {
     try {
         const { env } = await getCacheContext();
-        if (!env.DB) {
+        if (!env.FAST_TAKEOFF_NEWS_DB) {
             return NextResponse.json(
                 { error: 'Database not available' },
                 { status: 500 }
             );
         }
 
-        const emails = await env.DB.prepare(
-            'SELECT id, email, subscribed_at, status FROM email_subscribers ORDER BY subscribed_at DESC LIMIT 100'
+        const emails = await env.FAST_TAKEOFF_NEWS_DB.prepare(
+            'SELECT id, email, subscribed_at, status, frequency, name FROM newsletter_subscriptions ORDER BY subscribed_at DESC LIMIT 100'
         ).all();
 
         return NextResponse.json({
