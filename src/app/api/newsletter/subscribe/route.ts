@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createEmailService } from '@/lib/data/email-service';
+import { createServerEmailService } from '@/lib/data/email-service-server';
 
 // Removed edge runtime to enable Cloudflare Email Workers compatibility
 // Email Workers require full Cloudflare Workers runtime, not Next.js edge runtime
@@ -81,7 +81,7 @@ export async function POST(request: NextRequest) {
       .run();
 
     // Send welcome email
-    const emailService = createEmailService(env);
+    const emailService = createServerEmailService(env);
     
     const welcomeHtml = `
       <!DOCTYPE html>
@@ -150,7 +150,7 @@ export async function POST(request: NextRequest) {
     try {
       const env = (request as any).cf?.env || process.env;
       if (env) {
-        const emailService = createEmailService(env);
+        const emailService = createServerEmailService(env);
         await emailService.sendErrorAlert(
           error instanceof Error ? error : new Error('Unknown subscription error'),
           'Newsletter subscription failed'

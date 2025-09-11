@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createEmailService } from '@/lib/data/email-service';
+import { createServerEmailService } from '@/lib/data/email-service-server';
 
 // Removed edge runtime to enable Cloudflare Email Workers compatibility
 // Email Workers require full Cloudflare Workers runtime, not Next.js edge runtime
@@ -102,7 +102,7 @@ export async function POST(request: NextRequest) {
 
     // Send confirmation email
     try {
-      const emailService = createEmailService(env);
+      const emailService = createServerEmailService(env);
       
       const confirmationHtml = `
         <!DOCTYPE html>
