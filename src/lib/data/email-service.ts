@@ -3,7 +3,9 @@
 
 // Type definition for EmailMessage (matches Cloudflare Workers EmailMessage)
 export interface EmailMessage {
-  constructor(from: string, to: string, raw: string): EmailMessage;
+  from: string;
+  to: string;
+  raw: string;
 }
 
 // Type for the mimetext message builder
@@ -73,8 +75,8 @@ export class EmailService {
       }
 
       return { 
-        EmailMessage: EmailMessage as any,
-        createMimeMessage: createMimeMessage as any
+        EmailMessage: EmailMessage as new (from: string, to: string, raw: string) => EmailMessage,
+        createMimeMessage: createMimeMessage as () => MimeMessage
       };
     } catch (error) {
       throw new Error(`Failed to import email modules - ensure running in Cloudflare Workers environment: ${error instanceof Error ? error.message : 'Unknown error'}`);

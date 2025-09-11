@@ -12,7 +12,7 @@ interface UnsubscribeRequest {
 
 export async function POST(request: NextRequest) {
   try {
-    const env = (request as any).cf?.env || process.env;
+    const env = (request as unknown as { cf?: { env: unknown } }).cf?.env || process.env;
     const db = env?.FAST_TAKEOFF_NEWS_DB;
     
     if (!db) {
@@ -75,7 +75,7 @@ export async function POST(request: NextRequest) {
           `)
           .bind(subscription.email, reason, new Date().toISOString())
           .run();
-      } catch (feedbackError) {
+      } catch {
         // Table might not exist, create it
         await db
           .prepare(`

@@ -15,7 +15,7 @@ interface EmailRequest {
 export async function POST(request: NextRequest) {
   try {
     // Get the Cloudflare environment from the request context
-    const env = (request as any).cf?.env || process.env;
+    const env = (request as unknown as { cf?: { env: unknown } }).cf?.env || process.env;
     
     if (!env) {
       return NextResponse.json(
@@ -53,7 +53,7 @@ export async function POST(request: NextRequest) {
       try {
         const newsletterData = JSON.parse(message);
         await emailService.sendNewsletterEmail(to, newsletterData);
-      } catch (parseError) {
+      } catch {
         return NextResponse.json(
           { error: 'Invalid newsletter data format' },
           { status: 400 }

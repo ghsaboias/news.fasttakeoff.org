@@ -16,7 +16,7 @@ interface SubscriptionRequest {
 export async function POST(request: NextRequest) {
   try {
     // Get environment and database from request context
-    const env = (request as any).cf?.env || process.env;
+    const env = (request as unknown as { cf?: { env: unknown } }).cf?.env || process.env;
     const db = env?.DB; // Your existing D1 database binding
     
     if (!env || !db) {
@@ -148,7 +148,7 @@ export async function POST(request: NextRequest) {
     
     // Try to send error notification to admins
     try {
-      const env = (request as any).cf?.env || process.env;
+      const env = (request as unknown as { cf?: { env: unknown } }).cf?.env || process.env;
       if (env) {
         const emailService = createServerEmailService(env);
         await emailService.sendErrorAlert(
@@ -183,7 +183,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const env = (request as any).cf?.env || process.env;
+    const env = (request as unknown as { cf?: { env: unknown } }).cf?.env || process.env;
     const db = env?.DB;
 
     if (!db) {
