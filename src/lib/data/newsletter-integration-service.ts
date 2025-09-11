@@ -1,5 +1,5 @@
 import { Report } from '@/lib/types/core';
-import { createEmailService, NewsletterData } from './email-service';
+import { createServerEmailService, NewsletterData } from './email-service-server';
 import { Cloudflare } from '../../../worker-configuration';
 
 export interface NewsletterSubscription {
@@ -27,7 +27,7 @@ export class NewsletterIntegrationService {
     skipped: number;
     errors: number;
   }> {
-    const emailService = createEmailService(this.env);
+    const emailService = createServerEmailService(this.env);
     const db = this.env.FAST_TAKEOFF_NEWS_DB;
     
     if (!db) {
@@ -42,7 +42,7 @@ export class NewsletterIntegrationService {
       // Get active subscribers based on frequency and report timing
       const subscribers = await this.getEligibleSubscribers(report, db);
       
-      console.log(`[NEWSLETTER] Found ${subscribers.length} eligible subscribers for report: ${report.report_id}`);
+      console.log(`[NEWSLETTER] Found ${subscribers.length} eligible subscribers for report: ${report.reportId}`);
 
       // Process subscribers in batches to avoid overwhelming the email service
       const batchSize = 10;
@@ -61,7 +61,7 @@ export class NewsletterIntegrationService {
             const newsletterData: NewsletterData = {
               headline: report.headline,
               summary: this.generateEmailSummary(report),
-              reportUrl: `https://news.fasttakeoff.org/reports/${report.report_id}`,
+              reportUrl: `https://news.fasttakeoff.org/reports/${report.reportId}`,
               unsubscribeUrl: `https://news.fasttakeoff.org/newsletter/unsubscribe?token=${subscriber.verification_token}`
             };
 
@@ -98,7 +98,7 @@ export class NewsletterIntegrationService {
       try {
         await emailService.sendErrorAlert(
           error instanceof Error ? error : new Error('Newsletter sending failed'),
-          `Report: ${report.report_id}`
+          `Report: ${report.reportId}`
         );
       } catch (alertError) {
         console.error('[NEWSLETTER] Failed to send error alert:', alertError);
@@ -115,13 +115,11 @@ export class NewsletterIntegrationService {
    */
   private async getEligibleSubscribers(
     report: Report,
-    db: any
+    db: typeof this.env.FAST_TAKEOFF_NEWS_DB
   ): Promise<NewsletterSubscription[]> {
     const now = new Date();
-    const reportTime = new Date(report.generated_at);
     
     // Different time thresholds for different frequencies
-    const instantThreshold = new Date(now.getTime() - 15 * 60 * 1000); // 15 minutes ago
     const dailyThreshold = new Date(now.getTime() - 24 * 60 * 60 * 1000); // 24 hours ago
     const weeklyThreshold = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000); // 7 days ago
 
@@ -141,14 +139,14 @@ export class NewsletterIntegrationService {
       .bind(dailyThreshold.toISOString(), weeklyThreshold.toISOString())
       .all();
 
-    return result.results.map((row: any) => ({
-      email: row.email,
-      name: row.name,
-      frequency: row.frequency,
-      topics: row.topics ? JSON.parse(row.topics) : [],
-      status: row.status,
-      last_sent: row.last_sent,
-      verification_token: row.verification_token
+    return result.results.map((row: Record<string, unknown>) => ({
+      email: row.email as string,
+      name: row.name as string | undefined,
+      frequency: row.frequency as 'instant' | 'daily' | 'weekly',
+      topics: row.topics ? JSON.parse(row.topics as string) : [],
+      status: row.status as 'active' | 'paused' | 'unsubscribed',
+      last_sent: row.last_sent as string | undefined,
+      verification_token: row.verification_token as string
     }));
   }
 
@@ -189,7 +187,7 @@ export class NewsletterIntegrationService {
    */
   private isReportImportant(report: Report): boolean {
     const importantChannels = ['ukraine-russia-live', 'us-politics-live', 'breaking-news'];
-    const reportChannel = report.channel_name?.toLowerCase() || '';
+    const reportChannel = report.channelName?.toLowerCase() || '';
     
     // Check if from important channel
     if (importantChannels.some(channel => reportChannel.includes(channel))) {
@@ -197,7 +195,7 @@ export class NewsletterIntegrationService {
     }
 
     // Check message count threshold
-    if (report.message_count >= 10) {
+    if (report.messageCount && report.messageCount >= 10) {
       return true;
     }
 
@@ -259,7 +257,7 @@ export class NewsletterIntegrationService {
   /**
    * Create newsletter subscription table (run once during setup)
    */
-  async createNewsletterTable(db: any): Promise<void> {
+  async createNewsletterTable(db: typeof this.env.FAST_TAKEOFF_NEWS_DB): Promise<void> {
     await db
       .prepare(`
         CREATE TABLE IF NOT EXISTS newsletter_subscriptions (
