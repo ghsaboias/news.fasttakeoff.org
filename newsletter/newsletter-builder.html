@@ -290,7 +290,6 @@
         <p>Generate fresh newsletter data from Discord channels, then select images for each story.</p>
         
         <button class="export-btn" onclick="generateData()" id="generateDataBtn" style="background: #059669; margin-right: 10px;">🔄 Get Newsletter Data</button>
-        <button class="export-btn" onclick="loadNewsletter()" id="loadNewsletterBtn" style="background: #1f2937; margin-right: 10px;">📰 Generate Newsletter</button>
         
         <div id="statusMessage"></div>
         
@@ -559,9 +558,14 @@
                 const result = await response.json();
                 
                 if (result.success) {
-                    status.innerHTML = '<p style="color: #059669; margin: 10px 0;">✅ Newsletter data generated successfully! Click "Generate Newsletter" below.</p>';
-                    // Enable the next button
-                    document.getElementById('loadNewsletterBtn').disabled = false;
+                    // If data was returned, use it directly
+                    if (result.data) {
+                        newsletterData = result.data;
+                        buildDynamicNewsletter();
+                        status.innerHTML = '<p style="color: #059669; margin: 10px 0;">✅ Newsletter loaded! Select images and export when ready.</p>';
+                    } else {
+                        status.innerHTML = '<p style="color: #059669; margin: 10px 0;">✅ Newsletter data generated successfully!</p>';
+                    }
                 } else {
                     throw new Error(result.error || 'Unknown error');
                 }

@@ -18,7 +18,7 @@ app.use(express.static(path.join(__dirname, '..')));
 app.post('/api/generate-newsletter', (req, res) => {
   console.log('🔄 Starting newsletter generation...');
   
-  const scriptPath = path.join(__dirname, '..', 'scripts', 'generate-newsletter-data-kv.js');
+  const scriptPath = path.join(__dirname, '..', 'scripts', 'generate-newsletter-data.js');
   
   // Run the newsletter generation script
   exec(`node "${scriptPath}"`, { 
@@ -36,11 +36,25 @@ app.post('/api/generate-newsletter', (req, res) => {
     }
     
     console.log('✅ Newsletter generation completed');
-    res.json({ 
-      success: true, 
-      output: stdout,
-      stderr: stderr 
-    });
+    
+    // Read the generated newsletter data and return it
+    try {
+      const dataPath = path.join(__dirname, '..', 'newsletter-data.json');
+      const newsletterData = JSON.parse(require('fs').readFileSync(dataPath, 'utf8'));
+      res.json({ 
+        success: true, 
+        data: newsletterData,
+        output: stdout,
+        stderr: stderr 
+      });
+    } catch (readError) {
+      console.error('❌ Failed to read generated data:', readError);
+      res.json({ 
+        success: true, 
+        output: stdout,
+        stderr: stderr 
+      });
+    }
   });
 });
 
