@@ -119,7 +119,14 @@ Quick Rules
 - View evaluation metrics in `REPORTS_CACHE` under keys like `window_eval_metrics:2025-09-08`
 - Monitor overlap prevention via console logs: `[WINDOW_EVAL] Skipping report for channelId: X% overlap with recent report`
 - Dynamic reports have `generation_trigger = 'dynamic'` in database vs `'scheduled'` for fixed intervals
-- List available message channels: `npx wrangler kv key list --namespace-id a51ee099a3cb42eca2e143005e0b2558 --remote` (use --remote flag to access production data)
+### Production KV Namespaces
+- **MESSAGES_CACHE**: `b3ca706f58e44201a1f3d362c358cd1c` 
+- **REPORTS_CACHE**: `1907c22aa1e24a0e98f995ffcbb7b9aa`
+
+**Common Commands:**
+- List message channels: `npx wrangler kv key list --namespace-id b3ca706f58e44201a1f3d362c358cd1c --remote`
+- List reports: `npx wrangler kv key list --namespace-id 1907c22aa1e24a0e98f995ffcbb7b9aa --remote`
+- Get messages for channel: `npx wrangler kv key get "messages:CHANNEL_ID" --namespace-id b3ca706f58e44201a1f3d362c358cd1c --remote`
 
 ### Prompt Quality Analysis Workflow
 **Test/Iterate/Verify Flow for Dynamic Report Generation:**
