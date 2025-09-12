@@ -1,4 +1,4 @@
-import { Report } from '@/lib/types/core';
+import { Report } from '@/lib/types/reports';
 import { Cloudflare, KVNamespace } from '../../worker-configuration';
 import { TIME, URLs } from './config';
 import { OpenRouterImageService } from './openrouter-image-service';

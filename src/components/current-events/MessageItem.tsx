@@ -2,7 +2,7 @@
 
 import { LocalDateTimeFull } from "@/components/utils/LocalDateTime";
 import { TIME } from "@/lib/config";
-import { DiscordMessage } from "@/lib/types/core";
+import { DiscordMessage } from "@/lib/types/discord";
 import { detectTelegramUrls } from "@/lib/utils";
 import { detectTweetUrls } from "@/lib/utils/twitter-utils";
 import Image from "next/image";

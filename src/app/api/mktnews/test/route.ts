@@ -1,6 +1,6 @@
 import { withErrorHandling } from '@/lib/api-utils';
 import { MktNewsService } from '@/lib/data/mktnews-service';
-import { PiServerStatsResponse } from '@/lib/types/core';
+import { PiServerStatsResponse } from '@/lib/types/external-apis';
 
 /**
  * POST /api/mktnews/test

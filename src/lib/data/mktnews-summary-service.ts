@@ -2,7 +2,8 @@ import { Cloudflare } from '../../../worker-configuration';
 import { getAIAPIKey, getAIProviderConfig } from '../ai-config';
 import { CacheManager } from '../cache-utils';
 import { AI, CACHE, TIME } from '../config';
-import { MktNewsMessage, MktNewsSummary, OpenAIResponse } from '../types/core';
+import { MktNewsMessage, MktNewsSummary } from '../types/mktnews';
+import { OpenAIResponse } from '../types/external-apis';
 import { MktNewsService } from './mktnews-service';
 
 export class MktNewsSummaryService {

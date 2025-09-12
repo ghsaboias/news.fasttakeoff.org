@@ -1,6 +1,6 @@
 import { withErrorHandling } from '@/lib/api-utils';
 import { MktNewsService } from '@/lib/data/mktnews-service';
-import { MktNewsMessage } from '@/lib/types/core';
+import { MktNewsMessage } from '@/lib/types/mktnews';
 import { NextResponse } from 'next/server';
 
 interface IngestRequest {

@@ -1,7 +1,8 @@
 import { withErrorHandling } from '@/lib/api-utils';
 import { NextResponse } from 'next/server';
 import { ServiceFactory } from '@/lib/services/ServiceFactory';
-import { DiscordMessage, Report } from '@/lib/types/core';
+import { DiscordMessage } from '@/lib/types/discord';
+import { Report } from '@/lib/types/reports';
 
 type NewsletterImage = {
   url: string;

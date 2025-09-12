@@ -1,5 +1,5 @@
 import { CACHE, TIME } from '@/lib/config';
-import { CachedMktNews, MktNewsMessage } from '@/lib/types/core';
+import { CachedMktNews, MktNewsMessage } from '@/lib/types/mktnews';
 import { Cloudflare } from '../../../worker-configuration';
 import { CacheManager } from '../cache-utils';
 

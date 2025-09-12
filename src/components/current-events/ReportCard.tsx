@@ -3,7 +3,7 @@
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import LocalDateTime from "@/components/utils/LocalDateTime";
-import { Report } from "@/lib/types/core";
+import { Report } from "@/lib/types/reports";
 import Link from "next/link";
 import React, { useMemo } from "react";
 import LinkBadge from "./LinkBadge";

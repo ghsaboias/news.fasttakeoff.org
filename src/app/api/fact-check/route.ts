@@ -1,7 +1,7 @@
 import { withErrorHandling } from '@/lib/api-utils';
 import { CacheManager } from '@/lib/cache-utils';
 import { ServiceFactory } from '@/lib/services/ServiceFactory';
-import { FactCheckResult } from '@/lib/types/core';
+import { FactCheckResult } from '@/lib/types/reports';
 import { PerplexityFactCheckService } from '@/lib/utils/fact-check-service';
 import { NextRequest, NextResponse } from 'next/server';
 

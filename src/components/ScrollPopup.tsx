@@ -2,7 +2,7 @@
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { ApiErrorResponse } from "@/lib/types/core"
+import { ApiErrorResponse } from "@/lib/types/external-apis"
 import { X } from "lucide-react"
 import { useState, useCallback, useEffect } from "react"
 

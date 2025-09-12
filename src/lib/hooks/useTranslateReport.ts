@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { TranslationResponse } from '../types/core';
+import { TranslationResponse } from '../types/external-apis';
 
 interface TranslatedContent {
     headline?: string;

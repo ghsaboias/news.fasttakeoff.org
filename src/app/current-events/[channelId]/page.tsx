@@ -1,5 +1,6 @@
 import { ServiceFactory } from '@/lib/services/ServiceFactory';
-import { DiscordChannel, Report } from '@/lib/types/core';
+import { DiscordChannel } from '@/lib/types/discord';
+import { Report } from '@/lib/types/reports';
 import { getCacheContext } from '@/lib/utils';
 import { notFound } from 'next/navigation';
 import ChannelDetailClient from './ChannelDetailClient';

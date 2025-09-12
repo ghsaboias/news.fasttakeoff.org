@@ -1,7 +1,7 @@
 'use client';
 import { TIME } from '@/lib/config';
 
-import { TweetEmbed as TweetEmbedType } from '@/lib/types/core';
+import { TweetEmbed as TweetEmbedType } from '@/lib/types/social-media';
 import { detectTweetUrls } from '@/lib/utils/twitter-utils';
 import React, { useCallback, useEffect, useRef, useState, useMemo } from 'react';
 

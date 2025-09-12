@@ -1,6 +1,6 @@
 "use client";
 
-import { DiscordMessage } from "@/lib/types/core";
+import { DiscordMessage } from "@/lib/types/discord";
 import MessageItem from "./MessageItemTimeline";
 
 interface MessageTimelineProps {

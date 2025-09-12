@@ -1,7 +1,7 @@
 import { withErrorHandling } from '@/lib/api-utils';
 import { CacheManager } from '@/lib/cache-utils';
 import { ServiceFactory } from '@/lib/services/ServiceFactory';
-import { Report, ReportResponse } from '@/lib/types/core';
+import { Report, ReportResponse } from '@/lib/types/reports';
 import { NextRequest, NextResponse } from 'next/server';
 import { Cloudflare } from '../../../../worker-configuration';
 

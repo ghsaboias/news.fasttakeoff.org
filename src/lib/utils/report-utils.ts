@@ -1,5 +1,6 @@
 import { AI } from '@/lib/config';
-import { DiscordMessage, Report } from '@/lib/types/core';
+import { DiscordMessage } from '@/lib/types/discord';
+import { Report } from '@/lib/types/reports';
 
 /**
  * Formats a date into human-readable format: "Jun 14th, 2025, 3:45 PM UTC"

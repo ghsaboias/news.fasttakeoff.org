@@ -2,7 +2,8 @@
 
 import { Popover, PopoverArrow, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { LocalDateTimeFull } from '@/components/utils/LocalDateTime';
-import { DiscordMessage, SourceAttribution } from '@/lib/types/core';
+import { DiscordMessage } from '@/lib/types/discord';
+import { SourceAttribution } from '@/lib/types/reports';
 import { detectTelegramUrls } from '@/lib/utils';
 import { detectTweetUrls } from '@/lib/utils/twitter-utils';
 import Image from 'next/image';

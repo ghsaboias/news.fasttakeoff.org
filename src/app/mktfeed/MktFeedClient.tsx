@@ -7,7 +7,7 @@ import ReactMarkdown from '@/components/ui/dynamic-markdown';
 import { Loader } from '@/components/ui/loader';
 import LocalDateTime from '@/components/utils/LocalDateTime';
 import { useApi } from '@/lib/hooks';
-import { MktNewsMessage, MktNewsSummary } from '@/lib/types/core';
+import { MktNewsMessage, MktNewsSummary } from '@/lib/types/mktnews';
 import { Clock, RefreshCw, TrendingUp } from 'lucide-react';
 import Image from 'next/image';
 import { useRouter, useSearchParams } from 'next/navigation';

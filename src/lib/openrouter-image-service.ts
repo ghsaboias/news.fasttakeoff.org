@@ -1,5 +1,5 @@
 import { Cloudflare } from '../../worker-configuration';
-import { OpenRouterImageResponse } from './types/core';
+import { OpenRouterImageResponse } from './types/external-apis';
 
 export class OpenRouterImageService {
     private readonly apiKey: string;

@@ -7,7 +7,7 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { LocalDateTimeFull } from '@/components/utils/LocalDateTime';
 import { BRAZIL_NEWS_TOPICS } from '@/lib/config';
 import { useApi } from '@/lib/hooks';
-import { SummaryResult } from '@/lib/types/core';
+import { SummaryResult } from '@/lib/types/feeds';
 import { useEffect, useState } from 'react';
 
 // Helper function to convert bullet points in text to proper markdown list items

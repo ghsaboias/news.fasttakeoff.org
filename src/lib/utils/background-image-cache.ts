@@ -1,5 +1,5 @@
 import { TIME, URLs } from '@/lib/config';
-import type { Report } from '@/lib/types/core';
+import type { Report } from '@/lib/types/reports';
 import type { Cloudflare } from '../../../worker-configuration';
 import { OpenRouterImageService } from '@/lib/openrouter-image-service';
 

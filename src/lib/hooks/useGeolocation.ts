@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { GeolocationResponse } from '../types/core';
+import { GeolocationResponse } from '../types/external-apis';
 
 interface UseGeolocationOptions {
     /** Initial value before geo data is loaded. Defaults to null for loading state */

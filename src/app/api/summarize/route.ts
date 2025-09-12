@@ -1,6 +1,6 @@
 import { getAIAPIKey, getAIProviderConfig } from '@/lib/ai-config';
 import { FeedsService } from '@/lib/data/feeds-service';
-import { ExecutiveOrder } from '@/lib/types/core';
+import { ExecutiveOrder } from '@/lib/types/executive-orders';
 import { getCacheContext } from '@/lib/utils';
 import { NextResponse } from 'next/server';
 

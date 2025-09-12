@@ -3,7 +3,7 @@ import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 import { Cloudflare } from '../../worker-configuration';
 import { TIME } from './config';
-import { Report } from "./types/core";
+import { Report } from "./types/reports";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))

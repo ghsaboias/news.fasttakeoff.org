@@ -5,28 +5,77 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import type { 
-  EssentialDiscordMessage, 
-  MessageTransformResult,
-  MigrationDryRunResult,
-  MigrationValidationResult,
-  MigrationResult,
-  MigrationBatchConfig
-} from '@/lib/types/messages-migration';
 import type { DiscordMessage } from '@/lib/types/discord';
-import type { 
-  ID1MessagesService, 
-  IHybridMessagesService, 
-  IMessagesMigrationService,
-  IMessageTransformer 
-} from '@/lib/interfaces/messages-services';
-import type { Cloudflare } from '../../../worker-configuration';
+
+// TODO: These types don't exist yet - this is a TDD file for future migration functionality
+// import type { 
+//   MessageTransformResult,
+//   MigrationDryRunResult,
+//   MigrationValidationResult,
+//   MigrationResult,
+//   MigrationBatchConfig,
+//   EssentialDiscordMessage
+// } from '@/lib/types/database';
+// import type { MessagesServiceInterface } from '@/lib/types/services';
+
+// Temporary type definitions for TDD
+interface EssentialDiscordMessage {
+  id: string;
+  content: string;
+  timestamp: string;
+  channel_id: string;
+  author_username: string;
+  author_discriminator: string;
+  author_global_name: string | null;
+  referenced_message_content: string | null;
+  embeds: any[];
+  attachments: any[];
+}
+
+interface MessageTransformResult {
+  success: boolean;
+  transformed?: EssentialDiscordMessage;
+  error?: string;
+}
+
+interface MigrationDryRunResult {
+  channelId: string;
+  messageCount: number;
+  estimatedDuration: number;
+  potentialIssues: string[];
+  storageReduction: number;
+}
+
+interface MigrationValidationResult {
+  kvCount: number;
+  d1Count: number;
+  checksumMatch: boolean;
+  sampleValidation: { allMatch: boolean };
+  functionalityTest: { passed: boolean };
+}
+
+interface MigrationResult {
+  success: boolean;
+  migratedCount: number;
+  failedCount: number;
+}
+
+interface MigrationBatchConfig {
+  batchSize?: number;
+  onProgress?: (progress: number) => void;
+}
+
+// Mock Cloudflare environment for testing
+type MockEnv = {
+  FAST_TAKEOFF_NEWS_DB: any;
+  MESSAGES_CACHE: any;
+};
 
 // Mock environment - similar to existing tests
-const mockEnv: Cloudflare.Env = {
+const mockEnv: MockEnv = {
   FAST_TAKEOFF_NEWS_DB: {} as any,
   MESSAGES_CACHE: {} as any,
-} as any;
+};
 
 describe('Phase 1: Core Types and Interfaces', () => {
   describe('EssentialDiscordMessage Type', () => {
@@ -238,7 +287,7 @@ describe('Phase 1: Hybrid Messages Service Interface', () => {
     it('should maintain backward compatibility with current MessagesService API', async () => {
       // This ensures existing code continues to work
       await expect(async () => {
-        const hybridService: IHybridMessagesService = new HybridMessagesService(mockEnv);
+        const hybridService = new HybridMessagesService(mockEnv);
         
         // These methods must exist to maintain compatibility
         const messages = await hybridService.getMessages('channel-123', { limit: 10 });
@@ -338,7 +387,7 @@ describe('Phase 1: Migration Service Requirements', () => {
 });
 
 // Mock classes that will need to be implemented
-declare class MessageTransformer implements IMessageTransformer {
+declare class MessageTransformer {
   constructor();
   transformToEssential(message: DiscordMessage, channelId: string): EssentialDiscordMessage;
   transformToDisplay(essential: EssentialDiscordMessage): any;
@@ -346,8 +395,8 @@ declare class MessageTransformer implements IMessageTransformer {
   calculateStorageReduction(original: any, transformed: EssentialDiscordMessage): number;
 }
 
-declare class D1MessagesService implements ID1MessagesService {
-  constructor(env: Cloudflare.Env);
+declare class D1MessagesService {
+  constructor(env: MockEnv);
   createMessage(message: EssentialDiscordMessage): Promise<void>;
   getMessageById(messageId: string): Promise<EssentialDiscordMessage | null>;
   getMessagesByChannel(channelId: string, options?: any): Promise<EssentialDiscordMessage[]>;
@@ -360,21 +409,21 @@ declare class D1MessagesService implements ID1MessagesService {
   getMessageTimeRange(channelId: string): Promise<{ oldest: Date | null; newest: Date | null }>;
 }
 
-declare class HybridMessagesService implements IHybridMessagesService {
-  constructor(env: Cloudflare.Env);
-  getMessages(channelId: string, options?: any): Promise<EssentialDiscordMessage[]>;
-  getMessagesInTimeWindow(channelId: string, start: Date, end: Date): Promise<EssentialDiscordMessage[]>;
-  getMessagesForReport(channelId: string, messageIds: string[]): Promise<EssentialDiscordMessage[]>;
-  getCachedMessagesSince(channelId: string, since: Date): Promise<EssentialDiscordMessage[]>;
-  getAllCachedMessagesForChannel(channelId: string): Promise<EssentialDiscordMessage[]>;
-  cacheMessages(channelId: string, messages: EssentialDiscordMessage[], channelName?: string): Promise<void>;
+declare class HybridMessagesService {
+  constructor(env: MockEnv);
+  getMessages(channelId: string, options?: any): Promise<DiscordMessage[]>;
+  getMessagesInTimeWindow(channelId: string, start: Date, end: Date): Promise<DiscordMessage[]>;
+  getMessagesForReport(channelId: string, messageIds: string[]): Promise<DiscordMessage[]>;
+  getCachedMessagesSince(channelId: string, since: Date): Promise<DiscordMessage[]>;
+  getAllCachedMessagesForChannel(channelId: string): Promise<DiscordMessage[]>;
+  cacheMessages(channelId: string, messages: DiscordMessage[], channelName?: string): Promise<void>;
   updateMessages(local?: boolean): Promise<void>;
   getCacheStats(): Promise<any>;
   clearCache(channelId: string): Promise<void>;
 }
 
-declare class MessagesMigrationService implements IMessagesMigrationService {
-  constructor(env: Cloudflare.Env);
+declare class MessagesMigrationService {
+  constructor(env: MockEnv);
   dryRun(channelId: string): Promise<MigrationDryRunResult>;
   migrateChannel(channelId: string, config?: MigrationBatchConfig): Promise<MigrationResult>;
   migrateAllChannels(config?: MigrationBatchConfig): Promise<MigrationResult[]>;

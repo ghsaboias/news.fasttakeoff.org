@@ -1,5 +1,5 @@
 import { RSS_FEEDS } from '@/lib/config';
-import { FeedItem } from '@/lib/types/core';
+import { FeedItem } from '@/lib/types/feeds';
 import Parser from 'rss-parser';
 
 // Feeds known to publish naive UTC timestamps (no timezone in pubDate)

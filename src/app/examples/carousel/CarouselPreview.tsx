@@ -1,6 +1,7 @@
 "use client";
 import { URLs } from '@/lib/config';
-import type { ImageResponse, Report } from '@/lib/types/core';
+import type { ImageResponse } from '@/lib/types/external-apis';
+import type { Report } from '@/lib/types/reports';
 import Image from 'next/image';
 import { useMemo, useState } from 'react';
 

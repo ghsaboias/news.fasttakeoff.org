@@ -1,6 +1,6 @@
 import { Cloudflare } from '../../../worker-configuration';
 import { TIME } from '../config';
-import { DiscordChannel } from '../types/core';
+import { DiscordChannel } from '../types/discord';
 import { ServiceFactory } from '../services/ServiceFactory';
 
 export class SitemapService {

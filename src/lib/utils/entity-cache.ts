@@ -1,5 +1,5 @@
 import { CACHE } from '@/lib/config';
-import { EntityExtractionResult } from '@/lib/types/core';
+import { EntityExtractionResult } from '@/lib/types/entities';
 import { Cloudflare } from '../../../worker-configuration';
 import { CacheManager } from '../cache-utils';
 

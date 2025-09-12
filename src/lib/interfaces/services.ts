@@ -1,4 +1,6 @@
-import { DiscordMessage, Report, ReportRow, DiscordChannel } from '@/lib/types/core';
+import { DiscordMessage, DiscordChannel } from '@/lib/types/discord';
+import { Report } from '@/lib/types/reports';
+import { ReportRow } from '@/lib/types/database';
 
 /**
  * Service Interfaces - Contracts for dependency injection

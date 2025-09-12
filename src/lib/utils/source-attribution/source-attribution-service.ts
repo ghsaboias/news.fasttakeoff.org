@@ -1,6 +1,7 @@
 import { CacheManager } from '@/lib/cache-utils';
 import { CACHE } from '@/lib/config';
-import { DiscordMessage, Report, ReportSourceAttribution } from '@/lib/types/core';
+import { DiscordMessage } from '@/lib/types/discord';
+import { Report, ReportSourceAttribution } from '@/lib/types/reports';
 import { Cloudflare } from '../../../../worker-configuration';
 import { SourceAttributionAI } from './source-attribution-ai';
 

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { GraphEntitiesResponse } from '../types/core';
+import { GraphEntitiesResponse } from '../types/entities';
 
 interface Entity {
     type: 'person' | 'company' | 'fund';

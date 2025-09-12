@@ -7,7 +7,7 @@ import { Loader } from "@/components/ui/loader";
 import { Separator } from "@/components/ui/separator";
 import { fetchExecutiveOrders } from "@/lib/data/executive-orders";
 import { useApi } from "@/lib/hooks";
-import { ExecutiveOrder } from "@/lib/types/core";
+import { ExecutiveOrder } from "@/lib/types/executive-orders";
 import { getStartDate } from "@/lib/utils";
 import { useCallback, useMemo, useState } from "react";
 

@@ -1,7 +1,7 @@
 import { CacheManager } from '@/lib/cache-utils';
 import { TIME } from '@/lib/config';
 import { ServiceFactory } from '@/lib/services/ServiceFactory';
-import { CachedMessages } from '@/lib/types/core';
+import { CachedMessages } from '@/lib/types/reports';
 import { getCacheContext } from '@/lib/utils';
 import { NextResponse } from 'next/server';
 

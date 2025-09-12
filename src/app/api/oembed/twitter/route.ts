@@ -1,7 +1,7 @@
 import { withErrorHandling } from '@/lib/api-utils';
 import { CacheManager } from '@/lib/cache-utils';
 import { TIME } from '@/lib/config';
-import { TweetEmbed, TweetEmbedCache, TwitterOEmbedResponse } from '@/lib/types/core';
+import { TweetEmbed, TweetEmbedCache, TwitterOEmbedResponse } from '@/lib/types/social-media';
 import { extractTweetId, isValidTweetUrl, normalizeTweetUrl } from '@/lib/utils/twitter-utils';
 
 /**

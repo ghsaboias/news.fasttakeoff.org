@@ -1,6 +1,8 @@
 import { getAIAPIKey, getAIProviderConfig } from '@/lib/ai-config';
 import { AI } from '@/lib/config';
-import { DiscordMessage, OpenAIResponse, Report } from '@/lib/types/core';
+import { DiscordMessage } from '@/lib/types/discord';
+import { OpenAIResponse } from '@/lib/types/external-apis';
+import { Report } from '@/lib/types/reports';
 import { v4 as uuidv4 } from 'uuid';
 import { Cloudflare } from '../../../worker-configuration';
 import { createPrompt, isReportTruncated, formatPreviousReportForContext, formatSingleMessage, formatHumanReadableTimestamp } from './report-utils';

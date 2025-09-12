@@ -1,4 +1,4 @@
-import { Agency, ExecutiveOrder } from './core';
+import { Agency, ExecutiveOrder } from './executive-orders';
 
 export interface FederalRegisterAgency extends Omit<Agency, 'parentId'> {
     json_url?: string;

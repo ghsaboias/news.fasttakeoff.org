@@ -2,7 +2,9 @@ import { Cloudflare } from '../../../worker-configuration';
 import { getAIAPIKey, getAIProviderConfig } from '../ai-config';
 import { CacheManager } from '../cache-utils';
 import { AI, CACHE, TIME } from '../config';
-import { ExecutiveSummary, OpenAIResponse, Report, ReportRow } from '../types/core';
+import { ExecutiveSummary, Report } from '../types/reports';
+import { OpenAIResponse } from '../types/external-apis';
+import { ReportRow } from '../types/database';
 import { ReportCacheD1 } from '../utils/report-cache-d1';
 
 export class ExecutiveSummaryService {

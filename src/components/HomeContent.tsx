@@ -5,7 +5,9 @@ import OrderCard from "@/components/executive-orders/OrderCard"
 import ExecutiveSummary from "@/components/ExecutiveSummary"
 import ReportCardSkeleton from "@/components/skeletons/ReportCardSkeleton"
 import { useGeolocation } from "@/lib/hooks/useGeolocation"
-import { ExecutiveOrder, ExecutiveSummary as ExecutiveSummaryType, Report } from "@/lib/types/core"
+import { ExecutiveOrder } from "@/lib/types/executive-orders"
+import { ExecutiveSummary as ExecutiveSummaryType } from "@/lib/types/reports"
+import { Report } from "@/lib/types/reports"
 import Link from "next/link"
 
 interface HomeContentProps {

@@ -1,5 +1,6 @@
 import { API, CACHE, DISCORD, TIME } from '@/lib/config';
-import { CachedMessages, DiscordMessage } from '@/lib/types/core';
+import { CachedMessages } from '@/lib/types/reports';
+import { DiscordMessage } from '@/lib/types/discord';
 import { Cloudflare } from '../../../worker-configuration';
 import { CacheManager } from '../cache-utils';
 import { ChannelsService } from './channels-service';

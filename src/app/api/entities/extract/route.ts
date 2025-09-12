@@ -1,7 +1,7 @@
 import { withErrorHandling } from '@/lib/api-utils';
 import { TIME } from '@/lib/config';
 import { ServiceFactory } from '@/lib/services/ServiceFactory';
-import { EnhancedReport } from '@/lib/types/core';
+import { EnhancedReport } from '@/lib/types/reports';
 import { groupAndSortReports } from '@/lib/utils';
 import { EntityExtractor } from '@/lib/utils/entity-extraction';
 import { NextResponse } from 'next/server';

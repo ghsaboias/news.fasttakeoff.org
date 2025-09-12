@@ -1,7 +1,8 @@
 import { Cloudflare } from '../../worker-configuration';
 import { TIME, URLs } from './config';
 import { OpenRouterImageService } from './openrouter-image-service';
-import { InstagramMediaResponse, InstagramPublishResponse, Report } from './types/core';
+import { InstagramMediaResponse, InstagramPublishResponse } from './types/social-media';
+import { Report } from './types/reports';
 import { getOrCreateBackgroundUrl } from './utils/background-image-cache';
 const WEBSITE_URL = URLs.WEBSITE_URL;
 

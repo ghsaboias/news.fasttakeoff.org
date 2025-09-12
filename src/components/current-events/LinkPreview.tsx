@@ -1,7 +1,7 @@
 "use client"
 
 import { useApi } from "@/lib/hooks";
-import { LinkPreview as LinkPreviewType } from "@/lib/types/core";
+import { LinkPreview as LinkPreviewType } from "@/lib/types/external-apis";
 import { ExternalLink } from "lucide-react";
 import Image from "next/image";
 import { useMemo } from "react";

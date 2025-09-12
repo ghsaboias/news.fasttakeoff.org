@@ -1,4 +1,5 @@
-import { ChannelMessageCounts, DiscordMessage } from '@/lib/types/core';
+import { ChannelMessageCounts } from '@/lib/types/reports';
+import { DiscordMessage } from '@/lib/types/discord';
 import { Cloudflare } from '../../../worker-configuration';
 import { CacheManager } from '../cache-utils';
 import { TIME } from '../config';

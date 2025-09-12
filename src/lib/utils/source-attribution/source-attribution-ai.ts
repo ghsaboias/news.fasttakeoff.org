@@ -1,6 +1,7 @@
 import { getAIAPIKey, getAIProviderConfig } from '@/lib/ai-config';
 import { AI } from '@/lib/config';
-import { DiscordMessage, Report, ReportSourceAttribution, SourceAttribution } from '@/lib/types/core';
+import { DiscordMessage } from '@/lib/types/discord';
+import { Report, ReportSourceAttribution, SourceAttribution } from '@/lib/types/reports';
 import { formatSingleMessage } from '@/lib/utils/report-utils';
 import { Cloudflare } from '../../../../worker-configuration';
 

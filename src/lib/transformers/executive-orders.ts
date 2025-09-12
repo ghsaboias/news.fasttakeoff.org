@@ -1,5 +1,5 @@
 import { FederalRegisterAgency, FederalRegisterOrder } from '../types/api';
-import { Agency, Content, DocumentLinks, DocumentMetadata, ExecutiveOrder, Image, Publication } from '../types/core';
+import { Agency, Content, DocumentLinks, DocumentMetadata, ExecutiveOrder, Image, Publication } from '../types/executive-orders';
 
 export function transformAgency(agency: FederalRegisterAgency): Agency {
     return {

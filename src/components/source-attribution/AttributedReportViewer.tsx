@@ -1,7 +1,8 @@
 'use client';
 
 import { useApi } from '@/lib/hooks';
-import { DiscordMessage, ReportSourceAttribution } from '@/lib/types/core';
+import { DiscordMessage } from '@/lib/types/discord';
+import { ReportSourceAttribution } from '@/lib/types/reports';
 import { useCallback, useEffect } from 'react';
 import { InteractiveReportBody } from './InteractiveReportBody';
 

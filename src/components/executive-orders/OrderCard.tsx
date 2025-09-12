@@ -1,4 +1,4 @@
-import { ExecutiveOrder } from "@/lib/types/core";
+import { ExecutiveOrder } from "@/lib/types/executive-orders";
 import { formatDate } from "@/lib/utils";
 import Link from "next/link";
 import { Button } from "../ui/button";

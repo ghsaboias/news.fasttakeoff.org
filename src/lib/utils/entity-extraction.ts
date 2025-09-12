@@ -1,6 +1,6 @@
 import { getAIAPIKey, getAIProviderConfig } from '@/lib/ai-config';
 import { AI } from '@/lib/config';
-import { EntityExtractionResult, ExtractedEntity } from '@/lib/types/core';
+import { EntityExtractionResult, ExtractedEntity } from '@/lib/types/entities';
 import { Cloudflare } from '../../../worker-configuration';
 import { EntityCache } from './entity-cache';
 

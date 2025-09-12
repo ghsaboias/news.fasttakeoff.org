@@ -1,5 +1,5 @@
 import { ApiResponse, FederalRegisterOrder, FederalRegisterResponse } from '@/lib/types/api';
-import { ExecutiveOrder } from '@/lib/types/core';
+import { ExecutiveOrder } from '@/lib/types/executive-orders';
 import { Cloudflare } from '../../../worker-configuration';
 import { CacheManager } from '../cache-utils';
 import { TIME } from '../config';

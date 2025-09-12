@@ -1,7 +1,7 @@
 import { withErrorHandling } from '@/lib/api-utils';
 import { TwitterService } from '@/lib/twitter-service';
 import { OpenRouterImageService } from '@/lib/openrouter-image-service';
-import { Report } from '@/lib/types/core';
+import { Report } from '@/lib/types/reports';
 
 export async function POST(request: Request) {
     return withErrorHandling(async (env) => {

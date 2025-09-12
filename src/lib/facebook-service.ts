@@ -1,6 +1,7 @@
 import { Cloudflare } from '../../worker-configuration';
 import { URLs } from './config';
-import { FacebookPageResponse, FacebookPostResponse, Report } from './types/core';
+import { FacebookPageResponse, FacebookPostResponse } from './types/social-media';
+import { Report } from './types/reports';
 
 const WEBSITE_URL = URLs.WEBSITE_URL;
 

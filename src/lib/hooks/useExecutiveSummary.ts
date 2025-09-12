@@ -1,5 +1,5 @@
 import { useCallback } from 'react';
-import type { ExecutiveSummary } from '../types/core';
+import type { ExecutiveSummary } from '../types/reports';
 import { useApi } from './useApi';
 
 interface UseExecutiveSummaryOptions {

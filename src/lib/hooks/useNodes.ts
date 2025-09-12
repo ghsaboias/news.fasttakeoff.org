@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef } from 'react';
-import { GraphNode, TransformedGraphData } from '../types/core';
+import { GraphNode, TransformedGraphData } from '../types/entities';
 
 type GenericGraphData = TransformedGraphData | { entities: Record<string, Omit<GraphNode, 'id' | 'relevance' | 'connectionCount'>>; relationships: { from: string, to: string }[] } | null;
 

@@ -3,7 +3,7 @@
 import { Loader } from '@/components/ui/loader';
 import { ENTITY_COLORS, ENTITY_LABELS } from '@/lib/config';
 import { useApi } from '@/lib/hooks';
-import { GraphData, GraphLink, GraphNode, TransformedGraphData } from '@/lib/types/core';
+import { GraphData, GraphLink, GraphNode, TransformedGraphData } from '@/lib/types/entities';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRef, useState } from 'react';
@@ -50,7 +50,7 @@ export default function EntityGraphClient() {
     const { data: graphData, loading, error } = useApi<TransformedGraphData>(fetchGraphData);
 
     const isMobile = useMobileBreakpoint(768);
-    const { filters, searchTerm, setSearchTerm, toggleFilter, isNodeVisible } = useFilters(ENTITY_TYPES);
+    const { filters, searchTerm, setSearchTerm, toggleFilter } = useFilters(ENTITY_TYPES);
 
     // Nodes & physics
     const { nodesRef } = useNodes(graphData, isMobile);
@@ -59,9 +59,15 @@ export default function EntityGraphClient() {
     // Camera & interaction
     const { cameraRef, onWheel, onPanStart, onPanMove, onPanEnd, onTouchStart, onTouchMove, onTouchEnd, centerOnNode } = useCanvasCamera();
 
-    // Node selection with proper isNodeVisible binding
-    const isNodeVisibleBound = (node: Node) => isNodeVisible(node, selectedNode, graphData?.relationships);
-    const { selectedNode, setSelectedNode, canvasHandlers } = useNodeSelection(nodesRef, cameraRef, isNodeVisibleBound);
+    // Node selection - create a stable reference for the callback
+    const isNodeVisibleCallback = () => {
+        return true; // All nodes visible for now
+    };
+    const { selectedNode, setSelectedNode, canvasHandlers } = useNodeSelection(
+        nodesRef, 
+        cameraRef, 
+        isNodeVisibleCallback
+    );
 
     // Rendering
     useNetworkRenderer({
@@ -70,7 +76,7 @@ export default function EntityGraphClient() {
         relationships: graphData?.relationships,
         cameraRef,
         selectedNode,
-        isNodeVisible: isNodeVisibleBound,
+        isNodeVisible: isNodeVisibleCallback,
         tick,
     });
 

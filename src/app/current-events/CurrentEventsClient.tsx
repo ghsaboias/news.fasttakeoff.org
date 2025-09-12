@@ -13,7 +13,7 @@ import {
     SelectValue,
 } from "@/components/ui/select";
 import { useApi } from "@/lib/hooks";
-import { Report } from "@/lib/types/core";
+import { Report } from "@/lib/types/reports";
 import { FilterX } from "lucide-react";
 import { useMemo, useState } from "react";
 

@@ -51,6 +51,17 @@ export interface PiServerStatsResponse {
   uptime?: number;
 }
 
+// Link Preview Types
+export interface LinkPreview {
+    url: string;
+    title?: string;
+    description?: string;
+    image?: string;
+    siteName?: string;
+    domain: string;
+    cachedAt: string;
+}
+
 // Generic API Response Types
 export interface ApiErrorResponse {
   error?: string;

@@ -4,7 +4,7 @@ import TweetEmbed from "@/components/current-events/DynamicTweetEmbed";
 import MediaPreview from "@/components/current-events/MediaPreview";
 import { AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { LocalDateTimeFull } from "@/components/utils/LocalDateTime";
-import { DiscordMessage } from "@/lib/types/core";
+import { DiscordMessage } from "@/lib/types/discord";
 import Image from "next/image";
 import React from "react";
 

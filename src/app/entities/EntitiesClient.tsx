@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Loader } from '@/components/ui/loader';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ExtractedEntity } from '@/lib/types/core';
+import { ExtractedEntity } from '@/lib/types/entities';
 import { ArrowLeft, RefreshCw, Search } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';

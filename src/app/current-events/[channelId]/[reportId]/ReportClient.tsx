@@ -14,7 +14,8 @@ import {
 import { Loader } from "@/components/ui/loader";
 import { LocalDateTimeFull } from "@/components/utils/LocalDateTime";
 import { useApi, useTranslateReport, type LanguageCode } from "@/lib/hooks";
-import { DiscordMessage, ReportResponse } from "@/lib/types/core";
+import { DiscordMessage } from "@/lib/types/discord";
+import { ReportResponse } from "@/lib/types/reports";
 import {
     ArrowLeft,
     Check,

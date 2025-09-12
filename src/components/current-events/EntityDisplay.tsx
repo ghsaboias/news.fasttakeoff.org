@@ -2,7 +2,7 @@
 
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ExtractedEntity } from '@/lib/types/core';
+import { ExtractedEntity } from '@/lib/types/entities';
 
 interface EntityDisplayProps {
     entities: ExtractedEntity[];

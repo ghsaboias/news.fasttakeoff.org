@@ -2,7 +2,8 @@
 
 import ReportCard from "@/components/current-events/ReportCard";
 import { Button } from "@/components/ui/button";
-import { DiscordChannel, Report } from "@/lib/types/core";
+import { DiscordChannel } from "@/lib/types/discord";
+import { Report } from "@/lib/types/reports";
 import { ArrowLeft, MessageSquare } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";

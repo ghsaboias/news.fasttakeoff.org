@@ -1,5 +1,6 @@
 import { CACHE, TIME } from '@/lib/config';
-import { Report, ReportRow } from '@/lib/types/core';
+import { Report } from '@/lib/types/reports';
+import { ReportRow } from '@/lib/types/database';
 import { groupAndSortReports } from '@/lib/utils';
 import type { Cloudflare } from '../../../worker-configuration';
 

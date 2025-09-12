@@ -3,7 +3,7 @@
 import MessageTimeline from "@/components/current-events/timeline/MessageTimeline";
 import { Button } from "@/components/ui/button";
 import { Loader } from "@/components/ui/loader";
-import { DiscordChannel, DiscordMessage } from "@/lib/types/core";
+import { DiscordChannel, DiscordMessage } from "@/lib/types/discord";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";

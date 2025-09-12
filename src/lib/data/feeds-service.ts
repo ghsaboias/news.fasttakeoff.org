@@ -1,6 +1,7 @@
 import { CacheManager } from '@/lib/cache-utils';
 import { CACHE, TIME } from '@/lib/config';
-import { FeedItem, OpenAIResponse, SelectedStory, SummaryInputData, SummaryResult, UnselectedStory } from '@/lib/types/core';
+import { OpenAIResponse } from '@/lib/types/external-apis';
+import { FeedItem, SelectedStory, SummaryInputData, SummaryResult, UnselectedStory } from '@/lib/types/feeds';
 import { Cloudflare } from '../../../worker-configuration';
 import { getAIAPIKey, getAIProviderConfig } from '../ai-config';
 import { AI } from '../config';

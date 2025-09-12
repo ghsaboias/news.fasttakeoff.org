@@ -1,4 +1,7 @@
-import { DiscordMessage, EntityExtractionResult, Report, ReportRow } from '@/lib/types/core';
+import { DiscordMessage } from '@/lib/types/discord';
+import { EntityExtractionResult } from '@/lib/types/entities';
+import { Report } from '@/lib/types/reports';
+import { ReportRow } from '@/lib/types/database';
 import { Cloudflare } from '../../../worker-configuration';
 import { CacheManager } from '../cache-utils';
 import { FacebookService } from '../facebook-service';

@@ -1,5 +1,5 @@
 import { DISCORD } from '@/lib/config';
-import { DiscordMessage } from '@/lib/types/core';
+import { DiscordMessage } from '@/lib/types/discord';
 
 /**
  * Centralized message filtering service

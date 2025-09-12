@@ -14,7 +14,7 @@
  */
 import { withErrorHandling } from '@/lib/api-utils';
 import { ServiceFactory } from '@/lib/services/ServiceFactory';
-import { ExtractedEntity, GraphLink, GraphNode } from '@/lib/types/core';
+import { ExtractedEntity, GraphLink, GraphNode } from '@/lib/types/entities';
 import { EntityExtractor } from '@/lib/utils/entity-extraction';
 import { NextResponse } from 'next/server';
 

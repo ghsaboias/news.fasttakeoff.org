@@ -1,6 +1,6 @@
 import { withErrorHandling } from '@/lib/api-utils';
 import { ServiceFactory } from '@/lib/services/ServiceFactory';
-import { ReportRow } from '@/lib/types/core';
+import { ReportRow } from '@/lib/types/database';
 
 export async function POST(request: Request) {
     return withErrorHandling(

@@ -1,6 +1,7 @@
 'use client';
 
-import { DiscordMessage, ReportSourceAttribution } from '@/lib/types/core';
+import { DiscordMessage } from '@/lib/types/discord';
+import { ReportSourceAttribution } from '@/lib/types/reports';
 import React, { useMemo } from 'react';
 import { SourceTooltip } from './SourceTooltip';
 

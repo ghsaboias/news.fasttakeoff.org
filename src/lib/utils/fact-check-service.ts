@@ -1,6 +1,7 @@
 import { CacheManager } from '@/lib/cache-utils';
 import { AI, TIME } from '@/lib/config';
-import { FactCheckResult, OpenAIResponse, Report } from '@/lib/types/core';
+import { OpenAIResponse } from '@/lib/types/external-apis';
+import { FactCheckResult, Report } from '@/lib/types/reports';
 import { Cloudflare } from '../../../worker-configuration';
 import { getAIAPIKey, getAIProviderConfig } from '../ai-config';
 
