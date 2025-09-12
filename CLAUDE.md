@@ -183,6 +183,9 @@ Quick Rules
 - List reports: `npx wrangler kv key list --namespace-id 1907c22aa1e24a0e98f995ffcbb7b9aa --remote`
 - Get messages for channel: `npx wrangler kv key get "messages:CHANNEL_ID" --namespace-id b3ca706f58e44201a1f3d362c358cd1c --remote`
 
+### Messages Migration Status (Active)
+Currently migrating Discord messages storage from KV to D1 hybrid architecture. Migration analysis and tools located in `messages_d1_migration/` (gitignored). Phase 1 complete - see migration docs for progress and implementation details.
+
 ### Prompt Quality Analysis Workflow
 **Test/Iterate/Verify Flow for Dynamic Report Generation:**
 
