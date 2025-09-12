@@ -40,7 +40,27 @@ Phase 1 establishes the Test-Driven Development foundation for migrating Discord
 - **Migration process** - Dry-run, validation, rollback
 - **Performance requirements** - Time windows, batch operations
 
-## Essential Properties Analysis
+### 4. **Discord Message Analysis** (Generated Analysis Files)
+- **Property Analysis** (`discord_message_analysis.txt`) - Complete breakdown of 5 production messages
+- **Image URL Validator** (`image_url_validator.html`) - Live testing of 34 image URLs with timestamps
+- **Timestamp Extraction** (`corrected_timestamps.json`) - Complete timeline data for all images
+- **Property Counter** (`check_max_props.js`) - Automated analysis tool for message complexity
+
+## Discord Message Property Analysis
+
+### **Comprehensive Analysis Completed**
+- **Production Data Analyzed**: 5 complete Discord messages from production KV storage
+- **Total Properties Found**: 106+ unique properties across all messages (vs 84 documented)
+- **Complete Property Catalog**: Generated detailed analysis with examples (`discord_message_analysis.txt`)
+- **Image URL Validation**: Created HTML validator testing 34 unique image URLs with complete timestamp data
+- **Timestamp Extraction**: All messages contain 3 timestamp types (embed, referenced, main) - 100% coverage
+
+### **Key Discoveries**
+- **Enhanced Attachments**: `title`, `original_content_type` properties provide better file handling
+- **Reactions Support**: `emoji.name`, `count`, `count_details` for engagement tracking  
+- **Image URL Reliability**: Twitter (pbs.twimg.com), Discord CDN, Telegram URLs tested across domains
+- **Complete Timestamp Coverage**: Every image has full timeline from original post to Discord
+- **Nested Complexity**: Messages with 163 properties (reactions + multiple attachments) vs simpler 95-property messages
 
 ### **Properties Kept (26 total)**
 
@@ -88,12 +108,13 @@ Phase 1 establishes the Test-Driven Development foundation for migrating Discord
 ## Success Metrics
 
 ### **Storage Optimization**
-- **69% storage reduction** (84 → 26 properties)
-- **4x message capacity** increase per KV channel
+- **68% storage reduction** (84 → 27 properties)
+- **3.8x message capacity** increase per KV channel
 - **Eliminate KV limits** - no more binary search trimming
 
 ### **Enhanced Functionality**
 - **Full-size image support** for newsletters (`embeds[].image.*`)
+- **Engagement tracking** via lightweight reaction summaries
 - **Indexed D1 queries** for better performance on historical data
 - **Hybrid caching** for optimal recent message performance
 

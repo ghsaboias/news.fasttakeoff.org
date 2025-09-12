@@ -3,7 +3,7 @@
 ## Project Structure & Modules
 - `src/app`: Next.js App Router pages and API routes.
 - `src/components`: Reusable UI (shadcn/Radix-based) in PascalCase files.
-- `src/lib`: Core logic — `data/` services (Discord, feeds, EOs), `utils/`, `transformers/`, `types/`.
+- `src/lib`: Core logic — `data/` services (Discord, feeds, EOs), `utils/`, `transformers/`, `types/` (domain-organized).
 - `public/`: Static assets.
 - `tests/`: Vitest tests (`tests/**/*.test.ts`) with `tests/setup.ts`.
 - `scripts/`: Local utilities and model/scoring tools.
@@ -17,6 +17,30 @@
 - `bun run lint`: ESLint (Next + TypeScript rules).
 - `bun run test` / `bun run test:unit`: Run all/unit tests; `bun run test:watch` to watch.
 - `bun run cf-typegen`: Generate Cloudflare env typings after binding/env changes.
+
+## TypeScript Type Organization
+
+The codebase uses **domain-organized types** for better maintainability and clear boundaries:
+
+```
+src/lib/types/
+├── core.ts              # Session, LinkPreview (truly shared only)
+├── discord.ts            # DiscordMessage, DiscordChannel, etc.
+├── reports.ts            # Report, ReportResponse, ReportRow, etc.
+├── entities.ts           # ExtractedEntity, GraphNode, etc.
+├── social-media.ts       # TweetEmbed, FacebookPostResponse, etc.
+├── feeds.ts              # FeedItem, SummaryResult, etc.
+├── mktnews.ts            # MktNewsMessage, CachedMktNews, etc.
+├── database.ts           # Database schema types
+├── external-apis.ts      # OpenAI, geolocation, etc.
+├── executive-orders.ts   # Executive Orders domain types
+└── api.ts               # Federal Register API types
+```
+
+**Import Guidelines:**
+- Use domain-specific imports: `import { DiscordMessage } from '@/lib/types/discord'`
+- Avoid importing from `@/lib/types/core` unless using Session or LinkPreview
+- Group imports by domain when possible for clarity
 
 ## Dynamic Report Generation System
 

@@ -429,7 +429,7 @@ src/
 │   │       ├── source-attribution-ai.ts       # AI-powered attribution generation
 │   │       └── index.ts                       # Attribution exports
 │   ├── transformers/     # Data transformation (e.g., executive-orders.ts)
-│   ├── types/            # TypeScript interfaces (e.g., core.ts)
+│   ├── types/            # Domain-organized TypeScript interfaces
 │   ├── instagram-service.ts         # Instagram API integration
 │   ├── twitter-service.ts           # Twitter API integration
 │   ├── facebook-service.ts          # Facebook API integration

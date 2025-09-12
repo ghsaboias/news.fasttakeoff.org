@@ -388,7 +388,7 @@ export function GET(): Promise<NextResponse<{ error: string; }> | NextResponse<{
 ## src/app/api/entities/extract/route.ts
 
 ```typescript
-Imports: @/lib/api-utils, @/lib/data/report-service, @/lib/types/core, @/lib/utils, @/lib/utils/entity-extraction, next/server
+Imports: @/lib/api-utils, @/lib/data/report-service, @/lib/types/reports, @/lib/types/entities, @/lib/utils, @/lib/utils/entity-extraction, next/server
 /**
 POST /api/entities/extract
 Triggers entity extraction for the latest batch of reports that lack entity data.
@@ -403,7 +403,7 @@ export function POST(): Promise<NextResponse<unknown>>
 ## src/app/api/entities/route.ts
 
 ```typescript
-Imports: @/lib/api-utils, @/lib/data/report-service, @/lib/types/core, @/lib/utils/entity-extraction, next/server
+Imports: @/lib/api-utils, @/lib/data/report-service, @/lib/types/reports, @/lib/types/entities, @/lib/utils/entity-extraction, next/server
 export function POST(request: Request): Promise<NextResponse<unknown>>
 export function GET(request: Request): Promise<NextResponse<unknown>>
 ```
@@ -432,7 +432,7 @@ export function GET(): Promise<NextResponse<unknown>>;
 ## src/app/api/fact-check/route.ts
 
 ```typescript
-Imports: @/lib/api-utils, @/lib/cache-utils, @/lib/data/report-service, @/lib/types/core, @/lib/utils/fact-check-service, next/server
+Imports: @/lib/api-utils, @/lib/cache-utils, @/lib/data/report-service, @/lib/types/reports, @/lib/types/external-apis, @/lib/utils/fact-check-service, next/server
 /**
 GET /api/fact-check
 Retrieves a fact-check result for a specific report.
@@ -509,7 +509,7 @@ export function GET(request: Request): Promise<import("/Users/guilhermesaboia/Do
 ## src/app/api/messages/heatmap/route.ts
 
 ```typescript
-Imports: @/lib/cache-utils, @/lib/data/channels-service, @/lib/types/core, @/lib/utils, next/server
+Imports: @/lib/cache-utils, @/lib/data/channels-service, @/lib/types/discord, @/lib/utils, next/server
 export function GET(): Promise<NextResponse<{ error: string; }> | NextResponse<HeatmapResponse>>
 ```
 
@@ -531,14 +531,14 @@ export function GET(request: Request): Promise<import("/Users/guilhermesaboia/Do
 ## src/app/api/oembed/twitter/route.ts
 
 ```typescript
-Imports: @/lib/api-utils, @/lib/cache-utils, @/lib/types/core, @/lib/utils/twitter-utils
+Imports: @/lib/api-utils, @/lib/cache-utils, @/lib/types/social-media, @/lib/utils/twitter-utils
 export function GET(request: Request): Promise<import("/Users/guilhermesaboia/Documents/fasttakeoff/news.fasttakeoff.org/node_modules/next/server").NextResponse<unknown>>
 ```
 
 ## src/app/api/prompt-test/route.ts
 
 ```typescript
-Imports: @/lib/ai-config, @/lib/config, @/lib/data/channels-service, @/lib/data/messages-service, @/lib/types/core, fs, next/server, path, uuid, ../../../../worker-configuration
+Imports: @/lib/ai-config, @/lib/config, @/lib/data/channels-service, @/lib/data/messages-service, @/lib/types/discord, @/lib/types/external-apis, fs, next/server, path, uuid, ../../../../worker-configuration
 export function GET(request: Request): Promise<NextResponse<{ channels: import("/Users/guilhermesaboia/Documents/fasttakeoff/news.fasttakeoff.org/src/lib/types/core").DiscordChannel[]; }> | NextResponse<{ sets: { id: any; channel: any; messages: any; created: any; }[]; }> | NextResponse<{ error: string; }>>
 export function POST(request: Request): Promise<NextResponse<{ error: string; }> | NextResponse<{ testSet: { id: string; created_at: string; messages: DiscordMessage[]; metadata: { channelId: any; channelName: string; timeframe: any; messageCount: number; timeRange: { start: string; end: string; }; }; }; }> | NextResponse<{ result: Report; }>>
 ```
@@ -546,7 +546,7 @@ export function POST(request: Request): Promise<NextResponse<{ error: string; }>
 ## src/app/api/reports/route.ts
 
 ```typescript
-Imports: @/lib/api-utils, @/lib/cache-utils, @/lib/config, @/lib/data/report-service, @/lib/types/core, next/server
+Imports: @/lib/api-utils, @/lib/cache-utils, @/lib/config, @/lib/data/report-service, @/lib/types/reports, next/server
 /**
 GET /api/reports
 Fetches reports and associated messages for a channel or all channels.
@@ -675,7 +675,7 @@ export function GET(): Promise<NextResponse<{ key: string; createdAt: string; }[
 ## src/app/api/summarize/route.ts
 
 ```typescript
-Imports: @/lib/ai-config, @/lib/data/feeds-service, @/lib/types/core, @/lib/utils, next/server
+Imports: @/lib/ai-config, @/lib/data/feeds-service, @/lib/types/feeds, @/lib/types/external-apis, @/lib/utils, next/server
 export function POST(req: Request): Promise<NextResponse<{ error: string; }> | NextResponse<{ summary: string; }>>
 export function GET(): Promise<NextResponse<import("/Users/guilhermesaboia/Documents/fasttakeoff/news.fasttakeoff.org/src/lib/types/core").SummaryResult> | NextResponse<{ error: string; }>>
 ```
@@ -683,7 +683,7 @@ export function GET(): Promise<NextResponse<import("/Users/guilhermesaboia/Docum
 ## src/app/api/test-twitter/route.ts
 
 ```typescript
-Imports: @/lib/api-utils, @/lib/twitter-service, @/lib/types/core
+Imports: @/lib/api-utils, @/lib/twitter-service, @/lib/types/social-media
 export function POST(request: Request): Promise<import("/Users/guilhermesaboia/Documents/fasttakeoff/news.fasttakeoff.org/node_modules/next/server").NextResponse<unknown>>
 ```
 
@@ -713,7 +713,7 @@ export function POST(request: Request): Promise<NextResponse<unknown>>
 ## src/app/brazil/SummaryDisplay.tsx
 
 ```typescript
-Imports: @/components/ui/loader, @/components/ui/select, @/components/utils/LocalDateTime, @/lib/hooks, @/lib/types/core, react, react-markdown
+Imports: @/components/ui/loader, @/components/ui/select, @/components/utils/LocalDateTime, @/lib/hooks, @/lib/types/reports, react, react-markdown
 export function SummaryDisplay(): import("/Users/guilhermesaboia/Documents/fasttakeoff/news.fasttakeoff.org/node_modules/@types/react/index").JSX.Element | null
 ```
 
@@ -729,7 +729,7 @@ export function BRNewsPage(): Promise<import("/Users/guilhermesaboia/Documents/f
 ## src/app/current-events/CurrentEventsClient.tsx
 
 ```typescript
-Imports: @/components/current-events/ReportCard, @/components/ui/badge, @/components/ui/button, @/components/ui/input, @/components/ui/loader, @/components/ui/select, @/lib/hooks, @/lib/types/core, lucide-react, react
+Imports: @/components/current-events/ReportCard, @/components/ui/badge, @/components/ui/button, @/components/ui/input, @/components/ui/loader, @/components/ui/select, @/lib/hooks, @/lib/types/reports, @/lib/types/discord, lucide-react, react
 export interface Props {  reports: Report[];  isLoading?: boolean;
 }
 export function CurrentEventsClient({ reports: initialReports, isLoading = false }: Props): import("/Users/guilhermesaboia/Documents/fasttakeoff/news.fasttakeoff.org/node_modules/@types/react/index").JSX.Element
@@ -738,14 +738,14 @@ export function CurrentEventsClient({ reports: initialReports, isLoading = false
 ## src/app/current-events/[channelId]/ChannelDetailClient.tsx
 
 ```typescript
-Imports: @/components/current-events/ReportCard, @/components/ui/button, @/lib/types/core, lucide-react, next/link, next/navigation, react
+Imports: @/components/current-events/ReportCard, @/components/ui/button, @/lib/types/reports, @/lib/types/discord, lucide-react, next/link, next/navigation, react
 export function ChannelDetailClient({ reports, channel }: { reports: Report[]; channel: DiscordChannel | null }): import("/Users/guilhermesaboia/Documents/fasttakeoff/news.fasttakeoff.org/node_modules/@types/react/index").JSX.Element
 ```
 
 ## src/app/current-events/[channelId]/[reportId]/ReportClient.tsx
 
 ```typescript
-Imports: @/app/not-found, @/components/current-events/FactCheckDisplay, @/components/current-events/MessageItem, @/components/source-attribution, @/components/ui/button, @/components/ui/dropdown-menu, @/components/ui/loader, @/components/utils/LocalDateTime, @/lib/hooks, @/lib/types/core, lucide-react, next/link, next/navigation, react, react-masonry-css, sonner
+Imports: @/app/not-found, @/components/current-events/FactCheckDisplay, @/components/current-events/MessageItem, @/components/source-attribution, @/components/ui/button, @/components/ui/dropdown-menu, @/components/ui/loader, @/components/utils/LocalDateTime, @/lib/hooks, @/lib/types/reports, @/lib/types/discord, lucide-react, next/link, next/navigation, react, react-masonry-css, sonner
 export function ReportClient(): import("/Users/guilhermesaboia/Documents/fasttakeoff/news.fasttakeoff.org/node_modules/@types/react/index").JSX.Element
 ```
 
@@ -762,7 +762,7 @@ export function ReportDetailPage({ params }: { params: Promise<{ channelId: stri
 ## src/app/current-events/[channelId]/messages/MessagesClient.tsx
 
 ```typescript
-Imports: @/components/current-events/timeline/MessageTimeline, @/components/ui/button, @/components/ui/loader, @/lib/types/core, lucide-react, next/link, react
+Imports: @/components/current-events/timeline/MessageTimeline, @/components/ui/button, @/components/ui/loader, @/lib/types/discord, lucide-react, next/link, react
 export function MessagesClient({
     channelId
 }: MessagesClientProps): import("/Users/guilhermesaboia/Documents/fasttakeoff/news.fasttakeoff.org/node_modules/@types/react/index").JSX.Element
@@ -779,7 +779,7 @@ export function MessagesPage({ params }: PageProps): Promise<import("/Users/guil
 ## src/app/current-events/[channelId]/page.tsx
 
 ```typescript
-Imports: @/lib/data/channels-service, @/lib/data/report-service, @/lib/types/core, @/lib/utils, next/navigation, ./ChannelDetailClient
+Imports: @/lib/data/channels-service, @/lib/data/report-service, @/lib/types/reports, @/lib/types/discord, @/lib/utils, next/navigation, ./ChannelDetailClient
 export revalidate = 600
 export function generateStaticParams(): Promise<{ channelId: string; }[]>
 export function generateMetadata({ params }: { params: Promise<{ channelId: string }> }): Promise<{ title: string; description: string; alternates: { canonical: string; }; robots?: undefined; openGraph?: undefined; twitter?: undefined; } | { title: string; description: string; alternates: { canonical: string; }; robots: { index: boolean; follow: boolean; }; openGraph: { title: string; description: string; type: string; images: { url: string; width: number; height: number; alt: string; }[]; }; twitter: { card: string; title: string; description: string; images: { url: string; width: number; height: number; alt: string; type: string; }[]; }; }>
@@ -798,14 +798,14 @@ export function CurrentEventsPage(): Promise<import("/Users/guilhermesaboia/Docu
 ## src/app/entities/EntitiesClient.tsx
 
 ```typescript
-Imports: @/components/ui/badge, @/components/ui/button, @/components/ui/card, @/components/ui/input, @/components/ui/loader, @/components/ui/select, @/lib/types/core, lucide-react, next/link, react
+Imports: @/components/ui/badge, @/components/ui/button, @/components/ui/card, @/components/ui/input, @/components/ui/loader, @/components/ui/select, @/lib/types/entities, lucide-react, next/link, react
 export function EntitiesClient(): import("/Users/guilhermesaboia/Documents/fasttakeoff/news.fasttakeoff.org/node_modules/@types/react/index").JSX.Element
 ```
 
 ## src/app/entities/graph/EntityGraphClient.tsx
 
 ```typescript
-Imports: @/components/ui/loader, @/lib/config, @/lib/hooks, @/lib/types/core, next/image, next/link, react, ../../../lib/hooks
+Imports: @/components/ui/loader, @/lib/config, @/lib/hooks, @/lib/types/entities, next/image, next/link, react, ../../../lib/hooks
 export function EntityGraphClient(): import("/Users/guilhermesaboia/Documents/fasttakeoff/news.fasttakeoff.org/node_modules/@types/react/index").JSX.Element
 ```
 
@@ -836,14 +836,14 @@ export function EntitiesPage(): import("/Users/guilhermesaboia/Documents/fasttak
 ## src/app/executive-orders/ExecutiveOrdersClient.tsx
 
 ```typescript
-Imports: @/components/executive-orders/OrderCard, @/components/ui/button, @/components/ui/input, @/components/ui/loader, @/components/ui/separator, @/lib/data/executive-orders, @/lib/hooks, @/lib/types/core, @/lib/utils, react
+Imports: @/components/executive-orders/OrderCard, @/components/ui/button, @/components/ui/input, @/components/ui/loader, @/components/ui/separator, @/lib/data/executive-orders, @/lib/hooks, @/lib/types/executive-orders, @/lib/utils, react
 export function ClientExecutiveOrders({ initialOrders }: { initialOrders: ExecutiveOrder[] }): import("/Users/guilhermesaboia/Documents/fasttakeoff/news.fasttakeoff.org/node_modules/@types/react/index").JSX.Element
 ```
 
 ## src/app/executive-orders/[id]/ExecutiveOrderClient.tsx
 
 ```typescript
-Imports: @/components/ui/button, @/components/ui/loader, @/lib/data/executive-orders, @/lib/types/core, @/lib/utils, lucide-react, next/link, next/navigation, react, react-markdown
+Imports: @/components/ui/button, @/components/ui/loader, @/lib/data/executive-orders, @/lib/types/executive-orders, @/lib/utils, lucide-react, next/link, next/navigation, react, react-markdown
 export function ExecutiveOrderClient({
     initialOrder,
 }: {
@@ -965,7 +965,7 @@ export function NotFound(): import("/Users/guilhermesaboia/Documents/fasttakeoff
 ## src/app/page.tsx
 
 ```typescript
-Imports: @/components/HomeContent, @/lib/cache-utils, @/lib/data/report-service, @/lib/types/core, @/lib/utils, react
+Imports: @/components/HomeContent, @/lib/cache-utils, @/lib/data/report-service, @/lib/types/reports, @/lib/types/executive-orders, @/lib/utils, react
 export revalidate = 180
 export dynamic = 'force-dynamic'
 export function generateMetadata(): Promise<{ title: string; description: string; alternates: { canonical: string; }; }>
@@ -1062,7 +1062,7 @@ export function Header(): import("/Users/guilhermesaboia/Documents/fasttakeoff/n
 ## src/components/HomeContent.tsx
 
 ```typescript
-Imports: @/components/current-events/ReportCard, @/components/executive-orders/OrderCard, @/components/skeletons/ReportCardSkeleton, @/components/ui/button, @/components/ui/input, @/lib/hooks/useGeolocation, @/lib/types/core, next/link, react
+Imports: @/components/current-events/ReportCard, @/components/executive-orders/OrderCard, @/components/skeletons/ReportCardSkeleton, @/components/ui/button, @/components/ui/input, @/lib/hooks/useGeolocation, @/lib/types/reports, @/lib/types/executive-orders, next/link, react
 export function HomeContent({ initialReports, initialExecutiveOrders }: HomeContentProps): import("/Users/guilhermesaboia/Documents/fasttakeoff/news.fasttakeoff.org/node_modules/@types/react/index").JSX.Element
 ```
 
@@ -1144,7 +1144,7 @@ export function AuthProvider({ children }: PropsWithChildren): import("/Users/gu
 ## src/components/current-events/EntityDisplay.tsx
 
 ```typescript
-Imports: @/components/ui/badge, @/components/ui/card, @/lib/types/core
+Imports: @/components/ui/badge, @/components/ui/card, @/lib/types/entities
 export function EntityDisplay({ entities, showMentions = false, maxPerType = 5 }: EntityDisplayProps): import("/Users/guilhermesaboia/Documents/fasttakeoff/news.fasttakeoff.org/node_modules/@types/react/index").JSX.Element
 export function EntitySummary({ entities }: EntitySummaryProps): import("/Users/guilhermesaboia/Documents/fasttakeoff/news.fasttakeoff.org/node_modules/@types/react/index").JSX.Element | null
 ```
@@ -1152,7 +1152,7 @@ export function EntitySummary({ entities }: EntitySummaryProps): import("/Users/
 ## src/components/current-events/FactCheckDisplay.tsx
 
 ```typescript
-Imports: @/components/ui/badge, @/components/ui/button, @/components/ui/card, @/components/ui/loader, @/lib/hooks, @/lib/types/core, lucide-react, react, ./LinkPreview
+Imports: @/components/ui/badge, @/components/ui/button, @/components/ui/card, @/components/ui/loader, @/lib/hooks, @/lib/types/entities, @/lib/types/external-apis, lucide-react, react, ./LinkPreview
 export function FactCheckDisplay({ reportId, className, onDemandTrigger = false }: FactCheckDisplayProps): import("/Users/guilhermesaboia/Documents/fasttakeoff/news.fasttakeoff.org/node_modules/@types/react/index").JSX.Element
 ```
 
@@ -1166,7 +1166,7 @@ export function BadgeLink({ href, children, variant = "default", className }: Ba
 ## src/components/current-events/LinkPreview.tsx
 
 ```typescript
-Imports: @/lib/hooks, @/lib/types/core, lucide-react, next/image, react
+Imports: @/lib/hooks, @/lib/types/external-apis, lucide-react, next/image, react
 export function LinkPreview({ url, className = "" }: LinkPreviewProps): import("/Users/guilhermesaboia/Documents/fasttakeoff/news.fasttakeoff.org/node_modules/@types/react/index").JSX.Element
 ```
 
@@ -1180,14 +1180,14 @@ export function MediaPreview({ url, type, contentType, alt }: MediaPreviewProps)
 ## src/components/current-events/MessageItem.tsx
 
 ```typescript
-Imports: @/components/utils/LocalDateTime, @/lib/types/core, @/lib/utils, @/lib/utils/twitter-utils, next/image, next/link, react, ./MediaPreview, ./TelegramEmbed, ./TranslationBadge, ./TweetEmbed
+Imports: @/components/utils/LocalDateTime, @/lib/types/discord, @/lib/utils, @/lib/utils/twitter-utils, next/image, next/link, react, ./MediaPreview, ./TelegramEmbed, ./TranslationBadge, ./TweetEmbed
 export function MessageItem({ message, noAccordion = false, channelId }: MessageItemProps): import("/Users/guilhermesaboia/Documents/fasttakeoff/news.fasttakeoff.org/node_modules/@types/react/index").JSX.Element
 ```
 
 ## src/components/current-events/ReportCard.tsx
 
 ```typescript
-Imports: @/components/ui/badge, @/components/ui/card, @/components/utils/LocalDateTime, @/lib/config, @/lib/types/core, next/link, ./LinkBadge
+Imports: @/components/ui/badge, @/components/ui/card, @/components/utils/LocalDateTime, @/lib/config, @/lib/types/reports, next/link, ./LinkBadge
 export function ReportCard({
     report,
     clickableChannel = true,
@@ -1211,28 +1211,28 @@ export function TranslationBadge({ footerText, className = "" }: TranslationBadg
 ## src/components/current-events/TweetEmbed.tsx
 
 ```typescript
-Imports: @/lib/types/core, @/lib/utils/twitter-utils, react
+Imports: @/lib/types/social-media, @/lib/utils/twitter-utils, react
 export function TweetEmbed({ content, channelId, className = '', onEmbedFail }: TweetEmbedProps): import("/Users/guilhermesaboia/Documents/fasttakeoff/news.fasttakeoff.org/node_modules/@types/react/index").JSX.Element | null
 ```
 
 ## src/components/current-events/timeline/MessageItemTimeline.tsx
 
 ```typescript
-Imports: @/components/current-events/MediaPreview, @/components/current-events/TweetEmbed, @/components/ui/accordion, @/components/utils/LocalDateTime, @/lib/types/core, next/image, react
+Imports: @/components/current-events/MediaPreview, @/components/current-events/TweetEmbed, @/components/ui/accordion, @/components/utils/LocalDateTime, @/lib/types/discord, next/image, react
 export function MessageItemTimeline({ message, index, noAccordion = false, channelId }: MessageItemProps): React.JSX.Element
 ```
 
 ## src/components/current-events/timeline/MessageTimeline.tsx
 
 ```typescript
-Imports: @/lib/types/core, ./MessageItemTimeline
+Imports: @/lib/types/discord, ./MessageItemTimeline
 export function MessageTimeline({ messages, channelId }: MessageTimelineProps): import("/Users/guilhermesaboia/Documents/fasttakeoff/news.fasttakeoff.org/node_modules/@types/react/index").JSX.Element
 ```
 
 ## src/components/executive-orders/OrderCard.tsx
 
 ```typescript
-Imports: @/lib/types/core, @/lib/utils, next/link, ../ui/button, ../ui/card
+Imports: @/lib/types/reports, @/lib/utils, next/link, ../ui/button, ../ui/card
 export function OrderCard({ order }: { order: ExecutiveOrder }): import("/Users/guilhermesaboia/Documents/fasttakeoff/news.fasttakeoff.org/node_modules/@types/react/index").JSX.Element
 ```
 
@@ -1246,7 +1246,7 @@ export function ReportCardSkeleton(): import("/Users/guilhermesaboia/Documents/f
 ## src/components/source-attribution/AttributedReportViewer.tsx
 
 ```typescript
-Imports: @/lib/hooks, @/lib/types/core, react, ./InteractiveReportBody
+Imports: @/lib/hooks, @/lib/types/reports, react, ./InteractiveReportBody
 export function AttributedReportViewer({
     reportId,
     reportBody,
@@ -1261,7 +1261,7 @@ export function AttributedReportViewer({
 ## src/components/source-attribution/InteractiveReportBody.tsx
 
 ```typescript
-Imports: @/lib/types/core, react, ./SourceTooltip
+Imports: @/lib/types/reports, react, ./SourceTooltip
 export function InteractiveReportBody({
     reportBody,
     attributions,
@@ -1274,7 +1274,7 @@ export function InteractiveReportBody({
 ## src/components/source-attribution/SourceTooltip.tsx
 
 ```typescript
-Imports: @/components/ui/popover, @/components/utils/LocalDateTime, @/lib/types/core, @/lib/utils, @/lib/utils/twitter-utils, next/image, next/link, ../current-events/MediaPreview
+Imports: @/components/ui/popover, @/components/utils/LocalDateTime, @/lib/types/discord, @/lib/types/social-media, @/lib/utils, @/lib/utils/twitter-utils, next/image, next/link, ../current-events/MediaPreview
 export function SourceTooltip({ attribution, sourceMessages, children }: SourceTooltipProps): import("/Users/guilhermesaboia/Documents/fasttakeoff/news.fasttakeoff.org/node_modules/@types/react/index").JSX.Element
 ```
 
@@ -2263,7 +2263,7 @@ export function scheduled(event: ScheduledEvent, env: Cloudflare.Env): Promise<v
 ## src/lib/data/channels-service.ts
 
 ```typescript
-Imports: @/lib/config, @/lib/types/core, ../../../worker-configuration, ../cache-utils, ./messages-service
+Imports: @/lib/config, @/lib/types/discord, ../../../worker-configuration, ../cache-utils, ./messages-service
 export class ChannelsService
   filterChannels(channels: DiscordChannel[]): DiscordChannel[]
   fetchAllChannelsFromAPI(): Promise<DiscordChannel[]>
@@ -2278,7 +2278,7 @@ export function getChannelName(env: Cloudflare.Env, channelId: string): Promise<
 ## src/lib/data/executive-orders.ts
 
 ```typescript
-Imports: @/lib/types/api, @/lib/types/core, ../../../worker-configuration, ../cache-utils, ../transformers/executive-orders
+Imports: @/lib/types/api, @/lib/types/executive-orders, ../../../worker-configuration, ../cache-utils, ../transformers/executive-orders
 export function fetchExecutiveOrders(page: number = 1, startDate: string = '2025-01-20', category?: string): Promise<ApiResponse>
 export function fetchExecutiveOrderById(id: string, env?: Cloudflare.Env): Promise<ExecutiveOrder | null>
 export function findExecutiveOrderByNumber(eoNumber: string, date?: string, env?: Cloudflare.Env): Promise<string | null>
@@ -2287,7 +2287,7 @@ export function findExecutiveOrderByNumber(eoNumber: string, date?: string, env?
 ## src/lib/data/feeds-service.ts
 
 ```typescript
-Imports: @/lib/cache-utils, @/lib/config, @/lib/types/core, ../../../worker-configuration, ../ai-config, ../config, ./rss-service
+Imports: @/lib/cache-utils, @/lib/config, @/lib/types/feeds, @/lib/types/external-apis, ../../../worker-configuration, ../ai-config, ../config, ./rss-service
 export function summarizeFeed(input: SummaryInputData & { env: Cloudflare.Env }): Promise<SummaryResult>
 export function summarizeFeeds(feedIds: string[], env: Cloudflare.Env): Promise<SummaryResult>
 export class FeedsService
@@ -2302,7 +2302,7 @@ export class FeedsService
 ## src/lib/data/messages-service.ts
 
 ```typescript
-Imports: @/lib/config, @/lib/types/core, ../../../worker-configuration, ../cache-utils, ./channels-service
+Imports: @/lib/config, @/lib/types/discord, ../../../worker-configuration, ../cache-utils, ./channels-service
 export class MessagesService
   fetchBotMessagesFromAPI(channelId: string, sinceOverride?: Date): Promise<DiscordMessage[]>
   getMessages(channelId: string, options: { since?: Date; limit?: number } = {}): Promise<DiscordMessage[]>
@@ -2318,7 +2318,7 @@ export class MessagesService
 ## src/lib/data/report-service.ts
 
 ```typescript
-Imports: @/lib/config, @/lib/types/core, ../../../worker-configuration, ../facebook-service, ../instagram-service, ../twitter-service, ../utils/entity-extraction, ../utils/fact-check-service, ../utils/report-ai, ../utils/report-cache, ./channels-service, ./messages-service
+Imports: @/lib/config, @/lib/types/reports, @/lib/types/discord, @/lib/types/entities, @/lib/types/social-media, ../../../worker-configuration, ../facebook-service, ../instagram-service, ../twitter-service, ../utils/entity-extraction, ../utils/fact-check-service, ../utils/report-ai, ../utils/report-cache, ./channels-service, ./messages-service
 export class ReportService
   createDynamicReport(channelId: string, windowStart: Date, windowEnd: Date): Promise<{ report: Report | null; messages: DiscordMessage[]; }>
 /**
@@ -2354,7 +2354,7 @@ Useful for testing or when social media posting is not desired.
 ## src/lib/data/rss-service.ts
 
 ```typescript
-Imports: @/lib/config, @/lib/types/core, rss-parser
+Imports: @/lib/config, @/lib/types/feeds, rss-parser
 /**
 Returns the list of configured feed IDs.
 */
@@ -2578,7 +2578,7 @@ export function transformFederalRegisterOrders(orders: FederalRegisterOrder[]): 
 ## src/lib/twitter-service.ts
 
 ```typescript
-Imports: @/lib/types/core, ../../worker-configuration, ./config, ./utils/twitter-utils
+Imports: @/lib/types/social-media, ../../worker-configuration, ./config, ./utils/twitter-utils
 export class TwitterService
 /**
 Posts a single tweet with headline and URL
@@ -3100,7 +3100,7 @@ export interface OrderDetails {
 ## src/lib/utils/entity-cache.ts
 
 ```typescript
-Imports: @/lib/config, @/lib/types/core, ../../../worker-configuration, ../cache-utils
+Imports: @/lib/config, @/lib/types/entities, ../../../worker-configuration, ../cache-utils
 export class EntityCache
 /**
 Store entity extraction result for a report
@@ -3136,7 +3136,7 @@ Used when displaying reports with their entities
 ## src/lib/utils/entity-extraction.ts
 
 ```typescript
-Imports: @/lib/ai-config, @/lib/config, @/lib/types/core, ../../../worker-configuration, ./entity-cache
+Imports: @/lib/ai-config, @/lib/config, @/lib/types/entities, @/lib/types/external-apis, ../../../worker-configuration, ./entity-cache
 export interface EntityExtractionContext {  reportId?: string;  channelId?: string;  sourceType: 'report' | 'message' | 'summary';  processingHint?: string;
 }
 export class EntityExtractor
@@ -3183,7 +3183,7 @@ export function getEntityDetailLevel(entityId: string, entities: Record<string, 
 ## src/lib/utils/fact-check-service.ts
 
 ```typescript
-Imports: @/lib/cache-utils, @/lib/config, @/lib/types/core, ../../../worker-configuration, ../ai-config
+Imports: @/lib/cache-utils, @/lib/config, @/lib/types/external-apis, ../../../worker-configuration, ../ai-config
 export class PerplexityFactCheckService
 /**
 Fact-check a news report using Perplexity's real-time search capabilities
@@ -3206,7 +3206,7 @@ export class ImageService
 ## src/lib/utils/message-filter-service.ts
 
 ```typescript
-Imports: @/lib/config, @/lib/types/core
+Imports: @/lib/config, @/lib/types/discord
 /**
 Centralized message filtering service
 Provides various filters for processing Discord messages
@@ -3289,7 +3289,7 @@ Chain multiple filters together
 ## src/lib/utils/report-ai.ts
 
 ```typescript
-Imports: @/lib/ai-config, @/lib/config, @/lib/types/core, uuid, ../../../worker-configuration, ./report-utils
+Imports: @/lib/ai-config, @/lib/config, @/lib/types/reports, @/lib/types/external-apis, uuid, ../../../worker-configuration, ./report-utils
 export interface ReportContext {  channelId: string;  channelName: string;  messageCount: number;  timeframe: string;
 }
 export class ReportAI
@@ -3299,7 +3299,7 @@ export class ReportAI
 ## src/lib/utils/report-cache.ts
 
 ```typescript
-Imports: @/lib/config, @/lib/types/core, @/lib/utils, ../../../worker-configuration, ../cache-utils
+Imports: @/lib/config, @/lib/types/reports, @/lib/utils, ../../../worker-configuration, ../cache-utils
 export class ReportCache
   store(channelId: string, timeframe: string, reports: Report[], env: Cloudflare.Env): Promise<void>
   get(channelId: string, timeframe: string, env: Cloudflare.Env): Promise<Report[] | null>
@@ -3314,7 +3314,7 @@ export class ReportCache
 ## src/lib/utils/report-utils.ts
 
 ```typescript
-Imports: @/lib/config, @/lib/types/core
+Imports: @/lib/config, @/lib/types/reports, @/lib/types/discord
 export function formatSingleMessage(message: DiscordMessage): string
 export function formatPreviousReportForContext(reports: Report[]): string
 export function createPrompt(messages: DiscordMessage[], previousReports: Report[]): { prompt: string; tokenCount: number; }
@@ -3324,7 +3324,7 @@ export function isReportTruncated(report: { body: string }): boolean
 ## src/lib/utils/source-attribution/source-attribution-ai.ts
 
 ```typescript
-Imports: @/lib/ai-config, @/lib/config, @/lib/types/core, @/lib/utils/report-utils, ../../../../worker-configuration
+Imports: @/lib/ai-config, @/lib/config, @/lib/types/reports, @/lib/types/external-apis, @/lib/utils/report-utils, ../../../../worker-configuration
 /**
 AI service for generating source attributions for report content
 */
@@ -3338,7 +3338,7 @@ Generate source attributions for a report
 ## src/lib/utils/source-attribution/source-attribution-service.ts
 
 ```typescript
-Imports: @/lib/cache-utils, @/lib/config, @/lib/types/core, ../../../../worker-configuration, ./source-attribution-ai
+Imports: @/lib/cache-utils, @/lib/config, @/lib/types/reports, ../../../../worker-configuration, ./source-attribution-ai
 /**
 Service for managing source attributions with caching
 */
