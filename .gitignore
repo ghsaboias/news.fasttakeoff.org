@@ -103,3 +103,6 @@ EMAIL_SETUP.md
 
 # Newsletter generated data (regenerated frequently)
 newsletter-data.json
+
+# Discord messages migration analysis (contains production data)
+messages_d1_migration/
