@@ -9,6 +9,7 @@ export interface DiscordMessage {
   id: string;
   content: string;
   timestamp: string;
+  channel_id: string;
   author: {
     username: string;
     discriminator: string;
@@ -16,6 +17,13 @@ export interface DiscordMessage {
     global_name: string;
     id: string;
   };
+  reactions?: {
+    emoji: {
+      id?: string;
+      name?: string;
+    };
+    count: number;
+  }[];
   embeds?: {
     type?: string;
     url?: string;

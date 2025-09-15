@@ -4,11 +4,15 @@ import { DiscordMessage } from '@/lib/types/discord';
 import { Cloudflare } from '../../../worker-configuration';
 import { CacheManager } from '../cache-utils';
 import { ChannelsService } from './channels-service';
+import { D1MessagesService } from './d1-messages-service';
+import { MessageTransformer } from '../utils/message-transformer';
 
 export class MessagesService {
     public env: Cloudflare.Env;
     private cacheManager: CacheManager;
     private channelsService: ChannelsService;
+    private d1Service: D1MessagesService;
+    private messageTransformer: MessageTransformer;
 
     constructor(
         cacheManager: CacheManager,
@@ -21,6 +25,9 @@ export class MessagesService {
         }
         this.cacheManager = cacheManager;
         this.channelsService = channelsService;
+        // Initialize utility classes for dual-write functionality
+        this.d1Service = new D1MessagesService(env);
+        this.messageTransformer = new MessageTransformer();
     }
 
     private messageFilter = {
@@ -234,6 +241,14 @@ export class MessagesService {
         };
 
         // -------------------------------------------------------------
+        // DUAL-WRITE: Save to both KV (legacy) and D1 (new)
+        // -------------------------------------------------------------
+
+        // 1. Write to D1 first (new messages only)
+        await this.writeToD1(uniqueMessages, channelId);
+
+        // 2. Write to KV (existing logic with size limits)
+        // -------------------------------------------------------------
         // Hard guard against Cloudflare KV 25 MiB value limit
         // -------------------------------------------------------------
         const MAX_KV_VALUE_BYTES = 24 * 1024 * 1024; // 24 MiB – leave safety margin
@@ -272,6 +287,63 @@ export class MessagesService {
 
         const cacheKey = `messages:${channelId}`;
         await this.cacheManager.put('MESSAGES_CACHE', cacheKey, safeData, CACHE.TTL.MESSAGES);
+    }
+
+    /**
+     * Write new messages to D1 database (dual-write helper)
+     * Only writes messages that don't already exist in D1
+     */
+    private async writeToD1(messages: DiscordMessage[], channelId: string): Promise<void> {
+        if (!messages.length) return;
+
+        let successCount = 0;
+        let errorCount = 0;
+
+        try {
+            // Get existing message IDs from D1 to avoid duplicates
+            const messageIds = messages.map(m => m.id);
+            const existing = await this.d1Service.getMessagesByIds(messageIds);
+            const existingIds = new Set(existing.map(m => m.id));
+
+            // Filter to only new messages
+            const newMessages = messages.filter(m => !existingIds.has(m.id));
+
+            if (newMessages.length === 0) {
+                console.log(`[DUAL_WRITE] No new messages for channel ${channelId} (${messages.length} already in D1)`);
+                return;
+            }
+
+            console.log(`[DUAL_WRITE] Writing ${newMessages.length} new messages to D1 for channel ${channelId}`);
+
+            // Transform and write each new message
+            for (const message of newMessages) {
+                try {
+                    const transformResult = this.messageTransformer.transform(message);
+
+                    if (transformResult.success && transformResult.transformed) {
+                        await this.d1Service.createMessage(transformResult.transformed);
+                        successCount++;
+                    } else {
+                        console.warn(`[DUAL_WRITE] Transform failed for message ${message.id}: ${transformResult.error}`);
+                        errorCount++;
+                    }
+                } catch (error) {
+                    console.error(`[DUAL_WRITE] Failed to write message ${message.id} to D1:`, error);
+                    errorCount++;
+                }
+            }
+
+            if (successCount > 0) {
+                console.log(`[DUAL_WRITE] Successfully wrote ${successCount} messages to D1${errorCount > 0 ? ` (${errorCount} errors)` : ''}`);
+            }
+            if (errorCount > 0) {
+                console.error(`[DUAL_WRITE] Failed to write ${errorCount} messages to D1`);
+            }
+
+        } catch (error) {
+            console.error('[DUAL_WRITE] Error during D1 write operation:', error);
+            // Don't throw - KV write should still succeed even if D1 fails
+        }
     }
 
     async updateMessages(local: boolean = false): Promise<void> {

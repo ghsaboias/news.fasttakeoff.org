@@ -18,8 +18,9 @@ import type { DiscordMessage } from '@/lib/types/discord';
 // } from '@/lib/types/database';
 // import type { MessagesServiceInterface } from '@/lib/types/services';
 
-// Temporary type definitions for TDD
+// Essential Discord Message - 26 properties (68% storage reduction from 84+ properties)
 interface EssentialDiscordMessage {
+  // Core Message Properties (7)
   id: string;
   content: string;
   timestamp: string;
@@ -27,9 +28,60 @@ interface EssentialDiscordMessage {
   author_username: string;
   author_discriminator: string;
   author_global_name: string | null;
+  
+  // Context (1)
   referenced_message_content: string | null;
-  embeds: any[];
-  attachments: any[];
+  
+  // Engagement Tracking (1)
+  reaction_summary: ReactionSummary[] | null;
+  
+  // Embeds - Structured JSON (1 property containing multiple fields)
+  embeds: EssentialEmbed[] | null;
+  
+  // Attachments - Structured JSON (1 property containing multiple fields) 
+  attachments: EssentialAttachment[] | null;
+}
+
+// Supporting interfaces for structured JSON properties
+interface ReactionSummary {
+  emoji: string; // emoji name or unicode
+  count: number;
+}
+
+interface EssentialEmbed {
+  title?: string;
+  description?: string;
+  url?: string;
+  timestamp?: string;
+  fields?: Array<{ name: string; value: string; inline?: boolean }>;
+  author?: {
+    name?: string;
+    icon_url?: string;
+  };
+  footer?: {
+    text?: string;
+  };
+  thumbnail?: {
+    url?: string;
+    proxy_url?: string;
+    width?: number;
+    height?: number;
+  };
+  // NEW: Full-size image support for newsletter generation
+  image?: {
+    url?: string;
+    proxy_url?: string;
+    width?: number;
+    height?: number;
+  };
+}
+
+interface EssentialAttachment {
+  url: string;
+  filename: string;
+  content_type: string;
+  width?: number;
+  height?: number;
 }
 
 interface MessageTransformResult {
@@ -65,6 +117,40 @@ interface MigrationBatchConfig {
   onProgress?: (progress: number) => void;
 }
 
+// Service Interfaces - TDD Definitions for Implementation
+
+interface IMessageTransformer {
+  transform(discordMessage: DiscordMessage): MessageTransformResult;
+  validateTransform(original: DiscordMessage, transformed: EssentialDiscordMessage): boolean;
+}
+
+interface ID1MessagesService {
+  createMessage(message: EssentialDiscordMessage): Promise<void>;
+  getMessagesInTimeWindow(channelId: string, startTime: Date, endTime: Date): Promise<EssentialDiscordMessage[]>;
+  getMessagesByIds(messageIds: string[]): Promise<EssentialDiscordMessage[]>;
+  deleteMessage(messageId: string): Promise<void>;
+  updateMessage(message: EssentialDiscordMessage): Promise<void>;
+}
+
+interface IHybridMessagesService {
+  // Backward compatible with existing MessagesService
+  getMessages(channelId: string, limit?: number): Promise<DiscordMessage[]>;
+  getMessagesInTimeWindow(channelId: string, startTime: Date, endTime: Date): Promise<DiscordMessage[]>;
+  getMessagesForReport(messageIds: string[]): Promise<DiscordMessage[]>;
+  // New hybrid-specific methods
+  getCacheHitRate(): number;
+  warmCache(channelId: string): Promise<void>;
+  clearCache(channelId: string): Promise<void>;
+}
+
+interface IMessagesMigrationService {
+  dryRun(channelId: string): Promise<MigrationDryRunResult>;
+  migrateChannel(channelId: string, config?: MigrationBatchConfig): Promise<MigrationResult>;
+  validateMigration(channelId: string): Promise<MigrationValidationResult>;
+  rollback(channelId: string): Promise<boolean>;
+  getProgress(channelId: string): Promise<{ completed: number; total: number }>;
+}
+
 // Mock Cloudflare environment for testing
 type MockEnv = {
   FAST_TAKEOFF_NEWS_DB: any;
@@ -92,6 +178,12 @@ describe('Phase 1: Core Types and Interfaces', () => {
 
         // Context (1)
         referenced_message_content: 'referenced content',
+
+        // Engagement Tracking (1)
+        reaction_summary: [
+          { emoji: '👀', count: 11 },
+          { emoji: 'kekw', count: 1 }
+        ],
 
         // Embeds JSON (1 property containing structured data)
         embeds: [{
@@ -128,7 +220,7 @@ describe('Phase 1: Core Types and Interfaces', () => {
 
       // Verify we have exactly the properties we need
       const properties = Object.keys(essentialMessage);
-      expect(properties).toHaveLength(10); // 7 core + 1 context + 1 embeds + 1 attachments
+      expect(properties).toHaveLength(11); // 7 core + 1 context + 1 engagement + 1 embeds + 1 attachments
 
       // Verify essential properties exist
       expect(essentialMessage.id).toBeDefined();
@@ -136,6 +228,12 @@ describe('Phase 1: Core Types and Interfaces', () => {
       expect(essentialMessage.timestamp).toBeDefined();
       expect(essentialMessage.embeds).toBeDefined();
       expect(essentialMessage.attachments).toBeDefined();
+      expect(essentialMessage.reaction_summary).toBeDefined();
+      
+      // Verify reaction_summary structure for engagement tracking
+      expect(essentialMessage.reaction_summary).toHaveLength(2);
+      expect(essentialMessage.reaction_summary?.[0]).toEqual({ emoji: '👀', count: 11 });
+      expect(essentialMessage.reaction_summary?.[1]).toEqual({ emoji: 'kekw', count: 1 });
     });
 
     it('should support newsletter image extraction from embeds.image.*', () => {
@@ -148,6 +246,7 @@ describe('Phase 1: Core Types and Interfaces', () => {
         author_discriminator: '7032',
         author_global_name: 'Bot',
         referenced_message_content: null,
+        reaction_summary: null,
         embeds: [{
           image: {
             url: 'https://example.com/full-size.jpg',
@@ -173,6 +272,7 @@ describe('Phase 1: Core Types and Interfaces', () => {
         id: 'test-id',
         content: 'test content',
         timestamp: '2025-01-15T10:00:00.000Z',
+        channel_id: 'test-channel-id',
         author: {
           username: 'FaytuksBot',
           discriminator: '7032',
@@ -221,8 +321,8 @@ describe('Phase 1: Core Types and Interfaces', () => {
         expect(transformed.referenced_message_content).toBe('referenced content');
         
         // Verify filtered properties are excluded
-        expect('size' in transformed.attachments?.[0] || {}).toBe(false);
-        expect('content_scan_version' in transformed.embeds?.[0] || {}).toBe(false);
+        expect('size' in (transformed.attachments?.[0] || {})).toBe(false);
+        expect('content_scan_version' in (transformed.embeds?.[0] || {})).toBe(false);
         
         // Verify new image properties are included
         expect(transformed.embeds?.[0]?.image?.url).toBe('image.jpg');
