@@ -43,6 +43,12 @@ interface ReportFromAPI {
     userGenerated?: boolean;
     messageIds?: string[];
     timeframe?: string;
+    // Optional geo enrichment from API
+    lat?: number;
+    lon?: number;
+    country?: string;
+    country_code?: string;
+    display_name?: string;
 }
 
 interface GeoJsonFeatureCollection {
@@ -255,9 +261,23 @@ const Globe = React.memo<{
                 const reports: ReportFromAPI[] = await response.json();
                 const allReports = reports;
 
-                // De-duplicate geocode requests per city to reduce load
+                // 1) Immediately add any reports that already have coordinates from the API
+                const withCoords = allReports.filter(r => typeof r.lat === 'number' && typeof r.lon === 'number' && r.lat !== 0 && r.lon !== 0);
+                if (withCoords.length) {
+                    const initial = withCoords.map(r => ({
+                        ...r,
+                        lat: r.lat as number,
+                        lon: r.lon as number,
+                        generatedAtMs: new Date(r.generatedAt).getTime(),
+                    } as NewsMarkerData));
+                    processedReports.push(...initial);
+                    setNewsItems(prev => [...prev, ...initial]);
+                }
+
+                // 2) Build city index only for reports missing coords
+                const missing = allReports.filter(r => !(typeof r.lat === 'number' && typeof r.lon === 'number' && r.lat !== 0 && r.lon !== 0));
                 const cityIndex = new Map<string, ReportFromAPI[]>();
-                for (const r of allReports) {
+                for (const r of missing) {
                     if (!r.city) continue;
                     const key = r.city.trim().toLowerCase().replace(/\s+/g, ' ');
                     const arr = cityIndex.get(key) || [];
