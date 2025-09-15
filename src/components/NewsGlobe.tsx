@@ -198,7 +198,8 @@ const Globe = React.memo<{
     onSelectReport: (report: NewsMarkerData) => void;
     timelineFilter?: TimelineFilter;
     onReportsLoaded?: (reports: NewsMarkerData[]) => void;
-}>(function Globe({ onSelectReport, timelineFilter, onReportsLoaded }) {
+    onReportsMeta?: (start: Date, end: Date) => void;
+}>(function Globe({ onSelectReport, timelineFilter, onReportsLoaded, onReportsMeta }) {
     const globeRef = useRef<Mesh>(null!);
     const [countryBordersData, setCountryBordersData] = useState<GeoJsonFeatureCollection | null>(null);
     const [coastlinesData, setCoastlinesData] = useState<GeoJsonFeatureCollection | null>(null);
@@ -252,43 +253,59 @@ const Globe = React.memo<{
                     return;
                 }
                 const reports: ReportFromAPI[] = await response.json();
-                const limitedReports = reports; // Show all reports in the period
+                const allReports = reports;
 
-                // Process reports one by one
-                for (const report of limitedReports) {
-                    if (!report.city || !report.headline || !report.body || !report.reportId) {
-                        continue;
-                    }
-                    try {
-                        const geoResponse = await fetch(
-                            `/api/geocode?city=${encodeURIComponent(report.city)}`
-                        );
+                // Notify parent with time bounds immediately to enable timeline
+                if (onReportsMeta && allReports.length > 0) {
+                    const times = allReports.map(r => new Date(r.generatedAt).getTime()).filter(t => !isNaN(t));
+                    const latestMs = Math.max(...times);
+                    const latestTime = new Date(latestMs);
+                    const weekStart = new Date(latestMs - 7 * 24 * 60 * 60 * 1000);
+                    onReportsMeta(weekStart, latestTime);
+                }
 
-                        if (!geoResponse.ok) {
-                            // Skip if geocode fails
-                            await geoResponse.json().catch(() => null);
-                            continue;
+                // Geocode with limited concurrency
+                const concurrency = 8;
+                let index = 0;
+
+                const runWorker = async () => {
+                    while (index < allReports.length) {
+                        const i = index++;
+                        const report = allReports[i];
+                        if (!report || !report.city || !report.headline || !report.body || !report.reportId) continue;
+                        try {
+                            const geoResponse = await fetch(`/api/geocode?city=${encodeURIComponent(report.city)}`);
+                            if (!geoResponse.ok) {
+                                await geoResponse.json().catch(() => null);
+                                continue;
+                            }
+                            const location: { lat: number; lng: number; country?: string; country_code?: string; display_name?: string } = await geoResponse.json();
+                            if (typeof location.lat === 'number' && typeof location.lng === 'number' && !(location.lat === 0 && location.lng === 0)) {
+                                const newItem: NewsMarkerData = {
+                                    ...report,
+                                    lat: location.lat,
+                                    lon: location.lng,
+                                    country: location.country,
+                                    country_code: location.country_code,
+                                    display_name: location.display_name,
+                                    generatedAtMs: new Date(report.generatedAt).getTime(),
+                                };
+                                processedReports.push(newItem);
+                                // Batch DOM updates
+                                if (processedReports.length % 25 === 0) {
+                                    setNewsItems(prev => [...prev, ...processedReports.splice(0, processedReports.length)]);
+                                }
+                            }
+                        } catch {
+                            // Ignore errors per item
                         }
-
-                        const location: { lat: number; lng: number; country?: string; country_code?: string; display_name?: string } = await geoResponse.json();
-
-                        if (typeof location.lat === 'number' && typeof location.lng === 'number' && !(location.lat === 0 && location.lng === 0)) {
-                            // Add successfully geocoded item to state immediately
-                            const newItem: NewsMarkerData = {
-                                ...report,
-                                lat: location.lat,
-                                lon: location.lng,
-                                country: location.country,
-                                country_code: location.country_code,
-                                display_name: location.display_name,
-                                generatedAtMs: new Date(report.generatedAt).getTime(),
-                            };
-                            processedReports.push(newItem);
-                            setNewsItems(prevItems => [...prevItems, newItem]);
-                        }
-                    } catch {
-                        // Skip geocoding errors silently
                     }
+                };
+
+                const workers = Array.from({ length: concurrency }, () => runWorker());
+                await Promise.all(workers);
+                if (processedReports.length) {
+                    setNewsItems(prev => [...prev, ...processedReports.splice(0, processedReports.length)]);
                 }
 
                 // Call the callback with all processed reports
@@ -302,7 +319,7 @@ const Globe = React.memo<{
 
         fetchGeoData(); // Fetch borders/coastlines
         fetchAndProcessNews(); // Start fetching news in parallel
-    }, [onReportsLoaded]); // Run once on mount
+    }, [onReportsLoaded, onReportsMeta]); // Run once on mount
 
     useFrame(() => {
         if (globeRef.current) {
@@ -395,7 +412,9 @@ const NewsGlobe: React.FC = () => {
     const [allReports, setAllReports] = useState<NewsMarkerData[]>([]);
     const [timeRange, setTimeRange] = useState<{ start: Date; end: Date } | null>(null);
     const [currentTimeWindow, setCurrentTimeWindow] = useState<{ start: Date; end: Date } | null>(null);
-    const [initialized, setInitialized] = useState<boolean>(false);
+    // removed: initialized flag (unused)
+    const [userAdjustedWindow, setUserAdjustedWindow] = useState<boolean>(false);
+    const [timelineReady, setTimelineReady] = useState<boolean>(false);
 
     const handleSelectReport = React.useCallback((report: NewsMarkerData) => {
         setSelectedReport(report);
@@ -413,7 +432,6 @@ const NewsGlobe: React.FC = () => {
         const start = sixHoursAgo > weekAgo ? sixHoursAgo : weekAgo;
         setTimeRange({ start: weekAgo, end: now });
         setCurrentTimeWindow({ start, end: now });
-        setInitialized(true);
     }, []);
 
     // Set up time ranges when reports are loaded
@@ -429,12 +447,15 @@ const NewsGlobe: React.FC = () => {
             // Initial window: last 6 hours within the week
             const sixHoursAgo = new Date(latestMs - 6 * 60 * 60 * 1000);
             const windowStart = sixHoursAgo > weekAgo ? sixHoursAgo : weekAgo;
-            setCurrentTimeWindow({ start: windowStart, end: latestTime });
+            if (!userAdjustedWindow) {
+                setCurrentTimeWindow({ start: windowStart, end: latestTime });
+            }
         }
-    }, [allReports]);
+    }, [allReports, userAdjustedWindow]);
 
     const handleTimeRangeChange = useCallback((start: Date, end: Date) => {
         setCurrentTimeWindow({ start, end });
+        setUserAdjustedWindow(true);
     }, []);
 
     const timelineFilter = currentTimeWindow ? {
@@ -467,6 +488,15 @@ const NewsGlobe: React.FC = () => {
                             onSelectReport={handleSelectReport}
                             timelineFilter={timelineFilter}
                             onReportsLoaded={handleReportsLoaded}
+                            onReportsMeta={(start, end) => {
+                                setTimeRange({ start, end });
+                                if (!userAdjustedWindow) {
+                                    const sixHoursAgo = new Date(end.getTime() - 6 * 60 * 60 * 1000);
+                                    const ws = sixHoursAgo > start ? sixHoursAgo : start;
+                                    setCurrentTimeWindow({ start: ws, end });
+                                }
+                                setTimelineReady(true);
+                            }}
                         />
                     </Canvas>
                 </div>
@@ -503,7 +533,7 @@ const NewsGlobe: React.FC = () => {
                         currentStart={currentTimeWindow.start}
                         currentEnd={currentTimeWindow.end}
                         onTimeRangeChange={handleTimeRangeChange}
-                        disabled={!allReports.length && initialized}
+                        disabled={!timelineReady}
                     />
                 </div>
             )}
