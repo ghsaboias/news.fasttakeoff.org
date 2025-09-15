@@ -1,12 +1,13 @@
 'use client';
 
 import { ReportPanel } from '@/components/ReportPanel';
+import { Timeline } from '@/components/Timeline';
 import { Loader } from '@/components/ui/loader';
 import { Html, Line, OrbitControls, Sphere } from '@react-three/drei';
 import { Canvas, ThreeEvent, useFrame } from '@react-three/fiber';
 import Image from 'next/image';
 import Link from 'next/link';
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Color, Vector3, Mesh } from 'three';
 
 // --- Theme Configuration (Simplified from example) ---
@@ -74,9 +75,10 @@ interface MarkerProps {
     position: [number, number, number];
     data: NewsMarkerData;
     onSelect: (data: NewsMarkerData) => void;
+    visible: boolean;
 }
 
-const Marker = React.memo<MarkerProps>(function Marker({ position, data, onSelect }) {
+const Marker = React.memo<MarkerProps>(function Marker({ position, data, onSelect, visible }) {
     const [hovered, setHovered] = React.useState(false);
 
     const handleSphereClick = React.useCallback((event: ThreeEvent<MouseEvent>) => {
@@ -95,7 +97,7 @@ const Marker = React.memo<MarkerProps>(function Marker({ position, data, onSelec
     }, []);
 
     return (
-        <group position={position}>
+        <group position={position} visible={visible}>
             <Sphere
                 args={[0.03, 16, 16]}
                 onClick={handleSphereClick}
@@ -186,7 +188,16 @@ const GeoJsonLines = React.memo<LineFeatureProps>(function GeoJsonLines({ geoJso
 });
 // --- End GeoJSON Line Components ---
 
-const Globe = React.memo<{ onSelectReport: (report: NewsMarkerData) => void }>(function Globe({ onSelectReport }) {
+interface TimelineFilter {
+    startTime: Date;
+    endTime: Date;
+}
+
+const Globe = React.memo<{
+    onSelectReport: (report: NewsMarkerData) => void;
+    timelineFilter?: TimelineFilter;
+    onReportsLoaded?: (reports: NewsMarkerData[]) => void;
+}>(function Globe({ onSelectReport, timelineFilter, onReportsLoaded }) {
     const globeRef = useRef<Mesh>(null!);
     const [countryBordersData, setCountryBordersData] = useState<GeoJsonFeatureCollection | null>(null);
     const [coastlinesData, setCoastlinesData] = useState<GeoJsonFeatureCollection | null>(null);
@@ -213,14 +224,10 @@ const Globe = React.memo<{ onSelectReport: (report: NewsMarkerData) => void }>(f
                         const coastlinesJson = await coastlinesResponse.json() as GeoJsonFeatureCollection;
                         setCoastlinesData(coastlinesJson);
                     } else {
-                        if (coastlinesResponse.status === 429) {
-                            console.warn('Coastline data temporarily unavailable due to rate limiting (429). Globe will display without coastlines.');
-                        } else {
-                            console.warn(`Failed to fetch coastlines: ${coastlinesResponse.status}. Globe will display without coastlines.`);
-                        }
+                        // Optional coastline data unavailable; continue without it
                     }
-                } catch (coastlineError) {
-                    console.warn("Error fetching optional coastline data:", coastlineError);
+                } catch {
+                    // Ignore optional coastline errors
                 }
 
             } catch (error) {
@@ -234,21 +241,20 @@ const Globe = React.memo<{ onSelectReport: (report: NewsMarkerData) => void }>(f
 
         const fetchAndProcessNews = async () => {
             setNewsItems([]);
+            const processedReports: NewsMarkerData[] = [];
             try {
-                const response = await fetch('/api/reports?limit=20');
+                const response = await fetch('/api/reports?limit=50');
                 if (!response.ok) {
                     console.error(`Failed to fetch reports: ${response.status}`);
                     return;
                 }
                 const reports: ReportFromAPI[] = await response.json();
 
-                const limitedReports = reports.slice(0, 20);
-                console.log(`Processing up to ${limitedReports.length} out of ${reports.length} total reports`);
+                const limitedReports = reports.slice(0, 50);
 
                 // Process reports one by one
                 for (const report of limitedReports) {
                     if (!report.city || !report.headline || !report.body || !report.reportId) {
-                        console.warn('Report missing critical fields (city, headline, body, or reportId), skipping:', report);
                         continue;
                     }
                     try {
@@ -257,11 +263,8 @@ const Globe = React.memo<{ onSelectReport: (report: NewsMarkerData) => void }>(f
                         );
 
                         if (!geoResponse.ok) {
-                            const errorData = await geoResponse.json().catch(() => ({ error: "Failed to parse error response from geocode API" })) as { error?: string };
-                            console.warn( // Use warn as it's non-blocking for other markers
-                                `Error fetching geocoded data for ${report.city} (Report ID: ${report.reportId}): ${geoResponse.status}`,
-                                errorData?.error || geoResponse.statusText
-                            );
+                            // Skip if geocode fails
+                            await geoResponse.json().catch(() => null);
                             continue;
                         }
 
@@ -277,15 +280,18 @@ const Globe = React.memo<{ onSelectReport: (report: NewsMarkerData) => void }>(f
                                 country_code: location.country_code,
                                 display_name: location.display_name,
                             };
+                            processedReports.push(newItem);
                             setNewsItems(prevItems => [...prevItems, newItem]);
-                        } else {
-                            console.warn(`No valid geocoding results for ${report.city} (Report ID: ${report.reportId}). API might have returned no location or placeholder.`);
                         }
-                    } catch (geoError) {
-                        console.warn(`Error during geocoding process for ${report.city} (Report ID: ${report.reportId}):`, geoError);
+                    } catch {
+                        // Skip geocoding errors silently
                     }
                 }
-                console.log(`Finished processing reports. Total reports processed: ${limitedReports.length}`);
+
+                // Call the callback with all processed reports
+                if (onReportsLoaded && processedReports.length > 0) {
+                    onReportsLoaded(processedReports);
+                }
             } catch (error) {
                 console.error("Error fetching or processing news data:", error);
             }
@@ -293,7 +299,7 @@ const Globe = React.memo<{ onSelectReport: (report: NewsMarkerData) => void }>(f
 
         fetchGeoData(); // Fetch borders/coastlines
         fetchAndProcessNews(); // Start fetching news in parallel
-    }, []); // Run once on mount
+    }, [onReportsLoaded]); // Run once on mount
 
     useFrame(() => {
         if (globeRef.current) {
@@ -303,12 +309,37 @@ const Globe = React.memo<{ onSelectReport: (report: NewsMarkerData) => void }>(f
 
     const globeRadius = 2; // Radius of the globe
 
+    // Precompute and memoize stable positions so markers don't re-render unnecessarily
+    const markerPositions = useMemo(() => {
+        const map = new Map<string, [number, number, number]>();
+        for (const news of newsItems) {
+            map.set(news.reportId, latLonToVector3(news.lat, news.lon, globeRadius + 0.01));
+        }
+        return map;
+    }, [newsItems]);
+
     const markers = useMemo(() => {
         return newsItems.map((news: NewsMarkerData) => {
-            const position = latLonToVector3(news.lat, news.lon, globeRadius + 0.01);
-            return <Marker key={news.reportId} position={position} data={news} onSelect={onSelectReport} />;
+            const position = markerPositions.get(news.reportId)!;
+
+            // Determine if this marker should be visible based on timeline filter
+            let isVisible = true;
+            if (timelineFilter) {
+                const reportTime = new Date(news.generatedAt);
+                isVisible = reportTime >= timelineFilter.startTime && reportTime <= timelineFilter.endTime;
+            }
+
+            return (
+                <Marker
+                    key={news.reportId}
+                    position={position}
+                    data={news}
+                    onSelect={onSelectReport}
+                    visible={isVisible}
+                />
+            );
         });
-    }, [newsItems, onSelectReport]);
+    }, [newsItems, onSelectReport, timelineFilter, markerPositions]);
 
     // Optional: Render a subtle loading indicator for GeoJSON if needed
     if (isFetchingGeoData) {
@@ -358,6 +389,9 @@ const Globe = React.memo<{ onSelectReport: (report: NewsMarkerData) => void }>(f
 
 const NewsGlobe: React.FC = () => {
     const [selectedReport, setSelectedReport] = useState<NewsMarkerData | null>(null);
+    const [allReports, setAllReports] = useState<NewsMarkerData[]>([]);
+    const [timeRange, setTimeRange] = useState<{ start: Date; end: Date } | null>(null);
+    const [currentTimeWindow, setCurrentTimeWindow] = useState<{ start: Date; end: Date } | null>(null);
 
     const handleSelectReport = React.useCallback((report: NewsMarkerData) => {
         setSelectedReport(report);
@@ -365,6 +399,35 @@ const NewsGlobe: React.FC = () => {
 
     const handleCloseReport = React.useCallback(() => {
         setSelectedReport(null);
+    }, []);
+
+    // Set up time ranges when reports are loaded
+    useEffect(() => {
+        if (allReports.length > 0) {
+            const reportTimes = allReports.map(report => new Date(report.generatedAt));
+            const earliestTime = new Date(Math.min(...reportTimes.map(t => t.getTime())));
+            const latestTime = new Date(Math.max(...reportTimes.map(t => t.getTime())));
+
+            setTimeRange({ start: earliestTime, end: latestTime });
+
+            // Set initial window to show last 2 hours
+            const twoHoursAgo = new Date(latestTime.getTime() - 2 * 60 * 60 * 1000);
+            const windowStart = twoHoursAgo > earliestTime ? twoHoursAgo : earliestTime;
+            setCurrentTimeWindow({ start: windowStart, end: latestTime });
+        }
+    }, [allReports]);
+
+    const handleTimeRangeChange = useCallback((start: Date, end: Date) => {
+        setCurrentTimeWindow({ start, end });
+    }, []);
+
+    const timelineFilter = currentTimeWindow ? {
+        startTime: currentTimeWindow.start,
+        endTime: currentTimeWindow.end
+    } : undefined;
+
+    const handleReportsLoaded = useCallback((reports: NewsMarkerData[]) => {
+        setAllReports(reports);
     }, []);
 
     return (
@@ -384,7 +447,11 @@ const NewsGlobe: React.FC = () => {
                     style={{ transform: selectedReport ? 'translateX(-25%)' : 'translateX(0)' }}
                 >
                     <Canvas camera={{ position: [0, 0, 5], fov: 50 }}>
-                        <Globe onSelectReport={handleSelectReport} />
+                        <Globe
+                            onSelectReport={handleSelectReport}
+                            timelineFilter={timelineFilter}
+                            onReportsLoaded={handleReportsLoaded}
+                        />
                     </Canvas>
                 </div>
 
@@ -410,6 +477,19 @@ const NewsGlobe: React.FC = () => {
                     )}
                 </div>
             </div>
+
+            {/* Timeline at the bottom */}
+            {timeRange && currentTimeWindow && (
+                <div className="absolute bottom-0 left-0 right-0 z-30">
+                    <Timeline
+                        startTime={timeRange.start}
+                        endTime={timeRange.end}
+                        currentStart={currentTimeWindow.start}
+                        currentEnd={currentTimeWindow.end}
+                        onTimeRangeChange={handleTimeRangeChange}
+                    />
+                </div>
+            )}
         </div>
     );
 };
