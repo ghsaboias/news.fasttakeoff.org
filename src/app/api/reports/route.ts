@@ -28,6 +28,8 @@ export async function GET(request: NextRequest) {
         const limitParam = searchParams.get('limit');
         const timeframe = searchParams.get('timeframe');
         const mode = searchParams.get('mode');
+        const startParam = searchParams.get('start');
+        const endParam = searchParams.get('end');
 
         const factory = ServiceFactory.getInstance(env);
         const reportService = factory.createReportService();
@@ -75,24 +77,26 @@ export async function GET(request: NextRequest) {
             }
         }
 
-        // Parse limit parameter
+        // Parse limit parameter (ignored when start/end specified)
         let limit: number | undefined;
         const MAX_API_LIMIT = 200;
-        if (limitParam) {
+        if (!startParam && !endParam && limitParam) {
             const parsedLimit = parseInt(limitParam, 10);
             if (!isNaN(parsedLimit) && parsedLimit > 0) {
                 limit = Math.min(parsedLimit, MAX_API_LIMIT);
             }
-        } else if (!channelId) {
+        } else if (!channelId && !startParam && !endParam) {
             // Default to 100 for general API requests when no limit specified
             limit = 100;
         }
 
         // Add response caching for general reports requests
         const cacheManager = new CacheManager(env);
-        const cacheKey = channelId
-            ? `api-reports-${channelId}${limit ? `-${limit}` : ''}`
-            : `api-reports-homepage${limit ? `-${limit}` : ''}`;
+        const cacheKey = startParam && endParam
+            ? `api-reports-range-${startParam}-${endParam}`
+            : channelId
+                ? `api-reports-${channelId}${limit ? `-${limit}` : ''}`
+                : `api-reports-homepage${limit ? `-${limit}` : ''}`;
         const cached = await cacheManager.get('REPORTS_CACHE', cacheKey);
 
         if (cached) {
@@ -103,9 +107,24 @@ export async function GET(request: NextRequest) {
             });
         }
 
-        let reports = channelId
-            ? await reportService.getAllReportsForChannel(channelId)
-            : await reportService.getAllReports(limit);
+        let reports: Report[];
+
+        // Range query takes precedence when both start and end are provided
+        if (startParam && endParam) {
+            const startDate = new Date(startParam);
+            const endDate = new Date(endParam);
+            if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+                return NextResponse.json({ error: 'Invalid start or end date' }, { status: 400 });
+            }
+            if (startDate > endDate) {
+                return NextResponse.json({ error: 'start must be before end' }, { status: 400 });
+            }
+            reports = await reportService.getReportsInRange(startDate, endDate);
+        } else {
+            reports = channelId
+                ? await reportService.getAllReportsForChannel(channelId)
+                : await reportService.getAllReports(limit);
+        }
 
         // Filter by timeframe/mode if specified
         if (timeframe && ['2h', '6h', 'dynamic'].includes(timeframe)) {
@@ -116,7 +135,7 @@ export async function GET(request: NextRequest) {
         }
 
         // Cache the response for 5 minutes (longer for larger requests)
-        const ttl = limit && limit > 20 ? 600 : 300; // 10 minutes for large requests, 5 for small
+        const ttl = (startParam && endParam) || (limit && limit > 20) ? 600 : 300; // 10 minutes for large/range requests, 5 for small
         await cacheManager.put('REPORTS_CACHE', cacheKey, reports, ttl);
 
         return NextResponse.json(reports, {

@@ -244,14 +244,15 @@ const Globe = React.memo<{
             setNewsItems([]);
             const processedReports: NewsMarkerData[] = [];
             try {
-                const response = await fetch('/api/reports?limit=200');
+                const now = new Date();
+                const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+                const response = await fetch(`/api/reports?start=${encodeURIComponent(weekAgo.toISOString())}&end=${encodeURIComponent(now.toISOString())}`);
                 if (!response.ok) {
                     console.error(`Failed to fetch reports: ${response.status}`);
                     return;
                 }
                 const reports: ReportFromAPI[] = await response.json();
-
-                const limitedReports = reports.slice(0, 50);
+                const limitedReports = reports; // Show all reports in the period
 
                 // Process reports one by one
                 for (const report of limitedReports) {

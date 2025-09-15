@@ -211,6 +211,45 @@ export class ReportService {
     }
 
     /**
+     * Get all reports generated within a time range across all channels (D1)
+     */
+    async getReportsInRange(start: Date, end: Date): Promise<Report[]> {
+        try {
+            const query = `
+                SELECT * FROM reports
+                WHERE generated_at >= ? AND generated_at <= ?
+                ORDER BY generated_at DESC
+            `;
+
+            const result = await this.env.FAST_TAKEOFF_NEWS_DB
+                .prepare(query)
+                .bind(start.toISOString(), end.toISOString())
+                .all();
+
+            if (!result.results?.length) return [];
+
+            return result.results.map((row: Record<string, unknown>) => ({
+                reportId: row.report_id as string,
+                headline: row.headline as string,
+                body: row.body as string,
+                city: (row.city as string) || '',
+                generatedAt: row.generated_at as string,
+                channelId: row.channel_id as string | undefined,
+                channelName: row.channel_name as string | undefined,
+                messageCount: row.message_count as number | undefined,
+                messageIds: row.message_ids ? JSON.parse(row.message_ids as string) : [],
+                timeframe: row.timeframe as string | undefined,
+                generationTrigger: (row.generation_trigger as 'dynamic' | 'scheduled') || 'dynamic',
+                windowStartTime: row.window_start_time as string | undefined,
+                windowEndTime: row.window_end_time as string | undefined
+            }));
+        } catch (error) {
+            console.error('[REPORTS] Error fetching reports in range:', error);
+            return [];
+        }
+    }
+
+    /**
      * Get all reports for a specific channel using D1 database
      * Replacement for legacy getAllReportsForChannel(channelId, timeframe)
      */
