@@ -69,6 +69,7 @@ interface NewsMarkerData extends ReportFromAPI {
     country?: string;
     country_code?: string;
     display_name?: string;
+    generatedAtMs?: number;
 }
 
 interface MarkerProps {
@@ -243,7 +244,7 @@ const Globe = React.memo<{
             setNewsItems([]);
             const processedReports: NewsMarkerData[] = [];
             try {
-                const response = await fetch('/api/reports?limit=50');
+                const response = await fetch('/api/reports?limit=200');
                 if (!response.ok) {
                     console.error(`Failed to fetch reports: ${response.status}`);
                     return;
@@ -279,6 +280,7 @@ const Globe = React.memo<{
                                 country: location.country,
                                 country_code: location.country_code,
                                 display_name: location.display_name,
+                                generatedAtMs: new Date(report.generatedAt).getTime(),
                             };
                             processedReports.push(newItem);
                             setNewsItems(prevItems => [...prevItems, newItem]);
@@ -325,8 +327,8 @@ const Globe = React.memo<{
             // Determine if this marker should be visible based on timeline filter
             let isVisible = true;
             if (timelineFilter) {
-                const reportTime = new Date(news.generatedAt);
-                isVisible = reportTime >= timelineFilter.startTime && reportTime <= timelineFilter.endTime;
+                const t = news.generatedAtMs ?? new Date(news.generatedAt).getTime();
+                isVisible = t >= timelineFilter.startTime.getTime() && t <= timelineFilter.endTime.getTime();
             }
 
             return (
@@ -404,15 +406,16 @@ const NewsGlobe: React.FC = () => {
     // Set up time ranges when reports are loaded
     useEffect(() => {
         if (allReports.length > 0) {
-            const reportTimes = allReports.map(report => new Date(report.generatedAt));
-            const earliestTime = new Date(Math.min(...reportTimes.map(t => t.getTime())));
-            const latestTime = new Date(Math.max(...reportTimes.map(t => t.getTime())));
+            const times = allReports.map(r => (r.generatedAtMs ?? new Date(r.generatedAt).getTime()));
+            const latestMs = Math.max(...times);
+            const latestTime = new Date(latestMs);
+            const weekAgo = new Date(latestMs - 7 * 24 * 60 * 60 * 1000);
 
-            setTimeRange({ start: earliestTime, end: latestTime });
+            setTimeRange({ start: weekAgo, end: latestTime });
 
-            // Set initial window to show last 2 hours
-            const twoHoursAgo = new Date(latestTime.getTime() - 2 * 60 * 60 * 1000);
-            const windowStart = twoHoursAgo > earliestTime ? twoHoursAgo : earliestTime;
+            // Initial window: last 6 hours within the week
+            const sixHoursAgo = new Date(latestMs - 6 * 60 * 60 * 1000);
+            const windowStart = sixHoursAgo > weekAgo ? sixHoursAgo : weekAgo;
             setCurrentTimeWindow({ start: windowStart, end: latestTime });
         }
     }, [allReports]);

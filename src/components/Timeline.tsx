@@ -413,7 +413,7 @@ export const Timeline: React.FC<TimelineProps> = memo(({
           {/* Draggable window handles */}
           <div
             ref={startHandleRef}
-            className="absolute top-0 w-3 h-full bg-primary-foreground rounded-full shadow-md opacity-90 cursor-ew-resize hover:bg-white hover:w-4 transition-all duration-150 z-10"
+            className="absolute top-0 w-3 h-full bg-primary-foreground rounded-full shadow-md opacity-90 cursor-ew-resize hover:bg-white hover:w-4 z-10"
             style={{
               left: `${displayValues.startPercent}%`,
               transform: 'translateX(-50%) translateZ(0)', // Hardware acceleration
@@ -425,7 +425,7 @@ export const Timeline: React.FC<TimelineProps> = memo(({
           />
           <div
             ref={endHandleRef}
-            className="absolute top-0 w-3 h-full bg-primary-foreground rounded-full shadow-md opacity-90 cursor-ew-resize hover:bg-white hover:w-4 transition-all duration-150 z-10"
+            className="absolute top-0 w-3 h-full bg-primary-foreground rounded-full shadow-md opacity-90 cursor-ew-resize hover:bg-white hover:w-4 z-10"
             style={{
               left: `${displayValues.endPercent}%`,
               transform: 'translateX(-50%) translateZ(0)', // Hardware acceleration
