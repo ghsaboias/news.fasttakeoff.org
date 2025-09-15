@@ -463,9 +463,19 @@ const NewsGlobe: React.FC = () => {
         endTime: currentTimeWindow.end
     } : undefined;
 
-    const handleReportsLoaded = useCallback((reports: NewsMarkerData[]) => {
-        setAllReports(reports);
-    }, []);
+  const handleReportsLoaded = useCallback((reports: NewsMarkerData[]) => {
+      setAllReports(reports);
+  }, []);
+
+  const handleReportsMeta = useCallback((start: Date, end: Date) => {
+      setTimeRange({ start, end });
+      if (!userAdjustedWindow) {
+          const sixHoursAgo = new Date(end.getTime() - 6 * 60 * 60 * 1000);
+          const ws = sixHoursAgo > start ? sixHoursAgo : start;
+          setCurrentTimeWindow({ start: ws, end });
+      }
+      setTimelineReady(true);
+  }, [userAdjustedWindow]);
 
     return (
         <div className="relative h-screen w-full bg-[#000010] overflow-hidden">
@@ -488,15 +498,7 @@ const NewsGlobe: React.FC = () => {
                             onSelectReport={handleSelectReport}
                             timelineFilter={timelineFilter}
                             onReportsLoaded={handleReportsLoaded}
-                            onReportsMeta={(start, end) => {
-                                setTimeRange({ start, end });
-                                if (!userAdjustedWindow) {
-                                    const sixHoursAgo = new Date(end.getTime() - 6 * 60 * 60 * 1000);
-                                    const ws = sixHoursAgo > start ? sixHoursAgo : start;
-                                    setCurrentTimeWindow({ start: ws, end });
-                                }
-                                setTimelineReady(true);
-                            }}
+                            onReportsMeta={handleReportsMeta}
                         />
                     </Canvas>
                 </div>
