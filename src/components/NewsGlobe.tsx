@@ -394,6 +394,7 @@ const NewsGlobe: React.FC = () => {
     const [allReports, setAllReports] = useState<NewsMarkerData[]>([]);
     const [timeRange, setTimeRange] = useState<{ start: Date; end: Date } | null>(null);
     const [currentTimeWindow, setCurrentTimeWindow] = useState<{ start: Date; end: Date } | null>(null);
+    const [initialized, setInitialized] = useState<boolean>(false);
 
     const handleSelectReport = React.useCallback((report: NewsMarkerData) => {
         setSelectedReport(report);
@@ -401,6 +402,17 @@ const NewsGlobe: React.FC = () => {
 
     const handleCloseReport = React.useCallback(() => {
         setSelectedReport(null);
+    }, []);
+
+    // Initial timeline: show last week immediately while data loads
+    useEffect(() => {
+        const now = new Date();
+        const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+        const sixHoursAgo = new Date(now.getTime() - 6 * 60 * 60 * 1000);
+        const start = sixHoursAgo > weekAgo ? sixHoursAgo : weekAgo;
+        setTimeRange({ start: weekAgo, end: now });
+        setCurrentTimeWindow({ start, end: now });
+        setInitialized(true);
     }, []);
 
     // Set up time ranges when reports are loaded
@@ -490,6 +502,7 @@ const NewsGlobe: React.FC = () => {
                         currentStart={currentTimeWindow.start}
                         currentEnd={currentTimeWindow.end}
                         onTimeRangeChange={handleTimeRangeChange}
+                        disabled={!allReports.length && initialized}
                     />
                 </div>
             )}

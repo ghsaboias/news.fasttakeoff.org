@@ -10,6 +10,7 @@ interface TimelineProps {
   currentEnd: Date;
   onTimeRangeChange: (start: Date, end: Date) => void;
   className?: string;
+  disabled?: boolean;
 }
 
 // Simple hook for instant DOM updates
@@ -206,6 +207,7 @@ export const Timeline: React.FC<TimelineProps> = memo(({
   currentEnd,
   onTimeRangeChange,
   className,
+  disabled = false,
 }) => {
   // Cache DOM references to avoid repeated queries
   const timelineTrackRef = useRef<HTMLDivElement>(null);
@@ -262,13 +264,15 @@ export const Timeline: React.FC<TimelineProps> = memo(({
 
   // Instant slider handler for zero-lag performance
   const handleSliderChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
+    if (disabled) return;
     const value = parseFloat(event.target.value);
     handleInstantChange(value);
-  }, [handleInstantChange]);
+  }, [handleInstantChange, disabled]);
 
   // Simplified drag handlers for immediate response
   const createDragHandler = useCallback((isStartHandle: boolean) => {
     return (event: React.MouseEvent) => {
+      if (disabled) return;
       event.preventDefault();
       event.stopPropagation();
 
@@ -353,6 +357,7 @@ export const Timeline: React.FC<TimelineProps> = memo(({
     rangeIndicatorRef,
     startHandleRef,
     endHandleRef,
+    disabled,
   ]);
 
   const handleStartDrag = useMemo(() => createDragHandler(true), [createDragHandler]);
@@ -369,7 +374,7 @@ export const Timeline: React.FC<TimelineProps> = memo(({
   }), [formatters, startTime, endTime, currentStart, currentEnd, currentStartPercent, currentEndPercent]);
 
   return (
-    <div className={cn("bg-background/80 backdrop-blur-sm border-t p-4", className)}>
+    <div className={cn("bg-background/80 backdrop-blur-sm border-t p-4", disabled && "opacity-75", className)}>
       <div className="max-w-full mx-auto">
         {/* Time labels */}
         <div className="flex justify-between text-sm text-muted-foreground mb-2">
@@ -390,7 +395,7 @@ export const Timeline: React.FC<TimelineProps> = memo(({
         {/* Timeline track with enhanced markers */}
         <div
           ref={timelineTrackRef}
-          className="timeline-track relative h-3 bg-muted rounded-full overflow-visible mb-2"
+          className={cn("timeline-track relative h-3 bg-muted rounded-full overflow-visible mb-2", disabled && "pointer-events-none")}
         >
           {/* Time markers (6-hour intervals) */}
           {timeMarkers.map((marker, index) => (
@@ -454,6 +459,7 @@ export const Timeline: React.FC<TimelineProps> = memo(({
               transform: 'translateZ(0)', // Hardware acceleration for smooth dragging
               backfaceVisibility: 'hidden',
             }}
+            disabled={disabled}
           />
         </div>
 
