@@ -15,6 +15,23 @@ import { migrationLogger } from '@/lib/utils/migration-logger';
 
 export async function POST(request: NextRequest) {
   return withErrorHandling(async (env) => {
+    // Security: Require CRON_SECRET for migration operations
+    const authHeader = request.headers.get('authorization');
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return NextResponse.json(
+        { error: 'Unauthorized: Bearer token required' },
+        { status: 401 }
+      );
+    }
+
+    const token = authHeader.substring(7);
+    if (token !== env.CRON_SECRET) {
+      return NextResponse.json(
+        { error: 'Unauthorized: Invalid token' },
+        { status: 401 }
+      );
+    }
+
     const body = await request.json();
     const { channelId } = body;
 
