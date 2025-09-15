@@ -255,6 +255,16 @@ const Globe = React.memo<{
                 const reports: ReportFromAPI[] = await response.json();
                 const allReports = reports;
 
+                // De-duplicate geocode requests per city to reduce load
+                const cityIndex = new Map<string, ReportFromAPI[]>();
+                for (const r of allReports) {
+                    if (!r.city) continue;
+                    const key = r.city.trim().toLowerCase().replace(/\s+/g, ' ');
+                    const arr = cityIndex.get(key) || [];
+                    arr.push(r);
+                    cityIndex.set(key, arr);
+                }
+
                 // Notify parent with time bounds immediately to enable timeline
                 if (onReportsMeta && allReports.length > 0) {
                     const times = allReports.map(r => new Date(r.generatedAt).getTime()).filter(t => !isNaN(t));
@@ -264,36 +274,40 @@ const Globe = React.memo<{
                     onReportsMeta(weekStart, latestTime);
                 }
 
-                // Geocode with limited concurrency
-                const concurrency = 8;
+                // Geocode with limited concurrency (respect OSM Nominatim policy)
+                const concurrency = 3;
                 let index = 0;
 
                 const runWorker = async () => {
-                    while (index < allReports.length) {
+                    const cityKeys = Array.from(cityIndex.keys());
+                    while (index < cityKeys.length) {
                         const i = index++;
-                        const report = allReports[i];
-                        if (!report || !report.city || !report.headline || !report.body || !report.reportId) continue;
+                        const key = cityKeys[i];
+                        const cityReports = cityIndex.get(key) || [];
+                        const sample = cityReports[0];
+                        if (!sample || !sample.city) continue;
                         try {
-                            const geoResponse = await fetch(`/api/geocode?city=${encodeURIComponent(report.city)}`);
+                            const geoResponse = await fetch(`/api/geocode?city=${encodeURIComponent(sample.city)}`);
                             if (!geoResponse.ok) {
                                 await geoResponse.json().catch(() => null);
                                 continue;
                             }
                             const location: { lat: number; lng: number; country?: string; country_code?: string; display_name?: string } = await geoResponse.json();
                             if (typeof location.lat === 'number' && typeof location.lng === 'number' && !(location.lat === 0 && location.lng === 0)) {
-                                const newItem: NewsMarkerData = {
-                                    ...report,
-                                    lat: location.lat,
-                                    lon: location.lng,
-                                    country: location.country,
-                                    country_code: location.country_code,
-                                    display_name: location.display_name,
-                                    generatedAtMs: new Date(report.generatedAt).getTime(),
-                                };
-                                processedReports.push(newItem);
-                                // Batch DOM updates
-                                if (processedReports.length % 25 === 0) {
-                                    setNewsItems(prev => [...prev, ...processedReports.splice(0, processedReports.length)]);
+                                for (const report of cityReports) {
+                                    const newItem: NewsMarkerData = {
+                                        ...report,
+                                        lat: location.lat,
+                                        lon: location.lng,
+                                        country: location.country,
+                                        country_code: location.country_code,
+                                        display_name: location.display_name,
+                                        generatedAtMs: new Date(report.generatedAt).getTime(),
+                                    };
+                                    processedReports.push(newItem);
+                                    if (processedReports.length % 25 === 0) {
+                                        setNewsItems(prev => [...prev, ...processedReports.splice(0, processedReports.length)]);
+                                    }
                                 }
                             }
                         } catch {

@@ -134,6 +134,39 @@ export async function GET(request: NextRequest) {
             reports = reports.filter(report => report.generationTrigger === 'scheduled');
         }
 
+        // Optionally enrich reports with cached geocodes (KV-only, non-blocking)
+        try {
+            const geocodeKeysSet = new Set<string>();
+            const normalizeCityKey = (s: string) => s.toLowerCase().trim().replace(/\s+/g, ' ');
+            for (const r of reports) {
+                if (r.city) geocodeKeysSet.add(normalizeCityKey(r.city));
+            }
+            const geocodeKeys = Array.from(geocodeKeysSet);
+            if (geocodeKeys.length) {
+                const geoMap = await cacheManager.batchGet<{
+                    lat: number; lng: number; country?: string; country_code?: string; display_name?: string;
+                }>('GEOCODE_CACHE' as keyof Cloudflare.Env, geocodeKeys, 1200);
+
+                reports = reports.map(r => {
+                    const key = r.city ? normalizeCityKey(r.city) : '';
+                    const geo = key ? (geoMap.get(key) || null) : null;
+                    if (geo && typeof geo.lat === 'number' && typeof geo.lng === 'number' && !(geo.lat === 0 && geo.lng === 0)) {
+                        return {
+                            ...r,
+                            lat: geo.lat,
+                            lon: geo.lng,
+                            country: geo.country,
+                            country_code: geo.country_code,
+                            display_name: geo.display_name,
+                        } as Report;
+                    }
+                    return r;
+                });
+            }
+        } catch (err) {
+            console.warn('[REPORTS] Geocode enrichment failed, continuing without:', err);
+        }
+
         // Cache the response for 5 minutes (longer for larger requests)
         const ttl = (startParam && endParam) || (limit && limit > 20) ? 600 : 300; // 10 minutes for large/range requests, 5 for small
         await cacheManager.put('REPORTS_CACHE', cacheKey, reports, ttl);

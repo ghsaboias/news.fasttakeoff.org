@@ -26,6 +26,12 @@ export interface Report {
   generationTrigger?: 'scheduled' | 'dynamic';
   windowStartTime?: string;
   windowEndTime?: string;
+  // Optional geocoding enrichment (KV-based)
+  lat?: number;
+  lon?: number;
+  country?: string;
+  country_code?: string;
+  display_name?: string;
 }
 
 export interface CachedMessages {
