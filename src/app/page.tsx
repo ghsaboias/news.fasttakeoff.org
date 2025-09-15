@@ -7,9 +7,10 @@ import { ExecutiveSummary, Report } from "@/lib/types/reports";
 import { getCacheContext } from "@/lib/utils";
 import { Suspense } from "react";
 
-// Aggressive caching for breaking news - balance freshness vs performance
-export const revalidate = 180; // 3 minutes
-export const dynamic = 'force-dynamic'; // TEMP FIX: Edge cache serving 12h+ stale data due to failed revalidation
+// Phase 1 Caching Fix: Enable caching with smart revalidation
+export const revalidate = 300; // 5 minutes - balances freshness vs performance
+// Removed force-dynamic to allow proper caching - addresses SEO issues
+// export const dynamic = 'force-dynamic'; // REMOVED: Was preventing all caching
 
 export async function generateMetadata() {
   return {
