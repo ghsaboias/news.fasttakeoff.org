@@ -4,7 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Activity, AlertTriangle, CheckCircle, Clock, RefreshCw, XCircle } from 'lucide-react';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 interface CronStatus {
   type: string;
@@ -20,80 +20,52 @@ interface CronStatus {
   };
 }
 
-interface ConnectionStatus {
-  connected: boolean;
+interface LoadingStatus {
+  isLoading: boolean;
   lastUpdate?: string;
-  reconnectAttempts: number;
+  error?: string;
 }
 
 export default function CronMonitorDashboard() {
-  const [liveMetrics, setLiveMetrics] = useState<CronStatus[]>([]);
-  const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>({
-    connected: false,
-    reconnectAttempts: 0
+  const [cronMetrics, setCronMetrics] = useState<CronStatus[]>([]);
+  const [loadingStatus, setLoadingStatus] = useState<LoadingStatus>({
+    isLoading: false
   });
-  const eventSourceRef = useRef<EventSource | null>(null);
 
-  const connectToSSE = useCallback(() => {
-    // Close existing connection
-    if (eventSourceRef.current) {
-      eventSourceRef.current.close();
-    }
+  const fetchCronStatus = useCallback(async () => {
+    setLoadingStatus(prev => ({ ...prev, isLoading: true, error: undefined }));
 
-    const es = new EventSource('/api/admin/live-metrics');
-
-    es.onopen = () => {
-      console.log('SSE connection opened');
-      setConnectionStatus({
-        connected: true,
-        lastUpdate: new Date().toISOString(),
-        reconnectAttempts: 0
-      });
-    };
-
-    es.onerror = () => {
-      console.error('SSE connection error');
-      setConnectionStatus(prev => ({
-        connected: false,
-        lastUpdate: prev.lastUpdate,
-        reconnectAttempts: prev.reconnectAttempts + 1
-      }));
-    };
-
-    es.addEventListener('connected', (event) => {
-      console.log('SSE connected event:', event.data);
-    });
-
-    es.addEventListener('cron_status', (event) => {
-      try {
-        const data = JSON.parse(event.data) as CronStatus[];
-        console.log('Received cron status update:', data);
-        setLiveMetrics(data);
-        setConnectionStatus(prev => ({
-          ...prev,
-          lastUpdate: new Date().toISOString()
-        }));
-      } catch (error) {
-        console.error('Error parsing cron status data:', error);
+    try {
+      const response = await fetch('/api/admin/cron-status');
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
       }
-    });
 
-    es.addEventListener('error', (event) => {
-      console.error('SSE error event:', event);
-    });
-
-    eventSourceRef.current = es;
+      const data = await response.json() as CronStatus[];
+      setCronMetrics(data);
+      setLoadingStatus({
+        isLoading: false,
+        lastUpdate: new Date().toISOString()
+      });
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      setLoadingStatus({
+        isLoading: false,
+        error: errorMessage
+      });
+      console.error('Failed to fetch cron status:', error);
+    }
   }, []);
 
   useEffect(() => {
-    connectToSSE();
+    // Initial fetch
+    fetchCronStatus();
 
-    return () => {
-      if (eventSourceRef.current) {
-        eventSourceRef.current.close();
-      }
-    };
-  }, [connectToSSE]);
+    // Set up polling every 30 seconds
+    const interval = setInterval(fetchCronStatus, 30000);
+
+    return () => clearInterval(interval);
+  }, [fetchCronStatus]);
 
   const getStatusColor = (status: CronStatus) => {
     if (status.outcome === 'running') {
@@ -167,35 +139,40 @@ export default function CronMonitorDashboard() {
 
   return (
     <div className="space-y-6">
-      {/* Connection Status Header */}
+      {/* Status Header */}
       <Card>
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
-            <CardTitle className="text-lg">Advanced Cron Monitor</CardTitle>
+            <CardTitle className="text-lg">Cron Monitor</CardTitle>
             <div className="flex items-center space-x-3">
               <div className="flex items-center space-x-2">
-                <div className={`w-3 h-3 rounded-full ${connectionStatus.connected ? 'bg-green-500' : 'bg-red-500'}`} />
+                <div className={`w-3 h-3 rounded-full ${
+                  loadingStatus.isLoading ? 'bg-blue-500' :
+                  loadingStatus.error ? 'bg-red-500' : 'bg-green-500'
+                }`} />
                 <span className="text-sm text-muted-foreground">
-                  {connectionStatus.connected ? 'Live updates active' : 'Connection lost'}
+                  {loadingStatus.isLoading ? 'Loading...' :
+                   loadingStatus.error ? `Error: ${loadingStatus.error}` :
+                   'Data loaded'}
                 </span>
               </div>
               <Button
                 variant="outline"
                 size="sm"
-                onClick={connectToSSE}
-                disabled={connectionStatus.connected}
+                onClick={fetchCronStatus}
+                disabled={loadingStatus.isLoading}
               >
-                <RefreshCw className="w-4 h-4 mr-1" />
-                Reconnect
+                <RefreshCw className={`w-4 h-4 mr-1 ${loadingStatus.isLoading ? 'animate-spin' : ''}`} />
+                Refresh
               </Button>
             </div>
           </div>
         </CardHeader>
       </Card>
 
-      {/* Live Metrics Grid */}
+      {/* Cron Metrics Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {liveMetrics.map((metric) => (
+        {cronMetrics.map((metric) => (
           <Card key={metric.type} className="relative">
             <CardHeader className="pb-2">
               <div className="flex justify-between items-start">
@@ -259,26 +236,24 @@ export default function CronMonitorDashboard() {
         ))}
       </div>
 
-      {/* Connection Info */}
-      {connectionStatus.lastUpdate && (
+      {/* Update Info */}
+      {loadingStatus.lastUpdate && (
         <Card>
           <CardContent className="pt-4">
             <div className="flex items-center justify-between text-sm text-muted-foreground">
-              <span>Last update: {formatTimestamp(connectionStatus.lastUpdate)}</span>
-              {connectionStatus.reconnectAttempts > 0 && (
-                <span>Reconnect attempts: {connectionStatus.reconnectAttempts}</span>
-              )}
+              <span>Last update: {formatTimestamp(loadingStatus.lastUpdate)}</span>
+              <span>Auto-refresh every 30 seconds</span>
             </div>
           </CardContent>
         </Card>
       )}
 
-      {liveMetrics.length === 0 && connectionStatus.connected && (
+      {cronMetrics.length === 0 && !loadingStatus.isLoading && !loadingStatus.error && (
         <Card>
           <CardContent className="pt-6">
             <div className="text-center">
               <Activity className="w-8 h-8 mx-auto text-muted-foreground mb-2" />
-              <p className="text-muted-foreground">Waiting for cron metrics data...</p>
+              <p className="text-muted-foreground">No cron metrics data available</p>
             </div>
           </CardContent>
         </Card>
