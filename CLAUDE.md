@@ -93,7 +93,7 @@ During major events (war outbreak, breaking news):
 - **Examples**: Run a file `vitest run tests/unit/cache-utils.test.ts`.
 
 ## Commit & PR Guidelines
-- **Commits**: Conventional prefixes used in history: `feat:`, `fix:`, `refactor:`, etc. Example: `feat: add node panel minimization`.
+- **Commits**: Conventional prefixes used in history: `feat:`, `fix:`, `refactor:`, etc. Example: `feat: add node panel minimization`. **NEVER include Claude Code attribution in commit messages** - keep them clean and professional.
 - **PRs**: Include scope/intent, linked issues, screenshots for UI, and a test plan. Ensure `bun run test` and `bun run lint` pass. Note any env/KV changes (`wrangler.toml`).
 - **Git Integration**: Repository has automatic deployment on push to master. Commits trigger Cloudflare Pages builds and deployments.
 
