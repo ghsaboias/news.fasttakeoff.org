@@ -152,6 +152,8 @@ export default function CronMonitorDashboard() {
         return 'Social Media Content Distribution';
       case 'EXECUTIVE_SUMMARY_6H':
         return 'Executive Summary Generation';
+      case 'EXECUTIVE_SUMMARY':
+        return 'Executive Summary (Manual)';
       case 'MESSAGES':
         return 'Discord Messages Collection';
       case 'WINDOW_EVALUATION':

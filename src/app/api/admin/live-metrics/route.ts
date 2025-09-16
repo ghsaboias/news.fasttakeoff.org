@@ -72,7 +72,7 @@ export async function GET() {
       // Function to fetch and send cron status (optimized to use aggregated KV entry)
       const fetchAndSendStatus = async () => {
         try {
-          const cronTypes = ['FEEDS_GERAL', 'FEEDS_MERCADO', 'SOCIAL_MEDIA_POST', 'EXECUTIVE_SUMMARY_6H', 'MESSAGES', 'WINDOW_EVALUATION', 'MKTNEWS_SUMMARY', 'MKTNEWS'];
+          const cronTypes = ['FEEDS_GERAL', 'FEEDS_MERCADO', 'SOCIAL_MEDIA_POST', 'EXECUTIVE_SUMMARY_6H', 'EXECUTIVE_SUMMARY', 'MESSAGES', 'WINDOW_EVALUATION', 'MKTNEWS_SUMMARY', 'MKTNEWS'];
           
           // Get aggregated statuses from KV cache
           let statuses = [];
