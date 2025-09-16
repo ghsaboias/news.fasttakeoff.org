@@ -37,14 +37,21 @@ async function logRun(
     }));
 
     // Write running status to aggregated cache for live monitoring
-    if (env && ctx) {
-        ctx.waitUntil(updateAggregatedCronStatus(env, task, {
+    if (env) {
+        const runningUpdate = updateAggregatedCronStatus(env, task, {
             type: task,
             outcome: 'running',
             duration: 0,
             timestamp: new Date().toISOString(),
             errorCount: 0
-        }));
+        });
+
+        if (ctx) {
+            ctx.waitUntil(runningUpdate);
+        } else {
+            // No ctx available, just fire and forget
+            runningUpdate.catch(err => console.warn(`[CRON] Background running status update failed:`, err));
+        }
     }
 
     const start = Date.now();
@@ -79,7 +86,7 @@ async function logRun(
         }));
 
         // Write status to KV for live monitoring
-        if (env && ctx) {
+        if (env) {
             const statusData = {
                 type: task,
                 outcome: 'ok',
@@ -127,7 +134,7 @@ async function logRun(
         }));
 
         // Write error status to KV for live monitoring
-        if (env && ctx) {
+        if (env) {
             const errorStatusData = {
                 type: task,
                 outcome: 'exception',
