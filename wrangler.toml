@@ -96,11 +96,6 @@ bucket_name = "news-images"
 preview_bucket_name = "news-images-dev"
 
 [[d1_databases]]
-binding = "DB"
-database_name = "prod-emails"
-database_id = "06082f10-b7ba-4a98-bf03-5c4ac36a6e36"
-
-[[d1_databases]]
 binding = "FAST_TAKEOFF_NEWS_DB"
 database_name = "fast-takeoff-news-db"
 database_id = "7bc73994-101f-430e-bd4f-7149d23808bb"
@@ -121,6 +116,7 @@ SERVER_API_URL = "https://news.fasttakeoff.org"
 R2_PUBLIC_URL = "https://images.fasttakeoff.org"
 FACEBOOK_APP_ID = "1279507170438935"
 FACEBOOK_PAGE_ID = "818480904670711"
+DISCORD_DISABLED = ""
 
 [placement]
 mode = "smart"
