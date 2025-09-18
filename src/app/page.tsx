@@ -52,7 +52,7 @@ async function getServerSideData() {
           const reportStartTime = Date.now();
 
           // Try cache first
-          const cachedReports = await cacheManager.get<Report[]>('REPORTS_CACHE', 'homepage:reports');
+          const cachedReports = await cacheManager.get<Report[]>('REPORTS_CACHE', 'homepage:latest-reports');
           if (cachedReports && cachedReports.length > 0) {
             console.log(`[HOMEPAGE] Cache hit: ${cachedReports.length} reports`);
             return cachedReports.slice(0, 4);
@@ -70,7 +70,7 @@ async function getServerSideData() {
 
           // Cache the results for 2 minutes
           if (allReports.length > 0) {
-            await cacheManager.put('REPORTS_CACHE', 'homepage:reports', allReports, 120);
+            await cacheManager.put('REPORTS_CACHE', 'homepage:latest-reports', allReports, 120);
             console.log(`[HOMEPAGE] Cached ${allReports.length} reports for 2 minutes`);
           }
 
