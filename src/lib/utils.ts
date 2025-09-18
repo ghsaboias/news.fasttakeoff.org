@@ -342,14 +342,7 @@ export function formatDateTimeLocal(
  * @returns Promise<Cloudflare environment object>
  */
 export const getCacheContext = async (): Promise<{ env: Cloudflare.Env }> => {
-  // Detect build environment
-  const isBuildTime = process.env.NODE_ENV === 'production' && process.env.NEXT_PHASE === 'phase-production-build';
-
-  if (isBuildTime) {
-    console.log('[BUILD] Build environment detected, returning null env');
-    return { env: null as unknown as Cloudflare.Env };
-  }
-
+  // Use async mode to support both runtime and build-time access to Cloudflare bindings
   return await getCloudflareContext({ async: true }) as unknown as { env: Cloudflare.Env };
 };
 

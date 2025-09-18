@@ -7,9 +7,8 @@ import { ExecutiveSummary, Report } from "@/lib/types/reports";
 import { getCacheContext } from "@/lib/utils";
 import { Suspense } from "react";
 
-// Fix for static generation issue: Force dynamic rendering while preserving SEO
-export const dynamic = 'force-dynamic'; // Ensures server-side data fetching works
-export const revalidate = 300; // 5 minutes ISR - maintains SEO while keeping data fresh
+// ISR configuration: Static generation with 5-minute revalidation
+export const revalidate = 300; // 5 minutes ISR - enables caching with fresh data
 
 export async function generateMetadata() {
   return {

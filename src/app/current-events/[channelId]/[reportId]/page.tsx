@@ -20,8 +20,8 @@ export async function generateStaticParams() {
         const channelsService = factory.createChannelsService();
         const channels = await channelsService.getChannels();
 
-        // Collect all reports with their timestamps
-        const allReports: Array<{ channelId: string; reportId: string; generatedAt: string }> = [];
+        // Collect all reports with their message counts and timestamps
+        const allReports: Array<{ channelId: string; reportId: string; generatedAt: string; messageCount: number }> = [];
 
         for (const channel of channels) {
             const reports = await reportService.getAllReportsForChannel(channel.id);
@@ -30,16 +30,24 @@ export async function generateStaticParams() {
                     allReports.push({
                         channelId: channel.id,
                         reportId: report.reportId,
-                        generatedAt: report.generatedAt
+                        generatedAt: report.generatedAt,
+                        messageCount: report.messageCount || 0
                     });
                 });
             }
         }
 
-        // Sort by most recent first and take top 50
+        // Sort by highest message count first, then by most recent, and take top 10
         const topReports = allReports
-            .sort((a, b) => new Date(b.generatedAt).getTime() - new Date(a.generatedAt).getTime())
-            .slice(0, 50);
+            .sort((a, b) => {
+                // Primary sort: highest message count first
+                if (b.messageCount !== a.messageCount) {
+                    return b.messageCount - a.messageCount;
+                }
+                // Secondary sort: most recent first
+                return new Date(b.generatedAt).getTime() - new Date(a.generatedAt).getTime();
+            })
+            .slice(0, 10);
 
         // Return params without the timestamp
         return topReports.map(({ channelId, reportId }) => ({

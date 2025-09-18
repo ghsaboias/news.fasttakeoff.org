@@ -155,7 +155,7 @@ Quick Rules
 - Wrangler commands never use ":", that's old syntax. npx wrangler kv:key list is now npx wrangler kv key list
 
 ## Known Issues
-- **Homepage stale data (Sep 2025):** Added `force-dynamic` back due to Cloudflare edge cache serving 12h+ old reports. ISR revalidation failing - investigate `getCacheContext()` in edge environment for proper SEO-friendly fix.
+- **Homepage skeleton loading (Sep 2025 - PATCHED):** Homepage was statically generated at build time with empty data due to missing Cloudflare environment during build phase. Current patch uses `dynamic = 'force-dynamic'` which fixes loading but disables all caching (renders on every request). **TODO**: Implement proper ISR solution that works with Cloudflare bindings during build phase.
 
 ## Data Architecture & Debugging
 

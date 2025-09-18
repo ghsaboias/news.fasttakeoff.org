@@ -24,8 +24,8 @@ export async function generateStaticParams() {
         const factory = ServiceFactory.getInstance(env);
         const channelsService = factory.createChannelsService();
         const channels = await channelsService.getChannels();
-        // Generate top 10 most active channels
-        return channels.slice(0, 10).map(channel => ({
+        // Generate top 5 most active channels to reduce D1 load during build
+        return channels.slice(0, 5).map(channel => ({
             channelId: channel.id
         }));
     } catch (error) {
