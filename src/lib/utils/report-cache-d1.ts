@@ -221,14 +221,14 @@ export class ReportCacheD1 {
     private static async fetchOptimizedHomepageReports(env: Cloudflare.Env, limit: number): Promise<Report[]> {
         // Get recent reports (last 24 hours) sorted by generated_at, then apply groupAndSortReports
         const oneDayAgo = Date.now() - (24 * 60 * 60 * 1000);
-        
+
         const result = await env.FAST_TAKEOFF_NEWS_DB.prepare(`
-            SELECT * FROM reports 
-            WHERE expires_at > ? 
-            AND generated_at > ? 
-            AND channel_id != 'homepage' 
+            SELECT * FROM reports
+            WHERE expires_at > ?
+            AND generated_at > ?
+            AND channel_id != 'homepage'
             AND cache_status NOT LIKE 'homepage-cache%'
-            ORDER BY generated_at DESC 
+            ORDER BY generated_at DESC
             LIMIT ?
         `).bind(Date.now(), new Date(oneDayAgo).toISOString(), limit * 3).all<ReportRow>();
 
@@ -238,10 +238,10 @@ export class ReportCacheD1 {
         }
 
         const reports = result.results.map((row) => this.rowToReport(row));
-        
+
         // Use the same groupAndSortReports logic for consistency
         const sortedReports = groupAndSortReports(reports);
-        
+
         return sortedReports.slice(0, Math.max(limit, 10)); // Ensure we get at least 10 for caching
     }
 

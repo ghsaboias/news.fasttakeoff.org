@@ -7,10 +7,9 @@ import { ExecutiveSummary, Report } from "@/lib/types/reports";
 import { getCacheContext } from "@/lib/utils";
 import { Suspense } from "react";
 
-// Phase 1 Caching Fix: Enable caching with smart revalidation
-export const revalidate = 300; // 5 minutes - balances freshness vs performance
-// Removed force-dynamic to allow proper caching - addresses SEO issues
-// export const dynamic = 'force-dynamic'; // REMOVED: Was preventing all caching
+// Fix for static generation issue: Force dynamic rendering while preserving SEO
+export const dynamic = 'force-dynamic'; // Ensures server-side data fetching works
+export const revalidate = 300; // 5 minutes ISR - maintains SEO while keeping data fresh
 
 export async function generateMetadata() {
   return {
