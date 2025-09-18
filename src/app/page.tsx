@@ -42,26 +42,42 @@ async function getServerSideData() {
       };
     }
 
-    // Add response-level caching check
     const cacheManager = new CacheManager(env);
-    const cacheKey = 'homepage:full-response';
-    const cachedResponse = await cacheManager.get<{ reports: Report[], executiveOrders: ExecutiveOrder[], executiveSummary: ExecutiveSummary | null }>('REPORTS_CACHE', cacheKey);
-
-    if (cachedResponse) return cachedResponse;
 
     const fetchStartTime = Date.now();
 
     // Fetch reports, executive orders, and executive summary server-side in parallel
     const [reports, executiveOrders, executiveSummary] = await Promise.all([
-      // Fetch reports with timeout
+      // Fetch reports with simple KV cache
       (async () => {
         try {
           const reportStartTime = Date.now();
+
+          // Try cache first
+          const cachedReports = await cacheManager.get<Report[]>('REPORTS_CACHE', 'homepage:reports');
+          if (cachedReports && cachedReports.length > 0) {
+            console.log(`[HOMEPAGE] Cache hit: ${cachedReports.length} reports`);
+            return cachedReports.slice(0, 4);
+          }
+
+          // Cache miss or empty cache: fetch from D1
+          if (cachedReports) {
+            console.log('[HOMEPAGE] Cache exists but empty, fetching from D1');
+          } else {
+            console.log('[HOMEPAGE] Cache miss, fetching from D1');
+          }
           const factory = ServiceFactory.getInstance(env);
           const reportService = factory.createReportService();
-          const result = await reportService.getAllReports(4);
+          const allReports = await reportService.getAllReports(10); // Get 10 for cache
+
+          // Cache the results for 2 minutes
+          if (allReports.length > 0) {
+            await cacheManager.put('REPORTS_CACHE', 'homepage:reports', allReports, 120);
+            console.log(`[HOMEPAGE] Cached ${allReports.length} reports for 2 minutes`);
+          }
+
           console.log(`[PERF] Reports fetch took ${Date.now() - reportStartTime}ms`);
-          return result;
+          return allReports.slice(0, 4);
         } catch (error) {
           console.error('Error fetching reports server-side:', error);
           return [];
@@ -96,17 +112,13 @@ async function getServerSideData() {
 
     console.log(`[PERF] Parallel fetch took ${Date.now() - fetchStartTime}ms`);
 
-    const response = {
+    console.log(`[PERF] Total homepage data fetch took ${Date.now() - startTime}ms`);
+
+    return {
       reports: reports || [],
       executiveOrders: executiveOrders || [],
       executiveSummary: executiveSummary
     };
-
-    // Cache the full response for 2 minutes
-    await cacheManager.put('REPORTS_CACHE', cacheKey, response, 120);
-    console.log(`[PERF] Total homepage data fetch took ${Date.now() - startTime}ms`);
-
-    return response;
   } catch (error) {
     console.error('Error fetching server-side data:', error);
     return {

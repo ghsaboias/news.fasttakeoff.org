@@ -64,7 +64,8 @@ async function getServerSideData() {
 
         const factory = ServiceFactory.getInstance(env);
         const reportService = factory.createReportService();
-        const reports = await reportService.getLatestReportPerChannelWithCache();
+        // Read directly from D1 instead of using cached aggregation
+        const reports = await reportService.getLatestReportPerChannel();
         return reports || [];
     } catch (error) {
         console.error('Error fetching reports on server:', error);

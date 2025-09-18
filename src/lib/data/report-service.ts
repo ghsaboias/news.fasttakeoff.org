@@ -422,11 +422,10 @@ export class ReportService {
             // Invalidate current-events aggregated cache
             await ReportCache.invalidateCurrentEventsCache(this.env);
             
-            // Invalidate homepage cache
+            // Invalidate simple homepage cache
             if (this.env.REPORTS_CACHE) {
-                await this.env.REPORTS_CACHE.delete('homepage:latest-reports');
-                await this.env.REPORTS_CACHE.delete('homepage:backup-reports');
-                console.log('[REPORTS] Invalidated homepage caches');
+                await this.env.REPORTS_CACHE.delete('homepage:reports');
+                console.log('[REPORTS] Invalidated homepage cache');
             }
         } catch (error) {
             console.error('[REPORTS] Failed to invalidate cascade caches:', error);
