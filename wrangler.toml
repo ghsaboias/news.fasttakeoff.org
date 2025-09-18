@@ -16,7 +16,7 @@ compatibility_flags = [
 crons = [
     "0 */2 * * *",    # Feeds summaries and social media posting
     "0 */6 * * *",    # Executive summary generation
-    "*/15 * * * *",   # Message updates and dynamic window evaluation
+    "*/30 * * * *",   # Message updates and dynamic window evaluation
     "0 * * * *"       # MktNews summary and cache maintenance (hourly)
 ]
 
