@@ -3,8 +3,9 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader } from "@/components/ui/loader";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useApi } from "@/lib/hooks";
+import { Loader2 } from 'lucide-react';
 import { ApiErrorResponse } from "@/lib/types/external-apis";
 import { FactCheckResult } from "@/lib/types/reports";
 import { AlertTriangle, CheckCircle, Info, XCircle } from "lucide-react";
@@ -118,9 +119,13 @@ export default function FactCheckDisplay({ reportId, className, onDemandTrigger 
                     </CardTitle>
                 </CardHeader>
                 <CardContent>
-                    <div className="flex items-center justify-center py-4">
-                        <Loader size="sm" />
-                        <span className="ml-2 text-sm text-muted">Loading fact-check results...</span>
+                    <div className="space-y-3 py-4">
+                        <div className="flex items-center gap-2">
+                            <Skeleton className="h-4 w-4 rounded-full" />
+                            <Skeleton className="h-4 w-32" />
+                        </div>
+                        <Skeleton className="h-4 w-full" />
+                        <Skeleton className="h-4 w-3/4" />
                     </div>
                 </CardContent>
             </Card>
@@ -149,7 +154,7 @@ export default function FactCheckDisplay({ reportId, className, onDemandTrigger 
                         >
                             {isTriggering ? (
                                 <>
-                                    <Loader size="sm" className="mr-2" />
+                                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
                                     Fact-checking...
                                 </>
                             ) : (
@@ -187,7 +192,7 @@ export default function FactCheckDisplay({ reportId, className, onDemandTrigger 
                         >
                             {isTriggering ? (
                                 <>
-                                    <Loader size="sm" className="mr-2" />
+                                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
                                     Fact-checking...
                                 </>
                             ) : (
@@ -214,7 +219,7 @@ export default function FactCheckDisplay({ reportId, className, onDemandTrigger 
                 </CardHeader>
                 <CardContent>
                     <div className="flex items-center justify-center py-4">
-                        <Loader size="sm" />
+                        <Loader2 className="h-4 w-4 animate-spin" />
                         <span className="ml-2 text-sm text-muted">Performing fact-check... This may take up to 60 seconds.</span>
                     </div>
                 </CardContent>

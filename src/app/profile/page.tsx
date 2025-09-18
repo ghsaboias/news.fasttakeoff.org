@@ -2,8 +2,9 @@
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader } from '@/components/ui/loader';
+import { Skeleton } from '@/components/ui/skeleton';
 import { useUser } from '@clerk/nextjs';
+import { Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
@@ -42,8 +43,29 @@ export default function ProfilePage() {
 
     if (!isLoaded) {
         return (
-            <div className="flex items-center justify-center min-h-[400px]">
-                <Loader size="lg" />
+            <div className="container mx-auto px-4 py-8">
+                <div className="max-w-2xl mx-auto">
+                    <div className="mb-8">
+                        <Skeleton className="h-8 w-32 mb-4" />
+                        <Skeleton className="h-4 w-64" />
+                    </div>
+                    <Card>
+                        <CardHeader>
+                            <Skeleton className="h-6 w-24" />
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            <div className="space-y-2">
+                                <Skeleton className="h-4 w-16" />
+                                <Skeleton className="h-8 w-full" />
+                            </div>
+                            <div className="space-y-2">
+                                <Skeleton className="h-4 w-20" />
+                                <Skeleton className="h-8 w-full" />
+                            </div>
+                            <Skeleton className="h-10 w-24" />
+                        </CardContent>
+                    </Card>
+                </div>
             </div>
         );
     }
@@ -90,7 +112,10 @@ export default function ProfilePage() {
                                 className="w-full"
                             >
                                 {isSubscribing ? (
-                                    <Loader size="sm" className="mr-2" />
+                                    <>
+                                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                                        Subscribing...
+                                    </>
                                 ) : (
                                     'Subscribe Now'
                                 )}

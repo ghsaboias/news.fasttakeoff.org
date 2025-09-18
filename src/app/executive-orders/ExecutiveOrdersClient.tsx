@@ -3,8 +3,8 @@
 import OrderCard from "@/components/executive-orders/OrderCard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Loader } from "@/components/ui/loader";
 import { Separator } from "@/components/ui/separator";
+import { Skeleton } from "@/components/ui/skeleton";
 import { fetchExecutiveOrders } from "@/lib/data/executive-orders";
 import { useApi } from "@/lib/hooks";
 import { ExecutiveOrder } from "@/lib/types/executive-orders";
@@ -37,9 +37,30 @@ export default function ClientExecutiveOrders({ initialOrders }: { initialOrders
 
     if (loading) return (
         <div className="container mx-auto px-4 py-8">
-            <div className="col-span-full text-center py-16 flex flex-col items-center justify-center gap-4">
-                <Loader size="lg" />
-                <p className="text-lg text-muted-foreground">Loading executive orders...</p>
+            <div className="mb-8">
+                <Skeleton className="h-8 w-64 mb-4" />
+                <Skeleton className="h-4 w-96" />
+            </div>
+            <div className="space-y-6">
+                {Array.from({ length: 5 }).map((_, i) => (
+                    <div key={i} className="border rounded-lg p-6 bg-card">
+                        <div className="flex items-start justify-between">
+                            <div className="flex-1 space-y-3">
+                                <div className="flex items-center gap-2">
+                                    <Skeleton className="h-6 w-24" />
+                                    <Skeleton className="h-5 w-32" />
+                                </div>
+                                <Skeleton className="h-6 w-3/4" />
+                                <Skeleton className="h-4 w-full" />
+                                <Skeleton className="h-4 w-2/3" />
+                            </div>
+                            <div className="ml-4 flex flex-col items-end gap-2">
+                                <Skeleton className="h-4 w-20" />
+                                <Skeleton className="h-8 w-24" />
+                            </div>
+                        </div>
+                    </div>
+                ))}
             </div>
         </div>
     );

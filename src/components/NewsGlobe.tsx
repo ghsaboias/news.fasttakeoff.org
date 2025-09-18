@@ -2,7 +2,7 @@
 
 import { ReportPanel } from '@/components/ReportPanel';
 import { Timeline } from '@/components/Timeline';
-import { Loader } from '@/components/ui/loader';
+import { Skeleton } from '@/components/ui/skeleton';
 import { Html, Line, OrbitControls, Sphere } from '@react-three/drei';
 import { Canvas, ThreeEvent, useFrame } from '@react-three/fiber';
 import Image from 'next/image';
@@ -399,7 +399,14 @@ const Globe = React.memo<{
     if (isFetchingGeoData) {
         return (
             <Html center>
-                <Loader size="lg" className="text-muted-foreground" />
+                <div className="text-center space-y-4">
+                    <Skeleton className="h-8 w-48 mx-auto" />
+                    <Skeleton className="h-4 w-64 mx-auto" />
+                    <div className="grid grid-cols-2 gap-4">
+                        <Skeleton className="h-24 w-full" />
+                        <Skeleton className="h-24 w-full" />
+                    </div>
+                </div>
             </Html>
         );
     }

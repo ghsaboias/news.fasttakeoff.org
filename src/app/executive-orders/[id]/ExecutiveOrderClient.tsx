@@ -2,8 +2,8 @@
 
 import { Button } from "@/components/ui/button";
 import ReactMarkdown from '@/components/ui/dynamic-markdown';
-import { Loader } from "@/components/ui/loader";
 import { findExecutiveOrderByNumber } from "@/lib/data/executive-orders";
+import { Loader2 } from 'lucide-react';
 import { ExecutiveOrder, Section } from "@/lib/types/executive-orders";
 import { SummaryResponse } from "@/lib/types/external-apis";
 import { parseDispositionNotes, type RelatedEOInfo } from "@/lib/utils";
@@ -207,7 +207,7 @@ export default function ExecutiveOrderClient({
                     <h2 className="text-xl font-semibold mb-4">Executive Order Summary</h2>
                     {summaryLoading ? (
                         <div className="flex items-center justify-center p-6">
-                            <Loader size="md" className="mr-2" />
+                            <Loader2 className="h-5 w-5 animate-spin mr-2" />
                             <span>Generating summary...</span>
                         </div>
                     ) : aiSummary ? (
@@ -273,7 +273,7 @@ export default function ExecutiveOrderClient({
                                         <span className="font-medium">{relatedEO.relationship}:</span>{" "}
                                         {relatedEO.isLoading ? (
                                             <span className="inline-flex items-center gap-1 text-muted-foreground">
-                                                <Loader size="sm" className="inline" />
+                                                <Loader2 className="h-4 w-4 animate-spin inline" />
                                                 <span>EO {relatedEO.eoNumber}</span>
                                             </span>
                                         ) : (

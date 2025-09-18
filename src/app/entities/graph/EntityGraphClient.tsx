@@ -1,6 +1,6 @@
 'use client';
 
-import { Loader } from '@/components/ui/loader';
+import { Skeleton } from '@/components/ui/skeleton';
 import { ENTITY_COLORS, ENTITY_LABELS } from '@/lib/config';
 import { useApi } from '@/lib/hooks';
 import { GraphData, GraphLink, GraphNode, TransformedGraphData } from '@/lib/types/entities';
@@ -82,10 +82,18 @@ export default function EntityGraphClient() {
 
     if (loading) {
         return (
-            <div className="flex items-center justify-center h-full w-full bg-gray-900">
-                <div className="text-center">
-                    <Loader size="lg" className="mx-auto mb-4" />
-                    <p className="text-lg text-white">Loading Entity Graph...</p>
+            <div className="space-y-4 p-8 bg-gray-900">
+                <div className="text-center mb-6">
+                    <Skeleton className="h-6 w-48 mx-auto mb-2 bg-gray-700" />
+                    <Skeleton className="h-4 w-64 mx-auto bg-gray-700" />
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {Array.from({ length: 6 }).map((_, i) => (
+                        <div key={i} className="border border-gray-700 rounded-lg p-4">
+                            <Skeleton className="h-4 w-full mb-2 bg-gray-700" />
+                            <Skeleton className="h-3 w-3/4 bg-gray-700" />
+                        </div>
+                    ))}
                 </div>
             </div>
         );

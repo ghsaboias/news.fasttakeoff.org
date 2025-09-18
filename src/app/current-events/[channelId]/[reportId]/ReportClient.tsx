@@ -11,7 +11,7 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Loader } from "@/components/ui/loader";
+import { Skeleton } from "@/components/ui/skeleton";
 import { LocalDateTimeFull } from "@/components/utils/LocalDateTime";
 import { useApi, useTranslateReport, type LanguageCode } from "@/lib/hooks";
 import { DiscordMessage } from "@/lib/types/discord";
@@ -119,7 +119,17 @@ export default function ReportClient() {
             <div className="p-6 mx-auto flex flex-col overflow-x-hidden">
                 {isLoading ? (
                     <div className="flex items-center justify-center h-full">
-                        <Loader size="xl" />
+                        <div className="space-y-6">
+                            <div className="space-y-2">
+                                <Skeleton className="h-8 w-3/4" />
+                                <Skeleton className="h-4 w-1/2" />
+                            </div>
+                            <div className="space-y-4">
+                                {Array.from({ length: 6 }).map((_, i) => (
+                                    <Skeleton key={i} className={`h-4 ${i % 3 === 0 ? 'w-full' : i % 3 === 1 ? 'w-5/6' : 'w-3/4'}`} />
+                                ))}
+                            </div>
+                        </div>
                     </div>
                 ) : (
                     <div className="flex flex-col gap-6 max-w-full sm:max-w-[70%] mx-auto">

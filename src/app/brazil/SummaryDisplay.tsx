@@ -1,8 +1,8 @@
 'use client';
 
 import ReactMarkdown from '@/components/ui/dynamic-markdown';
-import { Loader } from '@/components/ui/loader';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { LocalDateTimeFull } from '@/components/utils/LocalDateTime';
 import { BRAZIL_NEWS_TOPICS } from '@/lib/config';
@@ -123,8 +123,16 @@ export default function SummaryDisplay() {
             </div>
             {/* --- Content area: loader, error, or summary --- */}
             {loading ? (
-                <div className="flex items-center justify-center py-12">
-                    <Loader size="lg" />
+                <div className="space-y-6 py-12">
+                    <div className="space-y-2">
+                        <Skeleton className="h-6 w-48" />
+                        <Skeleton className="h-4 w-96" />
+                    </div>
+                    <div className="space-y-4">
+                        {Array.from({ length: 8 }).map((_, i) => (
+                            <Skeleton key={i} className={`h-4 ${i % 3 === 0 ? 'w-full' : i % 3 === 1 ? 'w-5/6' : 'w-4/5'}`} />
+                        ))}
+                    </div>
                 </div>
             ) : error ? (() => {
                 const errorMessage = error.message || 'An error occurred';

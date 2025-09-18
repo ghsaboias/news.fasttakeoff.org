@@ -1,10 +1,10 @@
 "use client";
 
 import ReportCard from "@/components/current-events/ReportCard";
+import ReportCardSkeleton from "@/components/skeletons/ReportCardSkeleton";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Loader } from "@/components/ui/loader";
 import {
     Select,
     SelectContent,
@@ -177,10 +177,9 @@ export default function CurrentEventsClient({ reports: initialReports, isLoading
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
                 {loading ? (
-                    <div className="col-span-full text-center py-16 flex flex-col items-center justify-center gap-4">
-                        <Loader size="lg" />
-                        <p className="text-lg text-muted-foreground">Loading reports...</p>
-                    </div>
+                    Array.from({ length: 4 }).map((_, i) => (
+                        <ReportCardSkeleton key={i} />
+                    ))
                 ) : channelsWithLatest.length > 0 ? (
                     channelsWithLatest.map(({ latestReport }) => (
                         <ReportCard

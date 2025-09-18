@@ -1,9 +1,10 @@
 'use client';
 
 import React from 'react';
-import { Loader } from '@/components/ui/loader';
+import { Skeleton } from '@/components/ui/skeleton';
 import { LocalDateTimeFull } from '@/components/utils/LocalDateTime';
 import { useApi } from '@/lib/hooks';
+import { Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 
@@ -77,11 +78,23 @@ export default function FeedsBySourceClient({ initialRegion = 'ALL' }: Props) {
 
   if (loading && !data && !groupsByRegion[region]) {
     return (
-      <div className="flex items-center justify-center py-16">
-        <div className="text-center">
-          <Loader size="lg" className="mx-auto mb-3" />
-          <p className="text-sm text-muted-foreground">Loading per-source view…</p>
-        </div>
+      <div className="space-y-6 py-16">
+        {Array.from({ length: 5 }).map((_, i) => (
+          <div key={i} className="rounded border border-border bg-card p-4">
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex-1 space-y-2">
+                <Skeleton className="h-5 w-3/4" />
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-4 w-5/6" />
+                <div className="flex items-center gap-2 mt-3">
+                  <Skeleton className="h-4 w-20" />
+                  <Skeleton className="h-4 w-24" />
+                </div>
+              </div>
+              <Skeleton className="h-16 w-16 rounded" />
+            </div>
+          </div>
+        ))}
       </div>
     );
   }
@@ -117,7 +130,7 @@ export default function FeedsBySourceClient({ initialRegion = 'ALL' }: Props) {
         >Brazil</button>
         {loading && (
           <span className="ml-2 inline-flex items-center text-xs text-muted-foreground">
-            <Loader size="sm" className="mr-1" /> Refreshing…
+            <Loader2 className="h-4 w-4 animate-spin mr-1" /> Refreshing…
           </span>
         )}
       </div>

@@ -2,7 +2,7 @@
 
 import MessageTimeline from "@/components/current-events/timeline/MessageTimeline";
 import { Button } from "@/components/ui/button";
-import { Loader } from "@/components/ui/loader";
+import { Skeleton } from "@/components/ui/skeleton";
 import { DiscordChannel, DiscordMessage } from "@/lib/types/discord";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
@@ -56,8 +56,22 @@ export default function MessagesClient({
 
     if (isLoading) {
         return (
-            <div className="flex items-center justify-center p-8">
-                <Loader size="xl" />
+            <div className="space-y-4 p-8">
+                {Array.from({ length: 8 }).map((_, i) => (
+                    <div key={i} className="border rounded-lg p-4">
+                        <div className="flex items-start gap-3">
+                            <Skeleton className="h-8 w-8 rounded-full" />
+                            <div className="flex-1 space-y-2">
+                                <div className="flex items-center gap-2">
+                                    <Skeleton className="h-4 w-20" />
+                                    <Skeleton className="h-3 w-16" />
+                                </div>
+                                <Skeleton className="h-4 w-full" />
+                                <Skeleton className="h-4 w-3/4" />
+                            </div>
+                        </div>
+                    </div>
+                ))}
             </div>
         );
     }

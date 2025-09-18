@@ -4,8 +4,9 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import ReactMarkdown from '@/components/ui/dynamic-markdown';
-import { Loader } from '@/components/ui/loader';
+import { Skeleton } from '@/components/ui/skeleton';
 import LocalDateTime from '@/components/utils/LocalDateTime';
+import { Loader2 } from 'lucide-react';
 import { useApi } from '@/lib/hooks';
 import { MktNewsMessage, MktNewsSummary } from '@/lib/types/mktnews';
 import { Clock, RefreshCw, TrendingUp } from 'lucide-react';
@@ -118,7 +119,14 @@ export default function MktFeedClient() {
     if (loading && !data) {
         return (
             <div className="flex flex-col items-center justify-center p-8 gap-4">
-                <Loader size="lg" />
+                <div className="space-y-4">
+                    <Skeleton className="h-6 w-48" />
+                    <div className="space-y-3">
+                        {Array.from({ length: 5 }).map((_, i) => (
+                            <Skeleton key={i} className="h-4 w-full" />
+                        ))}
+                    </div>
+                </div>
                 <p className="text-lg text-foreground">Loading market feed...</p>
             </div>
         );
@@ -148,7 +156,7 @@ export default function MktFeedClient() {
             )}
             {summaryLoading && (
                 <div className="mb-4 flex items-center gap-2 text-sm text-foreground/80">
-                    <Loader size="sm" /> Loading market summary...
+                    <Loader2 className="h-4 w-4 animate-spin" /> Loading market summary...
                 </div>
             )}
             {summaryData?.summary && (
