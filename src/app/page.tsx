@@ -7,8 +7,11 @@ import { ExecutiveSummary, Report } from "@/lib/types/reports";
 import { getCacheContext } from "@/lib/utils";
 import { Suspense } from "react";
 
+// Force dynamic rendering to ensure Cloudflare bindings are available
+export const dynamic = 'force-dynamic';
+
 // ISR configuration: Static generation with 5-minute revalidation
-export const revalidate = 300; // 5 minutes ISR - enables caching with fresh data
+// export const revalidate = 300; // Disabled due to Cloudflare binding issues during build
 
 export async function generateMetadata() {
   return {
