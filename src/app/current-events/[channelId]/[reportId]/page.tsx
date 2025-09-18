@@ -10,7 +10,12 @@ export const revalidate = 300;
 // Pre-generate some popular report pages
 export async function generateStaticParams() {
     try {
-        // Generate static params for popular routes
+        // Detect build environment - skip static generation during build
+        const isBuildTime = process.env.NODE_ENV === 'production' && process.env.NEXT_PHASE === 'phase-production-build';
+        if (isBuildTime) {
+            console.log('[BUILD] Skipping static generation for report pages during build phase');
+            return [];
+        }
 
         const { env } = await getCacheContext();
         if (!env) return [];
