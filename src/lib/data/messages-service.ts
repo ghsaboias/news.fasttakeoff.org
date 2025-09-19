@@ -30,6 +30,11 @@ export class MessagesService {
         this.messageTransformer = new MessageTransformer();
     }
 
+    private sleep = (ms: number): Promise<void> => new Promise(resolve => setTimeout(resolve, ms));
+
+    private getRandomDelay = (min: number, max: number): number =>
+        Math.floor(Math.random() * (max - min + 1)) + min;
+
     private messageFilter = {
         byBot: (messages: DiscordMessage[]): DiscordMessage[] =>
             messages.filter(msg =>
@@ -420,6 +425,12 @@ export class MessagesService {
                             console.log(`[MESSAGES] Channel ${channel.name}: ${botMessages.length} bot messages, total ${allMessages.length} - OLDEST: ${messages[0].timestamp}`);
 
                             after = messages[0].id; // Use the newest message ID for the next batch
+
+                            // Add random delay between pagination requests (1-3 seconds)
+                            if (messages.length > 0) {
+                                const paginationDelay = this.getRandomDelay(1000, 3000);
+                                await this.sleep(paginationDelay);
+                            }
                         } catch (error) {
                             clearTimeout(timeoutId);
                             if (error instanceof Error && error.name === 'AbortError') {
@@ -445,6 +456,14 @@ export class MessagesService {
                         const updated = [...new Map([...cachedMessages, ...allMessages].map(m => [m.id, m])).values()]
                             .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
                         await this.cacheMessages(channel.id, updated, channel.name);
+                    }
+
+                    // Add random delay between channels (3-7 seconds)
+                    const channelIndex = channels.findIndex(c => c.id === channel.id);
+                    if (channelIndex < channels.length - 1) { // Don't delay after the last channel
+                        const channelDelay = this.getRandomDelay(3000, 7000);
+                        console.log(`[MESSAGES] Waiting ${channelDelay}ms before next channel...`);
+                        await this.sleep(channelDelay);
                     }
                 }
 

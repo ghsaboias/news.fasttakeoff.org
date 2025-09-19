@@ -77,7 +77,7 @@ export const ACTIVE_AI_PROVIDER_NAME: string = 'openrouter'; // Or 'groq', etc.
 export const API = {
     DISCORD: {
         BASE_URL: 'https://discord.com/api/v10',
-        USER_AGENT: 'NewsApp/0.1.0 (https://news.fasttakeoff.org)',
+        USER_AGENT: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) discord/1.0.9156 Chrome/124.0.6367.243 Electron/30.0.6 Safari/537.36',
     },
     // GROQ and OPENROUTER sections removed, managed by AI_PROVIDERS now
 };

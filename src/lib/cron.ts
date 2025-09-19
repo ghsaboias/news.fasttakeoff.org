@@ -234,8 +234,8 @@ const CRON_TASKS: Record<string, CronTaskFunction> = {
         
     },
 
-    // Every 15 minutes
-    "*/15 * * * *": async (env: Cloudflare.Env, scheduledTime?: number, ctx?: ExecutionContext) => {
+    // Every 30 minutes
+    "*/30 * * * *": async (env: Cloudflare.Env, scheduledTime?: number, ctx?: ExecutionContext) => {
         if (env.DISCORD_DISABLED) {
             console.warn('[CRON] DISCORD_DISABLED is set – skipping MESSAGES update and window evaluation');
             return;
