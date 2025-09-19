@@ -424,7 +424,7 @@ export class ReportService {
             
             // Invalidate simple homepage cache
             if (this.env.REPORTS_CACHE) {
-                await this.env.REPORTS_CACHE.delete('homepage:reports');
+                await this.env.REPORTS_CACHE.delete('homepage:latest-reports');
                 console.log('[REPORTS] Invalidated homepage cache');
             }
         } catch (error) {
