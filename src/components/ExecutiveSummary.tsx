@@ -89,7 +89,7 @@ function ExecutiveSummary({ className = '', initialSummary }: ExecutiveSummaryPr
                                     <ReactMarkdown
                                         components={{
                                             h2: ({ children }) => <h2 className="text-2xl font-bold text-dark-100 mb-2 text-center">{children}</h2>,
-                                            ul: ({ children }) => <ul className="list-disc space-y-1 mb-4 ml-4">{children}</ul>,
+                                            ul: ({ children }) => <ul className="space-y-2 mb-4 ml-4">{children}</ul>,
                                             li: ({ children }) => <li className="mb-1 text-md text-dark-300">{children}</li>,
                                             strong: ({ children }) => <strong className="font-semibold text-accent">{children}</strong>,
                                             p: ({ children }) => <p className="mb-4 text-dark-300">{children}</p>,
@@ -145,7 +145,7 @@ function ExecutiveSummary({ className = '', initialSummary }: ExecutiveSummaryPr
                                 <ReactMarkdown
                                     components={{
                                         h2: ({ children }) => <h2 className="text-2xl font-bold text-dark-100 mb-4 text-center">{children}</h2>,
-                                        ul: ({ children }) => <ul className="list-disc mb-4 ml-4">{children}</ul>,
+                                        ul: ({ children }) => <ul className="mb-4 ml-4">{children}</ul>,
                                         li: ({ children }) => <li className="my-4 text-dark-300">{children}</li>,
                                         strong: ({ children }) => <strong className="font-semibold text-accent">{children}</strong>,
                                         p: ({ children }) => <p className="mb-4 text-dark-300">{children}</p>,
