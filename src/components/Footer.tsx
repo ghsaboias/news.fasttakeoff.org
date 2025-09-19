@@ -2,11 +2,16 @@
 
 import { Separator } from "@/components/ui/separator";
 import { useGeolocation } from "@/lib/hooks/useGeolocation";
+import { AI_PROVIDERS, ACTIVE_AI_PROVIDER_NAME } from "@/lib/config";
 import Link from "next/link";
 
 export default function Footer() {
     // Use the consolidated geolocation hook
     const { isUSBased } = useGeolocation({ initialValue: false });
+
+    // Get current AI configuration
+    const activeProvider = AI_PROVIDERS[ACTIVE_AI_PROVIDER_NAME];
+    const activeModel = activeProvider?.models[0];
 
     return (
         <footer className="bg-dark-900 py-6 border-t border-dark-700">
@@ -92,6 +97,9 @@ export default function Footer() {
                 </div>
                 <Separator className="my-6 bg-dark-600" />
                 <div className="flex flex-col items-center gap-4">
+                    <p className="text-center text-xs text-dark-500">
+                        Powered by {activeProvider?.displayName || 'OpenRouter'} • {activeModel?.id || 'google/gemini-2.5-flash-lite'}
+                    </p>
                     <p className="text-center text-sm text-dark-400">
                         &copy; {new Date().getFullYear()} Fast Takeoff News. All rights reserved.
                     </p>
