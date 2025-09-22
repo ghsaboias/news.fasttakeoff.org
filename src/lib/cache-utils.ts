@@ -51,7 +51,6 @@ export class CacheManager {
         // 1️⃣ Fast path: value (or inflight promise) already cached
         if (requestCache.has(requestCacheKey)) {
             const cached = requestCache.get(requestCacheKey);
-            console.log(`[CACHE] Request cache hit for ${requestCacheKey}`);
             const value = cached instanceof Promise ? await cached : cached;
             return value as T | null;
         }
@@ -125,7 +124,6 @@ export class CacheManager {
         }
 
         if (keysToFetch.length === 0) {
-            console.log(`[CACHE] All ${keys.length} keys found in request cache`);
             return results;
         }
 
