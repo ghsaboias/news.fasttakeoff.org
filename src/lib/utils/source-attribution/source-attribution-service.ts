@@ -1,6 +1,6 @@
 import { CacheManager } from '@/lib/cache-utils';
 import { CACHE } from '@/lib/config';
-import { DiscordMessage } from '@/lib/types/discord';
+import { EssentialDiscordMessage } from '@/lib/utils/message-transformer';
 import { Report, ReportSourceAttribution } from '@/lib/types/reports';
 import { Cloudflare } from '../../../../worker-configuration';
 import { SourceAttributionAI } from './source-attribution-ai';
@@ -24,7 +24,7 @@ export class SourceAttributionService {
      */
     async getAttributions(
         report: Report,
-        sourceMessages: DiscordMessage[]
+        sourceMessages: EssentialDiscordMessage[]
     ): Promise<ReportSourceAttribution> {
         const cacheKey = `attribution:${report.reportId}`;
 
@@ -57,7 +57,7 @@ export class SourceAttributionService {
 
     private async generateAndCacheAttributions(
         report: Report,
-        sourceMessages: DiscordMessage[],
+        sourceMessages: EssentialDiscordMessage[],
         cacheKey: string
     ): Promise<ReportSourceAttribution> {
         try {

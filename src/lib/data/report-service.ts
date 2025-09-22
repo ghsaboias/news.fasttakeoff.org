@@ -1,4 +1,4 @@
-import { DiscordMessage } from '@/lib/types/discord';
+import type { EssentialDiscordMessage } from '../utils/message-transformer';
 import { EntityExtractionResult } from '@/lib/types/entities';
 import { Report } from '@/lib/types/reports';
 import { ReportRow } from '@/lib/types/database';
@@ -44,7 +44,7 @@ export class ReportService {
     /**
      * Create a dynamic report for the specified time window
      */
-    async createDynamicReport(channelId: string, windowStart: Date, windowEnd: Date): Promise<{ report: Report | null; messages: DiscordMessage[] }> {
+    async createDynamicReport(channelId: string, windowStart: Date, windowEnd: Date): Promise<{ report: Report | null; messages: EssentialDiscordMessage[] }> {
         // If Discord-dependent processing is disabled, avoid generating new reports
         if (this.env.DISCORD_DISABLED) {
             console.warn('[REPORTS] DISCORD_DISABLED is set – skipping createDynamicReport');
@@ -295,7 +295,7 @@ export class ReportService {
      * Get a specific report with its associated messages
      * Replacement for legacy getReportAndMessages(channelId, reportId, timeframe)
      */
-    async getReportAndMessages(channelId: string, reportId: string): Promise<{ report: Report | null; messages: DiscordMessage[] }> {
+    async getReportAndMessages(channelId: string, reportId: string): Promise<{ report: Report | null; messages: EssentialDiscordMessage[] }> {
         try {
             // First try to get report from KV cache
             const cacheKey = `report:${reportId}:full`;
@@ -305,7 +305,7 @@ export class ReportService {
             if (cachedReport) {
                 const report = cachedReport as Report;
                 // Get associated messages
-                let messages: DiscordMessage[] = [];
+                let messages: EssentialDiscordMessage[] = [];
                 if (report.messageIds?.length) {
                     messages = await this.messagesService.getMessagesForReport(channelId, report.messageIds);
                 }
@@ -345,7 +345,7 @@ export class ReportService {
             };
             
             // Get associated messages
-            let messages: DiscordMessage[] = [];
+            let messages: EssentialDiscordMessage[] = [];
             if (report.messageIds?.length) {
                 messages = await this.messagesService.getMessagesForReport(channelId, report.messageIds);
             }

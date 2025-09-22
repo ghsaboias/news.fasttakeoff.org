@@ -1,6 +1,6 @@
 import { getAIAPIKey, getAIProviderConfig } from '@/lib/ai-config';
 import { AI } from '@/lib/config';
-import { DiscordMessage } from '@/lib/types/discord';
+import type { EssentialDiscordMessage } from './message-transformer';
 import { OpenAIResponse } from '@/lib/types/external-apis';
 import { Report } from '@/lib/types/reports';
 import { v4 as uuidv4 } from 'uuid';
@@ -16,7 +16,7 @@ export interface ReportContext {
 
 export class ReportAI {
     static async generate(
-        messages: DiscordMessage[],
+        messages: EssentialDiscordMessage[],
         previousReports: Report[],
         context: ReportContext,
         env: Cloudflare.Env
@@ -43,7 +43,7 @@ export class ReportAI {
 
     private static async makeAIRequest(
         prompt: string,
-        messages: DiscordMessage[],
+        messages: EssentialDiscordMessage[],
         context: ReportContext,
         env: Cloudflare.Env
     ): Promise<Report> {
@@ -140,7 +140,7 @@ export class ReportAI {
      * Phase 1: Generate report with basic window context
      */
     static async generateWithWindowContext(
-        messages: DiscordMessage[],
+        messages: EssentialDiscordMessage[],
         previousReports: Report[],
         enhancedContext: ReportContext & { windowStart: string; windowEnd: string; windowDuration: string },
         env: Cloudflare.Env
@@ -171,7 +171,7 @@ export class ReportAI {
      * Phase 1: Create prompt with window context placeholders filled
      */
     private static createWindowAwarePrompt(
-        messages: DiscordMessage[],
+        messages: EssentialDiscordMessage[],
         previousReports: Report[],
         context: ReportContext & { windowStart: string; windowEnd: string; windowDuration: string }
     ): { prompt: string; tokenCount: number } {

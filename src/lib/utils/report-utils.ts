@@ -1,5 +1,5 @@
 import { AI } from '@/lib/config';
-import { DiscordMessage } from '@/lib/types/discord';
+import type { EssentialDiscordMessage } from './message-transformer';
 import { Report } from '@/lib/types/reports';
 
 /**
@@ -29,7 +29,7 @@ export function formatHumanReadableTimestamp(date: Date): string {
     }) + ' UTC';
 }
 
-export function formatSingleMessage(message: DiscordMessage): string {
+export function formatSingleMessage(message: EssentialDiscordMessage): string {
     const timestamp = formatHumanReadableTimestamp(new Date(message.timestamp));
     const parts = message.content.includes("https") ? [] : [`[${timestamp}] Message: ${message.content}`];
 
@@ -46,8 +46,8 @@ export function formatSingleMessage(message: DiscordMessage): string {
         });
     }
 
-    if (message.referenced_message?.content && !message.referenced_message.content.includes("https")) {
-        parts.push(`Context: ${message.referenced_message.content}`);
+    if (message.referenced_message_content && !message.referenced_message_content.includes("https")) {
+        parts.push(`Context: ${message.referenced_message_content}`);
     }
     return parts.join('\n');
 }
@@ -66,7 +66,7 @@ Generated: ${new Date(report.generatedAt).toISOString()}
     }).join('\n---\n');
 }
 
-export function createPrompt(messages: DiscordMessage[], previousReports: Report[]): { prompt: string; tokenCount: number } {
+export function createPrompt(messages: EssentialDiscordMessage[], previousReports: Report[]): { prompt: string; tokenCount: number } {
     const tokenPerChar = AI.REPORT_GENERATION.TOKEN_PER_CHAR;
     const overheadTokens = AI.REPORT_GENERATION.OVERHEAD_TOKENS;
     const outputBuffer = AI.REPORT_GENERATION.OUTPUT_BUFFER;

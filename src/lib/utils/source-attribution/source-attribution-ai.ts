@@ -1,6 +1,6 @@
 import { getAIAPIKey, getAIProviderConfig } from '@/lib/ai-config';
 import { AI } from '@/lib/config';
-import { DiscordMessage } from '@/lib/types/discord';
+import type { EssentialDiscordMessage } from '@/lib/utils/message-transformer';
 import { Report, ReportSourceAttribution, SourceAttribution } from '@/lib/types/reports';
 import { formatSingleMessage } from '@/lib/utils/report-utils';
 import { Cloudflare } from '../../../../worker-configuration';
@@ -14,7 +14,7 @@ export class SourceAttributionAI {
      */
     static async generateAttributions(
         report: Report,
-        sourceMessages: DiscordMessage[],
+        sourceMessages: EssentialDiscordMessage[],
         env: Cloudflare.Env
     ): Promise<ReportSourceAttribution> {
         const prompt = this.createPrompt(report, sourceMessages);
@@ -70,7 +70,7 @@ export class SourceAttributionAI {
         throw new Error(`[SOURCE_ATTRIBUTION] ${errorMessage}`);
     }
 
-    private static createPrompt(report: Report, sourceMessages: DiscordMessage[]): string {
+    private static createPrompt(report: Report, sourceMessages: EssentialDiscordMessage[]): string {
         // Format source messages for the prompt using the same rich formatting as report generation
         const formattedMessages = sourceMessages.map((msg) => {
             const formatted = formatSingleMessage(msg);
