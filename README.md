@@ -370,7 +370,6 @@ bun run deploy             # Deploy to production
   - `EXECUTIVE_ORDERS_CACHE`
   - `REPORTS_CACHE`
   - `CHANNELS_CACHE`
-  - `MESSAGES_CACHE`
   - `FEEDS_CACHE`
   - `AUTH_TOKENS`
   - `GEOCODE_CACHE`
@@ -754,14 +753,13 @@ The application utilizes Cloudflare Workers' scheduled events (cron jobs) for ba
 
 ### Caching
 
-The application leverages Cloudflare KV for caching various types of data to improve performance and reduce API calls. A `CacheManager` utility (`src/lib/cache-utils.ts`) provides a consistent interface for interacting with KV namespaces, supporting TTL-based expiration and background refresh (stale-while-revalidate) strategies.
+The application leverages Cloudflare KV for selective caching (e.g., reports, channels) while Discord message history now lives entirely in D1. A `CacheManager` utility (`src/lib/cache-utils.ts`) provides a consistent interface for interacting with KV namespaces, supporting TTL-based expiration and background refresh (stale-while-revalidate) strategies.
 
 Key KV namespaces used (defined in `wrangler.toml`):
 
 - `EXECUTIVE_ORDERS_CACHE`: Caches individual executive orders and ID lookups.
 - `REPORTS_CACHE`: Caches generated news reports.
 - `CHANNELS_CACHE`: Caches filtered lists of Discord channels.
-- `MESSAGES_CACHE`: Caches messages fetched from Discord channels.
 - `SUBSCRIPTIONS_CACHE`: Caches Stripe subscription data.
 - `AUTH_TOKENS`: Stores OAuth tokens for Twitter API access.
 - `GEOCODE_CACHE`: Caches geocoding results for News Globe.

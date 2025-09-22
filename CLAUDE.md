@@ -161,13 +161,13 @@ Quick Rules
 
 ### Database Schema
 - **Reports table columns**: `id` (INTEGER PK), `report_id` (TEXT), `headline` (not `title`), `channel_id`, `channel_name`, `generation_trigger`, `window_start_time`, `window_end_time`, `message_count`, `message_ids` (TEXT), `generated_at` (TEXT), `body`, `city`, `user_generated`, `timeframe`, `cache_status`, etc.
-- **Message storage**: Messages stored in KV as `messages:{channel_id}` (not individual message IDs)
-- **Local vs production**: Local KV often has stale/partial data; recent dynamic reports may not be cached locally
+- **Message storage**: Messages are stored in D1 (`messages` table) keyed by `message_id` and `channel_id`
+- **Local vs production**: Ensure local D1 has been populated (e.g., via `scripts/backfill`) before testing dynamic flows
 
 ### Key Patterns
-- **KV message keys**: `messages:{channel_id}` contains array of Discord message objects with full metadata (the number in the key IS the Discord channel ID)
+- **D1 message queries**: `SELECT * FROM messages WHERE channel_id = ? AND timestamp BETWEEN ? AND ? ORDER BY timestamp DESC`
 - **Message IDs in reports**: Stored as JSON array in `message_ids` column, references Discord snowflake IDs
-- **Channel mapping**: Use D1 to map channel IDs to names, then fetch messages from KV by channel ID
+- **Channel mapping**: Use D1 to map channel IDs to names, then fetch messages from D1 by channel ID
 
 ### Dynamic Report Debugging
 - Check channel metrics: `npx wrangler d1 execute FAST_TAKEOFF_NEWS_DB --remote --command "SELECT channel_id, MAX(channel_name) as channel_name, AVG(message_count) as avg_msgs, COUNT(*) as reports FROM reports WHERE generated_at >= datetime('now', '-7 days') GROUP BY channel_id ORDER BY avg_msgs DESC"`
@@ -175,16 +175,14 @@ Quick Rules
 - Monitor overlap prevention via console logs: `[WINDOW_EVAL] Skipping report for channelId: X% overlap with recent report`
 - Dynamic reports have `generation_trigger = 'dynamic'` in database vs `'scheduled'` for fixed intervals
 ### Production KV Namespaces
-- **MESSAGES_CACHE**: `b3ca706f58e44201a1f3d362c358cd1c` 
 - **REPORTS_CACHE**: `1907c22aa1e24a0e98f995ffcbb7b9aa`
 
 **Common Commands:**
-- List message channels: `npx wrangler kv key list --namespace-id b3ca706f58e44201a1f3d362c358cd1c --remote`
 - List reports: `npx wrangler kv key list --namespace-id 1907c22aa1e24a0e98f995ffcbb7b9aa --remote`
-- Get messages for channel: `npx wrangler kv key get "messages:CHANNEL_ID" --namespace-id b3ca706f58e44201a1f3d362c358cd1c --remote`
+- Inspect D1 messages: `npx wrangler d1 execute FAST_TAKEOFF_NEWS_DB --remote --command "SELECT channel_id, COUNT(*) FROM messages GROUP BY channel_id ORDER BY COUNT(*) DESC"`
 
-### Messages Migration Status (Active)
-Currently migrating Discord messages storage from KV to D1 hybrid architecture. Migration analysis and tools located in `messages_d1_migration/` (gitignored). Phase 1 complete - see migration docs for progress and implementation details.
+### Messages Migration Status
+Discord messages now live entirely in D1. Legacy KV migration utilities have been removed; rely on D1 queries for debugging and audits.
 
 ### Prompt Quality Analysis Workflow
 **Test/Iterate/Verify Flow for Dynamic Report Generation:**
