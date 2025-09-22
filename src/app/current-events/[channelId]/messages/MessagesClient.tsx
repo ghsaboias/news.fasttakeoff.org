@@ -3,7 +3,8 @@
 import MessageTimeline from "@/components/current-events/timeline/MessageTimeline";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { DiscordChannel, DiscordMessage } from "@/lib/types/discord";
+import { DiscordChannel } from "@/lib/types/discord";
+import type { EssentialDiscordMessage } from "@/lib/utils/message-transformer";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
@@ -18,8 +19,8 @@ export default function MessagesClient({
     channelId
 }: MessagesClientProps) {
     const [channel, setChannel] = useState<DiscordChannel | null>(null);
-    const [allMessages, setAllMessages] = useState<DiscordMessage[]>([]);
-    const [displayedMessages, setDisplayedMessages] = useState<DiscordMessage[]>([]);
+    const [allMessages, setAllMessages] = useState<EssentialDiscordMessage[]>([]);
+    const [displayedMessages, setDisplayedMessages] = useState<EssentialDiscordMessage[]>([]);
     const [messageCount, setMessageCount] = useState(0);
     const [currentPage, setCurrentPage] = useState(1);
     const [isLoading, setIsLoading] = useState(true);
@@ -30,7 +31,7 @@ export default function MessagesClient({
             try {
                 const response = await fetch(`/api/messages?channelId=${channelId}`);
                 if (!response.ok) throw new Error('Failed to fetch messages');
-                const data = await response.json() as { channel: DiscordChannel; messages: { messages: DiscordMessage[]; count: number } };
+                const data = await response.json() as { channel: DiscordChannel; messages: { messages: EssentialDiscordMessage[]; count: number } };
                 setChannel(data.channel);
                 setAllMessages(data.messages.messages);
                 setDisplayedMessages(data.messages.messages.slice(0, MESSAGES_PER_PAGE));

@@ -14,7 +14,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { LocalDateTimeFull } from "@/components/utils/LocalDateTime";
 import { useApi, useTranslateReport, type LanguageCode } from "@/lib/hooks";
-import { DiscordMessage } from "@/lib/types/discord";
+import type { EssentialDiscordMessage } from "@/lib/utils/message-transformer";
 import { ReportResponse } from "@/lib/types/reports";
 import {
     ArrowLeft,
@@ -67,7 +67,7 @@ export default function ReportClient() {
     const previousReportId = useMemo(() => data?.previousReportId, [data]);
     const nextReportId = useMemo(() => data?.nextReportId, [data]);
 
-    const [displayedMessages, setDisplayedMessages] = useState<DiscordMessage[]>([]);
+    const [displayedMessages, setDisplayedMessages] = useState<EssentialDiscordMessage[]>([]);
     const [messageCount, setMessageCount] = useState(0);
     const [currentPage, setCurrentPage] = useState(1);
     const [showAttributions, setShowAttributions] = useState(false);

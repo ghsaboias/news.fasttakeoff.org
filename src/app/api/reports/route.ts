@@ -238,6 +238,12 @@ export async function POST(request: Request) {
             }
 
             if (!report) {
+                // If no report was generated but we have an empty messages array,
+                // this means no messages in timeframe (legitimate case, not an error)
+                if (messages && messages.length === 0) {
+                    return { report: null, messages: [] };
+                }
+                // Otherwise, this is an actual error (AI failure, etc.)
                 throw new Error('No report generated - possibly no messages in timeframe/window');
             }
 

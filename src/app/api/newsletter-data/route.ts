@@ -1,7 +1,7 @@
 import { withErrorHandling } from '@/lib/api-utils';
 import { NextResponse } from 'next/server';
 import { ServiceFactory } from '@/lib/services/ServiceFactory';
-import { DiscordMessage } from '@/lib/types/discord';
+import { EssentialDiscordMessage } from '@/lib/utils/message-transformer';
 import { Report } from '@/lib/types/reports';
 
 type NewsletterImage = {
@@ -92,7 +92,7 @@ function mapCategory(channelName?: string, headline?: string): { category: strin
   return { category: 'news', emoji: '📰', color: '#6b7280' };
 }
 
-function extractImagesFromMessages(channelId: string | undefined, messages: DiscordMessage[], reportMessageIds: string[] | undefined): NewsletterImage[] {
+function extractImagesFromMessages(channelId: string | undefined, messages: EssentialDiscordMessage[], reportMessageIds: string[] | undefined): NewsletterImage[] {
   if (!messages?.length) return [];
   const filterByIds = Array.isArray(reportMessageIds) && reportMessageIds.length > 0;
   const included = filterByIds ? new Set(reportMessageIds) : null;
@@ -112,9 +112,9 @@ function extractImagesFromMessages(channelId: string | undefined, messages: Disc
           filename: att.filename,
           width: att.width,
           height: att.height,
-          description: `Image from ${msg.author?.username || 'unknown'}: ${att.filename}`,
+          description: `Image from ${msg.author_username || 'unknown'}: ${att.filename}`,
           messageId: msg.id,
-          author: msg.author?.username || msg.author?.global_name || 'unknown',
+          author: msg.author_username || msg.author_global_name || 'unknown',
         });
       }
     }
@@ -126,14 +126,14 @@ function extractImagesFromMessages(channelId: string | undefined, messages: Disc
         const imageUrl = normalizeImageUrl((emb as { image?: { url?: string } })?.image?.url);
         const candidateUrl = imageUrl || thumbUrl;
         if (!candidateUrl) continue;
-        if (!looksLikeImage(undefined, emb?.thumbnail?.content_type, candidateUrl)) continue;
+        if (!looksLikeImage(undefined, undefined, candidateUrl)) continue;
         const filename = candidateUrl.split('/').pop() || 'image';
         out.push({
           url: candidateUrl,
           filename,
-          description: `Embedded image from ${msg.author?.username || 'unknown'}`,
+          description: `Embedded image from ${msg.author_username || 'unknown'}`,
           messageId: msg.id,
-          author: msg.author?.username || msg.author?.global_name || 'unknown',
+          author: msg.author_username || msg.author_global_name || 'unknown',
         });
       }
     }
@@ -166,7 +166,7 @@ export async function GET(request: Request) {
 
     for (const report of reports.slice(0, limit)) {
       if (!report?.reportId) continue;
-      let messages: DiscordMessage[] = [];
+      let messages: EssentialDiscordMessage[] = [];
       let presentMessageIds = 0;
       if (report.channelId) {
         const { messages: msgs } = await reportService.getReportAndMessages(report.channelId, report.reportId);
