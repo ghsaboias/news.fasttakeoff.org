@@ -1,4 +1,5 @@
 import { Cloudflare, KVNamespace } from '../../worker-configuration';
+import { KV_TIMEOUTS } from './config';
 
 // Request-level cache to prevent duplicate KV operations
 const requestCache = new Map<string, unknown>();
@@ -45,7 +46,7 @@ export class CacheManager {
         }
     }
 
-    async get<T>(namespace: keyof Cloudflare.Env, key: string, timeoutMs: number = 5000): Promise<T | null> {
+    async get<T>(namespace: keyof Cloudflare.Env, key: string, timeoutMs: number = KV_TIMEOUTS.SINGLE_OPERATION): Promise<T | null> {
         const requestCacheKey = this.getRequestCacheKey(namespace as string, key);
 
         // 1️⃣ Fast path: value (or inflight promise) already cached
@@ -106,7 +107,7 @@ export class CacheManager {
         }
     }
 
-    async batchGet<T>(namespace: keyof Cloudflare.Env, keys: string[], timeoutMs: number = 1500): Promise<Map<string, T | null>> {
+    async batchGet<T>(namespace: keyof Cloudflare.Env, keys: string[], timeoutMs: number = KV_TIMEOUTS.BATCH_OPERATION): Promise<Map<string, T | null>> {
         const cache = this.env[namespace] as KVNamespace;
         if (!cache) return new Map();
 
@@ -155,7 +156,7 @@ export class CacheManager {
         }
     }
 
-    async list(namespace: keyof Cloudflare.Env, options: { prefix?: string; limit?: number } = {}, timeoutMs: number = 5000): Promise<{ keys: Array<{ name: string; expiration?: number; metadata?: unknown }> }> {
+    async list(namespace: keyof Cloudflare.Env, options: { prefix?: string; limit?: number } = {}, timeoutMs: number = KV_TIMEOUTS.SINGLE_OPERATION): Promise<{ keys: Array<{ name: string; expiration?: number; metadata?: unknown }> }> {
         const cache = this.env[namespace] as KVNamespace;
         if (!cache) return { keys: [] };
 
@@ -168,7 +169,7 @@ export class CacheManager {
         return result;
     }
 
-    async delete(namespace: keyof Cloudflare.Env, key: string, timeoutMs: number = 5000): Promise<void> {
+    async delete(namespace: keyof Cloudflare.Env, key: string, timeoutMs: number = KV_TIMEOUTS.SINGLE_OPERATION): Promise<void> {
         const cache = this.env[namespace] as KVNamespace;
         if (!cache) return;
 

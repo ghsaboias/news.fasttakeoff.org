@@ -673,6 +673,13 @@ export const TASK_TIMEOUTS = {
   FEEDS: 240000,           // 4 minutes
 } as const;
 
+// Centralized KV operation timeouts (milliseconds)
+export const KV_TIMEOUTS = {
+  SINGLE_OPERATION: 5000,   // get, put, delete, list
+  BATCH_OPERATION: 7500,    // batchGet (1.5x single operation)
+  CRON_STATUS: 5000,        // Critical cron status operations
+} as const;
+
 // Legacy types removed - use dynamic windows with explicit start/end times
 
 // Feature flags for gradual migration from fixed to dynamic windows

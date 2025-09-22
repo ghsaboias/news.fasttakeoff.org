@@ -1,6 +1,6 @@
 import { Cloudflare } from '../../worker-configuration';
 import type { ExecutionContext } from '../../worker-configuration';
-import { TASK_TIMEOUTS, FEATURE_FLAGS } from './config';
+import { TASK_TIMEOUTS, FEATURE_FLAGS, KV_TIMEOUTS } from './config';
 import { ExecutiveSummaryService } from './data/executive-summary-service';
 import { FeedsService } from './data/feeds-service';
 import { MktNewsService } from './data/mktnews-service';
@@ -363,7 +363,7 @@ async function updateAggregatedCronStatus(env: Cloudflare.Env, updatedTask: stri
         console.log(`[CRON] Reading current aggregated status from KV`);
         const currentAggregatedRaw = await Promise.race([
             env.CRON_STATUS_CACHE.get('cron_statuses_aggregated'),
-            new Promise<never>((_, reject) => setTimeout(() => reject(new Error('KV_GET_TIMEOUT')), 5000))
+            new Promise<never>((_, reject) => setTimeout(() => reject(new Error('KV_GET_TIMEOUT')), KV_TIMEOUTS.CRON_STATUS))
         ]);
         
         let aggregatedStatuses: Record<string, CronStatusData> = {};
@@ -392,7 +392,7 @@ async function updateAggregatedCronStatus(env: Cloudflare.Env, updatedTask: stri
                 JSON.stringify(aggregatedStatuses), 
                 { expirationTtl: 86400 } // 24 hours
             ),
-            new Promise((_, reject) => setTimeout(() => reject(new Error('KV_PUT_TIMEOUT')), 5000))
+            new Promise((_, reject) => setTimeout(() => reject(new Error('KV_PUT_TIMEOUT')), KV_TIMEOUTS.CRON_STATUS))
         ]);
 
         console.log(`[CRON] ✅ Successfully updated aggregated status for task: ${updatedTask}`);
