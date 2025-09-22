@@ -77,7 +77,7 @@ export class WindowEvaluationService {
       WHERE datetime(generated_at) >= datetime('now', '-7 days')
         AND message_count > 0
       GROUP BY channel_id
-      HAVING total_reports >= 3
+      HAVING total_reports >= 1
       ORDER BY avg_messages_per_report DESC
     `;
 
@@ -239,9 +239,9 @@ export class WindowEvaluationService {
     
     const messageCount = await this.countMessagesSince(channelId, since);
     
-    const shouldGenerate = 
-      messageCount >= thresholds.minMessages || 
-      minutesSinceLastGeneration >= thresholds.maxIntervalMinutes;
+    const shouldGenerate =
+      messageCount >= thresholds.minMessages ||
+      (minutesSinceLastGeneration >= thresholds.maxIntervalMinutes && messageCount > 0);
 
     if (shouldGenerate) {
       // Check for overlapping reports to avoid duplication

@@ -1,148 +1,129 @@
 import { ChannelMessageCounts } from '@/lib/types/reports';
-import { DiscordMessage } from '@/lib/types/discord';
 import { Cloudflare } from '../../../worker-configuration';
-import { CacheManager } from '../cache-utils';
 import { TIME } from '../config';
-import { ServiceFactory } from '../services/ServiceFactory';
-import { MessagesService } from './messages-service';
+import { D1MessagesService } from './d1-messages-service';
 
 export class MessageCountsService {
-    private cacheManager: CacheManager;
-    private messagesService: MessagesService;
+    private d1Service: D1MessagesService;
     private env: Cloudflare.Env;
 
     constructor(env: Cloudflare.Env) {
         this.env = env;
-        this.cacheManager = new CacheManager(env);
-        const factory = ServiceFactory.getInstance(env);
-        this.messagesService = factory.getMessagesService();
+        this.d1Service = new D1MessagesService(env);
     }
 
     /**
-     * Update message counts for all channels
+     * Get active channels from D1 database
+     * PHASE 2: Replace KV key listing with D1 query
      */
-    async updateAllChannelCounts(): Promise<void> {
-        console.log('[MESSAGE_COUNTS] Starting message count update');
+    private async getActiveChannels(): Promise<string[]> {
+        try {
+            const stmt = this.env.FAST_TAKEOFF_NEWS_DB.prepare(`
+                SELECT DISTINCT channel_id
+                FROM messages
+                WHERE timestamp >= datetime('now', '-7 days')
+                ORDER BY channel_id
+            `);
 
-        // Get all channels from message cache
-        const messageKeys = await this.messagesService.listMessageKeys();
-        const channelIds = messageKeys.map(key => key.name.replace('messages:', ''));
-
-        // Batch fetch all cached messages
-        const channelMessages = new Map<string, DiscordMessage[]>();
-        const batchSize = 10; // Process channels in batches of 10
-
-        for (let i = 0; i < channelIds.length; i += batchSize) {
-            const batchChannelIds = channelIds.slice(i, i + batchSize);
-            const batchKeys = batchChannelIds.map(id => `messages:${id}`);
-
-            const batchResults = await this.cacheManager.batchGet<{ messages: DiscordMessage[] }>('MESSAGES_CACHE', batchKeys, 2000);
-
-            for (const [key, data] of batchResults.entries()) {
-                if (data?.messages) {
-                    const channelId = key.replace('messages:', '');
-                    channelMessages.set(channelId, data.messages);
-                }
+            const result = await stmt.all();
+            if (!result.success) {
+                throw new Error(`Failed to get active channels: ${result.error || 'Unknown error'}`);
             }
+
+            return (result.results as Array<{ channel_id: string }>).map(row => row.channel_id);
+        } catch (error) {
+            console.error('[MESSAGE_COUNTS] Failed to get active channels:', error);
+            return [];
         }
-
-        // Process all channels using the batched data
-        const now = Date.now();
-        const countUpdates: Promise<void>[] = [];
-
-        for (const [channelId, messages] of channelMessages.entries()) {
-            const counts = {
-                '5min': this.countMessagesInWindow(messages, TIME.FIVE_MINUTES_MS),
-                '15min': this.countMessagesInWindow(messages, TIME.FIFTEEN_MINUTES_MS),
-                '1h': this.countMessagesInWindow(messages, TIME.ONE_HOUR_MS),
-                '6h': this.countMessagesInWindow(messages, TIME.SIX_HOURS_MS),
-                '1d': this.countMessagesInWindow(messages, TIME.DAY_MS),
-                '7d': this.countMessagesInWindow(messages, TIME.WEEK_MS),
-            };
-
-            const channelCounts: ChannelMessageCounts = {
-                channelId,
-                lastUpdated: now,
-                counts
-            };
-
-            // Queue the update
-            countUpdates.push(this.saveChannelCounts(channelId, channelCounts));
-        }
-
-        // Wait for all updates to complete
-        await Promise.all(countUpdates);
-        console.log(`[MESSAGE_COUNTS] Updated counts for ${channelIds.length} channels`);
     }
 
     /**
-     * Update message counts for a single channel
+     * Get message counts for all time windows using D1 aggregation
+     * PHASE 2: Replace in-memory filtering with efficient D1 queries
      */
-    async updateChannelCounts(channelId: string): Promise<void> {
-        const now = Date.now();
-
-        // Get all messages from cache
-        const cachedData = await this.messagesService.getAllCachedMessagesForChannel(channelId);
-        if (!cachedData?.messages) {
-            console.log(`[MESSAGE_COUNTS] No cached messages found for channel ${channelId}`);
-            return;
-        }
-
-        // Calculate counts for each time window using cached data
-        const counts = {
-            '5min': this.countMessagesInWindow(cachedData.messages, TIME.FIVE_MINUTES_MS),
-            '15min': this.countMessagesInWindow(cachedData.messages, TIME.FIFTEEN_MINUTES_MS),
-            '1h': this.countMessagesInWindow(cachedData.messages, TIME.ONE_HOUR_MS),
-            '6h': this.countMessagesInWindow(cachedData.messages, TIME.SIX_HOURS_MS),
-            '1d': this.countMessagesInWindow(cachedData.messages, TIME.DAY_MS),
-            '7d': this.countMessagesInWindow(cachedData.messages, TIME.WEEK_MS),
+    private async getChannelCountsFromD1(channelId: string): Promise<ChannelMessageCounts['counts']> {
+        const now = new Date();
+        const timeWindows = {
+            '5min': new Date(now.getTime() - TIME.FIVE_MINUTES_MS),
+            '15min': new Date(now.getTime() - TIME.FIFTEEN_MINUTES_MS),
+            '1h': new Date(now.getTime() - TIME.ONE_HOUR_MS),
+            '6h': new Date(now.getTime() - TIME.SIX_HOURS_MS),
+            '1d': new Date(now.getTime() - TIME.DAY_MS),
+            '7d': new Date(now.getTime() - TIME.WEEK_MS)
         };
 
-        const channelCounts: ChannelMessageCounts = {
+        const counts: ChannelMessageCounts['counts'] = {
+            '5min': 0,
+            '15min': 0,
+            '1h': 0,
+            '6h': 0,
+            '1d': 0,
+            '7d': 0
+        };
+
+        try {
+            // Single query to get all counts at once
+            const stmt = this.env.FAST_TAKEOFF_NEWS_DB.prepare(`
+                SELECT
+                    COUNT(CASE WHEN timestamp >= ? THEN 1 END) as count_5min,
+                    COUNT(CASE WHEN timestamp >= ? THEN 1 END) as count_15min,
+                    COUNT(CASE WHEN timestamp >= ? THEN 1 END) as count_1h,
+                    COUNT(CASE WHEN timestamp >= ? THEN 1 END) as count_6h,
+                    COUNT(CASE WHEN timestamp >= ? THEN 1 END) as count_1d,
+                    COUNT(CASE WHEN timestamp >= ? THEN 1 END) as count_7d
+                FROM messages
+                WHERE channel_id = ?
+            `);
+
+            const result = await stmt.bind(
+                timeWindows['5min'].toISOString(),
+                timeWindows['15min'].toISOString(),
+                timeWindows['1h'].toISOString(),
+                timeWindows['6h'].toISOString(),
+                timeWindows['1d'].toISOString(),
+                timeWindows['7d'].toISOString(),
+                channelId
+            ).first();
+
+            if (result) {
+                counts['5min'] = (result.count_5min as number) || 0;
+                counts['15min'] = (result.count_15min as number) || 0;
+                counts['1h'] = (result.count_1h as number) || 0;
+                counts['6h'] = (result.count_6h as number) || 0;
+                counts['1d'] = (result.count_1d as number) || 0;
+                counts['7d'] = (result.count_7d as number) || 0;
+            }
+        } catch (error) {
+            console.error(`[MESSAGE_COUNTS] Failed to get D1 counts for channel ${channelId}:`, error);
+        }
+
+        return counts;
+    }
+
+    /**
+     * Get channel counts directly from D1
+     */
+    async getChannelCounts(channelId: string): Promise<ChannelMessageCounts> {
+        const counts = await this.getChannelCountsFromD1(channelId);
+        return {
             channelId,
-            lastUpdated: now,
-            counts
+            lastUpdated: Date.now(),
+            counts,
         };
-
-        await this.saveChannelCounts(channelId, channelCounts);
-
-        console.log(`[MESSAGE_COUNTS] Channel ${channelId}: ${counts['5min']} (5min), ${counts['1h']} (1h), ${counts['6h']} (6h)`);
     }
 
     /**
-     * Count messages in a time window from cached messages
-     */
-    private countMessagesInWindow(messages: DiscordMessage[], windowMs: number): number {
-        const cutoffTime = Date.now() - windowMs;
-        return messages.filter(msg => new Date(msg.timestamp).getTime() > cutoffTime).length;
-    }
-
-    /**
-     * Save channel counts to KV with efficient batching
-     */
-    private async saveChannelCounts(channelId: string, counts: ChannelMessageCounts): Promise<void> {
-        const key = `message-counts:${channelId}`;
-        await this.cacheManager.put('MESSAGES_CACHE', key, counts, TIME.DAY_SEC); // 24 hour TTL
-    }
-
-    /**
-     * Get channel counts efficiently using request-level cache
-     */
-    async getChannelCounts(channelId: string): Promise<ChannelMessageCounts | null> {
-        const key = `message-counts:${channelId}`;
-        return await this.cacheManager.get('MESSAGES_CACHE', key, 2000); // 2 second timeout
-    }
-
-    /**
-     * Get all channel counts using batch operations
+     * Get all channel counts using D1-based channel discovery
      */
     async getAllChannelCounts(): Promise<ChannelMessageCounts[]> {
-        const messageKeys = await this.messagesService.listMessageKeys();
-        const channelIds = messageKeys.map(key => key.name.replace('messages:', ''));
-        const countKeys = channelIds.map(id => `message-counts:${id}`);
-
-        const batchResults = await this.cacheManager.batchGet<ChannelMessageCounts>('MESSAGES_CACHE', countKeys, 2000);
-        return Array.from(batchResults.values()).filter((count): count is ChannelMessageCounts => count !== null);
+        try {
+            // Get active channels from D1 instead of KV keys
+            const channelIds = await this.getActiveChannels();
+            return Promise.all(channelIds.map(async channelId => this.getChannelCounts(channelId)));
+        } catch (error) {
+            console.error('[MESSAGE_COUNTS] Failed to get all channel counts:', error);
+            return [];
+        }
     }
 
     /**
