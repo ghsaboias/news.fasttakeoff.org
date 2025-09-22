@@ -1,18 +1,22 @@
 import { API, CACHE, DISCORD } from '@/lib/config';
-import { CachedMessages } from '@/lib/types/reports';
-import { DiscordChannel, DiscordMessage } from '@/lib/types/discord';
+// Removed CachedMessages import - now using D1 directly
+import { DiscordChannel } from '@/lib/types/discord';
 import { Cloudflare } from '../../../worker-configuration';
 import { CacheManager } from '../cache-utils';
+import { D1MessagesService } from './d1-messages-service';
+import type { EssentialDiscordMessage } from '../utils/message-transformer';
 
 export class ChannelsService {
     private env: Cloudflare.Env;
     private cache: CacheManager;
+    private d1Service: D1MessagesService;
     apiCallCount = 0;
     callStartTime = Date.now();
 
     constructor(cacheManager: CacheManager, env: Cloudflare.Env) {
         this.env = env;
         this.cache = cacheManager;
+        this.d1Service = new D1MessagesService(env);
     }
 
     filterChannels(channels: DiscordChannel[]): DiscordChannel[] {
@@ -110,7 +114,9 @@ export class ChannelsService {
             }
         }
 
-        throw new Error('Unreachable code');
+        // This should never be reached, but TypeScript needs a return statement
+        console.error('[Discord] Unexpected: exited retry loop without returning or throwing');
+        return [];
     }
 
     async getChannels(): Promise<DiscordChannel[]> {
@@ -142,9 +148,13 @@ export class ChannelsService {
         return filteredChannels;
     }
 
+    /**
+     * Get channel details with message count from D1
+     * PHASE 2: Now uses D1 instead of KV for message data
+     */
     async getChannelDetails(channelId: string): Promise<{
         channel: DiscordChannel | null;
-        messages: { count: number; messages: DiscordMessage[] };
+        messages: { count: number; messages: EssentialDiscordMessage[] };
     }> {
         const channels = await this.getChannels();
         const channel = channels.find(c => c.id === channelId);
@@ -153,17 +163,31 @@ export class ChannelsService {
             return { channel: null, messages: { count: 0, messages: [] } };
         }
 
-        // Access cached messages directly through cache manager
-        const cacheKey = `messages:${channelId}`;
-        const cachedMessages = await this.cache.get<CachedMessages>('MESSAGES_CACHE', cacheKey);
+        try {
+            // Get message count from D1
+            const messageCount = await this.d1Service.getMessageCount(channelId);
 
-        return {
-            channel,
-            messages: {
-                count: cachedMessages?.messages?.length || 0,
-                messages: cachedMessages?.messages || []
-            }
-        };
+            // For compatibility, get recent messages if needed
+            // Use wide date range to get recent messages
+            const endDate = new Date();
+            const startDate = new Date(endDate.getTime() - 24 * 60 * 60 * 1000); // Last 24 hours
+
+            const messages = await this.d1Service.getMessagesInTimeWindow(channelId, startDate, endDate);
+
+            return {
+                channel,
+                messages: {
+                    count: messageCount,
+                    messages
+                }
+            };
+        } catch (error) {
+            console.error(`[CHANNELS] Failed to get D1 messages for channel ${channelId}:`, error);
+            return {
+                channel,
+                messages: { count: 0, messages: [] }
+            };
+        }
     }
 
     async getChannelName(channelId: string): Promise<string> {
@@ -171,5 +195,6 @@ export class ChannelsService {
         const channel = channels.find(c => c.id === channelId);
         return channel?.name || `Channel_${channelId}`;
     }
+
 }
 

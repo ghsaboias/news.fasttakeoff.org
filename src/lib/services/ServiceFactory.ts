@@ -41,7 +41,6 @@ export class ServiceFactory {
   getMessagesService(): MessagesService {
     if (!this.messagesService) {
       this.messagesService = new MessagesService(
-        this.getCacheManager(),
         this.createChannelsService(),
         this.env
       );
