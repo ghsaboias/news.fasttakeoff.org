@@ -251,7 +251,7 @@ const CRON_TASKS: Record<string, CronTaskFunction> = {
         // Dynamic window evaluation - generate reports based on real-time activity
         const windowEvaluationService = new WindowEvaluationService(env);
         await logRun('WINDOW_EVALUATION', () => windowEvaluationService.evaluateAllChannels(), {
-            timeoutMs: 120000, // 2 minutes timeout for evaluation
+            timeoutMs: TASK_TIMEOUTS.REPORTS,
             env,
             ctx
         });
