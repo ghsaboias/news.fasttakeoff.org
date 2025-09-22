@@ -2,7 +2,7 @@
 
 import { LocalDateTimeFull } from "@/components/utils/LocalDateTime";
 import { TIME } from "@/lib/config";
-import { DiscordMessage } from "@/lib/types/discord";
+import type { EssentialDiscordMessage } from "@/lib/utils/message-transformer";
 import { detectTelegramUrls } from "@/lib/utils";
 import { detectTweetUrls } from "@/lib/utils/twitter-utils";
 import Image from "next/image";
@@ -14,7 +14,7 @@ import TelegramEmbed from "./TelegramEmbed";
 import TranslationBadge from "./TranslationBadge";
 
 interface MessageItemProps {
-    message: DiscordMessage;
+    message: EssentialDiscordMessage;
     noAccordion?: boolean;
     channelId?: string;
 }
@@ -136,7 +136,7 @@ function MessageItem({ message, noAccordion = false, channelId }: MessageItemPro
                     )}
 
                     {/* Footer info - but skip translation info since we show it as badge */}
-                    {twitterEmbed.footer && !twitterEmbed.footer.text.includes("FaytuksBot") && !twitterEmbed.footer.text.includes("Translated from:") && (
+                    {twitterEmbed.footer && twitterEmbed.footer.text && !twitterEmbed.footer.text.includes("FaytuksBot") && !twitterEmbed.footer.text.includes("Translated from:") && (
                         <div className="mt-2 text-xs">
                             {twitterEmbed.footer.text}
                         </div>
@@ -333,11 +333,11 @@ function MessageItem({ message, noAccordion = false, channelId }: MessageItemPro
                 <div className="space-y-2 mt-2">
                     <h4 className="font-semibold text-sm">Media:</h4>
                     <div className="grid grid-cols-2 gap-4">
-                        {message.attachments.map((attachment) => {
+                        {message.attachments.map((attachment, index) => {
                             if (attachment.content_type?.startsWith('image/')) {
                                 return (
                                     <MediaPreview
-                                        key={attachment.id}
+                                        key={`${message.id}-attachment-${index}`}
                                         url={attachment.url}
                                         type="image"
                                         alt={attachment.filename}
@@ -346,7 +346,7 @@ function MessageItem({ message, noAccordion = false, channelId }: MessageItemPro
                             } else if (attachment.content_type?.startsWith('video/')) {
                                 return (
                                     <MediaPreview
-                                        key={attachment.id}
+                                        key={`${message.id}-attachment-${index}`}
                                         url={attachment.url}
                                         type="video"
                                         contentType={attachment.content_type}

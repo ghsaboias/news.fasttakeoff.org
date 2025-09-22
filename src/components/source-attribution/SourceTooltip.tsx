@@ -2,7 +2,7 @@
 
 import { Popover, PopoverArrow, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { LocalDateTimeFull } from '@/components/utils/LocalDateTime';
-import { DiscordMessage } from '@/lib/types/discord';
+import { EssentialDiscordMessage, EssentialEmbed, EssentialAttachment } from '@/lib/utils/message-transformer';
 import { SourceAttribution } from '@/lib/types/reports';
 import { detectTelegramUrls } from '@/lib/utils';
 import { detectTweetUrls } from '@/lib/utils/twitter-utils';
@@ -12,7 +12,7 @@ import MediaPreview from '../current-events/MediaPreview';
 
 interface SourceTooltipProps {
     attribution: SourceAttribution;
-    sourceMessages: DiscordMessage[];
+    sourceMessages: EssentialDiscordMessage[];
     children: React.ReactNode;
 }
 
@@ -73,7 +73,7 @@ function parseTextWithLinks(text: string): (string | React.ReactElement)[] {
     return elements;
 }
 
-function TooltipContentBody({ attribution, sourceMessages }: { attribution: SourceAttribution; sourceMessages: DiscordMessage[] }) {
+function TooltipContentBody({ attribution, sourceMessages }: { attribution: SourceAttribution; sourceMessages: EssentialDiscordMessage[] }) {
     // Get the source message for this attribution
     const sourceMessage = sourceMessages.find(msg => msg.id === attribution.sourceMessageId);
 
@@ -149,7 +149,7 @@ function TooltipContentBody({ attribution, sourceMessages }: { attribution: Sour
                 {/* Embeds */}
                 {sourceMessage.embeds && sourceMessage.embeds.length > 0 && (
                     <div className="space-y-2">
-                        {sourceMessage.embeds.slice(0, 2).map((embed, embedIndex) => (
+                        {sourceMessage.embeds.slice(0, 2).map((embed: EssentialEmbed, embedIndex: number) => (
                             <div key={embedIndex} className="p-2 bg-muted/30 rounded border border-muted/50 text-xs">
                                 {/* Embed Author */}
                                 {embed.author && (
@@ -226,7 +226,7 @@ function TooltipContentBody({ attribution, sourceMessages }: { attribution: Sour
                                 {/* Embed Fields */}
                                 {embed.fields && embed.fields.length > 0 && (
                                     <div className="space-y-1">
-                                        {embed.fields.slice(0, 2).map((field, fieldIndex) => (
+                                        {embed.fields.slice(0, 2).map((field: { name: string; value: string; inline?: boolean }, fieldIndex: number) => (
                                             <div key={fieldIndex} className="border-l-2 border-accent/40 pl-2">
                                                 <p className="font-medium text-popover-foreground">
                                                     {field.name}:
@@ -267,11 +267,11 @@ function TooltipContentBody({ attribution, sourceMessages }: { attribution: Sour
                             Media ({sourceMessage.attachments.length}):
                         </div>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                            {sourceMessage.attachments.slice(0, 4).map((attachment) => {
+                            {sourceMessage.attachments.slice(0, 4).map((attachment: EssentialAttachment, index: number) => {
                                 if (attachment.content_type?.startsWith('image/')) {
                                     return (
                                         <MediaPreview
-                                            key={attachment.id}
+                                            key={`attachment-${index}`}
                                             url={attachment.url}
                                             type="image"
                                             alt={attachment.filename}
@@ -280,7 +280,7 @@ function TooltipContentBody({ attribution, sourceMessages }: { attribution: Sour
                                 } else if (attachment.content_type?.startsWith('video/')) {
                                     return (
                                         <MediaPreview
-                                            key={attachment.id}
+                                            key={`attachment-${index}`}
                                             url={attachment.url}
                                             type="video"
                                             contentType={attachment.content_type}
@@ -288,7 +288,7 @@ function TooltipContentBody({ attribution, sourceMessages }: { attribution: Sour
                                     );
                                 }
                                 return (
-                                    <div key={attachment.id} className="bg-muted/30 rounded border border-muted/50 p-2 h-12 flex items-center justify-center">
+                                    <div key={`attachment-${index}`} className="bg-muted/30 rounded border border-muted/50 p-2 h-12 flex items-center justify-center">
                                         <span className="text-xs text-muted-foreground">📎 File</span>
                                     </div>
                                 );

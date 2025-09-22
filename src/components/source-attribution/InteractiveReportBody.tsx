@@ -1,6 +1,6 @@
 'use client';
 
-import { DiscordMessage } from '@/lib/types/discord';
+import { EssentialDiscordMessage } from '@/lib/utils/message-transformer';
 import { ReportSourceAttribution } from '@/lib/types/reports';
 import React, { useMemo } from 'react';
 import { SourceTooltip } from './SourceTooltip';
@@ -8,7 +8,7 @@ import { SourceTooltip } from './SourceTooltip';
 interface InteractiveReportBodyProps {
     reportBody: string;
     attributions?: ReportSourceAttribution;
-    sourceMessages: DiscordMessage[];
+    sourceMessages: EssentialDiscordMessage[];
     className?: string;
     showAttributions?: boolean;
 }

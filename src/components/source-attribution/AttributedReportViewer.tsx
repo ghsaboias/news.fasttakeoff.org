@@ -1,7 +1,7 @@
 'use client';
 
 import { useApi } from '@/lib/hooks';
-import { DiscordMessage } from '@/lib/types/discord';
+import type { EssentialDiscordMessage } from '@/lib/utils/message-transformer';
 import { ReportSourceAttribution } from '@/lib/types/reports';
 import { useCallback, useEffect } from 'react';
 import { InteractiveReportBody } from './InteractiveReportBody';
@@ -9,7 +9,7 @@ import { InteractiveReportBody } from './InteractiveReportBody';
 interface AttributedReportViewerProps {
     reportId: string;
     reportBody: string;
-    sourceMessages: DiscordMessage[];
+    sourceMessages: EssentialDiscordMessage[];
     channelId: string;
     className?: string;
     showAttributions?: boolean;

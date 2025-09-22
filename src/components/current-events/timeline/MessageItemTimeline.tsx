@@ -4,12 +4,12 @@ import TweetEmbed from "@/components/current-events/DynamicTweetEmbed";
 import MediaPreview from "@/components/current-events/MediaPreview";
 import { AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { LocalDateTimeFull } from "@/components/utils/LocalDateTime";
-import { DiscordMessage } from "@/lib/types/discord";
+import type { EssentialDiscordMessage } from "@/lib/utils/message-transformer";
 import Image from "next/image";
 import React from "react";
 
 interface MessageItemProps {
-    message: DiscordMessage;
+    message: EssentialDiscordMessage;
     index: number;
     noAccordion?: boolean;
     channelId?: string;
@@ -143,11 +143,11 @@ export default function MessageItemTimeline({ message, index, noAccordion = fals
             {message.attachments?.length && message.attachments.length > 0 ? (
                 <div>
                     <div className="grid grid-cols-2 gap-4">
-                        {message.attachments.map((attachment) => {
+                        {message.attachments.map((attachment, attachmentIndex) => {
                             if (attachment.content_type?.startsWith('image/')) {
                                 return (
                                     <MediaPreview
-                                        key={attachment.id}
+                                        key={`${message.id}-attachment-${attachmentIndex}`}
                                         url={attachment.url}
                                         type="image"
                                         alt={attachment.filename}
@@ -156,7 +156,7 @@ export default function MessageItemTimeline({ message, index, noAccordion = fals
                             } else if (attachment.content_type?.startsWith('video/')) {
                                 return (
                                     <MediaPreview
-                                        key={attachment.id}
+                                        key={`${message.id}-attachment-${attachmentIndex}`}
                                         url={attachment.url}
                                         type="video"
                                         contentType={attachment.content_type}

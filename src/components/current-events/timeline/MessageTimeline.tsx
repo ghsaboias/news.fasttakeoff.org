@@ -1,15 +1,15 @@
 "use client";
 
-import { DiscordMessage } from "@/lib/types/discord";
+import type { EssentialDiscordMessage } from "@/lib/utils/message-transformer";
 import MessageItem from "./MessageItemTimeline";
 
 interface MessageTimelineProps {
-    messages: DiscordMessage[];
+    messages: EssentialDiscordMessage[];
     channelId?: string;
 }
 
-function groupMessagesByDate(messages: DiscordMessage[]) {
-    const groups: Record<string, DiscordMessage[]> = {};
+function groupMessagesByDate(messages: EssentialDiscordMessage[]) {
+    const groups: Record<string, EssentialDiscordMessage[]> = {};
     messages?.forEach(message => {
         const dateStr = new Date(message.timestamp).toLocaleDateString('en-US', {
             year: 'numeric',
