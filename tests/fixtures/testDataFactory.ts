@@ -31,11 +31,13 @@ export function createTestData(options: TestDataOptions = {}) {
             {
                 id: "1234567890123456789",
                 channel_id: "1179003366362329138",
-                author: {
-                    id: "123456789012345678",
-                    username: "FaytuksBot",
-                    discriminator: "7032"
-                },
+        author: {
+            id: "123456789012345678",
+            username: "FaytuksBot",
+            discriminator: "7032",
+            avatar: "avatar_hash",
+            global_name: "Faytuks Bot"
+        },
                 content: "Breaking news: https://example.com/news",
                 timestamp: message1Time.toISOString(),
                 embeds: [
@@ -49,11 +51,13 @@ export function createTestData(options: TestDataOptions = {}) {
             {
                 id: "1234567890123456790",
                 channel_id: "1179003366362329138",
-                author: {
-                    id: "123456789012345678",
-                    username: "FaytuksBot",
-                    discriminator: "7032"
-                },
+        author: {
+            id: "123456789012345678",
+            username: "FaytuksBot",
+            discriminator: "7032",
+            avatar: "avatar_hash",
+            global_name: "Faytuks Bot"
+        },
                 content: "Follow-up report: https://example.com/update",
                 timestamp: message2Time.toISOString(),
                 embeds: [
@@ -108,11 +112,13 @@ export function createMessagesWithTimeRelation(baseTime: Date = new Date()) {
         oldMessage: {
             id: "old_message_id",
             channel_id: "1179003366362329138",
-            author: {
-                id: "123456789012345678",
-                username: "FaytuksBot",
-                discriminator: "7032"
-            },
+        author: {
+            id: "123456789012345678",
+            username: "FaytuksBot",
+            discriminator: "7032",
+            avatar: "avatar_hash",
+            global_name: "Faytuks Bot"
+        },
             content: "Old news: https://example.com/old",
             timestamp: new Date(baseTime.getTime() - 90 * 60 * 1000).toISOString(), // 90 minutes ago
             embeds: [{ title: "Old News", description: "This is old", url: "https://example.com/old" }]
@@ -121,11 +127,13 @@ export function createMessagesWithTimeRelation(baseTime: Date = new Date()) {
         recentMessage: {
             id: "recent_message_id",
             channel_id: "1179003366362329138",
-            author: {
-                id: "123456789012345678",
-                username: "FaytuksBot",
-                discriminator: "7032"
-            },
+        author: {
+            id: "123456789012345678",
+            username: "FaytuksBot",
+            discriminator: "7032",
+            avatar: "avatar_hash",
+            global_name: "Faytuks Bot"
+        },
             content: "Recent news: https://example.com/recent",
             timestamp: new Date(baseTime.getTime() - 30 * 60 * 1000).toISOString(), // 30 minutes ago
             embeds: [{ title: "Recent News", description: "This is recent", url: "https://example.com/recent" }]

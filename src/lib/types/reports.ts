@@ -5,7 +5,7 @@
  * fact checking, executive summaries, and channel analytics.
  */
 
-import { DiscordMessage } from './discord';
+import type { EssentialDiscordMessage } from '../utils/message-transformer';
 import { EntityExtractionResult } from './entities';
 
 export interface Report {
@@ -35,7 +35,7 @@ export interface Report {
 }
 
 export interface CachedMessages {
-  messages: DiscordMessage[];
+  messages: EssentialDiscordMessage[];
   cachedAt: string;
   messageCount: number;
   lastMessageTimestamp: string;
@@ -44,7 +44,7 @@ export interface CachedMessages {
 
 export interface ReportResponse {
   report: Report;
-  messages: DiscordMessage[];
+  messages: EssentialDiscordMessage[];
   previousReportId?: string | null;
   nextReportId?: string | null;
 }

@@ -1,6 +1,7 @@
-import { DiscordMessage, DiscordChannel } from '@/lib/types/discord';
+import { DiscordChannel } from '@/lib/types/discord';
 import { Report } from '@/lib/types/reports';
 import { ReportRow } from '@/lib/types/database';
+import type { EssentialDiscordMessage } from '../utils/message-transformer';
 
 /**
  * Service Interfaces - Contracts for dependency injection
@@ -8,8 +9,8 @@ import { ReportRow } from '@/lib/types/database';
  */
 
 export interface IMessagesService {
-  getMessagesInTimeWindow(channelId: string, windowStart: Date, windowEnd: Date): Promise<DiscordMessage[]>;
-  getLatestMessages(channelId: string, limit?: number): Promise<DiscordMessage[]>;
+  getMessagesInTimeWindow(channelId: string, windowStart: Date, windowEnd: Date): Promise<EssentialDiscordMessage[]>;
+  getLatestMessages(channelId: string, limit?: number): Promise<EssentialDiscordMessage[]>;
   updateMessages(): Promise<void>;
 }
 
@@ -21,7 +22,7 @@ export interface IChannelsService {
 }
 
 export interface IReportService {
-  createDynamicReport(channelId: string, windowStart: Date, windowEnd: Date): Promise<{ report: Report | null; messages: DiscordMessage[] }>;
+  createDynamicReport(channelId: string, windowStart: Date, windowEnd: Date): Promise<{ report: Report | null; messages: EssentialDiscordMessage[] }>;
   getReports(options?: { channelId?: string; limit?: number; offset?: number }): Promise<ReportRow[]>;
   getReportById(reportId: string): Promise<Report | null>;
 }
