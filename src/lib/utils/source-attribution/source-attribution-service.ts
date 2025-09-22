@@ -31,7 +31,6 @@ export class SourceAttributionService {
         // Try to get from cache first
         const cached = await this.cache.get<ReportSourceAttribution>('REPORTS_CACHE', cacheKey);
         if (cached) {
-            console.log(`[SOURCE_ATTRIBUTION] Cache hit for report ${report.reportId}`);
             return cached;
         }
 

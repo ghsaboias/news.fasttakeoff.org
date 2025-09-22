@@ -24,7 +24,6 @@ export class ExecutiveSummaryService {
         const cached = await this.cache.get<ExecutiveSummary>('EXECUTIVE_SUMMARIES_CACHE', cacheKey);
 
         if (cached) {
-            console.log('[EXECUTIVE_SUMMARY] Cache hit for latest summary');
             return cached;
         }
 

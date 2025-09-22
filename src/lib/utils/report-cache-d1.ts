@@ -434,7 +434,6 @@ export class ReportCacheD1 {
             if (cached) {
                 const reports = JSON.parse(cached);
                 if (Array.isArray(reports) && reports.length > 0) {
-                    console.log(`[REPORTS] Current-events cache hit: ${reports.length} reports`);
                     return reports;
                 }
             }
@@ -480,7 +479,6 @@ export class ReportCacheD1 {
             
             if (cached) {
                 const report = JSON.parse(cached);
-                console.log(`[REPORTS] Individual report cache hit: ${reportId}`);
                 return report;
             }
 

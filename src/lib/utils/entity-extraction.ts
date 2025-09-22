@@ -221,7 +221,6 @@ export class EntityExtractor {
         try {
             const cachedResult = await EntityCache.get(reportId, env);
             if (cachedResult) {
-                console.log(`[ENTITIES] Cache hit for report ${reportId}`);
                 return cachedResult;
             }
         } catch (cacheError) {

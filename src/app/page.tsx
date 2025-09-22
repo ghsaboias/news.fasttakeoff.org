@@ -57,7 +57,6 @@ async function getServerSideData() {
           // Try cache first
           const cachedReports = await cacheManager.get<Report[]>('REPORTS_CACHE', 'homepage:latest-reports');
           if (cachedReports && cachedReports.length > 0) {
-            console.log(`[HOMEPAGE] Cache hit: ${cachedReports.length} reports`);
             return cachedReports.slice(0, 4);
           }
 

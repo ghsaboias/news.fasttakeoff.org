@@ -300,7 +300,9 @@ export class ReportService {
             // First try to get report from KV cache
             const cacheKey = `report:${reportId}:full`;
             const cachedReport = await this.cacheManager.get('REPORTS_CACHE', cacheKey);
-            console.log(`[REPORTS] Individual report cache ${cachedReport ? 'hit' : 'miss'}: ${reportId}`);
+            if (!cachedReport) {
+                console.log(`[REPORTS] Individual report cache miss: ${reportId}`);
+            }
             
             if (cachedReport) {
                 const report = cachedReport as Report;
