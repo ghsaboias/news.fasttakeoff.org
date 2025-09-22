@@ -154,13 +154,11 @@ interface IMessagesMigrationService {
 // Mock Cloudflare environment for testing
 type MockEnv = {
   FAST_TAKEOFF_NEWS_DB: any;
-  MESSAGES_CACHE: any;
 };
 
 // Mock environment - similar to existing tests
 const mockEnv: MockEnv = {
   FAST_TAKEOFF_NEWS_DB: {} as any,
-  MESSAGES_CACHE: {} as any,
 };
 
 describe('Phase 1: Core Types and Interfaces', () => {

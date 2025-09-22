@@ -1,5 +1,8 @@
 import { MessagesService } from '@/lib/data/messages-service';
 import { ServiceFactory } from '@/lib/services/ServiceFactory';
+import { MessageFilterService } from '@/lib/utils/message-filter-service';
+import { MessageTransformer } from '@/lib/utils/message-transformer';
+import type { DiscordMessage } from '@/lib/types/discord';
 import { beforeEach, describe, expect, it, Mock, vi } from 'vitest';
 import { createMessagesWithTimeRelation, createTestData } from '../fixtures/testDataFactory';
 import { createMockEnv } from '../setup';
@@ -31,36 +34,29 @@ describe('MessagesService', () => {
     getChannelName: vi.fn().mockResolvedValue('🔵test-channel'),
   }));
 
-  describe('constructor', () => {
-    it('should throw error when MESSAGES_CACHE is missing', () => {
-      const envWithoutCache = { ...mockEnv };
-      delete envWithoutCache.MESSAGES_CACHE;
-
-      // Reset factory to ensure we use the new environment
-      ServiceFactory.reset();
-      
-      expect(() => ServiceFactory.getInstance(envWithoutCache).getMessagesService()).toThrow('Missing required KV namespace: MESSAGES_CACHE');
-    });
-  });
-
   describe('messageFilter', () => {
     it('should filter messages by bot correctly', () => {
-      const mockMessages = testData.messages;
+      const transformer = new MessageTransformer();
+      const essentials = testData.messages
+        .map(msg => transformer.transform(msg as DiscordMessage))
+        .filter(result => result.success)
+        .map(result => result.transformed!);
+
       const nonBotMessage = {
-        ...mockMessages[0],
-        author: { ...mockMessages[0].author, username: 'NotBot' }
+        ...essentials[0],
+        author_username: 'NotBot',
       };
 
-      const result = messagesService['messageFilter'].byBot([
-        mockMessages[0],
+      const result = MessageFilterService.byBot([
+        essentials[0],
         nonBotMessage,
-        mockMessages[1]
-      ] as any);
+        essentials[1]
+      ]);
 
       expect(result).toHaveLength(2);
       expect(result.every(msg =>
-        msg.author.username === 'FaytuksBot' &&
-        msg.author.discriminator === '7032'
+        msg.author_username === 'FaytuksBot' &&
+        msg.author_discriminator === '7032'
       )).toBe(true);
     });
 
@@ -70,21 +66,32 @@ describe('MessagesService', () => {
       const { oldMessage, recentMessage } = createMessagesWithTimeRelation(baseTime);
       const cutoffTime = new Date(baseTime.getTime() - 60 * 60 * 1000); // 1 hour ago
 
-      const result = messagesService['messageFilter'].byTime([oldMessage, recentMessage] as any, cutoffTime);
+      const transformer = new MessageTransformer();
+      const essentials = [oldMessage, recentMessage]
+        .map(msg => transformer.transform(msg as DiscordMessage))
+        .filter(result => result.success)
+        .map(result => result.transformed!);
+
+      const result = MessageFilterService.byTimeAfter(essentials, cutoffTime);
 
       // Only the recent message should pass (old message is 90 minutes ago, cutoff is 60 minutes ago)
       expect(result).toHaveLength(1);
-      expect(result[0].id).toBe(recentMessage.id);
+      expect(result[0].id).toBe(essentials[1].id);
     });
 
     it('should filter messages by IDs correctly', () => {
-      const mockMessages = testData.messages;
-      const targetIds = [mockMessages[0].id];
+      const transformer = new MessageTransformer();
+      const essentials = testData.messages
+        .map(msg => transformer.transform(msg as DiscordMessage))
+        .filter(result => result.success)
+        .map(result => result.transformed!);
 
-      const result = messagesService['messageFilter'].byIds(mockMessages as any, targetIds);
+      const targetIds = [essentials[0].id];
+
+      const result = MessageFilterService.byIds(essentials, targetIds);
 
       expect(result).toHaveLength(1);
-      expect(result[0].id).toBe(mockMessages[0].id);
+      expect(result[0].id).toBe(essentials[0].id);
     });
   });
 
@@ -151,63 +158,53 @@ describe('MessagesService', () => {
   describe('getMessagesInTimeWindow', () => {
     it('should return messages within time window from cache', async () => {
       const channelId = testData.channels[0].id;
-      const cachedData = {
-        messages: testData.messages,
-        cachedAt: new Date().toISOString(),
-        messageCount: testData.messages.length,
-        lastMessageTimestamp: testData.messages[0].timestamp,
-        channelName: testData.channels[0].name,
-      };
-
-      mockEnv.MESSAGES_CACHE.get.mockResolvedValue(cachedData);
+      const d1Spy = vi
+        .spyOn(messagesService['d1Service'], 'getMessagesInTimeWindow')
+        .mockResolvedValue(testData.messages as any);
 
       const now = new Date();
       const twoHoursAgo = new Date(now.getTime() - 2 * 60 * 60 * 1000);
       const result = await messagesService.getMessagesInTimeWindow(channelId, twoHoursAgo, now);
 
-      expect(result).toHaveLength(2); // Both messages are within 2 hours
-      expect(result[0].timestamp).toBe(testData.messages[1].timestamp); // Sorted newest first
+      expect(result).toEqual(testData.messages);
+      expect(d1Spy).toHaveBeenCalledWith(channelId, twoHoursAgo, now);
+
+      d1Spy.mockRestore();
     });
 
     it('should return empty array when no cached messages', async () => {
-      mockEnv.MESSAGES_CACHE.get.mockResolvedValue(null);
+      const d1Spy = vi
+        .spyOn(messagesService['d1Service'], 'getMessagesInTimeWindow')
+        .mockResolvedValue([]);
 
       const now = new Date();
       const twoHoursAgo = new Date(now.getTime() - 2 * 60 * 60 * 1000);
       const result = await messagesService.getMessagesInTimeWindow('channel-id', twoHoursAgo, now);
 
       expect(result).toEqual([]);
+      expect(d1Spy).toHaveBeenCalled();
+
+      d1Spy.mockRestore();
     });
   });
 
   describe('cacheMessages', () => {
-    it('should cache messages with proper structure', async () => {
+    it('should persist messages to D1 without writing to KV', async () => {
       const channelId = testData.channels[0].id;
-      const messages = testData.messages as any;
+      const transformer = new MessageTransformer();
+      const essentials = testData.messages
+        .map(msg => transformer.transform(msg as DiscordMessage))
+        .filter(result => result.success)
+        .map(result => result.transformed!);
 
-      await messagesService.cacheMessages(channelId, messages, 'test-channel');
+      const writeSpy = vi.spyOn(messagesService as any, 'writeToD1').mockResolvedValue(undefined);
 
-      const putCall = mockEnv.MESSAGES_CACHE.put.mock.calls[0];
-      expect(putCall[0]).toBe(`messages:${channelId}`);
+      await messagesService.cacheMessages(channelId, essentials);
 
-      const cachedData = JSON.parse(putCall[1]);
-      expect(cachedData.messages).toEqual(messages);
-      expect(cachedData.messageCount).toBe(messages.length);
-      expect(cachedData.channelName).toBe('test-channel');
-      expect(typeof cachedData.cachedAt).toBe('string');
+      expect(writeSpy).toHaveBeenCalledTimes(1);
+      expect(writeSpy).toHaveBeenCalledWith(essentials, channelId);
 
-      expect(putCall[2]).toEqual({ expirationTtl: expect.any(Number) });
-    });
-
-    it('should handle missing KV namespace gracefully', async () => {
-      const envWithoutCache = { ...mockEnv };
-      delete envWithoutCache.MESSAGES_CACHE;
-
-      // Reset factory to ensure we use the new environment
-      ServiceFactory.reset();
-
-      expect(() => ServiceFactory.getInstance(envWithoutCache).getMessagesService())
-        .toThrow('Missing required KV namespace: MESSAGES_CACHE');
+      writeSpy.mockRestore();
     });
   });
 });

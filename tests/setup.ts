@@ -10,11 +10,6 @@ export const createMockEnv = (): any => ({
   TWITTER_CLIENT_SECRET: 'mock-twitter-client-secret',
   INSTAGRAM_ACCESS_TOKEN: 'mock-instagram-token',
   INSTAGRAM_ACCOUNT_ID: 'mock-instagram-account',
-  MESSAGES_CACHE: {
-    get: vi.fn(),
-    put: vi.fn(),
-    list: vi.fn().mockResolvedValue({ keys: [] }),
-  },
   REPORTS_CACHE: {
     get: vi.fn(),
     put: vi.fn(),
@@ -39,6 +34,16 @@ export const createMockEnv = (): any => ({
     get: vi.fn(),
     put: vi.fn(),
     list: vi.fn().mockResolvedValue({ keys: [] }),
+  },
+  FAST_TAKEOFF_NEWS_DB: {
+    prepare: vi.fn(() => {
+      const statement: any = {};
+      statement.bind = vi.fn(() => statement);
+      statement.run = vi.fn().mockResolvedValue({ success: true });
+      statement.all = vi.fn().mockResolvedValue({ success: true, results: [] });
+      statement.first = vi.fn().mockResolvedValue(null);
+      return statement;
+    }),
   },
 });
 
