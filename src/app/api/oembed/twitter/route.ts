@@ -1,7 +1,5 @@
 import { withErrorHandling } from '@/lib/api-utils';
-import { CacheManager } from '@/lib/cache-utils';
-import { TIME } from '@/lib/config';
-import { TweetEmbed, TweetEmbedCache, TwitterOEmbedResponse } from '@/lib/types/social-media';
+import { TweetEmbed, TwitterOEmbedResponse } from '@/lib/types/social-media';
 import { extractTweetId, isValidTweetUrl, normalizeTweetUrl } from '@/lib/utils/twitter-utils';
 
 /**
@@ -71,12 +69,12 @@ function sanitizeHtml(html: string): string {
 
 /**
  * GET /api/oembed/twitter
- * Fetches and caches Twitter/X oEmbed data for a given tweet URL.
+ * Fetches Twitter/X oEmbed data for a given tweet URL.
  * @param request - Query params: url (string, required), channelId (optional), omit_script (optional: 'true')
  * @returns {Promise<TweetEmbed | { error: string }>}
  * @throws 400 if url is missing/invalid, 500 for fetch/parse errors.
  * @auth None required.
- * @integration Uses CacheManager for 7-day caching per channel.
+ * @integration No KV access; computed on demand.
  */
 async function fetchWithRetry(url: string, maxAttempts: number = 3): Promise<Response | null> {
     let lastError: Error = new Error('No attempts made');
@@ -122,10 +120,11 @@ async function fetchWithRetry(url: string, maxAttempts: number = 3): Promise<Res
 }
 
 export async function GET(request: Request) {
-    return withErrorHandling(async env => {
+    return withErrorHandling(async () => {
         const { searchParams } = new URL(request.url);
         const url = searchParams.get('url');
-        const channelId = searchParams.get('channelId');
+        // channelId parameter available but not currently used
+        // const channelId = searchParams.get('channelId');
         const omitScript = searchParams.get('omit_script') === 'true';
 
         if (!url) {
@@ -139,18 +138,6 @@ export async function GET(request: Request) {
         const tweetId = extractTweetId(url);
         if (!tweetId) {
             throw new Error('Could not extract tweet ID from URL');
-        }
-
-        const cacheManager = new CacheManager(env);
-
-        // Check if we have cached embeds for this channel
-        if (channelId) {
-            const cacheKey = `tweet_embeds:${channelId}`;
-            const cachedEmbeds = await cacheManager.get<TweetEmbedCache>('MESSAGES_CACHE', cacheKey);
-
-            if (cachedEmbeds && cachedEmbeds[tweetId]) {
-                return cachedEmbeds[tweetId];
-            }
         }
 
         // Fetch from Twitter's oEmbed API with retry logic
@@ -176,14 +163,6 @@ export async function GET(request: Request) {
                 cachedAt: new Date().toISOString()
             };
 
-            // Still cache the "deleted" state to avoid repeated API calls
-            if (channelId) {
-                const cacheKey = `tweet_embeds:${channelId}`;
-                const existingCache = await cacheManager.get<TweetEmbedCache>('MESSAGES_CACHE', cacheKey) || {};
-                existingCache[tweetId] = deletedTweetEmbed;
-                await cacheManager.put('MESSAGES_CACHE', cacheKey, existingCache, TIME.WEEK_SEC);
-            }
-
             return deletedTweetEmbed;
         }
 
@@ -203,17 +182,6 @@ export async function GET(request: Request) {
             height: oembedData?.height,
             cachedAt: new Date().toISOString()
         };
-
-        // Cache the result if we have a channelId
-        if (channelId) {
-            const cacheKey = `tweet_embeds:${channelId}`;
-            const existingCache = await cacheManager.get<TweetEmbedCache>('MESSAGES_CACHE', cacheKey) || {};
-
-            existingCache[tweetId] = tweetEmbed;
-
-            // Cache for 7 days (same as Twitter's typical cache age)
-            await cacheManager.put('MESSAGES_CACHE', cacheKey, existingCache, TIME.WEEK_SEC);
-        }
 
         return tweetEmbed;
     }, 'Failed to fetch tweet embed');

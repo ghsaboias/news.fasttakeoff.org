@@ -1,6 +1,4 @@
 import { withErrorHandling } from '@/lib/api-utils';
-import { CacheManager } from '@/lib/cache-utils';
-import { TIME } from '@/lib/config';
 
 interface LinkPreview {
     url: string;
@@ -67,15 +65,15 @@ function parseMetaTags(html: string, url: string): LinkPreview {
 
 /**
  * GET /api/link-preview
- * Fetches and caches Open Graph/meta preview data for a given URL.
+ * Fetches Open Graph/meta preview data for a given URL.
  * @param request - Query param: url (string, required)
  * @returns {Promise<LinkPreview | { error: string }>}
  * @throws 400 if url is missing/invalid, 500 for fetch/parse errors.
  * @auth None required.
- * @integration Uses CacheManager for 24h caching.
+ * @integration No KV access; computed on demand.
  */
 export async function GET(request: Request) {
-    return withErrorHandling(async env => {
+    return withErrorHandling(async () => {
         const { searchParams } = new URL(request.url);
         const url = searchParams.get('url');
 
@@ -88,15 +86,6 @@ export async function GET(request: Request) {
             new URL(url);
         } catch {
             throw new Error('Invalid URL');
-        }
-
-        const cacheManager = new CacheManager(env);
-        const cacheKey = `link_preview:${url}`;
-
-        // Check cache first (24 hour TTL)
-        const cached = await cacheManager.get<LinkPreview>('MESSAGES_CACHE', cacheKey);
-        if (cached) {
-            return cached;
         }
 
         try {
@@ -129,12 +118,7 @@ export async function GET(request: Request) {
             }
 
             const html = await response.text();
-            const preview = parseMetaTags(html, url);
-
-            // Cache the result for 24 hours
-            await cacheManager.put('MESSAGES_CACHE', cacheKey, preview, TIME.DAY_SEC);
-
-            return preview;
+            return parseMetaTags(html, url);
 
         } catch (error) {
             console.error(`Error fetching link preview for ${url}:`, error);
@@ -145,11 +129,7 @@ export async function GET(request: Request) {
                 domain: extractDomain(url),
                 cachedAt: new Date().toISOString()
             };
-
-            // Cache the fallback for 1 hour to avoid repeated failures
-            await cacheManager.put('MESSAGES_CACHE', cacheKey, fallbackPreview, TIME.HOUR_SEC);
-
             return fallbackPreview;
         }
     }, 'Failed to fetch link preview');
-} 
+}
