@@ -253,8 +253,8 @@ export default function FactCheckDisplay({ reportId, className, onDemandTrigger 
                         <h4 className="font-medium">Verified Claims</h4>
                         {factCheck.claims
                             .sort((a, b) => b.importance - a.importance)
-                            .map((claim, index) => (
-                                <div key={index} className="border rounded-lg p-3 space-y-2">
+                            .map((claim) => (
+                                <div key={claim.claim} className="border rounded-lg p-3 space-y-2">
                                     <div className="flex items-start gap-2">
                                         {getVerificationIcon(claim.verification)}
                                         <div className="flex-1">
@@ -306,8 +306,8 @@ export default function FactCheckDisplay({ reportId, className, onDemandTrigger 
                     <div className="space-y-2">
                         <h4 className="font-medium">Suggested Improvements</h4>
                         <ul className="text-sm space-y-1">
-                            {factCheck.improvements.map((improvement, index) => (
-                                <li key={index} className="flex items-start gap-2">
+                            {factCheck.improvements.map((improvement) => (
+                                <li key={improvement} className="flex items-start gap-2">
                                     <span className="text-muted">•</span>
                                     <span>{improvement}</span>
                                 </li>
@@ -320,8 +320,8 @@ export default function FactCheckDisplay({ reportId, className, onDemandTrigger 
                     <div className="space-y-2">
                         <h4 className="font-medium">Missing Context</h4>
                         <ul className="text-sm space-y-1">
-                            {factCheck.missingContext.map((context, index) => (
-                                <li key={index} className="flex items-start gap-2">
+                            {factCheck.missingContext.map((context) => (
+                                <li key={context} className="flex items-start gap-2">
                                     <span className="text-muted">•</span>
                                     <span>{context}</span>
                                 </li>

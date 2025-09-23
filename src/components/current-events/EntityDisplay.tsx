@@ -108,8 +108,8 @@ function EntityBadge({ entity, showMentions }: EntityBadgeProps) {
             {showMentions && entity.mentions.length > 0 && (
                 <div className="absolute z-10 invisible group-hover:visible bg-black text-white text-xs rounded p-2 mt-1 max-w-xs">
                     <div className="font-medium mb-1">Mentions:</div>
-                    {entity.mentions.slice(0, 3).map((mention, index) => (
-                        <div key={index} className="text-xs opacity-90">
+                    {entity.mentions.slice(0, 3).map((mention) => (
+                        <div key={mention.text} className="text-xs opacity-90">
                             &ldquo;{mention.text}&rdquo; ({(mention.confidence * 100).toFixed(0)}%)
                         </div>
                     ))}
@@ -152,8 +152,8 @@ export function EntitySummary({ entities }: EntitySummaryProps) {
             </div>
             {topEntities.length > 0 && (
                 <div className="flex flex-wrap gap-1">
-                    {topEntities.map((entity, index) => (
-                        <Badge key={index} variant="secondary" className="text-xs">
+                    {topEntities.map((entity) => (
+                        <Badge key={entity.value} variant="secondary" className="text-xs">
                             {entity.value}
                         </Badge>
                     ))}

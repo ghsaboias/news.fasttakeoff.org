@@ -3,7 +3,6 @@ import { AI } from '@/lib/config';
 import type { EssentialDiscordMessage } from './message-transformer';
 import { OpenAIResponse } from '@/lib/types/external-apis';
 import { Report } from '@/lib/types/reports';
-import { v4 as uuidv4 } from 'uuid';
 import { Cloudflare } from '../../../worker-configuration';
 import { createPrompt, isReportTruncated, formatPreviousReportForContext, formatSingleMessage, formatHumanReadableTimestamp } from './report-utils';
 
@@ -117,7 +116,7 @@ export class ReportAI {
                 headline,
                 city,
                 body,
-                reportId: uuidv4(),
+                reportId: crypto.randomUUID(),
                 channelId: context.channelId,
                 channelName: context.channelName,
                 cacheStatus: 'miss' as const,
