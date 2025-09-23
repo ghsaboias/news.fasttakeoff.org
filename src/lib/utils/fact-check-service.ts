@@ -292,7 +292,20 @@ export class PerplexityFactCheckService {
         console.log('Message content:', messageContent);
 
         if (useStructuredOutput) {
-            const parsedContent = JSON.parse(messageContent);
+            // Handle JSON wrapped in markdown code fences
+            let jsonString = messageContent;
+            if (messageContent.includes('```json')) {
+                // Extract JSON from markdown code fences
+                const jsonMatch = messageContent.match(/```json\s*\n([\s\S]*?)\n```/);
+                if (jsonMatch) {
+                    jsonString = jsonMatch[1];
+                } else {
+                    // Fallback: remove all ```json and ``` markers
+                    jsonString = messageContent.replace(/```json\s*/g, '').replace(/```/g, '').trim();
+                }
+            }
+
+            const parsedContent = JSON.parse(jsonString);
             console.log('Parsed content:', parsedContent);
             return parsedContent;
         } else {

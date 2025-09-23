@@ -142,7 +142,7 @@ export default function FactCheckDisplay({ reportId, className, onDemandTrigger 
                     </CardTitle>
                 </CardHeader>
                 <CardContent>
-                    <p className="text-sm text-muted">
+                    <p className="text-sm text-muted-foreground">
                         Fact-check results are not available for this report.
                     </p>
                     {onDemandTrigger && (
@@ -180,7 +180,7 @@ export default function FactCheckDisplay({ reportId, className, onDemandTrigger 
                     </CardTitle>
                 </CardHeader>
                 <CardContent>
-                    <p className="text-sm text-muted">
+                    <p className="text-sm text-muted-foreground">
                         {factCheck.verificationSummary || 'Fact-check not yet available for this report'}
                     </p>
                     {onDemandTrigger && (
@@ -220,7 +220,7 @@ export default function FactCheckDisplay({ reportId, className, onDemandTrigger 
                 <CardContent>
                     <div className="flex items-center justify-center py-4">
                         <Loader2 className="h-4 w-4 animate-spin" />
-                        <span className="ml-2 text-sm text-muted">Performing fact-check... This may take up to 60 seconds.</span>
+                        <span className="ml-2 text-sm text-muted-foreground">Performing fact-check... This may take up to 60 seconds.</span>
                     </div>
                 </CardContent>
             </Card>
@@ -263,18 +263,18 @@ export default function FactCheckDisplay({ reportId, className, onDemandTrigger 
                                                 {claim.verification.replace('-', ' ')}
                                             </Badge>
                                         </div>
-                                        <div className="text-xs text-muted">
+                                        <div className="text-xs text-muted-foreground">
                                             Importance: {claim.importance}/10
                                         </div>
                                     </div>
                                     {claim.details && (
-                                        <p className="text-xs text-muted ml-6">
+                                        <p className="text-xs text-muted-foreground ml-6">
                                             {claim.details}
                                         </p>
                                     )}
                                     {claim.sources.length > 0 && (
                                         <div className="ml-6 space-y-2">
-                                            <div className="text-xs font-medium text-muted">
+                                            <div className="text-xs font-medium text-muted-foreground">
                                                 Sources:
                                             </div>
                                             {claim.sources.slice(0, 3).map((source, sourceIndex) => (
@@ -308,7 +308,7 @@ export default function FactCheckDisplay({ reportId, className, onDemandTrigger 
                         <ul className="text-sm space-y-1">
                             {factCheck.improvements.map((improvement) => (
                                 <li key={improvement} className="flex items-start gap-2">
-                                    <span className="text-muted">•</span>
+                                    <span className="text-muted-foreground">•</span>
                                     <span>{improvement}</span>
                                 </li>
                             ))}
@@ -322,7 +322,7 @@ export default function FactCheckDisplay({ reportId, className, onDemandTrigger 
                         <ul className="text-sm space-y-1">
                             {factCheck.missingContext.map((context) => (
                                 <li key={context} className="flex items-start gap-2">
-                                    <span className="text-muted">•</span>
+                                    <span className="text-muted-foreground">•</span>
                                     <span>{context}</span>
                                 </li>
                             ))}
@@ -330,7 +330,7 @@ export default function FactCheckDisplay({ reportId, className, onDemandTrigger 
                     </div>
                 )}
 
-                <div className="text-xs text-muted pt-2 border-t">
+                <div className="text-xs text-muted-foreground pt-2 border-t">
                     Fact-checked on {new Date(factCheck.checkedAt).toLocaleString()}
                 </div>
             </CardContent>
