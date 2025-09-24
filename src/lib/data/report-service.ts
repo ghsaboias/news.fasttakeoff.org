@@ -195,16 +195,12 @@ export class ReportService {
         }));
     }
 
-    // REMOVED: getLastReportAndMessages(timeframe) - use time-based queries on D1 database instead
-
-    // REMOVED: getReportAndMessages with TimeframeKey - use D1 database queries by reportId instead
 
     async getReport(reportId: string): Promise<Report | null> {
         const cachedReports = await ReportCache.getAllReports(this.env);
         return cachedReports?.find(r => r.reportId === reportId) || null;
     }
 
-    // REMOVED: getReportTimeframe() - timeframes no longer used, check report.generationTrigger instead
 
     async getAllReports(limit?: number): Promise<Report[]> {
         return ReportCache.getAllReports(this.env, limit);
@@ -434,7 +430,6 @@ export class ReportService {
         }
     }
 
-    // REMOVED: _generateAndCacheReportsForTimeframes - replaced by dynamic window evaluation
 
     private async _postTopReportToSocialMedia(generatedReports: Report[]): Promise<void> {
         if (generatedReports.length > 0) {
@@ -471,9 +466,6 @@ export class ReportService {
     /**
      * Generates reports for a specific timeframe with social media posting
      */
-    // REMOVED: generateReports(timeframe) - replaced by dynamic window evaluation
-    // REMOVED: generateReportsForManualTrigger(timeframes) - replaced by dynamic window evaluation  
-    // REMOVED: generateReportsWithoutSocialMedia(timeframes) - replaced by dynamic window evaluation
 
     /**
      * Query recent dynamic reports and post the top one to social media

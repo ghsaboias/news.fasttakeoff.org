@@ -218,3 +218,19 @@ npx wrangler d1 execute FAST_TAKEOFF_NEWS_DB --remote --command "SELECT report_i
 ```
 
 **Key Files**: `src/lib/config.ts` (PROMPT_TEMPLATE), `src/lib/utils/report-ai.ts` (createWindowAwarePrompt)
+
+## Power Network System
+
+**Database Tables:**
+- **power_network_entities** (267): People, companies, funds with financial data
+- **power_network_relationships** (281): Network connections between entities
+- **power_network_financials** (55+): Live stock prices updated daily at midnight UTC via `FINANCE_QUEUE`
+
+**Commands:**
+```bash
+# Check data status
+npx wrangler d1 execute FAST_TAKEOFF_NEWS_DB --remote --command "SELECT 'entities', COUNT(*) FROM power_network_entities UNION ALL SELECT 'relationships', COUNT(*) FROM power_network_relationships UNION ALL SELECT 'financials', COUNT(*) FROM power_network_financials"
+
+# Trigger financial data update manually
+curl -X POST "https://news.fasttakeoff.org/api/trigger-cron" -H "Authorization: Bearer manual-cron-trigger-secret-e1d5b8c7a9f0" -d '{"task": "FINANCIAL_DATA_QUEUE"}'
+```
