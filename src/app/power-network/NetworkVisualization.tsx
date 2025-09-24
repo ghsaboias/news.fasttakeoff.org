@@ -10,6 +10,7 @@ import {
     useEntityRelevance,
     useFilters,
     useGraphData,
+    useLiveFinancialData,
     useMobileBreakpoint,
     useNetworkRenderer,
     useNodes,
@@ -36,6 +37,9 @@ function NetworkVisualization() {
 
     // Entity relevance scoring
     const entityRelevance = useEntityRelevance(graphData);
+
+    // Live financial data
+    const { getEntityPrice, getEntityChangePercent, isLiveData } = useLiveFinancialData();
 
     // Nodes & physics
     const { nodesRef } = useNodes(graphData, isMobile);
@@ -140,6 +144,27 @@ function NetworkVisualization() {
                                 {formatEntityRelevance(score)}
                             </span>
                         </div>
+                        {/* Live Price Section */}
+                        {node.ticker && isLiveData(node.ticker) && (
+                            <div className="flex items-center justify-between">
+                                <span className="text-gray-300 text-sm">Live Price:</span>
+                                <div className="flex items-center space-x-2">
+                                    <span className="text-sm text-green-400">
+                                        ${getEntityPrice(node.ticker)?.toFixed(2)}
+                                    </span>
+                                    {getEntityChangePercent(node.ticker) !== undefined && (
+                                        <span className={`text-xs px-1 rounded ${
+                                            (getEntityChangePercent(node.ticker) || 0) >= 0
+                                                ? 'text-green-400 bg-green-900/20'
+                                                : 'text-red-400 bg-red-900/20'
+                                        }`}>
+                                            {(getEntityChangePercent(node.ticker) || 0) >= 0 ? '+' : ''}
+                                            {getEntityChangePercent(node.ticker)?.toFixed(1)}%
+                                        </span>
+                                    )}
+                                </div>
+                            </div>
+                        )}
                     </div>
                     <div className="text-xs text-gray-400 mt-1">
                         {score.reasons.join(', ')}

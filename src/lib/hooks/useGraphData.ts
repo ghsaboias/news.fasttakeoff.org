@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import { GraphEntitiesResponse } from '../types/entities';
 
 interface Entity {
     type: 'person' | 'company' | 'fund';
@@ -26,13 +25,34 @@ export function useGraphData() {
     useEffect(() => {
         async function loadData() {
             try {
-                console.log('Fetching graph data...');
-                const response = await fetch('/data/graph.json');
-                if (!response.ok) throw new Error('Failed to load network data');
-                const data = await response.json() as GraphEntitiesResponse;
-                console.log('Graph data fetched successfully:', data);
-                const relationships = data.relationships.map(([from, to, type]: [string, string, string]) => ({ from, to, type }));
-                setGraphData({ entities: data.entities, relationships });
+                console.log('Fetching graph data from D1 database...');
+
+                // Fetch entities and relationships from new API endpoints
+                const [entitiesResponse, relationshipsResponse] = await Promise.all([
+                    fetch('/api/power-network/entities'),
+                    fetch('/api/power-network/relationships')
+                ]);
+
+                if (!entitiesResponse.ok || !relationshipsResponse.ok) {
+                    throw new Error('Failed to load network data from database');
+                }
+
+                const entitiesData = await entitiesResponse.json();
+                const relationshipsData = await relationshipsResponse.json();
+
+                console.log('Graph data fetched successfully from D1:', {
+                    entitiesCount: Object.keys(entitiesData.entities).length,
+                    relationshipsCount: relationshipsData.relationships.length
+                });
+
+                const relationships = relationshipsData.relationships.map(([from, to, type]: [string, string, string]) => ({
+                    from, to, type
+                }));
+
+                setGraphData({
+                    entities: entitiesData.entities,
+                    relationships
+                });
                 setLoading(false);
             } catch (err) {
                 console.error('Error loading graph data:', err);

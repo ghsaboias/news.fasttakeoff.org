@@ -46,6 +46,7 @@ export interface GraphNode {
   netWorth?: number;
   marketCap?: number;
   aum?: number;
+  ticker?: string;
 }
 
 export interface GraphLink {
