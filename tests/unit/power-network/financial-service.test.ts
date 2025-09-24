@@ -121,8 +121,9 @@ describe('PowerNetworkFinancialService', () => {
       const service = new PowerNetworkFinancialService(mockD1);
       const result = await service.fetchLiveFinancialData('TSLA', { useCacheIfFresh: true });
 
-      expect(result.scrapedAt).toBe(recentTimestamp);
-      expect(result.price).toBe(425.85);
+      expect(result).not.toBeNull();
+      expect(result!.scrapedAt).toBe(recentTimestamp);
+      expect(result!.price).toBe(425.85);
     });
 
     it('should detect stale data (> 15 minutes old)', async () => {
@@ -143,8 +144,9 @@ describe('PowerNetworkFinancialService', () => {
       const result = await service.fetchLiveFinancialData('TSLA', { useCacheIfFresh: true });
 
       // Should return stale data with appropriate timestamp
-      expect(result.price).toBe(420.00);
-      expect(result.scrapedAt).toBe(staleTimestamp);
+      expect(result).not.toBeNull();
+      expect(result!.price).toBe(420.00);
+      expect(result!.scrapedAt).toBe(staleTimestamp);
     });
   });
 

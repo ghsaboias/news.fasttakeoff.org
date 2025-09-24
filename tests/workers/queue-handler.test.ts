@@ -3,7 +3,7 @@ import { createMessageBatch, createExecutionContext, getQueueResult, env } from 
 import { queue } from '@/lib/cron';
 
 describe('Financial Data Queue Handler', () => {
-  let ctx: ExecutionContext;
+  let ctx: ReturnType<typeof createExecutionContext>;
 
   beforeEach(() => {
     ctx = createExecutionContext();

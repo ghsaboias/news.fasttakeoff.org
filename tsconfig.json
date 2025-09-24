@@ -13,6 +13,7 @@
     "isolatedModules": true,
     "jsx": "preserve",
     "incremental": true,
+    "types": ["@cloudflare/vitest-pool-workers"],
     "plugins": [
       {
         "name": "next"
@@ -29,7 +30,8 @@
     "**/*.tsx",
     ".next/types/**/*.ts",
     "cloudflare-env.old.d.ts",
-    "worker-configuration.d.ts"
+    "worker-configuration.d.ts",
+    "node_modules/@cloudflare/vitest-pool-workers/types/cloudflare-test.d.ts"
   ],
   "exclude": ["node_modules"]
 }

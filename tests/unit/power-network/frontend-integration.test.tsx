@@ -199,7 +199,7 @@ describe('Power Network Frontend Integration', () => {
               return {
                 ...node,
                 livePrice: liveData?.price,
-                liveMarketCap: liveData?.marketCap / 1_000_000_000_000, // Convert to trillions
+                liveMarketCap: liveData?.marketCap ? liveData.marketCap / 1_000_000_000_000 : undefined, // Convert to trillions
                 dayChangePercent: liveData?.dayChangePercent,
                 isLiveData: true,
               };
