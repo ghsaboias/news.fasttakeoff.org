@@ -5,19 +5,18 @@ compatibility_flags = [
     "nodejs_compat",
 ]
 
-# Email bindings removed - switching to Resend for email sending
 
 [triggers]
 # Dynamic report system based on channel activity patterns
 # Every 15 minutes for message fetching and dynamic window evaluation
 # Every 2 hours for feeds summaries and social media posting  
-# Every 6 hours for executive summary generation
+# Every 2 hours for executive summary generation
 # Every 1 hour for MktNews summary and cache maintenance
 crons = [
-    "0 */2 * * *",    # Feeds summaries and social media posting
-    "0 */6 * * *",    # Executive summary generation
+    "0 */2 * * *",    # Feeds summaries, social media posting, and executive summary generation
     "*/30 * * * *",   # Message updates and dynamic window evaluation
-    "0 * * * *"       # MktNews summary and cache maintenance (hourly)
+    "0 * * * *",      # MktNews summary and cache maintenance (hourly)
+    "0 0 * * *"       # Daily financial data collection (midnight UTC)
 ]
 
 [assets]
@@ -99,6 +98,19 @@ preview_bucket_name = "news-images-dev"
 binding = "FAST_TAKEOFF_NEWS_DB"
 database_name = "fast-takeoff-news-db"
 database_id = "7bc73994-101f-430e-bd4f-7149d23808bb"
+experimental_remote = true
+
+# Financial data queue for Power Network companies
+[[queues.producers]]
+binding = "FINANCE_QUEUE"
+queue = "finance-data-queue"
+
+[[queues.consumers]]
+queue = "finance-data-queue"
+max_batch_size = 1
+max_batch_timeout = 30
+max_retries = 3
+dead_letter_queue = "finance-data-dlq"
 
 [[routes]]
 pattern = "news.fasttakeoff.org"

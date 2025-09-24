@@ -1,5 +1,5 @@
 import { Cloudflare } from '../../worker-configuration';
-import type { ExecutionContext } from '../../worker-configuration';
+import type { ExecutionContext, MessageBatch } from '../../worker-configuration';
 import { TASK_TIMEOUTS, FEATURE_FLAGS, KV_TIMEOUTS } from './config';
 import { ExecutiveSummaryService } from './data/executive-summary-service';
 import { FeedsService } from './data/feeds-service';
@@ -161,31 +161,21 @@ async function logRun(
 
 // Task timeouts are centralized in config.ts via TASK_TIMEOUTS
 
-/**
- * Check if current time coincides with 6h report schedule
- * Returns true if we're at 0:00, 6:00, 12:00, or 18:00
- * Note: Currently unused as static report generation is disabled
- */
-// function is6hReportTime(scheduledTime: number): boolean {
-//     const date = new Date(scheduledTime);
-//     const hour = date.getHours();
-//     return hour % 6 === 0; // 0, 6, 12, 18
-// }
 
 // Type for cron task functions
 type CronTaskFunction = (env: Cloudflare.Env, scheduledTime?: number, ctx?: ExecutionContext) => Promise<void>;
 
 // Map cron expressions to their tasks
 const CRON_TASKS: Record<string, CronTaskFunction> = {
-    // Post top dynamic report to social media every 2 hours
+    // Feeds summaries, social media posting, and executive summary generation every 2 hours
     // Every 2 hours (0:00, 2:00, 4:00, etc)
     "0 */2 * * *": async (env: Cloudflare.Env, scheduledTime?: number, ctx?: ExecutionContext) => {
         // Skip if Discord-dependent processing is disabled
         if (env.DISCORD_DISABLED) {
-            console.warn('[CRON] DISCORD_DISABLED is set – skipping feeds generation and social media posting');
+            console.warn('[CRON] DISCORD_DISABLED is set – skipping feeds generation, social media posting, and executive summary');
             return;
         }
-        
+
         // Generate feeds summaries
         const feedsService = new FeedsService(env);
 
@@ -197,6 +187,14 @@ const CRON_TASKS: Record<string, CronTaskFunction> = {
 
         await logRun('FEEDS_MERCADO', () => feedsService.createFreshSummary('mercado', ['Investing.com Brasil - Empresas', 'Investing.com Brasil - Mercado']), {
             timeoutMs: TASK_TIMEOUTS.FEEDS,
+            env,
+            ctx
+        });
+
+        // Generate executive summary
+        const executiveSummaryService = new ExecutiveSummaryService(env);
+        await logRun('EXECUTIVE_SUMMARY_2H', () => executiveSummaryService.generateAndCacheSummary(), {
+            timeoutMs: TASK_TIMEOUTS.EXECUTIVE_SUMMARY,
             env,
             ctx
         });
@@ -213,25 +211,7 @@ const CRON_TASKS: Record<string, CronTaskFunction> = {
         } else {
             console.log('[CRON] Social media posting skipped (SKIP_SOCIAL_POSTING flag enabled)');
         }
-        
-    },
 
-    // DISABLED: Static 6h report generation - replaced by dynamic window evaluation  
-    // Every 6 hours (0:00, 6:00, 12:00, 18:00)
-    "0 */6 * * *": async (env: Cloudflare.Env, scheduledTime?: number, ctx?: ExecutionContext) => {
-        if (env.DISCORD_DISABLED) {
-            console.warn('[CRON] DISCORD_DISABLED is set – skipping EXECUTIVE_SUMMARY');
-            return;
-        }
-        
-        // Only generate executive summary - report generation now handled by dynamic window evaluation
-        const executiveSummaryService = new ExecutiveSummaryService(env);
-        await logRun('EXECUTIVE_SUMMARY_6H', () => executiveSummaryService.generateAndCacheSummary(), {
-            timeoutMs: TASK_TIMEOUTS.EXECUTIVE_SUMMARY,
-            env,
-            ctx
-        });
-        
     },
 
     // Every 30 minutes
@@ -269,6 +249,45 @@ const CRON_TASKS: Record<string, CronTaskFunction> = {
         const mktNewsService = new MktNewsService(env);
         await logRun('MKTNEWS', () => mktNewsService.updateMessages(), {
             timeoutMs: TASK_TIMEOUTS.MKTNEWS,
+            env,
+            ctx
+        });
+    },
+
+    // Daily financial data collection (midnight UTC)
+    "0 0 * * *": async (env: Cloudflare.Env, scheduledTime?: number, ctx?: ExecutionContext) => {
+        await logRun('FINANCIAL_DATA_QUEUE', async () => {
+            const companies = await loadPowerNetworkCompanies(env);
+
+            if (companies.length === 0) {
+                console.log('[FINANCIAL] No companies found with tickers, skipping queue jobs');
+                return;
+            }
+
+            console.log(`[FINANCIAL] Queuing ${companies.length} companies for financial data collection`);
+
+            // Send each company as a separate queue job for parallel processing
+            const queueJobs = companies.map(company => ({
+                body: {
+                    entityId: company.entityId,
+                    ticker: company.ticker,
+                    name: company.name,
+                    marketCap: company.marketCap,
+                    timestamp: new Date().toISOString()
+                }
+            }));
+
+            // Send jobs in batches of 10 to avoid overwhelming the queue
+            const batchSize = 10;
+            for (let i = 0; i < queueJobs.length; i += batchSize) {
+                const batch = queueJobs.slice(i, i + batchSize);
+                await env.FINANCE_QUEUE.sendBatch(batch);
+                console.log(`[FINANCIAL] Queued batch ${Math.floor(i / batchSize) + 1}/${Math.ceil(queueJobs.length / batchSize)} (${batch.length} jobs)`);
+            }
+
+            console.log(`[FINANCIAL] Successfully queued all ${companies.length} financial data jobs`);
+        }, {
+            timeoutMs: 60000, // 1 minute timeout for queue operations
             env,
             ctx
         });
@@ -323,6 +342,42 @@ async function handleManualTrigger(trigger: string, env: Cloudflare.Env, ctx?: E
 
         'MKTNEWS_SUMMARY': () => logRun('MKTNEWS_SUMMARY', () => (new MktNewsSummaryService(env)).generateAndCacheSummary(60), {
             timeoutMs: TASK_TIMEOUTS.MKTNEWS_SUMMARY,
+            env,
+            ctx
+        }),
+
+        'FINANCIAL_DATA_QUEUE': () => logRun('FINANCIAL_DATA_QUEUE', async () => {
+            const companies = await loadPowerNetworkCompanies(env);
+
+            if (companies.length === 0) {
+                console.log('[FINANCIAL] No companies found with tickers, skipping queue jobs');
+                return;
+            }
+
+            console.log(`[FINANCIAL] Queuing ${companies.length} companies for financial data collection`);
+
+            // Send each company as a separate queue job for parallel processing
+            const queueJobs = companies.map(company => ({
+                body: {
+                    entityId: company.entityId,
+                    ticker: company.ticker,
+                    name: company.name,
+                    marketCap: company.marketCap,
+                    timestamp: new Date().toISOString()
+                }
+            }));
+
+            // Send jobs in batches of 10 to avoid overwhelming the queue
+            const batchSize = 10;
+            for (let i = 0; i < queueJobs.length; i += batchSize) {
+                const batch = queueJobs.slice(i, i + batchSize);
+                await env.FINANCE_QUEUE.sendBatch(batch);
+                console.log(`[FINANCIAL] Queued batch ${Math.floor(i / batchSize) + 1}/${Math.ceil(queueJobs.length / batchSize)} (${batch.length} jobs)`);
+            }
+
+            console.log(`[FINANCIAL] Successfully queued all ${companies.length} financial data jobs`);
+        }, {
+            timeoutMs: 60000,
             env,
             ctx
         })
@@ -410,6 +465,304 @@ async function updateAggregatedCronStatus(env: Cloudflare.Env, updatedTask: stri
         
         // Don't throw - this is a performance optimization, not critical functionality
     }
+}
+
+/**
+ * Load Power Network companies from graph.json with tickers for financial data collection
+ */
+interface PowerNetworkCompany {
+    entityId: string;
+    name: string;
+    ticker: string;
+    marketCap?: number;
+}
+
+async function loadPowerNetworkCompanies(env: Cloudflare.Env): Promise<PowerNetworkCompany[]> {
+    try {
+        console.log('[FINANCIAL] Loading Power Network companies from D1 database...');
+
+        // Fetch companies with tickers from D1 database
+        const result = await env.FAST_TAKEOFF_NEWS_DB.prepare(`
+            SELECT id, name, type, ticker, market_cap
+            FROM power_network_entities
+            WHERE ticker IS NOT NULL AND ticker != 'null' AND type = 'company'
+            ORDER BY name ASC
+        `).all();
+
+        if (!result.success) {
+            console.error('[FINANCIAL] Failed to fetch entities from D1:', result.error);
+            return [];
+        }
+
+        // Extract companies with tickers
+        const companies = (result.results as Array<{
+            id: string;
+            name: string;
+            type: string;
+            ticker: string;
+            market_cap: number | null;
+        }>).map(entity => {
+            return {
+                entityId: entity.id,
+                name: entity.name,
+                ticker: entity.ticker,
+                marketCap: entity.market_cap ?? undefined
+            };
+        });
+
+        console.log(`[FINANCIAL] Loaded ${companies.length} Power Network companies with tickers from D1`);
+        return companies;
+    } catch (error) {
+        console.error('[FINANCIAL] Failed to load Power Network companies:', error);
+        throw error instanceof Error ? error : new Error(String(error));
+    }
+}
+
+interface FinancialDataMessage {
+    ticker: string;
+    entityId: string;
+    name: string;
+    marketCap?: number;
+    timestamp: string;
+}
+
+/**
+ * Queue handler for financial data collection
+ * Processes individual company financial data requests from the queue
+ */
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export async function queue(batch: MessageBatch<FinancialDataMessage>, env: Cloudflare.Env, _ctx: ExecutionContext): Promise<void> {
+    console.log(`[FINANCIAL_QUEUE] Processing batch of ${batch.messages.length} financial data jobs`);
+
+    for (const message of batch.messages) {
+        const { ticker, entityId, name, marketCap, timestamp } = message.body;
+
+        try {
+            console.log(`[FINANCIAL_QUEUE] Processing ${ticker} (${name})`);
+
+            // Scrape financial data using Yahoo Finance API
+            const financialData = await scrapeCompanyFinancialData(ticker);
+
+            if (financialData) {
+                // Store in D1 database
+                await storeFinancialData(env, {
+                    entityId,
+                    ticker,
+                    name,
+                    marketCap,
+                    ...financialData,
+                    timestamp
+                });
+
+                console.log(`[FINANCIAL_QUEUE] ✅ Successfully processed ${ticker}`);
+
+                // Update monitoring status
+                await updateAggregatedCronStatus(env, `FINANCIAL_${ticker}`, {
+                    type: 'FINANCIAL_DATA',
+                    outcome: 'ok',
+                    duration: 0,
+                    timestamp: new Date().toISOString(),
+                    errorCount: 0,
+                    taskDetails: {
+                        task: `Financial data for ${ticker} - Price: ${financialData.price || 'N/A'}`,
+                        duration: 0
+                    }
+                });
+            } else {
+                console.warn(`[FINANCIAL_QUEUE] ⚠️ No data retrieved for ${ticker}`);
+            }
+
+        } catch (error) {
+            console.error(`[FINANCIAL_QUEUE] ❌ Failed to process ${ticker}:`, error);
+
+            // Update error status
+            await updateAggregatedCronStatus(env, `FINANCIAL_${ticker}`, {
+                type: 'FINANCIAL_DATA',
+                outcome: 'exception',
+                duration: 0,
+                timestamp: new Date().toISOString(),
+                errorCount: 1,
+                taskDetails: {
+                    task: `Financial data for ${ticker}`,
+                    duration: 0,
+                    error: error instanceof Error ? error.message : String(error)
+                }
+            });
+
+            // Don't throw - let other messages in batch continue processing
+        }
+    }
+
+    console.log(`[FINANCIAL_QUEUE] Completed batch processing`);
+}
+
+interface FinancialData {
+    price?: number;
+    currency?: string;
+    exchange?: string;
+    marketCap?: number;
+    volume?: number;
+    avgVolume?: number;
+    dayHigh?: number;
+    dayLow?: number;
+    previousClose?: number;
+    fiftyTwoWeekHigh?: number;
+    fiftyTwoWeekLow?: number;
+}
+
+/**
+ * Scrape financial data from Yahoo Finance Chart API
+ */
+async function scrapeCompanyFinancialData(ticker: string): Promise<FinancialData | null> {
+    const chartUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${ticker}`;
+
+    try {
+        const response = await fetch(chartUrl, {
+            headers: {
+                'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                'Accept': 'application/json, text/plain, */*',
+                'Accept-Language': 'en-US,en;q=0.9',
+                'Referer': 'https://finance.yahoo.com/',
+                'Origin': 'https://finance.yahoo.com'
+            }
+        });
+
+        if (!response.ok) {
+            console.warn(`[FINANCIAL] API error for ${ticker}: ${response.status}`);
+            if (response.status === 404) {
+                return fetchYahooQuoteSummary(ticker);
+            }
+            return null;
+        }
+
+        const data = await response.json();
+        const result = data.chart?.result?.[0];
+
+        if (!result?.meta) {
+            console.warn(`[FINANCIAL] No chart data for ${ticker}`);
+            return fetchYahooQuoteSummary(ticker);
+        }
+
+        const meta = result.meta;
+        return {
+            price: meta.regularMarketPrice,
+            currency: meta.currency,
+            exchange: meta.exchangeName,
+            marketCap: meta.marketCap,
+            volume: meta.regularMarketVolume,
+            dayHigh: meta.regularMarketDayHigh,
+            dayLow: meta.regularMarketDayLow,
+            previousClose: meta.regularMarketPreviousClose,
+            fiftyTwoWeekHigh: meta.fiftyTwoWeekHigh,
+            fiftyTwoWeekLow: meta.fiftyTwoWeekLow
+        };
+
+    } catch (error) {
+        console.error(`[FINANCIAL] Scraping error for ${ticker}:`, error);
+        return fetchYahooQuoteSummary(ticker);
+    }
+}
+
+async function fetchYahooQuoteSummary(ticker: string): Promise<FinancialData | null> {
+    const quoteUrl = `https://query2.finance.yahoo.com/v10/finance/quoteSummary/${ticker}?modules=price,summaryDetail`;
+
+    try {
+        const response = await fetch(quoteUrl, {
+            headers: {
+                'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                'Accept': 'application/json, text/plain, */*',
+                'Accept-Language': 'en-US,en;q=0.9',
+                'Referer': 'https://finance.yahoo.com/',
+                'Origin': 'https://finance.yahoo.com'
+            }
+        });
+
+        if (!response.ok) {
+            console.warn(`[FINANCIAL] Quote summary API error for ${ticker}: ${response.status}`);
+            return null;
+        }
+
+        const data = await response.json();
+        const result = data.quoteSummary?.result?.[0];
+
+        if (!result?.price) {
+            console.warn(`[FINANCIAL] Quote summary response missing price data for ${ticker}`);
+            return null;
+        }
+
+        const priceInfo = result.price;
+        const summaryDetail = result.summaryDetail ?? {};
+
+        const getRaw = (field?: { raw?: number }): number | undefined => (typeof field?.raw === 'number' ? field.raw : undefined);
+
+        return {
+            price: getRaw(priceInfo.regularMarketPrice),
+            currency: priceInfo.currency,
+            exchange: priceInfo.exchangeName,
+            marketCap: getRaw(priceInfo.marketCap),
+            volume: getRaw(priceInfo.regularMarketVolume),
+            avgVolume: getRaw(summaryDetail.averageDailyVolume3Month) ?? getRaw(priceInfo.averageDailyVolume3Month),
+            dayHigh: getRaw(summaryDetail.dayHigh) ?? getRaw(priceInfo.regularMarketDayHigh),
+            dayLow: getRaw(summaryDetail.dayLow) ?? getRaw(priceInfo.regularMarketDayLow),
+            previousClose: getRaw(summaryDetail.previousClose) ?? getRaw(priceInfo.regularMarketPreviousClose),
+            fiftyTwoWeekHigh: getRaw(summaryDetail.fiftyTwoWeekHigh) ?? getRaw(priceInfo.fiftyTwoWeekHigh),
+            fiftyTwoWeekLow: getRaw(summaryDetail.fiftyTwoWeekLow) ?? getRaw(priceInfo.fiftyTwoWeekLow)
+        };
+    } catch (error) {
+        console.error(`[FINANCIAL] Quote summary scraping error for ${ticker}:`, error);
+        return null;
+    }
+}
+
+interface StoreFinancialDataParams {
+    entityId: string;
+    ticker: string;
+    name: string;
+    marketCap?: number;
+    timestamp: string;
+    price?: number;
+    currency?: string;
+    exchange?: string;
+    volume?: number;
+    dayHigh?: number;
+    dayLow?: number;
+    previousClose?: number;
+    fiftyTwoWeekHigh?: number;
+    fiftyTwoWeekLow?: number;
+}
+
+/**
+ * Store financial data in D1 database
+ */
+async function storeFinancialData(env: Cloudflare.Env, data: StoreFinancialDataParams): Promise<void> {
+    const sql = `
+        INSERT OR REPLACE INTO power_network_financials (
+            symbol, company_name, entity_id, price, currency, market_cap, volume,
+            day_high, day_low, previous_close, fifty_two_week_high, fifty_two_week_low,
+            exchange, date_key, scraped_at, data_source
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `;
+
+    const params = [
+        data.ticker,
+        data.name,
+        data.entityId,
+        data.price ?? null,
+        data.currency ?? 'USD',
+        data.marketCap ?? null,
+        data.volume ?? null,
+        data.dayHigh ?? null,
+        data.dayLow ?? null,
+        data.previousClose ?? null,
+        data.fiftyTwoWeekHigh ?? null,
+        data.fiftyTwoWeekLow ?? null,
+        data.exchange ?? null,
+        new Date().toISOString().split('T')[0], // Date component
+        data.timestamp,
+        'yahoo_finance_chart_api'
+    ];
+
+    await env.FAST_TAKEOFF_NEWS_DB.prepare(sql).bind(...params).run();
 }
 
 export async function scheduled(event: ScheduledEvent, env: Cloudflare.Env, ctx: ExecutionContext): Promise<void> {

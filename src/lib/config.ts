@@ -687,7 +687,6 @@ export const FEATURE_FLAGS = {
     DYNAMIC_REPORTS_ENABLED: true,
     DYNAMIC_REPORTS_PRIMARY: false, // Start false, gradually increase
     FIXED_REPORTS_FALLBACK: true,
-    SHOW_DYNAMIC_REPORTS_IN_UI: false, // Dynamic reports are now the standard - toggle no longer needed
     SKIP_SOCIAL_POSTING: false, // Set to true to skip social media posting in cron jobs
 };
 
