@@ -281,7 +281,7 @@ const CRON_TASKS: Record<string, CronTaskFunction> = {
             const batchSize = 10;
             for (let i = 0; i < queueJobs.length; i += batchSize) {
                 const batch = queueJobs.slice(i, i + batchSize);
-                await env.FINANCE_QUEUE.sendBatch(batch);
+                await env.finance_data_queue.sendBatch(batch);
                 console.log(`[FINANCIAL] Queued batch ${Math.floor(i / batchSize) + 1}/${Math.ceil(queueJobs.length / batchSize)} (${batch.length} jobs)`);
             }
 
@@ -371,7 +371,7 @@ async function handleManualTrigger(trigger: string, env: Cloudflare.Env, ctx?: E
             const batchSize = 10;
             for (let i = 0; i < queueJobs.length; i += batchSize) {
                 const batch = queueJobs.slice(i, i + batchSize);
-                await env.FINANCE_QUEUE.sendBatch(batch);
+                await env.finance_data_queue.sendBatch(batch);
                 console.log(`[FINANCIAL] Queued batch ${Math.floor(i / batchSize) + 1}/${Math.ceil(queueJobs.length / batchSize)} (${batch.length} jobs)`);
             }
 

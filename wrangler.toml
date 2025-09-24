@@ -102,7 +102,7 @@ experimental_remote = true
 
 # Financial data queue for Power Network companies
 [[queues.producers]]
-binding = "FINANCE_QUEUE"
+binding = "finance_data_queue"
 queue = "finance-data-queue"
 
 [[queues.consumers]]

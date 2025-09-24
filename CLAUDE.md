@@ -224,7 +224,7 @@ npx wrangler d1 execute FAST_TAKEOFF_NEWS_DB --remote --command "SELECT report_i
 **Database Tables:**
 - **power_network_entities** (267): People, companies, funds with financial data
 - **power_network_relationships** (281): Network connections between entities
-- **power_network_financials** (55+): Live stock prices updated daily at midnight UTC via `FINANCE_QUEUE`
+- **power_network_financials** (55+): Live stock prices updated daily at midnight UTC via `finance_data_queue`
 
 **Commands:**
 ```bash
