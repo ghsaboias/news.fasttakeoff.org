@@ -164,7 +164,23 @@ export default function MessageVolumeChart() {
       </CardHeader>
       <CardContent>
         <div className="mb-4">
-          <p className="text-sm text-muted-foreground mb-2">Click channels to toggle:</p>
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-sm text-muted-foreground">Click channels to toggle:</p>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setSelectedChannels(new Set(channels))}
+                className="px-3 py-1 text-xs font-medium rounded-md bg-primary text-primary-foreground hover:bg-primary/80 transition-colors"
+              >
+                Select All
+              </button>
+              <button
+                onClick={() => setSelectedChannels(new Set())}
+                className="px-3 py-1 text-xs font-medium rounded-md bg-muted text-muted-foreground hover:bg-muted/80 transition-colors"
+              >
+                Clear All
+              </button>
+            </div>
+          </div>
           <div className="flex flex-wrap gap-2">
             {channels.map((channel, channelIdx) => (
               <button
