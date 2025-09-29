@@ -225,6 +225,28 @@ export default function MessageVolumeChart() {
                 border: '1px solid hsl(var(--border))',
                 borderRadius: '6px'
               }}
+              content={({ active, payload, label }) => {
+                if (active && payload && payload.length) {
+                  // Filter out channels with 0 messages
+                  const activePayload = payload.filter(item =>
+                    item.value && typeof item.value === 'number' && item.value > 0
+                  );
+
+                  if (activePayload.length === 0) return null;
+
+                  return (
+                    <div className="bg-background border border-border rounded-md p-3 shadow-md">
+                      <p className="font-medium mb-2">{formatTooltipDate(label as string)}</p>
+                      {activePayload.map((entry, index) => (
+                        <p key={index} style={{ color: entry.color }} className="text-sm">
+                          {entry.dataKey}: {entry.value}
+                        </p>
+                      ))}
+                    </div>
+                  );
+                }
+                return null;
+              }}
             />
             <Legend />
 
