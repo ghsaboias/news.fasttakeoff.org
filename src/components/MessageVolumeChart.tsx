@@ -67,17 +67,22 @@ export default function MessageVolumeChart() {
       // Extract unique channel names
       const uniqueChannels = [...new Set(rawData.map(item => item.channel_name))];
 
-      // Initialize selected channels (top 5 by total volume)
-      const channelVolumes = uniqueChannels.map(channel => ({
-        channel,
-        total: rawData
-          .filter(d => d.channel_name === channel)
-          .reduce((sum, d) => sum + d.total_messages, 0)
-      }));
+      // Initialize selected channels (top 5 by activity distribution and volume)
+      const channelMetrics = uniqueChannels.map(channel => {
+        const channelData = rawData.filter(d => d.channel_name === channel);
+        const total = channelData.reduce((sum, d) => sum + d.total_messages, 0);
+        const daysActive = channelData.filter(d => d.total_messages > 0).length;
+        const avgDaily = total / Math.max(daysActive, 1);
 
-      const topChannels = channelVolumes
-        .sort((a, b) => b.total - a.total)
-        .slice(0, 5)
+        // Score based on total volume, consistency, and average daily activity
+        const score = total * 0.6 + daysActive * 5 + avgDaily * 0.4;
+
+        return { channel, total, daysActive, avgDaily, score };
+      });
+
+      const topChannels = channelMetrics
+        .sort((a, b) => b.score - a.score)
+        .slice(0, 8) // Show top 8 instead of 5 for better coverage
         .map(c => c.channel);
 
       setChannels(uniqueChannels);
