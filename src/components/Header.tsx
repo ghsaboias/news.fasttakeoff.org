@@ -3,15 +3,22 @@
 import { Button } from "@/components/ui/button";
 import { useGeolocation } from "@/lib/hooks/useGeolocation";
 import { UserButton, useUser } from "@clerk/nextjs";
-import { Menu, UserIcon } from "lucide-react";
+import { ChevronDown, Menu, UserIcon } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "./ui/sheet";
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger
+} from "./ui/dropdown-menu";
 
 export default function Header() {
     const { user } = useUser()
     const [isMenuOpen, setIsMenuOpen] = useState(false);
+    const [isAnalyticsOpen, setIsAnalyticsOpen] = useState(false);
 
     // Use the consolidated geolocation hook
     const { isUSBased } = useGeolocation({ initialValue: false });
@@ -41,12 +48,6 @@ export default function Header() {
                 <Link href="/mktfeed" className="text-sm font-medium hover:underline hover:text-accent transition-colors text-center">
                     Market Feed
                 </Link>
-                <Link href="/entities" className="text-sm font-medium hover:underline hover:text-accent transition-colors text-center">
-                    Entities
-                </Link>
-                <Link href="/message-activity" className="text-sm font-medium hover:underline hover:text-accent transition-colors text-center">
-                    Heatmap
-                </Link>
                 <Link href="/news-globe" className="text-sm font-medium hover:underline hover:text-accent transition-colors text-center">
                     News Globe
                 </Link>
@@ -56,6 +57,39 @@ export default function Header() {
                 <Link href="/power-network" className="text-sm font-medium hover:underline hover:text-accent transition-colors text-center">
                     Power Network
                 </Link>
+                <div onMouseLeave={() => setIsAnalyticsOpen(false)}>
+                    <DropdownMenu open={isAnalyticsOpen} onOpenChange={setIsAnalyticsOpen} modal={false}>
+                        <DropdownMenuTrigger
+                            className="text-sm font-medium hover:text-accent transition-colors text-center inline-flex items-center gap-1 outline-none focus:outline-none pb-1"
+                            onMouseEnter={() => setIsAnalyticsOpen(true)}
+                        >
+                            Analytics
+                            <ChevronDown className="h-3 w-3" />
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent className="bg-dark-800 border-dark-700 mt-[-4px]">
+                            <DropdownMenuItem asChild className="focus:outline-none">
+                                <Link href="/analytics/entities" className="text-dark-100 hover:text-accent cursor-pointer focus:outline-none">
+                                    Entities
+                                </Link>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem asChild className="focus:outline-none">
+                                <Link href="/analytics/heatmap" className="text-dark-100 hover:text-accent cursor-pointer focus:outline-none">
+                                    Heatmap
+                                </Link>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem asChild className="focus:outline-none">
+                                <Link href="/analytics/word-cloud" className="text-dark-100 hover:text-accent cursor-pointer focus:outline-none">
+                                    Word Cloud
+                                </Link>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem asChild className="focus:outline-none">
+                                <Link href="/analytics/trump-timeline" className="text-dark-100 hover:text-accent cursor-pointer focus:outline-none">
+                                    Trump Timeline
+                                </Link>
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+                </div>
             </div>
             {
                 user ? (
@@ -101,12 +135,6 @@ export default function Header() {
                                     <Link href="/mktfeed" className="text-sm font-medium hover:underline hover:text-accent transition-colors text-dark-100">
                                         Market Feed
                                     </Link>
-                                    <Link href="/entities" className="text-sm font-medium hover:underline hover:text-accent transition-colors text-dark-100">
-                                        Entities
-                                    </Link>
-                                    <Link href="/message-activity" className="text-sm font-medium hover:underline hover:text-accent transition-colors text-dark-100">
-                                        Heatmap
-                                    </Link>
                                     <Link href="/news-globe" className="text-sm font-medium hover:underline hover:text-accent transition-colors text-dark-100">
                                         News Globe
                                     </Link>
@@ -116,6 +144,34 @@ export default function Header() {
                                     <Link href="/power-network" className="text-sm font-medium hover:underline hover:text-accent transition-colors text-dark-100">
                                         Power Network
                                     </Link>
+                                    <DropdownMenu>
+                                        <DropdownMenuTrigger className="text-sm font-medium hover:text-accent transition-colors text-dark-100 inline-flex items-center gap-1">
+                                            Analytics
+                                            <ChevronDown className="h-3 w-3" />
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent className="bg-dark-800 border-dark-700">
+                                            <DropdownMenuItem asChild>
+                                                <Link href="/analytics/entities" className="text-dark-100 hover:text-accent cursor-pointer">
+                                                    Entities
+                                                </Link>
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem asChild>
+                                                <Link href="/analytics/heatmap" className="text-dark-100 hover:text-accent cursor-pointer">
+                                                    Heatmap
+                                                </Link>
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem asChild>
+                                                <Link href="/analytics/word-cloud" className="text-dark-100 hover:text-accent cursor-pointer">
+                                                    Word Cloud
+                                                </Link>
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem asChild>
+                                                <Link href="/analytics/trump-timeline" className="text-dark-100 hover:text-accent cursor-pointer">
+                                                    Trump Timeline
+                                                </Link>
+                                            </DropdownMenuItem>
+                                        </DropdownMenuContent>
+                                    </DropdownMenu>
                                 </div>
                             </SheetContent>
                         </Sheet>
@@ -165,12 +221,6 @@ export default function Header() {
                                     <Link href="/mktfeed" className="text-sm font-medium hover:underline hover:text-accent transition-colors text-dark-100">
                                         Market Feed
                                     </Link>
-                                    <Link href="/entities" className="text-sm font-medium hover:underline hover:text-accent transition-colors text-dark-100">
-                                        Entities
-                                    </Link>
-                                    <Link href="/message-activity" className="text-sm font-medium hover:underline hover:text-accent transition-colors text-dark-100">
-                                        Heatmap
-                                    </Link>
                                     <Link href="/news-globe" className="text-sm font-medium hover:underline hover:text-accent transition-colors text-dark-100">
                                         News Globe
                                     </Link>
@@ -180,6 +230,34 @@ export default function Header() {
                                     <Link href="/power-network" className="text-sm font-medium hover:underline hover:text-accent transition-colors text-dark-100">
                                         Power Network
                                     </Link>
+                                    <DropdownMenu>
+                                        <DropdownMenuTrigger className="text-sm font-medium hover:text-accent transition-colors text-dark-100 inline-flex items-center gap-1">
+                                            Analytics
+                                            <ChevronDown className="h-3 w-3" />
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent className="bg-dark-800 border-dark-700">
+                                            <DropdownMenuItem asChild>
+                                                <Link href="/analytics/entities" className="text-dark-100 hover:text-accent cursor-pointer">
+                                                    Entities
+                                                </Link>
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem asChild>
+                                                <Link href="/analytics/heatmap" className="text-dark-100 hover:text-accent cursor-pointer">
+                                                    Heatmap
+                                                </Link>
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem asChild>
+                                                <Link href="/analytics/word-cloud" className="text-dark-100 hover:text-accent cursor-pointer">
+                                                    Word Cloud
+                                                </Link>
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem asChild>
+                                                <Link href="/analytics/trump-timeline" className="text-dark-100 hover:text-accent cursor-pointer">
+                                                    Trump Timeline
+                                                </Link>
+                                            </DropdownMenuItem>
+                                        </DropdownMenuContent>
+                                    </DropdownMenu>
                                 </div>
                             </SheetContent>
                         </Sheet>

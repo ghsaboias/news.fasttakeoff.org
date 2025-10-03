@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Time River Flow Visualization</title>
+    <style>
+        body { margin: 0; background: #0a0a0a; color: white; font-family: Arial; }
+        canvas { border: 1px solid #333; }
+        .info { position: absolute; top: 10px; left: 10px; z-index: 10; }
+    </style>
+</head>
+<body>
+    <div class="info">
+        <h3>Time River: Events Flow Left ← Right</h3>
+        <p>Click to add breaking news on the right</p>
+        <p>Events drift leftward as they age</p>
+        <p>Red = fresh, Blue = old, disappear when they flow off-screen</p>
+    </div>
+
+    <canvas id="canvas" width="800" height="600"></canvas>
+
+    <script src="event-data.js"></script>
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+
+        let entities = [];
+        let animationId;
+        let riverLanes = 4; // Number of horizontal lanes
+
+        class Entity {
+            constructor(name) {
+                this.name = name;
+                this.x = canvas.width - 50; // Start from right edge
+                this.y = (Math.floor(Math.random() * riverLanes) + 1) * (canvas.height / (riverLanes + 1));
+                this.birthTime = Date.now();
+                this.flowSpeed = 30 + Math.random() * 20; // pixels per second
+                this.size = 15;
+                this.bobPhase = Math.random() * Math.PI * 2;
+            }
+
+            getAge() {
+                return Date.now() - this.birthTime;
+            }
+
+            getAgeSeconds() {
+                return this.getAge() / 1000;
+            }
+
+            update(deltaTime) {
+                this.x -= this.flowSpeed * deltaTime / 1000;
+
+                // Gentle bobbing motion like floating on water
+                this.y += Math.sin(Date.now() / 1000 + this.bobPhase) * 0.5;
+            }
+
+            getColor() {
+                const ageSeconds = this.getAgeSeconds();
+                const ageFactor = Math.max(0.3, 1 - ageSeconds / 30);
+
+                if (ageSeconds < 5) return `rgba(255, 0, 0, ${ageFactor})`;      // Red
+                if (ageSeconds < 10) return `rgba(255, 165, 0, ${ageFactor})`;   // Orange
+                if (ageSeconds < 15) return `rgba(255, 215, 0, ${ageFactor})`;   // Gold
+                if (ageSeconds < 20) return `rgba(135, 206, 235, ${ageFactor})`; // Sky blue
+                return `rgba(64, 64, 64, ${ageFactor})`;                         // Gray
+            }
+
+            getSize() {
+                const ageSeconds = this.getAgeSeconds();
+                const ageFactor = Math.max(0.5, 1 - ageSeconds / 30);
+                return this.size * ageFactor;
+            }
+
+            render() {
+                const size = this.getSize();
+
+                // Entity circle
+                ctx.fillStyle = this.getColor();
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, size, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Glow effect for recent entities
+                if (this.getAgeSeconds() < 10) {
+                    ctx.shadowBlur = 10;
+                    ctx.shadowColor = this.getColor();
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y, size * 0.7, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.shadowBlur = 0;
+                }
+
+                // Wake trail behind the entity
+                for (let i = 1; i <= 5; i++) {
+                    const trailX = this.x + i * 20;
+                    const trailSize = size * (0.8 - i * 0.1);
+                    const trailAlpha = 0.3 - i * 0.05;
+
+                    if (trailX < canvas.width) {
+                        ctx.fillStyle = this.getColor().replace(/[\d.]+\)$/, `${trailAlpha})`);
+                        ctx.beginPath();
+                        ctx.arc(trailX, this.y, trailSize, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+                }
+
+                // Label
+                ctx.fillStyle = 'white';
+                ctx.font = '12px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText(this.name, this.x, this.y - size - 5);
+
+                // Age indicator
+                ctx.font = '10px Arial';
+                ctx.fillStyle = '#888';
+                ctx.fillText(`${this.getAgeSeconds().toFixed(0)}s`, this.x, this.y + size + 15);
+            }
+
+            isOffScreen() {
+                return this.x < -50;
+            }
+        }
+
+        function drawRiverBed() {
+            // River lanes (horizontal guides)
+            ctx.strokeStyle = '#222';
+            ctx.lineWidth = 1;
+            ctx.setLineDash([5, 5]);
+
+            for (let i = 1; i <= riverLanes; i++) {
+                const y = i * (canvas.height / (riverLanes + 1));
+                ctx.beginPath();
+                ctx.moveTo(0, y);
+                ctx.lineTo(canvas.width, y);
+                ctx.stroke();
+            }
+            ctx.setLineDash([]);
+
+            // Flow direction arrows
+            ctx.fillStyle = '#333';
+            ctx.font = '24px Arial';
+            ctx.textAlign = 'center';
+            for (let x = 100; x < canvas.width; x += 200) {
+                ctx.fillText('←', x, canvas.height / 2);
+            }
+
+            // Time labels
+            ctx.fillStyle = '#666';
+            ctx.font = '14px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('OLD', 50, 30);
+            ctx.fillText('NEW', canvas.width - 50, 30);
+        }
+
+        function animate() {
+            const deltaTime = 16;
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            drawRiverBed();
+
+            entities.forEach(entity => {
+                entity.update(deltaTime);
+                entity.render();
+            });
+
+            // Remove entities that flowed off screen
+            entities = entities.filter(e => !e.isOffScreen());
+
+            animationId = requestAnimationFrame(animate);
+        }
+
+        canvas.addEventListener('click', () => {
+            const names = ['Breaking', 'Alert', 'Flash', 'Update', 'Urgent', 'News', 'Report'];
+            const name = names[Math.floor(Math.random() * names.length)];
+            entities.push(new Entity(name));
+        });
+
+        // Auto-generate entities periodically
+        setInterval(() => {
+            if (Math.random() < 0.3) { // 30% chance every 2 seconds
+                const names = ['Update', 'News', 'Report', 'Story', 'Info'];
+                const name = names[Math.floor(Math.random() * names.length)];
+                entities.push(new Entity(name));
+            }
+        }, 2000);
+
+        // Load real events data
+        if (window.EVENT_DATA) {
+            console.log(`Loading ${EVENT_DATA.length} real events`);
+
+            // Filter to recent events and sort by age
+            const recentEvents = getEventsByAge(720); // Last 12 hours
+            recentEvents.sort((a, b) => a.ageMinutes - b.ageMinutes);
+
+            recentEvents.forEach(event => {
+                const entity = new Entity(event.name);
+
+                // Position based on age
+                const ageMinutes = event.ageMinutes;
+                const maxAge = 720; // 12 hours
+                const ageRatio = Math.min(ageMinutes / maxAge, 1);
+
+                // Start further left if older
+                entity.x = canvas.width - 50 - (ageRatio * (canvas.width - 100));
+
+                // Adjust size based on importance
+                entity.size = 10 + (event.importance * 15);
+
+                // Set birth time to match real age
+                entity.birthTime = Date.now() - (ageMinutes * 60 * 1000);
+
+                entities.push(entity);
+            });
+        } else {
+            // Fallback sample data
+            entities.push(new Entity('Ukraine'));
+            entities.push(new Entity('Markets'));
+        }
+
+        animate();
+    </script>
+</body>
+</html>

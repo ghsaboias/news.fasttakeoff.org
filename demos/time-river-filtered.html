@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Time River - Top 20% Events</title>
+    <style>
+        body { margin: 0; background: #0a0a0a; color: white; font-family: Arial; }
+        canvas { border: 1px solid #333; }
+        .info { position: absolute; top: 10px; left: 10px; z-index: 10; }
+        .time-display {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            z-index: 10;
+            background: rgba(0,0,0,0.8);
+            padding: 15px;
+            border-radius: 8px;
+            font-size: 16px;
+            min-width: 280px;
+        }
+        .controls {
+            position: absolute;
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 10;
+            background: rgba(0,0,0,0.8);
+            padding: 15px;
+            border-radius: 8px;
+        }
+        button {
+            background: #333;
+            color: white;
+            border: 1px solid #555;
+            padding: 10px 20px;
+            margin: 0 8px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        button:hover { background: #444; }
+        button.active { background: #0066cc; }
+        .filter-info {
+            margin-top: 8px;
+            color: #0066cc;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="info">
+        <h3>Time River: Top 20% Most Frequent</h3>
+        <p>Only recurring entities • Clear signal/noise</p>
+        <div class="filter-info">Showing 63 of 315 unique entities</div>
+    </div>
+
+    <div class="time-display">
+        <div><strong>Report Window:</strong> <span id="current-window">--</span></div>
+        <div><strong>Events in batch:</strong> <span id="batch-count">0</span></div>
+        <div><strong>Total spawned:</strong> <span id="total-spawned">0</span> / <span id="total-filtered">0</span></div>
+        <div><strong>Active flowing:</strong> <span id="active-count">0</span></div>
+        <div class="filter-info">
+            <div>🔥 Most frequent: <span id="top-event">--</span></div>
+        </div>
+    </div>
+
+    <div class="controls">
+        <button id="play-btn" class="active">⏸️ Pause</button>
+        <button id="next-batch-btn">➡️ Next Batch</button>
+        <button id="restart-btn">🔄 Restart</button>
+        <button id="speed-btn" onclick="toggleSpeed()">Normal</button>
+    </div>
+
+    <canvas id="canvas" width="800" height="600"></canvas>
+
+    <script src="event-data.js"></script>
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+
+        let entities = [];
+        let animationId;
+        let riverLanes = 4; // Fewer lanes since fewer events
+        let isPlaying = true;
+        let speedMultiplier = 1;
+
+        // Top 20% filtering
+        let topEventNames = new Set();
+        let eventFrequencies = {};
+        let filteredEventData = [];
+
+        // Batch system
+        let eventBatches = [];
+        let currentBatchIndex = 0;
+        let batchTimer = 0;
+        let batchInterval = 5000; // 5 seconds between batches for better visibility
+        let totalSpawned = 0;
+        let totalFiltered = 0;
+
+        class Entity {
+            constructor(event, spawnTime = Date.now()) {
+                this.name = event.name;
+                this.reportId = event.reportId;
+                this.channelName = event.channelName;
+                this.importance = event.importance;
+                this.type = event.type;
+                this.headline = event.headline;
+                this.frequency = eventFrequencies[event.name] || 1;
+
+                // Spawn position - spread across fewer lanes
+                this.x = canvas.width - 30;
+                this.targetLane = Math.floor(Math.random() * riverLanes) + 1;
+                this.y = this.targetLane * (canvas.height / (riverLanes + 1)) + (Math.random() - 0.5) * 50;
+
+                this.spawnTime = spawnTime;
+                // Speed based on both importance and frequency
+                this.flowSpeed = 15 + (this.importance * 20) + (Math.log(this.frequency) * 5);
+                // Size based on frequency and importance
+                this.size = 12 + (this.importance * 15) + (Math.log(this.frequency) * 3);
+                this.bobPhase = Math.random() * Math.PI * 2;
+                this.pulsePhase = Math.random() * Math.PI * 2;
+            }
+
+            getAge() {
+                return Date.now() - this.spawnTime;
+            }
+
+            getAgeSeconds() {
+                return this.getAge() / 1000;
+            }
+
+            update(deltaTime) {
+                this.x -= this.flowSpeed * deltaTime / 1000 * speedMultiplier;
+
+                // Gentle lane movement with frequency-based stability
+                const bobAmount = Math.sin(Date.now() / 2000 + this.bobPhase) * (2 / Math.log(this.frequency + 1));
+                const targetY = this.targetLane * (canvas.height / (riverLanes + 1));
+                this.y += (targetY - this.y) * 0.015 + bobAmount;
+
+                // Less frequent lane changes for high-frequency events
+                const changeProb = 0.0005 / Math.log(this.frequency + 1);
+                if (Math.random() < changeProb) {
+                    this.targetLane = Math.max(1, Math.min(riverLanes, this.targetLane + (Math.random() > 0.5 ? 1 : -1)));
+                }
+            }
+
+            getColor() {
+                const ageSeconds = this.getAgeSeconds();
+                const ageFactor = Math.max(0.5, 1 - ageSeconds / 90); // Longer fade time
+
+                // Color intensity based on frequency
+                const intensityBoost = Math.min(0.3, Math.log(this.frequency) / 10);
+
+                if (ageSeconds < 12) return `rgba(255, ${50 + intensityBoost * 100}, 50, ${ageFactor + intensityBoost})`;      // Enhanced red
+                if (ageSeconds < 24) return `rgba(255, ${150 + intensityBoost * 50}, 0, ${ageFactor + intensityBoost})`;    // Enhanced orange
+                if (ageSeconds < 36) return `rgba(255, ${220 + intensityBoost * 35}, 0, ${ageFactor + intensityBoost})`;    // Enhanced yellow
+                if (ageSeconds < 48) return `rgba(${100 + intensityBoost * 100}, 200, 255, ${ageFactor + intensityBoost})`; // Enhanced blue
+                return `rgba(${120 + intensityBoost * 100}, ${120 + intensityBoost * 100}, ${120 + intensityBoost * 100}, ${ageFactor})`;
+            }
+
+            render() {
+                const ageSeconds = this.getAgeSeconds();
+                const size = this.size * Math.max(0.7, 1 - ageSeconds / 180);
+
+                // Enhanced pulsing for very frequent events
+                const pulseMultiplier = this.frequency > 5 ?
+                    1 + Math.sin(Date.now() / 300 + this.pulsePhase) * 0.15 : 1;
+                const renderSize = size * pulseMultiplier;
+
+                // Main entity circle with frequency ring
+                ctx.fillStyle = this.getColor();
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, renderSize, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Frequency indicator ring for very frequent events
+                if (this.frequency >= 5) {
+                    ctx.strokeStyle = this.getColor();
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y, renderSize + 4, 0, Math.PI * 2);
+                    ctx.stroke();
+                }
+
+                // Enhanced glow for important frequent events
+                if (ageSeconds < 15 && (this.importance > 0.6 || this.frequency >= 4)) {
+                    ctx.shadowBlur = 20;
+                    ctx.shadowColor = this.getColor();
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y, renderSize * 0.8, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.shadowBlur = 0;
+                }
+
+                // Cleaner wake trail
+                for (let i = 1; i <= 3; i++) {
+                    const trailX = this.x + i * 30;
+                    const trailSize = renderSize * (0.8 - i * 0.15);
+                    const trailAlpha = (0.5 - i * 0.12) * (this.frequency / 10);
+
+                    if (trailX < canvas.width && trailSize > 3) {
+                        ctx.fillStyle = this.getColor().replace(/[\d.]+\)$/, `${trailAlpha})`);
+                        ctx.beginPath();
+                        ctx.arc(trailX, this.y, trailSize, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+                }
+
+                // Always show labels for frequent events
+                if (this.frequency >= 3 && ageSeconds < 30) {
+                    ctx.fillStyle = 'white';
+                    ctx.font = `${Math.min(14, renderSize * 0.8)}px Arial`;
+                    ctx.textAlign = 'center';
+                    ctx.fillText(this.name, this.x, this.y - renderSize - 10);
+
+                    // Frequency badge
+                    if (this.frequency >= 5) {
+                        ctx.fillStyle = '#ffaa00';
+                        ctx.font = '8px Arial';
+                        ctx.fillText(`×${this.frequency}`, this.x, this.y + renderSize + 15);
+                    }
+                }
+            }
+
+            isOffScreen() {
+                return this.x < -50;
+            }
+        }
+
+        function calculateTopEvents() {
+            // Count frequencies
+            EVENT_DATA.forEach(event => {
+                eventFrequencies[event.name] = (eventFrequencies[event.name] || 0) + 1;
+            });
+
+            // Get top 20%
+            const sortedEvents = Object.entries(eventFrequencies).sort((a, b) => b[1] - a[1]);
+            const top20PercentCount = Math.ceil(sortedEvents.length * 0.2);
+            const topEvents = sortedEvents.slice(0, top20PercentCount);
+
+            topEvents.forEach(([name, count]) => {
+                topEventNames.add(name);
+            });
+
+            // Filter EVENT_DATA to only include top events
+            filteredEventData = EVENT_DATA.filter(event => topEventNames.has(event.name));
+            totalFiltered = filteredEventData.length;
+
+            console.log(`Filtered to ${totalFiltered} events from top ${top20PercentCount} most frequent entities`);
+            console.log(`Top event: ${topEvents[0][0]} (${topEvents[0][1]} times)`);
+
+            document.getElementById('top-event').textContent = `${topEvents[0][0]} (×${topEvents[0][1]})`;
+            document.getElementById('total-filtered').textContent = totalFiltered;
+        }
+
+        function createEventBatches() {
+            if (filteredEventData.length === 0) return;
+
+            // Group filtered events by time periods
+            const sortedEvents = [...filteredEventData].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+
+            let currentBatch = [];
+            let lastTimestamp = null;
+            const batchThresholdHours = 4;
+
+            sortedEvents.forEach(event => {
+                const eventTime = new Date(event.timestamp);
+
+                if (!lastTimestamp || (eventTime - lastTimestamp) / (1000 * 60 * 60) > batchThresholdHours) {
+                    if (currentBatch.length > 0) {
+                        eventBatches.push([...currentBatch]);
+                        currentBatch = [];
+                    }
+                }
+
+                currentBatch.push(event);
+                lastTimestamp = eventTime;
+            });
+
+            if (currentBatch.length > 0) {
+                eventBatches.push(currentBatch);
+            }
+
+            console.log(`Created ${eventBatches.length} filtered event batches`);
+            updateBatchDisplay();
+        }
+
+        function spawnNextBatch() {
+            if (currentBatchIndex >= eventBatches.length) {
+                console.log('All batches spawned, restarting...');
+                setTimeout(() => restart(), 4000);
+                return;
+            }
+
+            const batch = eventBatches[currentBatchIndex];
+            console.log(`Spawning filtered batch ${currentBatchIndex + 1}: ${batch.length} events`);
+
+            batch.forEach((event, i) => {
+                setTimeout(() => {
+                    const entity = new Entity(event);
+                    entities.push(entity);
+                    totalSpawned++;
+                    updateBatchDisplay();
+                }, i * 150); // Slower spawn for better visibility
+            });
+
+            currentBatchIndex++;
+            batchTimer = 0;
+            updateBatchDisplay();
+        }
+
+        function updateBatchDisplay() {
+            const currentWindowEl = document.getElementById('current-window');
+            const batchCountEl = document.getElementById('batch-count');
+            const totalSpawnedEl = document.getElementById('total-spawned');
+            const activeCountEl = document.getElementById('active-count');
+
+            if (currentBatchIndex < eventBatches.length) {
+                const batch = eventBatches[currentBatchIndex];
+                const firstEvent = new Date(batch[0].timestamp);
+                currentWindowEl.textContent = firstEvent.toLocaleDateString() + ' ' + firstEvent.toLocaleTimeString();
+                batchCountEl.textContent = batch.length;
+            } else {
+                currentWindowEl.textContent = 'Complete';
+                batchCountEl.textContent = '0';
+            }
+
+            totalSpawnedEl.textContent = totalSpawned;
+            activeCountEl.textContent = entities.filter(e => !e.isOffScreen()).length;
+        }
+
+        function drawRiverBed() {
+            // Cleaner river lanes
+            ctx.strokeStyle = '#333';
+            ctx.lineWidth = 1;
+            ctx.setLineDash([10, 10]);
+
+            for (let i = 1; i <= riverLanes; i++) {
+                const y = i * (canvas.height / (riverLanes + 1));
+                ctx.globalAlpha = 0.4;
+                ctx.beginPath();
+                ctx.moveTo(0, y);
+                ctx.lineTo(canvas.width, y);
+                ctx.stroke();
+            }
+            ctx.globalAlpha = 1;
+            ctx.setLineDash([]);
+
+            // Flow arrows
+            ctx.fillStyle = '#444';
+            ctx.font = '32px Arial';
+            ctx.textAlign = 'center';
+            for (let x = 200; x < canvas.width; x += 300) {
+                ctx.fillText('←', x, canvas.height / 2);
+            }
+
+            // Enhanced time labels
+            ctx.fillStyle = '#888';
+            ctx.font = '18px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('ARCHIVE', 80, 40);
+            ctx.fillText('BREAKING', canvas.width - 80, 40);
+        }
+
+        function animate() {
+            const deltaTime = 16;
+
+            if (isPlaying) {
+                batchTimer += deltaTime;
+                if (batchTimer >= batchInterval && currentBatchIndex < eventBatches.length) {
+                    spawnNextBatch();
+                }
+            }
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawRiverBed();
+
+            entities.forEach(entity => {
+                if (isPlaying) entity.update(deltaTime);
+                entity.render();
+            });
+
+            entities = entities.filter(e => !e.isOffScreen());
+            updateBatchDisplay();
+            animationId = requestAnimationFrame(animate);
+        }
+
+        function togglePlayPause() {
+            isPlaying = !isPlaying;
+            const btn = document.getElementById('play-btn');
+            btn.textContent = isPlaying ? '⏸️ Pause' : '▶️ Play';
+            btn.classList.toggle('active', isPlaying);
+        }
+
+        function nextBatch() {
+            if (currentBatchIndex < eventBatches.length) {
+                spawnNextBatch();
+            }
+        }
+
+        function restart() {
+            entities = [];
+            currentBatchIndex = 0;
+            batchTimer = 0;
+            totalSpawned = 0;
+            updateBatchDisplay();
+        }
+
+        function toggleSpeed() {
+            speedMultiplier = speedMultiplier === 1 ? 1.5 : speedMultiplier === 1.5 ? 0.5 : 1;
+            const btn = document.getElementById('speed-btn');
+            const speedNames = { 1: 'Normal', 1.5: 'Fast', 0.5: 'Slow' };
+            btn.textContent = speedNames[speedMultiplier];
+        }
+
+        // Event listeners
+        document.getElementById('play-btn').addEventListener('click', togglePlayPause);
+        document.getElementById('next-batch-btn').addEventListener('click', nextBatch);
+        document.getElementById('restart-btn').addEventListener('click', restart);
+
+        // Initialize
+        calculateTopEvents();
+        createEventBatches();
+        animate();
+    </script>
+</body>
+</html>

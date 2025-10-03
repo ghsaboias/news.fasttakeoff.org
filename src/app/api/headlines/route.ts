@@ -27,7 +27,8 @@ function processHeadlines(headlines: HeadlineData[]): WordFrequency[] {
     'into', 'through', 'during', 'before', 'after', 'above', 'below', 'between',
     'among', 'around', 'over', 'under', 'across', 'within', 'without', 'against',
     'so', 'because', 'since', 'while', 'although', 'though', 'if', 'unless',
-    'when', 'where', 'why', 'how', 'what', 'which', 'who', 'whom', 'whose'
+    'when', 'where', 'why', 'how', 'what', 'which', 'who', 'whom', 'whose',
+    'amid', 'amidst'
   ]);
 
   headlines.forEach(({ headline }) => {
@@ -58,6 +59,17 @@ export async function GET(request: NextRequest) {
   return withErrorHandling(async (env: Cloudflare.Env) => {
     const { searchParams } = new URL(request.url);
     const days = parseInt(searchParams.get('days') || '30', 10);
+    const cacheKey = `word_cloud:${days}d`;
+
+    // Check cache first
+    try {
+      const cached = await env.REPORTS_CACHE.get(cacheKey);
+      if (cached) {
+        return JSON.parse(cached);
+      }
+    } catch (error) {
+      console.warn('[WORD_CLOUD] Failed to get from cache:', error);
+    }
 
     // Query headlines from the last N days
     const query = `
@@ -83,7 +95,7 @@ export async function GET(request: NextRequest) {
     })) as HeadlineData[];
     const wordFrequencies = processHeadlines(headlines);
 
-    return {
+    const responseData = {
       wordFrequencies,
       metadata: {
         totalHeadlines: headlines.length,
@@ -92,5 +104,16 @@ export async function GET(request: NextRequest) {
         generatedAt: new Date().toISOString()
       }
     };
+
+    // Cache for 5 minutes
+    try {
+      await env.REPORTS_CACHE.put(cacheKey, JSON.stringify(responseData), {
+        expirationTtl: 300
+      });
+    } catch (error) {
+      console.warn('[WORD_CLOUD] Failed to cache response:', error);
+    }
+
+    return responseData;
   }, 'Failed to fetch headlines');
 }

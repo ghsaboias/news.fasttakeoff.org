@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Time River Timelapse - 30s Compressed</title>
+    <style>
+        body { margin: 0; background: #0a0a0a; color: white; font-family: Arial; }
+        canvas { border: 1px solid #333; }
+        .info { position: absolute; top: 10px; left: 10px; z-index: 10; }
+        .time-display {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            z-index: 10;
+            background: rgba(0,0,0,0.7);
+            padding: 10px;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+        .controls {
+            position: absolute;
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 10;
+            background: rgba(0,0,0,0.8);
+            padding: 10px;
+            border-radius: 8px;
+        }
+        button {
+            background: #333;
+            color: white;
+            border: 1px solid #555;
+            padding: 8px 16px;
+            margin: 0 5px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover { background: #444; }
+        button.active { background: #0066cc; }
+    </style>
+</head>
+<body>
+    <div class="info">
+        <h3>Time River Timelapse: 72h → 30s</h3>
+        <p>Watch events emerge and flow through time</p>
+        <p>Speed: 8640x real time</p>
+    </div>
+
+    <div class="time-display">
+        <div><strong>Current Time:</strong> <span id="current-time">--</span></div>
+        <div><strong>Elapsed:</strong> <span id="elapsed-time">0s</span></div>
+        <div><strong>Period:</strong> <span id="time-period">--</span></div>
+        <div><strong>Active Events:</strong> <span id="active-count">0</span></div>
+    </div>
+
+    <div class="controls">
+        <button id="play-btn" class="active">⏸️ Pause</button>
+        <button id="restart-btn">🔄 Restart</button>
+        <button id="speed-btn" onclick="toggleSpeed()">1x Speed</button>
+    </div>
+
+    <canvas id="canvas" width="800" height="600"></canvas>
+
+    <script src="event-data.js"></script>
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+
+        let entities = [];
+        let animationId;
+        let riverLanes = 4;
+        let isPlaying = true;
+        let speedMultiplier = 1;
+
+        // Timelapse configuration
+        const TIMELAPSE_DURATION = 30; // 30 seconds
+        let timelapseStartTime = Date.now();
+        let realTimeStart;
+        let realTimeEnd;
+        let currentSimulatedTime;
+
+        class Entity {
+            constructor(event, simulatedBirthTime) {
+                this.name = event.name;
+                this.reportId = event.reportId;
+                this.channelName = event.channelName;
+                this.importance = event.importance;
+                this.type = event.type;
+
+                this.x = canvas.width - 50; // Start from right edge
+                this.y = (Math.floor(Math.random() * riverLanes) + 1) * (canvas.height / (riverLanes + 1));
+                this.realBirthTime = new Date(event.timestamp);
+                this.simulatedBirthTime = simulatedBirthTime;
+                this.flowSpeed = 30 + Math.random() * 20; // pixels per second
+                this.size = 10 + (this.importance * 15);
+                this.bobPhase = Math.random() * Math.PI * 2;
+                this.hasAppeared = false;
+            }
+
+            getSimulatedAge() {
+                return currentSimulatedTime - this.realBirthTime.getTime();
+            }
+
+            getSimulatedAgeSeconds() {
+                return this.getSimulatedAge() / 1000;
+            }
+
+            shouldAppear() {
+                return currentSimulatedTime >= this.realBirthTime.getTime() && !this.hasAppeared;
+            }
+
+            update(deltaTime) {
+                if (!this.hasAppeared) return;
+
+                this.x -= this.flowSpeed * deltaTime / 1000 * speedMultiplier;
+
+                // Gentle bobbing motion
+                this.y += Math.sin(Date.now() / 1000 + this.bobPhase) * 0.5;
+            }
+
+            getColor() {
+                const ageSeconds = this.getSimulatedAgeSeconds();
+                const ageFactor = Math.max(0.3, 1 - ageSeconds / (30 * 60)); // 30 minutes
+
+                if (ageSeconds < 5 * 60) return `rgba(255, 0, 0, ${ageFactor})`;      // Red - 5 min
+                if (ageSeconds < 15 * 60) return `rgba(255, 165, 0, ${ageFactor})`;   // Orange - 15 min
+                if (ageSeconds < 30 * 60) return `rgba(255, 215, 0, ${ageFactor})`;   // Gold - 30 min
+                if (ageSeconds < 60 * 60) return `rgba(135, 206, 235, ${ageFactor})`; // Sky blue - 1 hour
+                return `rgba(64, 64, 64, ${ageFactor})`;                             // Gray
+            }
+
+            render() {
+                if (!this.hasAppeared) return;
+
+                const size = Math.max(this.size * 0.5, this.size * (1 - this.getSimulatedAgeSeconds() / (60 * 60)));
+
+                // Entity circle
+                ctx.fillStyle = this.getColor();
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, size, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Glow effect for recent entities
+                if (this.getSimulatedAgeSeconds() < 10 * 60) {
+                    ctx.shadowBlur = 10;
+                    ctx.shadowColor = this.getColor();
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y, size * 0.7, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.shadowBlur = 0;
+                }
+
+                // Wake trail
+                for (let i = 1; i <= 3; i++) {
+                    const trailX = this.x + i * 15;
+                    const trailSize = size * (0.8 - i * 0.15);
+                    const trailAlpha = 0.3 - i * 0.08;
+
+                    if (trailX < canvas.width) {
+                        ctx.fillStyle = this.getColor().replace(/[\d.]+\)$/, `${trailAlpha})`);
+                        ctx.beginPath();
+                        ctx.arc(trailX, this.y, trailSize, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+                }
+
+                // Label for important events
+                if (this.importance > 0.7 && size > 8) {
+                    ctx.fillStyle = 'white';
+                    ctx.font = '10px Arial';
+                    ctx.textAlign = 'center';
+                    ctx.fillText(this.name, this.x, this.y - size - 5);
+                }
+            }
+
+            isOffScreen() {
+                return this.x < -50;
+            }
+        }
+
+        function initializeTimelapse() {
+            if (!window.EVENT_DATA) {
+                console.error('No event data available');
+                return;
+            }
+
+            // Find the time range of all events
+            const timestamps = EVENT_DATA.map(e => new Date(e.timestamp).getTime());
+            realTimeStart = Math.min(...timestamps);
+            realTimeEnd = Math.max(...timestamps);
+
+            console.log(`Timelapse covering: ${new Date(realTimeStart)} to ${new Date(realTimeEnd)}`);
+            console.log(`Real duration: ${(realTimeEnd - realTimeStart) / (1000 * 60 * 60)} hours`);
+
+            currentSimulatedTime = realTimeStart;
+
+            // Pre-create all entities
+            EVENT_DATA.forEach(event => {
+                const entity = new Entity(event, new Date(event.timestamp).getTime());
+                entities.push(entity);
+            });
+
+            console.log(`Created ${entities.length} entities for timelapse`);
+            updateTimeDisplay();
+        }
+
+        function updateTimeDisplay() {
+            const currentTimeEl = document.getElementById('current-time');
+            const elapsedTimeEl = document.getElementById('elapsed-time');
+            const timePeriodEl = document.getElementById('time-period');
+            const activeCountEl = document.getElementById('active-count');
+
+            if (currentSimulatedTime) {
+                currentTimeEl.textContent = new Date(currentSimulatedTime).toLocaleString();
+
+                const elapsedMs = Date.now() - timelapseStartTime;
+                elapsedTimeEl.textContent = `${(elapsedMs / 1000).toFixed(1)}s`;
+
+                const startStr = new Date(realTimeStart).toLocaleDateString();
+                const endStr = new Date(realTimeEnd).toLocaleDateString();
+                timePeriodEl.textContent = `${startStr} → ${endStr}`;
+
+                const activeEntities = entities.filter(e => e.hasAppeared && !e.isOffScreen()).length;
+                activeCountEl.textContent = activeEntities;
+            }
+        }
+
+        function drawRiverBed() {
+            // River lanes
+            ctx.strokeStyle = '#222';
+            ctx.lineWidth = 1;
+            ctx.setLineDash([5, 5]);
+
+            for (let i = 1; i <= riverLanes; i++) {
+                const y = i * (canvas.height / (riverLanes + 1));
+                ctx.beginPath();
+                ctx.moveTo(0, y);
+                ctx.lineTo(canvas.width, y);
+                ctx.stroke();
+            }
+            ctx.setLineDash([]);
+
+            // Flow direction arrows
+            ctx.fillStyle = '#333';
+            ctx.font = '24px Arial';
+            ctx.textAlign = 'center';
+            for (let x = 100; x < canvas.width; x += 200) {
+                ctx.fillText('←', x, canvas.height / 2);
+            }
+
+            // Time labels
+            ctx.fillStyle = '#666';
+            ctx.font = '14px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('OLD', 50, 30);
+            ctx.fillText('NEW', canvas.width - 50, 30);
+        }
+
+        function animate() {
+            if (!isPlaying) {
+                animationId = requestAnimationFrame(animate);
+                return;
+            }
+
+            const deltaTime = 16;
+
+            // Update simulated time (compress 72 hours into 30 seconds)
+            const realDuration = realTimeEnd - realTimeStart;
+            const compressionRatio = realDuration / (TIMELAPSE_DURATION * 1000);
+            currentSimulatedTime += (deltaTime * compressionRatio * speedMultiplier);
+
+            // Check if any entities should appear
+            entities.forEach(entity => {
+                if (entity.shouldAppear()) {
+                    entity.hasAppeared = true;
+                    console.log(`Entity appeared: ${entity.name} at ${new Date(currentSimulatedTime).toLocaleTimeString()}`);
+                }
+            });
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawRiverBed();
+
+            // Update and render entities
+            entities.forEach(entity => {
+                entity.update(deltaTime);
+                entity.render();
+            });
+
+            // Remove entities that flowed off screen
+            entities = entities.filter(e => !e.isOffScreen());
+
+            updateTimeDisplay();
+
+            // Restart when we reach the end
+            if (currentSimulatedTime > realTimeEnd) {
+                console.log('Timelapse complete, restarting...');
+                setTimeout(() => restartTimelapse(), 2000);
+                return;
+            }
+
+            animationId = requestAnimationFrame(animate);
+        }
+
+        function restartTimelapse() {
+            entities = [];
+            timelapseStartTime = Date.now();
+            initializeTimelapse();
+        }
+
+        function togglePlayPause() {
+            isPlaying = !isPlaying;
+            const btn = document.getElementById('play-btn');
+            btn.textContent = isPlaying ? '⏸️ Pause' : '▶️ Play';
+            btn.classList.toggle('active', isPlaying);
+        }
+
+        function toggleSpeed() {
+            speedMultiplier = speedMultiplier === 1 ? 2 : speedMultiplier === 2 ? 0.5 : 1;
+            const btn = document.getElementById('speed-btn');
+            btn.textContent = `${speedMultiplier}x Speed`;
+        }
+
+        // Event listeners
+        document.getElementById('play-btn').addEventListener('click', togglePlayPause);
+        document.getElementById('restart-btn').addEventListener('click', restartTimelapse);
+
+        // Initialize
+        initializeTimelapse();
+        animate();
+    </script>
+</body>
+</html>

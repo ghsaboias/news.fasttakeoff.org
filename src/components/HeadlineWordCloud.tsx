@@ -50,12 +50,16 @@ export function HeadlineWordCloud({ days = 30 }: HeadlineWordCloudProps) {
 
   const getWordStyle = (word: WordFrequency, maxValue: number) => {
     const normalizedSize = (word.value / maxValue) * 3 + 0.5; // Scale from 0.5 to 3.5
-    const hue = Math.floor((word.value / maxValue) * 280); // Blue to purple range
+    const intensity = word.value / maxValue;
+    // Sophisticated color palette: cyan to orange through blues and purples
+    const hue = 180 + (intensity * 100); // 180 (cyan) to 280 (purple/pink)
+    const saturation = 50 + (intensity * 30); // 50-80% saturation
+    const lightness = 55 + (intensity * 20); // 55-75% lightness
 
     return {
       fontSize: `${normalizedSize}rem`,
-      color: `hsl(${hue}, 70%, 50%)`,
-      fontWeight: Math.floor((word.value / maxValue) * 400 + 300), // 300 to 700
+      color: `hsl(${hue}, ${saturation}%, ${lightness}%)`,
+      fontWeight: Math.floor(intensity * 400 + 300), // 300 to 700
       lineHeight: '1.2',
       margin: '0.2rem 0.4rem',
       display: 'inline-block',
@@ -125,7 +129,7 @@ export function HeadlineWordCloud({ days = 30 }: HeadlineWordCloudProps) {
       </CardHeader>
       <CardContent>
         <div
-          className="text-center leading-relaxed p-4 bg-gradient-to-br from-slate-50 to-slate-100 rounded-lg"
+          className="text-center leading-relaxed p-4 bg-dark-800 rounded-lg border border-dark-700"
           style={{
             minHeight: '400px',
             display: 'flex',

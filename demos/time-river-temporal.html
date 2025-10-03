@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Time River - True Temporal Flow</title>
+    <style>
+        body { margin: 0; background: #0a0a0a; color: white; font-family: Arial; }
+        canvas { border: 1px solid #333; }
+        .info { position: absolute; top: 10px; left: 10px; z-index: 10; }
+        .time-display {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            z-index: 10;
+            background: rgba(0,0,0,0.8);
+            padding: 15px;
+            border-radius: 8px;
+            font-size: 16px;
+            min-width: 320px;
+        }
+        .controls {
+            position: absolute;
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 10;
+            background: rgba(0,0,0,0.8);
+            padding: 15px;
+            border-radius: 8px;
+        }
+        button {
+            background: #333;
+            color: white;
+            border: 1px solid #555;
+            padding: 10px 20px;
+            margin: 0 8px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        button:hover { background: #444; }
+        button.active { background: #0066cc; }
+        .temporal-info {
+            margin-top: 8px;
+            color: #00ccff;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="info">
+        <h3>Time River: True Temporal Flow</h3>
+        <p>Events spawn at exact mention times</p>
+        <div class="temporal-info">Compressed timeline • Real temporal accuracy</div>
+    </div>
+
+    <div class="time-display">
+        <div><strong>Current Time:</strong> <span id="current-sim-time">--</span></div>
+        <div><strong>Timeline:</strong> <span id="timeline-info">--</span></div>
+        <div><strong>Next Event:</strong> <span id="next-event">--</span></div>
+        <div><strong>Total Spawned:</strong> <span id="total-spawned">0</span> / <span id="total-events">0</span></div>
+        <div><strong>Active Flowing:</strong> <span id="active-count">0</span></div>
+        <div class="temporal-info">
+            <div>📊 Compression: <span id="compression-ratio">--</span></div>
+        </div>
+    </div>
+
+    <div class="controls">
+        <button id="play-btn" class="active">⏸️ Pause</button>
+        <button id="restart-btn">🔄 Restart</button>
+        <button id="speed-btn" onclick="toggleSpeed()">1x Speed</button>
+    </div>
+
+    <canvas id="canvas" width="800" height="600"></canvas>
+
+    <script src="event-data.js"></script>
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+
+        let entities = [];
+        let animationId;
+        let riverLanes = 4;
+        let isPlaying = true;
+        let speedMultiplier = 1;
+
+        // Temporal timeline system
+        let timelineStartTime = Date.now();
+        let realTimeStart, realTimeEnd;
+        let currentSimulatedTime;
+        let compressionRatio;
+        let timelineDuration = 60000; // 60 seconds for entire timeline
+
+        // Clean filtering
+        const STOP_WORDS = new Set([
+            'September', 'October', 'November', 'December', 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August',
+            'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday',
+            'This', 'That', 'These', 'Those', 'The', 'A', 'An', 'And', 'Or', 'But', 'In', 'On', 'At', 'To', 'For', 'Of', 'With', 'By',
+            'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine', 'Ten',
+            'Multiple', 'Several', 'Many', 'Few', 'Some', 'All', 'Most', 'More', 'Less', 'Throughout', 'During', 'Between'
+        ]);
+
+        let eventFrequencies = {};
+        let filteredEvents = [];
+        let eventQueue = [];
+        let nextEventIndex = 0;
+        let totalSpawned = 0;
+
+        class Entity {
+            constructor(event, spawnTime = Date.now()) {
+                this.name = event.name;
+                this.reportId = event.reportId;
+                this.channelName = event.channelName;
+                this.importance = event.importance;
+                this.type = event.type;
+                this.headline = event.headline;
+                this.frequency = eventFrequencies[event.name] || 1;
+                this.realTimestamp = new Date(event.timestamp);
+
+                // Position
+                this.x = canvas.width - 30;
+                this.targetLane = Math.floor(Math.random() * riverLanes) + 1;
+                this.y = this.targetLane * (canvas.height / (riverLanes + 1)) + (Math.random() - 0.5) * 40;
+
+                this.spawnTime = spawnTime;
+                // Speed based on frequency and importance
+                this.flowSpeed = 10 + (this.importance * 12) + (Math.log(this.frequency + 1) * 3);
+                // Initial size - will grow with mentions
+                this.baseSize = 15 + (this.importance * 8);
+                this.size = this.baseSize;
+                this.bobPhase = Math.random() * Math.PI * 2;
+                this.pulsePhase = Math.random() * Math.PI * 2;
+
+                // Mention tracking
+                this.mentionCount = 1;
+                this.lastMentionTime = spawnTime;
+                this.growthAnimation = 0;
+
+                // Spawn effect
+                this.spawnAnimation = 1.0;
+            }
+
+            addMention(event) {
+                this.mentionCount++;
+                this.lastMentionTime = Date.now();
+
+                // Grow the entity
+                const growthAmount = 8 + (event.importance * 5);
+                this.size += growthAmount;
+
+                // Growth animation effect
+                this.growthAnimation = 1.0;
+
+                // Update latest info
+                this.importance = Math.max(this.importance, event.importance);
+                this.headline = event.headline; // Latest headline
+
+                console.log(`${this.name} grew to size ${this.size.toFixed(1)} (${this.mentionCount} mentions)`);
+            }
+
+            getAge() {
+                return Date.now() - this.spawnTime;
+            }
+
+            getAgeSeconds() {
+                return this.getAge() / 1000;
+            }
+
+            update(deltaTime) {
+                // Spawn animation
+                this.spawnAnimation = Math.max(0, this.spawnAnimation - deltaTime / 500);
+
+                // Growth animation
+                this.growthAnimation = Math.max(0, this.growthAnimation - deltaTime / 800);
+
+                this.x -= this.flowSpeed * deltaTime / 1000 * speedMultiplier;
+
+                // Gentle movement - larger entities move more slowly and stably
+                const stabilityFactor = Math.min(1, this.size / 40);
+                const bobAmount = Math.sin(Date.now() / 3000 + this.bobPhase) * (3 / (1 + stabilityFactor));
+                const targetY = this.targetLane * (canvas.height / (riverLanes + 1));
+                this.y += (targetY - this.y) * 0.008 + bobAmount;
+
+                // Very rare lane changes - less likely for larger entities
+                const laneChangeProb = 0.0002 / (1 + stabilityFactor);
+                if (Math.random() < laneChangeProb) {
+                    this.targetLane = Math.max(1, Math.min(riverLanes, this.targetLane + (Math.random() > 0.5 ? 1 : -1)));
+                }
+            }
+
+            getColor() {
+                const ageSeconds = this.getAgeSeconds();
+                const ageFactor = Math.max(0.6, 1 - ageSeconds / 150);
+                const intensityBoost = Math.min(0.4, this.frequency / 12);
+
+                // Entity-specific colors for major players
+                if (['Ukraine', 'UKRAINE'].includes(this.name)) {
+                    return `rgba(${255}, ${120 + intensityBoost * 100}, ${0}, ${ageFactor + intensityBoost})`;
+                }
+                if (['Russia', 'Russian'].includes(this.name)) {
+                    return `rgba(${255}, ${80}, ${80}, ${ageFactor + intensityBoost})`;
+                }
+                if (['Trump', 'President Donald'].includes(this.name)) {
+                    return `rgba(${180 + intensityBoost * 75}, ${100}, ${255}, ${ageFactor + intensityBoost})`;
+                }
+                if (['Israel'].includes(this.name)) {
+                    return `rgba(${100}, ${255}, ${180 + intensityBoost * 75}, ${ageFactor + intensityBoost})`;
+                }
+                if (['Moldova', 'MOLDOVA'].includes(this.name)) {
+                    return `rgba(${255}, ${200}, ${120 + intensityBoost * 135}, ${ageFactor + intensityBoost})`;
+                }
+
+                // Default age-based progression
+                if (ageSeconds < 20) return `rgba(255, ${120 + intensityBoost * 100}, 100, ${ageFactor + intensityBoost})`;
+                if (ageSeconds < 40) return `rgba(255, ${180 + intensityBoost * 50}, 80, ${ageFactor + intensityBoost})`;
+                if (ageSeconds < 60) return `rgba(255, ${240 + intensityBoost * 15}, 100, ${ageFactor + intensityBoost})`;
+                if (ageSeconds < 80) return `rgba(${160 + intensityBoost * 95}, 230, 255, ${ageFactor + intensityBoost})`;
+                return `rgba(${150 + intensityBoost * 105}, ${150 + intensityBoost * 105}, ${150 + intensityBoost * 105}, ${ageFactor})`;
+            }
+
+            render() {
+                const ageSeconds = this.getAgeSeconds();
+                const size = this.size * Math.max(0.8, 1 - ageSeconds / 240);
+
+                // Enhanced pulsing for entities with many mentions
+                const pulseMultiplier = this.mentionCount >= 3 ?
+                    1 + Math.sin(Date.now() / 400 + this.pulsePhase) * 0.12 : 1;
+
+                // Growth animation effect
+                const growthScale = 1 + this.growthAnimation * 0.3;
+
+                // Spawn effect
+                const spawnScale = 1 + this.spawnAnimation * 0.5;
+                const renderSize = size * pulseMultiplier * growthScale * spawnScale;
+
+                // Main entity
+                ctx.fillStyle = this.getColor();
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, renderSize, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Mention rings for entities with multiple mentions
+                if (this.mentionCount >= 3) {
+                    ctx.strokeStyle = this.getColor();
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y, renderSize + 5, 0, Math.PI * 2);
+                    ctx.stroke();
+
+                    if (this.mentionCount >= 5) {
+                        ctx.lineWidth = 1;
+                        ctx.beginPath();
+                        ctx.arc(this.x, this.y, renderSize + 9, 0, Math.PI * 2);
+                        ctx.stroke();
+                    }
+                }
+
+                // Spawn flash effect
+                if (this.spawnAnimation > 0.5) {
+                    ctx.shadowBlur = 30;
+                    ctx.shadowColor = this.getColor();
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y, renderSize * 1.2, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.shadowBlur = 0;
+                }
+
+                // Enhanced glow for recent high-frequency events
+                if (ageSeconds < 25 && this.frequency >= 4) {
+                    ctx.shadowBlur = 20;
+                    ctx.shadowColor = this.getColor();
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y, renderSize * 0.7, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.shadowBlur = 0;
+                }
+
+                // Clean wake trail
+                for (let i = 1; i <= 2; i++) {
+                    const trailX = this.x + i * 40;
+                    const trailSize = renderSize * (0.8 - i * 0.25);
+                    const trailAlpha = (0.5 - i * 0.2) * Math.min(1, this.frequency / 6);
+
+                    if (trailX < canvas.width && trailSize > 5) {
+                        ctx.fillStyle = this.getColor().replace(/[\d.]+\)$/, `${trailAlpha})`);
+                        ctx.beginPath();
+                        ctx.arc(trailX, this.y, trailSize, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+                }
+
+                // Labels for meaningful entities
+                if (ageSeconds < 50) {
+                    ctx.fillStyle = 'white';
+                    ctx.font = `bold ${Math.min(18, renderSize * 0.85)}px Arial`;
+                    ctx.textAlign = 'center';
+                    ctx.fillText(this.name, this.x, this.y - renderSize - 15);
+
+                    // Mention count and timestamp info
+                    if (this.mentionCount >= 2) {
+                        ctx.fillStyle = '#00ff88';
+                        ctx.font = 'bold 11px Arial';
+                        ctx.fillText(`×${this.mentionCount}`, this.x + renderSize + 8, this.y - 5);
+                    }
+
+                    // Show growth effect for recent mentions
+                    if (this.growthAnimation > 0.5) {
+                        ctx.fillStyle = '#ffff00';
+                        ctx.font = 'bold 10px Arial';
+                        ctx.fillText('GROWING', this.x, this.y + renderSize + 25);
+                    }
+
+                    // Show spawn time for very recent events
+                    if (ageSeconds < 8) {
+                        ctx.fillStyle = '#ffaa00';
+                        ctx.font = '9px Arial';
+                        ctx.fillText(this.realTimestamp.toLocaleTimeString(), this.x, this.y + renderSize + 20);
+                    }
+                }
+            }
+
+            isOffScreen() {
+                return this.x < -100;
+            }
+        }
+
+        function calculateCleanEvents() {
+            // Count frequencies excluding stop words
+            EVENT_DATA.forEach(event => {
+                if (!STOP_WORDS.has(event.name)) {
+                    eventFrequencies[event.name] = (eventFrequencies[event.name] || 0) + 1;
+                }
+            });
+
+            // Get top 10 meaningful events
+            const sortedEvents = Object.entries(eventFrequencies)
+                .filter(([name, count]) => count >= 3)
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 10);
+
+            const cleanEventNames = new Set();
+            sortedEvents.forEach(([name, count]) => {
+                cleanEventNames.add(name);
+            });
+
+            // Filter and sort by timestamp
+            filteredEvents = EVENT_DATA
+                .filter(event => cleanEventNames.has(event.name))
+                .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+
+            console.log(`Filtered to ${filteredEvents.length} events from top 10 entities`);
+
+            document.getElementById('total-events').textContent = filteredEvents.length;
+            return filteredEvents;
+        }
+
+        function initializeTimeline() {
+            if (filteredEvents.length === 0) return;
+
+            // Calculate time bounds
+            const timestamps = filteredEvents.map(e => new Date(e.timestamp).getTime());
+            realTimeStart = Math.min(...timestamps);
+            realTimeEnd = Math.max(...timestamps);
+
+            const realDuration = realTimeEnd - realTimeStart;
+            compressionRatio = realDuration / timelineDuration;
+
+            console.log(`Timeline: ${new Date(realTimeStart).toLocaleString()} → ${new Date(realTimeEnd).toLocaleString()}`);
+            console.log(`Real duration: ${(realDuration / (1000 * 60 * 60)).toFixed(1)} hours`);
+            console.log(`Compression: ${(compressionRatio / 1000).toFixed(0)}x speed`);
+
+            // Reset timeline
+            timelineStartTime = Date.now();
+            currentSimulatedTime = realTimeStart;
+            nextEventIndex = 0;
+            totalSpawned = 0;
+
+            updateTimeDisplay();
+        }
+
+        function updateTimeDisplay() {
+            if (!currentSimulatedTime) return;
+
+            document.getElementById('current-sim-time').textContent = new Date(currentSimulatedTime).toLocaleString();
+
+            const startStr = new Date(realTimeStart).toLocaleDateString();
+            const endStr = new Date(realTimeEnd).toLocaleDateString();
+            document.getElementById('timeline-info').textContent = `${startStr} → ${endStr}`;
+
+            document.getElementById('compression-ratio').textContent = `${(compressionRatio / 1000).toFixed(0)}x real time`;
+
+            document.getElementById('total-spawned').textContent = totalSpawned;
+            document.getElementById('active-count').textContent = entities.filter(e => !e.isOffScreen()).length;
+
+            // Next event info
+            if (nextEventIndex < filteredEvents.length) {
+                const nextEvent = filteredEvents[nextEventIndex];
+                document.getElementById('next-event').textContent = `${nextEvent.name} in ${((new Date(nextEvent.timestamp).getTime() - currentSimulatedTime) / (compressionRatio / 1000)).toFixed(1)}s`;
+            } else {
+                document.getElementById('next-event').textContent = 'Complete';
+            }
+        }
+
+        function checkForNewEvents() {
+            // Spawn events that should appear at current simulated time
+            while (nextEventIndex < filteredEvents.length) {
+                const event = filteredEvents[nextEventIndex];
+                const eventTime = new Date(event.timestamp).getTime();
+
+                if (eventTime <= currentSimulatedTime) {
+                    // Check if entity already exists
+                    const existingEntity = entities.find(e => e.name === event.name);
+
+                    if (existingEntity) {
+                        // Grow existing entity instead of creating new one
+                        existingEntity.addMention(event);
+                        console.log(`Grew: ${event.name} (size: ${existingEntity.size.toFixed(1)}) at ${new Date(eventTime).toLocaleTimeString()}`);
+                    } else {
+                        // Create new entity
+                        const entity = new Entity(event);
+                        entities.push(entity);
+                        console.log(`Spawned: ${event.name} at ${new Date(eventTime).toLocaleTimeString()}`);
+                    }
+
+                    totalSpawned++;
+                    nextEventIndex++;
+                } else {
+                    break; // No more events ready to spawn
+                }
+            }
+        }
+
+        function drawRiverBed() {
+            // Minimal temporal river bed
+            ctx.strokeStyle = '#555';
+            ctx.lineWidth = 1;
+            ctx.setLineDash([15, 15]);
+
+            for (let i = 1; i <= riverLanes; i++) {
+                const y = i * (canvas.height / (riverLanes + 1));
+                ctx.globalAlpha = 0.25;
+                ctx.beginPath();
+                ctx.moveTo(0, y);
+                ctx.lineTo(canvas.width, y);
+                ctx.stroke();
+            }
+            ctx.globalAlpha = 1;
+            ctx.setLineDash([]);
+
+            // Temporal flow indicators
+            ctx.fillStyle = '#666';
+            ctx.font = '40px Arial';
+            ctx.textAlign = 'center';
+            for (let x = 300; x < canvas.width; x += 400) {
+                ctx.fillText('←', x, canvas.height / 2);
+            }
+
+            // Time labels
+            ctx.fillStyle = '#bbb';
+            ctx.font = '22px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('PAST', 120, 50);
+            ctx.fillText('NOW', canvas.width - 120, 50);
+
+            // Timeline progress bar
+            if (realTimeStart && realTimeEnd) {
+                const progress = (currentSimulatedTime - realTimeStart) / (realTimeEnd - realTimeStart);
+                const barWidth = canvas.width - 40;
+                const barHeight = 4;
+                const barY = canvas.height - 30;
+
+                // Background
+                ctx.fillStyle = '#333';
+                ctx.fillRect(20, barY, barWidth, barHeight);
+
+                // Progress
+                ctx.fillStyle = '#00ccff';
+                ctx.fillRect(20, barY, barWidth * progress, barHeight);
+            }
+        }
+
+        function animate() {
+            const deltaTime = 16;
+
+            if (isPlaying) {
+                // Update simulated time
+                currentSimulatedTime += (deltaTime * compressionRatio * speedMultiplier);
+
+                // Check for events to spawn
+                checkForNewEvents();
+
+                // End timeline when complete
+                if (currentSimulatedTime > realTimeEnd && nextEventIndex >= filteredEvents.length) {
+                    console.log('Timeline complete, restarting in 3 seconds...');
+                    setTimeout(() => restart(), 3000);
+                }
+            }
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawRiverBed();
+
+            // Update and render entities
+            entities.forEach(entity => {
+                if (isPlaying) entity.update(deltaTime);
+                entity.render();
+            });
+
+            // Remove off-screen entities
+            entities = entities.filter(e => !e.isOffScreen());
+
+            updateTimeDisplay();
+            animationId = requestAnimationFrame(animate);
+        }
+
+        function togglePlayPause() {
+            isPlaying = !isPlaying;
+            const btn = document.getElementById('play-btn');
+            btn.textContent = isPlaying ? '⏸️ Pause' : '▶️ Play';
+            btn.classList.toggle('active', isPlaying);
+        }
+
+        function restart() {
+            entities = [];
+            initializeTimeline();
+        }
+
+        function toggleSpeed() {
+            speedMultiplier = speedMultiplier === 1 ? 2 : speedMultiplier === 2 ? 0.5 : 1;
+            const btn = document.getElementById('speed-btn');
+            btn.textContent = `${speedMultiplier}x Speed`;
+        }
+
+        // Event listeners
+        document.getElementById('play-btn').addEventListener('click', togglePlayPause);
+        document.getElementById('restart-btn').addEventListener('click', restart);
+
+        // Initialize
+        calculateCleanEvents();
+        initializeTimeline();
+        animate();
+    </script>
+</body>
+</html>

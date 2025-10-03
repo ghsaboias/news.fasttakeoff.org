@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Orbital News System</title>
+    <link rel="stylesheet" href="orbital-news.css">
+</head>
+<body>
+    <div class="info-panel">
+        <h3>Orbital News</h3>
+        <p id="status">Gravitational news dynamics</p>
+    </div>
+
+    <div class="stats-panel">
+        <div>Bodies: <span id="body-count">0</span></div>
+        <div>Systems: <span id="system-count">0</span></div>
+        <div>Time: <span id="sim-time">--</span></div>
+    </div>
+
+    <div class="controls">
+        <button id="pause-btn">⏸️ Pause</button>
+        <button id="reset-btn">🔄 Reset</button>
+        <button id="zoom-in-btn">🔍+</button>
+        <button id="zoom-out-btn">🔍-</button>
+    </div>
+
+    <canvas id="canvas"></canvas>
+
+    <script src="event-data.js"></script>
+    <script src="orbital-news.js"></script>
+</body>
+</html>

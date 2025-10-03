@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Time River - Clean Signal</title>
+    <style>
+        body { margin: 0; background: #0a0a0a; color: white; font-family: Arial; }
+        canvas { border: 1px solid #333; }
+        .info { position: absolute; top: 10px; left: 10px; z-index: 10; }
+        .time-display {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            z-index: 10;
+            background: rgba(0,0,0,0.8);
+            padding: 15px;
+            border-radius: 8px;
+            font-size: 16px;
+            min-width: 280px;
+        }
+        .controls {
+            position: absolute;
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 10;
+            background: rgba(0,0,0,0.8);
+            padding: 15px;
+            border-radius: 8px;
+        }
+        button {
+            background: #333;
+            color: white;
+            border: 1px solid #555;
+            padding: 10px 20px;
+            margin: 0 8px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        button:hover { background: #444; }
+        button.active { background: #0066cc; }
+        .filter-info {
+            margin-top: 8px;
+            color: #00cc66;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="info">
+        <h3>Time River: Clean Signal</h3>
+        <p>Meaningful entities only • No temporal noise</p>
+        <div class="filter-info">Top 10 entities only • Ultra clean</div>
+    </div>
+
+    <div class="time-display">
+        <div><strong>Report Window:</strong> <span id="current-window">--</span></div>
+        <div><strong>Events in batch:</strong> <span id="batch-count">0</span></div>
+        <div><strong>Total spawned:</strong> <span id="total-spawned">0</span> / <span id="total-filtered">0</span></div>
+        <div><strong>Active flowing:</strong> <span id="active-count">0</span></div>
+        <div class="filter-info">
+            <div>🎯 Top entity: <span id="top-event">--</span></div>
+        </div>
+    </div>
+
+    <div class="controls">
+        <button id="play-btn" class="active">⏸️ Pause</button>
+        <button id="next-batch-btn">➡️ Next Batch</button>
+        <button id="restart-btn">🔄 Restart</button>
+        <button id="speed-btn" onclick="toggleSpeed()">Normal</button>
+    </div>
+
+    <canvas id="canvas" width="800" height="600"></canvas>
+
+    <script src="event-data.js"></script>
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+
+        let entities = [];
+        let animationId;
+        let riverLanes = 4;
+        let isPlaying = true;
+        let speedMultiplier = 1;
+
+        // Clean filtering
+        const STOP_WORDS = new Set([
+            'September', 'October', 'November', 'December', 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August',
+            'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday',
+            'This', 'That', 'These', 'Those', 'The', 'A', 'An', 'And', 'Or', 'But', 'In', 'On', 'At', 'To', 'For', 'Of', 'With', 'By',
+            'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine', 'Ten',
+            'Multiple', 'Several', 'Many', 'Few', 'Some', 'All', 'Most', 'More', 'Less', 'Throughout', 'During', 'Between'
+        ]);
+
+        let cleanEventNames = new Set();
+        let eventFrequencies = {};
+        let filteredEventData = [];
+
+        // Batch system
+        let eventBatches = [];
+        let currentBatchIndex = 0;
+        let batchTimer = 0;
+        let batchInterval = 8000; // 8 seconds for less crowding
+        let totalSpawned = 0;
+        let totalFiltered = 0;
+
+        class Entity {
+            constructor(event, spawnTime = Date.now()) {
+                this.name = event.name;
+                this.reportId = event.reportId;
+                this.channelName = event.channelName;
+                this.importance = event.importance;
+                this.type = event.type;
+                this.headline = event.headline;
+                this.frequency = eventFrequencies[event.name] || 1;
+
+                // Position with more spacing
+                this.x = canvas.width - 30;
+                this.targetLane = Math.floor(Math.random() * riverLanes) + 1;
+                this.y = this.targetLane * (canvas.height / (riverLanes + 1)) + (Math.random() - 0.5) * 60;
+
+                this.spawnTime = spawnTime;
+                // Slower, more deliberate movement
+                this.flowSpeed = 12 + (this.importance * 15) + (Math.log(this.frequency + 1) * 4);
+                // Size emphasizes frequency more
+                this.size = 15 + (this.importance * 12) + (Math.log(this.frequency + 1) * 5);
+                this.bobPhase = Math.random() * Math.PI * 2;
+                this.pulsePhase = Math.random() * Math.PI * 2;
+            }
+
+            getAge() {
+                return Date.now() - this.spawnTime;
+            }
+
+            getAgeSeconds() {
+                return this.getAge() / 1000;
+            }
+
+            update(deltaTime) {
+                this.x -= this.flowSpeed * deltaTime / 1000 * speedMultiplier;
+
+                // More stable movement for high-frequency events
+                const bobAmount = Math.sin(Date.now() / 3000 + this.bobPhase) * (3 / Math.log(this.frequency + 2));
+                const targetY = this.targetLane * (canvas.height / (riverLanes + 1));
+                this.y += (targetY - this.y) * 0.01 + bobAmount;
+
+                // Very rare lane changes for important events
+                const changeProb = 0.0003 / Math.log(this.frequency + 2);
+                if (Math.random() < changeProb) {
+                    this.targetLane = Math.max(1, Math.min(riverLanes, this.targetLane + (Math.random() > 0.5 ? 1 : -1)));
+                }
+            }
+
+            getColor() {
+                const ageSeconds = this.getAgeSeconds();
+                const ageFactor = Math.max(0.6, 1 - ageSeconds / 120);
+
+                // Color based on entity type and frequency
+                const intensityBoost = Math.min(0.4, this.frequency / 15);
+
+                // Geopolitical entities get distinct colors
+                if (['Ukraine', 'Russia', 'UKRAINE', 'Russian'].includes(this.name)) {
+                    return `rgba(${255}, ${100 + intensityBoost * 100}, ${0}, ${ageFactor + intensityBoost})`;
+                }
+                if (['Trump', 'President Donald', 'PRESIDENT'].includes(this.name)) {
+                    return `rgba(${200 + intensityBoost * 55}, ${50}, ${255}, ${ageFactor + intensityBoost})`;
+                }
+                if (['Israel', 'Gaza', 'Tel Aviv'].includes(this.name)) {
+                    return `rgba(${100}, ${255}, ${150 + intensityBoost * 105}, ${ageFactor + intensityBoost})`;
+                }
+                if (['Iran', 'Iranian'].includes(this.name)) {
+                    return `rgba(${255}, ${200}, ${100 + intensityBoost * 155}, ${ageFactor + intensityBoost})`;
+                }
+
+                // Default progression for other entities
+                if (ageSeconds < 15) return `rgba(255, ${100 + intensityBoost * 100}, 80, ${ageFactor + intensityBoost})`;
+                if (ageSeconds < 30) return `rgba(255, ${170 + intensityBoost * 50}, 50, ${ageFactor + intensityBoost})`;
+                if (ageSeconds < 45) return `rgba(255, ${230 + intensityBoost * 25}, 80, ${ageFactor + intensityBoost})`;
+                if (ageSeconds < 60) return `rgba(${150 + intensityBoost * 105}, 220, 255, ${ageFactor + intensityBoost})`;
+                return `rgba(${140 + intensityBoost * 115}, ${140 + intensityBoost * 115}, ${140 + intensityBoost * 115}, ${ageFactor})`;
+            }
+
+            render() {
+                const ageSeconds = this.getAgeSeconds();
+                const size = this.size * Math.max(0.8, 1 - ageSeconds / 200);
+
+                // Enhanced pulsing for very frequent events
+                const pulseMultiplier = this.frequency >= 4 ?
+                    1 + Math.sin(Date.now() / 400 + this.pulsePhase) * 0.12 : 1;
+                const renderSize = size * pulseMultiplier;
+
+                // Main entity with enhanced visibility
+                ctx.fillStyle = this.getColor();
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, renderSize, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Double ring for very frequent entities
+                if (this.frequency >= 6) {
+                    ctx.strokeStyle = this.getColor();
+                    ctx.lineWidth = 3;
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y, renderSize + 6, 0, Math.PI * 2);
+                    ctx.stroke();
+
+                    ctx.lineWidth = 1;
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y, renderSize + 10, 0, Math.PI * 2);
+                    ctx.stroke();
+                }
+
+                // Enhanced glow for important entities
+                if (ageSeconds < 20 && this.frequency >= 3) {
+                    ctx.shadowBlur = 25;
+                    ctx.shadowColor = this.getColor();
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y, renderSize * 0.7, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.shadowBlur = 0;
+                }
+
+                // Minimal, clean wake trail
+                for (let i = 1; i <= 2; i++) {
+                    const trailX = this.x + i * 35;
+                    const trailSize = renderSize * (0.7 - i * 0.2);
+                    const trailAlpha = (0.4 - i * 0.15) * Math.min(1, this.frequency / 5);
+
+                    if (trailX < canvas.width && trailSize > 4) {
+                        ctx.fillStyle = this.getColor().replace(/[\d.]+\)$/, `${trailAlpha})`);
+                        ctx.beginPath();
+                        ctx.arc(trailX, this.y, trailSize, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+                }
+
+                // Always show labels for meaningful entities
+                if (ageSeconds < 40) {
+                    ctx.fillStyle = 'white';
+                    ctx.font = `${Math.min(16, renderSize * 0.9)}px Arial`;
+                    ctx.textAlign = 'center';
+                    ctx.fillText(this.name, this.x, this.y - renderSize - 12);
+
+                    // Frequency badge for recurring entities
+                    if (this.frequency >= 3) {
+                        ctx.fillStyle = '#00cc66';
+                        ctx.font = 'bold 10px Arial';
+                        ctx.fillText(`×${this.frequency}`, this.x, this.y + renderSize + 18);
+                    }
+                }
+            }
+
+            isOffScreen() {
+                return this.x < -80;
+            }
+        }
+
+        function calculateCleanEvents() {
+            // Count frequencies excluding stop words
+            EVENT_DATA.forEach(event => {
+                if (!STOP_WORDS.has(event.name)) {
+                    eventFrequencies[event.name] = (eventFrequencies[event.name] || 0) + 1;
+                }
+            });
+
+            // Get top 10 meaningful events only
+            const sortedEvents = Object.entries(eventFrequencies)
+                .filter(([name, count]) => count >= 3)
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 10); // Limit to top 10 only
+
+            sortedEvents.forEach(([name, count]) => {
+                cleanEventNames.add(name);
+            });
+
+            // Filter EVENT_DATA to only include clean events
+            filteredEventData = EVENT_DATA.filter(event => cleanEventNames.has(event.name));
+            totalFiltered = filteredEventData.length;
+
+            console.log(`Filtered to ${totalFiltered} events from ${sortedEvents.length} meaningful entities`);
+            console.log(`Top meaningful entity: ${sortedEvents[0][0]} (${sortedEvents[0][1]} times)`);
+
+            document.getElementById('top-event').textContent = `${sortedEvents[0][0]} (×${sortedEvents[0][1]})`;
+            document.getElementById('total-filtered').textContent = totalFiltered;
+        }
+
+        function createEventBatches() {
+            if (filteredEventData.length === 0) return;
+
+            const sortedEvents = [...filteredEventData].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+
+            let currentBatch = [];
+            let lastTimestamp = null;
+            const batchThresholdHours = 5;
+
+            sortedEvents.forEach(event => {
+                const eventTime = new Date(event.timestamp);
+
+                if (!lastTimestamp || (eventTime - lastTimestamp) / (1000 * 60 * 60) > batchThresholdHours) {
+                    if (currentBatch.length > 0) {
+                        eventBatches.push([...currentBatch]);
+                        currentBatch = [];
+                    }
+                }
+
+                currentBatch.push(event);
+                lastTimestamp = eventTime;
+            });
+
+            if (currentBatch.length > 0) {
+                eventBatches.push(currentBatch);
+            }
+
+            console.log(`Created ${eventBatches.length} clean event batches`);
+            updateBatchDisplay();
+        }
+
+        function spawnNextBatch() {
+            if (currentBatchIndex >= eventBatches.length) {
+                console.log('All batches spawned, restarting...');
+                setTimeout(() => restart(), 5000);
+                return;
+            }
+
+            const batch = eventBatches[currentBatchIndex];
+            console.log(`Spawning clean batch ${currentBatchIndex + 1}: ${batch.length} events`);
+
+            batch.forEach((event, i) => {
+                setTimeout(() => {
+                    const entity = new Entity(event);
+                    entities.push(entity);
+                    totalSpawned++;
+                    updateBatchDisplay();
+                }, i * 300); // Much slower spawn to reduce crowding
+            });
+
+            currentBatchIndex++;
+            batchTimer = 0;
+            updateBatchDisplay();
+        }
+
+        function updateBatchDisplay() {
+            const currentWindowEl = document.getElementById('current-window');
+            const batchCountEl = document.getElementById('batch-count');
+            const totalSpawnedEl = document.getElementById('total-spawned');
+            const activeCountEl = document.getElementById('active-count');
+
+            if (currentBatchIndex < eventBatches.length) {
+                const batch = eventBatches[currentBatchIndex];
+                const firstEvent = new Date(batch[0].timestamp);
+                currentWindowEl.textContent = firstEvent.toLocaleDateString() + ' ' + firstEvent.toLocaleTimeString();
+                batchCountEl.textContent = batch.length;
+            } else {
+                currentWindowEl.textContent = 'Complete';
+                batchCountEl.textContent = '0';
+            }
+
+            totalSpawnedEl.textContent = totalSpawned;
+            activeCountEl.textContent = entities.filter(e => !e.isOffScreen()).length;
+        }
+
+        function drawRiverBed() {
+            // Minimal river bed
+            ctx.strokeStyle = '#444';
+            ctx.lineWidth = 1;
+            ctx.setLineDash([12, 12]);
+
+            for (let i = 1; i <= riverLanes; i++) {
+                const y = i * (canvas.height / (riverLanes + 1));
+                ctx.globalAlpha = 0.3;
+                ctx.beginPath();
+                ctx.moveTo(0, y);
+                ctx.lineTo(canvas.width, y);
+                ctx.stroke();
+            }
+            ctx.globalAlpha = 1;
+            ctx.setLineDash([]);
+
+            // Subtle flow indicators
+            ctx.fillStyle = '#555';
+            ctx.font = '36px Arial';
+            ctx.textAlign = 'center';
+            for (let x = 250; x < canvas.width; x += 350) {
+                ctx.fillText('←', x, canvas.height / 2);
+            }
+
+            // Clean time labels
+            ctx.fillStyle = '#aaa';
+            ctx.font = '20px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('ARCHIVE', 100, 45);
+            ctx.fillText('LIVE', canvas.width - 100, 45);
+        }
+
+        function animate() {
+            const deltaTime = 16;
+
+            if (isPlaying) {
+                batchTimer += deltaTime;
+                if (batchTimer >= batchInterval && currentBatchIndex < eventBatches.length) {
+                    spawnNextBatch();
+                }
+            }
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawRiverBed();
+
+            entities.forEach(entity => {
+                if (isPlaying) entity.update(deltaTime);
+                entity.render();
+            });
+
+            entities = entities.filter(e => !e.isOffScreen());
+            updateBatchDisplay();
+            animationId = requestAnimationFrame(animate);
+        }
+
+        function togglePlayPause() {
+            isPlaying = !isPlaying;
+            const btn = document.getElementById('play-btn');
+            btn.textContent = isPlaying ? '⏸️ Pause' : '▶️ Play';
+            btn.classList.toggle('active', isPlaying);
+        }
+
+        function nextBatch() {
+            if (currentBatchIndex < eventBatches.length) {
+                spawnNextBatch();
+            }
+        }
+
+        function restart() {
+            entities = [];
+            currentBatchIndex = 0;
+            batchTimer = 0;
+            totalSpawned = 0;
+            updateBatchDisplay();
+        }
+
+        function toggleSpeed() {
+            speedMultiplier = speedMultiplier === 1 ? 1.5 : speedMultiplier === 1.5 ? 0.5 : 1;
+            const btn = document.getElementById('speed-btn');
+            const speedNames = { 1: 'Normal', 1.5: 'Fast', 0.5: 'Slow' };
+            btn.textContent = speedNames[speedMultiplier];
+        }
+
+        // Event listeners
+        document.getElementById('play-btn').addEventListener('click', togglePlayPause);
+        document.getElementById('next-batch-btn').addEventListener('click', nextBatch);
+        document.getElementById('restart-btn').addEventListener('click', restart);
+
+        // Initialize
+        calculateCleanEvents();
+        createEventBatches();
+        animate();
+    </script>
+</body>
+</html>
