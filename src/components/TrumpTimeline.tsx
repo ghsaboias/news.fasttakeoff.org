@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { ChevronDown, ChevronUp, Calendar, MapPin, AlertCircle, Globe, Shield, DollarSign, Users } from 'lucide-react'
+import { Calendar, MapPin, AlertCircle, Globe, Shield, DollarSign, Users } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 interface TimelineEvent {
@@ -196,18 +196,7 @@ const importanceColors = {
 }
 
 export default function TrumpTimeline() {
-  const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set())
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
-
-  const toggleExpanded = (id: string) => {
-    const newExpanded = new Set(expandedItems)
-    if (newExpanded.has(id)) {
-      newExpanded.delete(id)
-    } else {
-      newExpanded.add(id)
-    }
-    setExpandedItems(newExpanded)
-  }
 
   const filteredData = selectedCategory
     ? timelineData.filter(item => item.category === selectedCategory)
@@ -257,15 +246,14 @@ export default function TrumpTimeline() {
             <div className="absolute left-8 top-0 bottom-0 w-0.5 bg-gray-200" />
 
             {/* Timeline items */}
-            <div className="space-y-6">
+            <div className="space-y-2">
               {filteredData.map((event) => {
                 const Icon = categoryIcons[event.category]
-                const isExpanded = expandedItems.has(event.id)
 
                 return (
                   <div key={event.id} className="relative flex gap-4">
                     {/* Date dot */}
-                    <div className="relative z-10 flex h-16 w-16 flex-shrink-0 items-center justify-center">
+                    <div className="relative z-10 flex h-6 w-[4.1rem] flex-shrink-0 items-center justify-center">
                       <div className={cn(
                         'h-4 w-4 rounded-full border-2 border-white',
                         event.importance === 'high' ? 'bg-red-500' :
@@ -276,58 +264,39 @@ export default function TrumpTimeline() {
 
                     {/* Content card */}
                     <Card className={cn(
-                      'flex-1 border-l-4 transition-all',
-                      importanceColors[event.importance],
-                      isExpanded && 'shadow-lg'
+                      'flex-1 border-l-4 gap-0',
+                      importanceColors[event.importance]
                     )}>
-                      <CardHeader className="pb-3">
-                        <div className="flex items-start justify-between">
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-2">
-                              <Badge variant="outline" className="text-xs">
-                                <Calendar className="h-3 w-3 mr-1" />
-                                {new Date(event.date).toLocaleDateString()}
-                              </Badge>
-                              <Badge variant="outline" className="text-xs">
-                                <MapPin className="h-3 w-3 mr-1" />
-                                {event.city}
-                              </Badge>
-                              <Badge
-                                variant="outline"
-                                className={cn('text-xs', categoryColors[event.category])}
-                              >
-                                <Icon className="h-3 w-3 mr-1" />
-                                {event.category.replace('-', ' ')}
-                              </Badge>
-                            </div>
-                            <CardTitle className="text-lg leading-tight">
-                              {event.headline}
-                            </CardTitle>
-                            <div className="text-xs text-muted-foreground mt-1">
-                              {event.channel}
-                            </div>
-                          </div>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => toggleExpanded(event.id)}
-                            className="ml-2"
+                      <CardHeader className="pb-2 pl-6">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Badge variant="outline" className="text-xs">
+                            <Calendar className="h-3 w-3 mr-1" />
+                            {new Date(event.date).toLocaleDateString()}
+                          </Badge>
+                          <Badge variant="outline" className="text-xs">
+                            <MapPin className="h-3 w-3 mr-1" />
+                            {event.city}
+                          </Badge>
+                          <Badge
+                            variant="outline"
+                            className={cn('text-xs', categoryColors[event.category])}
                           >
-                            {isExpanded ? (
-                              <ChevronUp className="h-4 w-4" />
-                            ) : (
-                              <ChevronDown className="h-4 w-4" />
-                            )}
-                          </Button>
+                            <Icon className="h-3 w-3 mr-1" />
+                            {event.category.replace('-', ' ')}
+                          </Badge>
+                        </div>
+                        <CardTitle className="text-lg leading-tight">
+                          {event.headline}
+                        </CardTitle>
+                        <div className="text-xs text-muted-foreground mt-1 mb-2">
+                          {event.channel}
                         </div>
                       </CardHeader>
-                      {isExpanded && (
-                        <CardContent className="pt-0">
-                          <p className="text-sm text-muted-foreground">
-                            {event.description}
-                          </p>
-                        </CardContent>
-                      )}
+                      <CardContent className="pt-0 pl-6 pb-4">
+                        <p className="text-sm text-muted-foreground">
+                          {event.description}
+                        </p>
+                      </CardContent>
                     </Card>
                   </div>
                 )
