@@ -18,15 +18,12 @@ export class ReportCacheD1 {
         const now = Date.now();
         const expiresAt = now + (CACHE.TTL.REPORTS * 1000);
 
-        // Delete existing reports for this channel/timeframe combination
-        await env.FAST_TAKEOFF_NEWS_DB.prepare(
-            'DELETE FROM reports WHERE channel_id = ? AND timeframe = ?'
-        ).bind(channelId, timeframe).run();
-
-        // Insert each report as a separate row
+        // Use INSERT OR IGNORE to preserve historical data
+        // This prevents duplicate report_id insertions while keeping existing reports intact
+        // Unlike the old DELETE approach, this preserves all historical reports
         for (const report of cleanedReports) {
             await env.FAST_TAKEOFF_NEWS_DB.prepare(`
-                INSERT INTO reports (
+                INSERT OR IGNORE INTO reports (
                     report_id, channel_id, channel_name, headline, city, body,
                     generated_at, message_count, last_message_timestamp, user_generated,
                     timeframe, cache_status, message_ids, created_at, expires_at,
