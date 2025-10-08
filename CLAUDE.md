@@ -207,8 +207,13 @@ Discord messages now live entirely in D1. Legacy KV migration utilities have bee
 # Trigger message fetch
 curl -X POST "http://localhost:8787/api/trigger-cron" -H "Authorization: Bearer $(grep CRON_SECRET .dev.vars | cut -d'"' -f2)" -d '{"task": "MESSAGES"}'
 
-# Generate test report (replace timestamps with current window)
-curl -X POST "http://localhost:8787/api/reports" -H "Content-Type: application/json" -d '{"channelId":"1312302264203087963","mode":"dynamic","windowStart":"2025-09-08T19:11:43.612Z","windowEnd":"2025-09-08T21:11:43.612Z"}'
+# Generate test report with explicit window
+curl -X POST "http://localhost:8787/api/reports" -H "Content-Type: application/json" \
+  -d '{"channelId":"1312302264203087963","windowStart":"2025-09-08T19:11:43.612Z","windowEnd":"2025-09-08T21:11:43.612Z"}'
+
+# Generate report with duration (e.g., 4 hours)
+curl -X POST "http://localhost:8787/api/reports" -H "Content-Type: application/json" \
+  -d '{"channelId":"1312302264203087963","windowDuration":4}'
 
 # Generate window timestamps dynamically:
 node -e "const now = new Date(); const twoHoursAgo = new Date(now.getTime() - 2 * 60 * 60 * 1000); console.log(JSON.stringify({windowStart: twoHoursAgo.toISOString(), windowEnd: now.toISOString()}))"
@@ -216,6 +221,11 @@ node -e "const now = new Date(); const twoHoursAgo = new Date(now.getTime() - 2 
 # Check previous context
 npx wrangler d1 execute FAST_TAKEOFF_NEWS_DB --remote --command "SELECT report_id, headline, channel_name, generated_at FROM reports WHERE channel_id = 'X' ORDER BY generated_at DESC LIMIT 3"
 ```
+
+**API Migration Note:**
+- Legacy `timeframe` and `mode` params still work but are deprecated
+- Use `windowDuration` (hours) or explicit `windowStart`/`windowEnd` for new code
+- All reports now use dynamic windows regardless of generation method
 
 **Key Files**: `src/lib/config.ts` (PROMPT_TEMPLATE), `src/lib/utils/report-ai.ts` (createWindowAwarePrompt)
 

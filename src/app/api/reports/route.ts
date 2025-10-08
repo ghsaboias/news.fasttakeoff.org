@@ -13,8 +13,14 @@ import { Cloudflare } from '../../../../worker-configuration';
  * @throws 404 if report not found, 500 for errors.
  *
  * POST /api/reports
- * Generates a new report for a channel and timeframe.
- * @param request - JSON body: { channelId: string, timeframe?: '2h'|'6h'|'dynamic', mode?: 'dynamic', windowStart?: string, windowEnd?: string, model?: string }
+ * Generates a new report for a channel using dynamic time windows.
+ * @param request - JSON body: {
+ *   channelId: string (required),
+ *   windowStart?: string (ISO 8601),
+ *   windowEnd?: string (ISO 8601),
+ *   windowDuration?: number (hours, default: 2),
+ *   model?: string
+ * }
  * @returns {Promise<{ report: Report, messages: DiscordMessage[] } | { error: string }>}
  * @throws 400 if channelId is missing, 500 for errors.
  * @auth None required.
@@ -126,11 +132,10 @@ export async function GET(request: NextRequest) {
                 : await reportService.getAllReports(limit);
         }
 
-        // Filter by timeframe/mode if specified
-        if (timeframe && ['2h', '6h', 'dynamic'].includes(timeframe)) {
-            reports = reports.filter(report => report.timeframe === timeframe);
+        // Filter by timeframe/mode if specified (keeping filter for historical data)
+        if (timeframe === 'dynamic') {
+            reports = reports.filter(report => report.timeframe === 'dynamic');
         } else if (mode === 'scheduled') {
-            // Show only scheduled reports when explicitly requested
             reports = reports.filter(report => report.generationTrigger === 'scheduled');
         }
 
@@ -181,15 +186,14 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: Request) {
     return withErrorHandling(async env => {
-        const body = await request.json() as { 
-            channelId?: string; 
-            timeframe?: string; 
-            mode?: string;
+        const body = await request.json() as {
+            channelId?: string;
             windowStart?: string;
             windowEnd?: string;
-            model?: string; 
+            windowDuration?: number; // Hours (default: 2)
+            model?: string;
         };
-        const { channelId, timeframe = '2h', mode, windowStart, windowEnd, model } = body;
+        const { channelId, windowStart, windowEnd, windowDuration, model } = body;
 
         if (!channelId) {
             throw new Error('Missing channelId');
@@ -208,31 +212,25 @@ export async function POST(request: Request) {
         try {
             let report, messages;
 
-            // Handle dynamic report generation
-            if (mode === 'dynamic' || timeframe === 'dynamic') {
-                if (!windowStart || !windowEnd) {
-                    // Default to 2-hour window if no window specified
-                    const now = new Date();
-                    const twoHoursAgo = new Date(now.getTime() - 2 * 60 * 60 * 1000);
-                    ({ report, messages } = await reportService.createDynamicReport(channelId, twoHoursAgo, now));
-                } else {
-                    const startDate = new Date(windowStart);
-                    const endDate = new Date(windowEnd);
-                    
-                    if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
-                        throw new Error('Invalid windowStart or windowEnd date format');
-                    }
-                    
-                    if (startDate >= endDate) {
-                        throw new Error('windowStart must be before windowEnd');
-                    }
+            // All report generation uses dynamic windows
+            if (windowStart && windowEnd) {
+                // Explicit window provided
+                const startDate = new Date(windowStart);
+                const endDate = new Date(windowEnd);
 
-                    ({ report, messages } = await reportService.createDynamicReport(channelId, startDate, endDate));
+                if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+                    throw new Error('Invalid windowStart or windowEnd date format');
                 }
+
+                if (startDate >= endDate) {
+                    throw new Error('windowStart must be before windowEnd');
+                }
+
+                ({ report, messages } = await reportService.createDynamicReport(channelId, startDate, endDate));
             } else {
-                // All requests now use dynamic reports - convert legacy timeframes to windows
+                // Calculate window from duration (default 2 hours)
                 const now = new Date();
-                const hours = timeframe === '6h' ? 6 : 2; // Default to 2h
+                const hours = windowDuration || 2;
                 const startTime = new Date(now.getTime() - hours * 60 * 60 * 1000);
                 ({ report, messages } = await reportService.createDynamicReport(channelId, startTime, now));
             }
