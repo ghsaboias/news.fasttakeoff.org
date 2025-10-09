@@ -109,6 +109,13 @@ export default function WarTimelineSonar() {
       }, {} as Record<string, TimelineEvent[]>)
     : {}
 
+  // Get next 5 upcoming events (sorted chronologically)
+  const upcomingEvents = Array.isArray(timelineData)
+    ? [...timelineData]
+        .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime())
+        .slice(0, 5)
+    : []
+
   return (
     <div className="w-full min-h-screen bg-slate-950 p-4 md:p-6">
       {/* Ambient glow overlay */}
@@ -118,89 +125,137 @@ export default function WarTimelineSonar() {
       </div>
 
       <div className="max-w-7xl mx-auto relative">
-        {/* Command Header */}
-        <div className="mb-6 bg-gradient-to-r from-slate-900 to-slate-800 border border-cyan-500/30 rounded-lg p-6 shadow-[0_0_30px_rgba(6,182,212,0.2)]">
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center gap-3">
-              <div className="relative">
-                <div className="w-10 h-10 rounded-full bg-cyan-500/20 border-2 border-cyan-500 flex items-center justify-center">
-                  <div className="w-4 h-4 rounded-full bg-cyan-500 animate-pulse" />
+        {/* Command Header - Two Column Layout */}
+        <div className="mb-6 grid grid-cols-1 lg:grid-cols-3 gap-4">
+          {/* Left Column - Main Header */}
+          <div className="lg:col-span-2 bg-gradient-to-r from-slate-900 to-slate-800 border border-cyan-500/30 rounded-lg p-6 shadow-[0_0_30px_rgba(6,182,212,0.2)]">
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-3">
+                <div className="relative">
+                  <div className="w-10 h-10 rounded-full bg-cyan-500/20 border-2 border-cyan-500 flex items-center justify-center">
+                    <div className="w-4 h-4 rounded-full bg-cyan-500 animate-pulse" />
+                  </div>
+                  <div className="absolute inset-0 rounded-full border-2 border-cyan-500 animate-ping opacity-30" />
                 </div>
-                <div className="absolute inset-0 rounded-full border-2 border-cyan-500 animate-ping opacity-30" />
+                <div>
+                  <h1 className="text-2xl font-bold text-cyan-400 tracking-wider">SONAR TIMELINE</h1>
+                  <p className="text-xs text-cyan-500/60 font-mono">CONFLICT MONITORING SYSTEM</p>
+                </div>
               </div>
-              <div>
-                <h1 className="text-2xl font-bold text-cyan-400 tracking-wider">SONAR TIMELINE</h1>
-                <p className="text-xs text-cyan-500/60 font-mono">CONFLICT MONITORING SYSTEM</p>
+              <div className="text-right">
+                <div className="text-cyan-400 font-mono text-sm">ACTIVE SCAN</div>
+                <div className="text-cyan-500/60 text-xs font-mono">
+                  {isLoading ? 'LOADING...' : `${timelineData?.length || 0} SIGNALS`}
+                </div>
               </div>
             </div>
-            <div className="text-right">
-              <div className="text-cyan-400 font-mono text-sm">ACTIVE SCAN</div>
-              <div className="text-cyan-500/60 text-xs font-mono">
-                {isLoading ? 'LOADING...' : `${timelineData?.length || 0} SIGNALS`}
+
+            {/* Date Navigation */}
+            <div className="flex items-center justify-between mb-5">
+              <div className="flex items-center gap-2">
+                <Button
+                  onClick={() => navigateDate(-1)}
+                  variant="outline"
+                  size="sm"
+                  className="bg-slate-800 border-cyan-500/30 text-cyan-400 hover:bg-cyan-500/10"
+                >
+                  <ChevronLeft className="h-4 w-4 mr-1" />
+                  Previous Day
+                </Button>
+                <div className="px-4 py-2 bg-slate-800 border border-cyan-500/30 rounded text-cyan-400 font-mono text-sm">
+                  {new Date(selectedDate).toLocaleDateString('en-US', {
+                    weekday: 'short',
+                    month: 'short',
+                    day: 'numeric',
+                    year: 'numeric'
+                  })}
+                </div>
+                <Button
+                  onClick={() => navigateDate(1)}
+                  variant="outline"
+                  size="sm"
+                  className="bg-slate-800 border-cyan-500/30 text-cyan-400 hover:bg-cyan-500/10"
+                  disabled={selectedDate >= new Date().toISOString().split('T')[0]}
+                >
+                  Next Day
+                  <ChevronRight className="h-4 w-4 ml-1" />
+                </Button>
               </div>
+              <Button
+                onClick={goToToday}
+                variant="outline"
+                size="sm"
+                className="bg-cyan-500/20 border-cyan-500 text-cyan-400 hover:bg-cyan-500/30"
+              >
+                Today
+              </Button>
+            </div>
+
+            {/* Theater status indicators */}
+            <div className="flex gap-4 text-xs font-mono pt-1">
+              {Object.entries(theaterConfig).map(([key, config]) => {
+                const count = eventsByTheater[key]?.length || 0
+                return (
+                  <div
+                    key={key}
+                    className="flex items-center gap-2 px-3 py-1 rounded border"
+                    style={{
+                      borderColor: config.color + '40',
+                      backgroundColor: config.color + '10'
+                    }}
+                  >
+                    <span style={{ color: config.color }}>{config.icon}</span>
+                    <span style={{ color: config.color }}>{config.label}</span>
+                    <span className="text-white/60">({count})</span>
+                  </div>
+                )
+              })}
             </div>
           </div>
 
-          {/* Date Navigation */}
-          <div className="flex items-center justify-between mb-5">
-            <div className="flex items-center gap-2">
-              <Button
-                onClick={() => navigateDate(-1)}
-                variant="outline"
-                size="sm"
-                className="bg-slate-800 border-cyan-500/30 text-cyan-400 hover:bg-cyan-500/10"
-              >
-                <ChevronLeft className="h-4 w-4 mr-1" />
-                Previous Day
-              </Button>
-              <div className="px-4 py-2 bg-slate-800 border border-cyan-500/30 rounded text-cyan-400 font-mono text-sm">
-                {new Date(selectedDate).toLocaleDateString('en-US', {
-                  weekday: 'short',
-                  month: 'short',
-                  day: 'numeric',
-                  year: 'numeric'
+          {/* Right Column - Upcoming Events Calendar */}
+          <div className="bg-gradient-to-br from-slate-900 to-slate-800 border border-cyan-500/30 rounded-lg p-4 shadow-[0_0_30px_rgba(6,182,212,0.2)]">
+            <div className="mb-4">
+              <h2 className="text-sm font-bold text-cyan-400 tracking-wider mb-1">NEXT EVENTS</h2>
+              <p className="text-xs text-cyan-500/60 font-mono">UPCOMING SIGNALS</p>
+            </div>
+
+            {upcomingEvents.length === 0 ? (
+              <div className="text-center py-8 text-slate-500 text-xs font-mono">
+                NO UPCOMING EVENTS
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {upcomingEvents.map((event) => {
+                  const config = theaterConfig[event.theater]
+                  return (
+                    <div
+                      key={event.id}
+                      className="p-2 rounded border-l-2 bg-slate-800/50 hover:bg-slate-800 transition-colors"
+                      style={{ borderLeftColor: config.color }}
+                    >
+                      <div className="flex items-start gap-2">
+                        <div
+                          className="w-2 h-2 rounded-full mt-1 flex-shrink-0"
+                          style={{ backgroundColor: config.color }}
+                        />
+                        <div className="flex-1 min-w-0">
+                          <div className="text-xs font-mono mb-1" style={{ color: config.color }}>
+                            {formatTime(event.timestamp)}
+                          </div>
+                          <p className="text-xs text-slate-300 line-clamp-2 leading-relaxed">
+                            {event.headline}
+                          </p>
+                          <div className="text-xs text-slate-500 mt-1 font-mono">
+                            {event.location}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )
                 })}
               </div>
-              <Button
-                onClick={() => navigateDate(1)}
-                variant="outline"
-                size="sm"
-                className="bg-slate-800 border-cyan-500/30 text-cyan-400 hover:bg-cyan-500/10"
-                disabled={selectedDate >= new Date().toISOString().split('T')[0]}
-              >
-                Next Day
-                <ChevronRight className="h-4 w-4 ml-1" />
-              </Button>
-            </div>
-            <Button
-              onClick={goToToday}
-              variant="outline"
-              size="sm"
-              className="bg-cyan-500/20 border-cyan-500 text-cyan-400 hover:bg-cyan-500/30"
-            >
-              Today
-            </Button>
-          </div>
-
-          {/* Theater status indicators */}
-          <div className="flex gap-4 text-xs font-mono pt-1">
-            {Object.entries(theaterConfig).map(([key, config]) => {
-              const count = eventsByTheater[key]?.length || 0
-              return (
-                <div
-                  key={key}
-                  className="flex items-center gap-2 px-3 py-1 rounded border"
-                  style={{
-                    borderColor: config.color + '40',
-                    backgroundColor: config.color + '10'
-                  }}
-                >
-                  <span style={{ color: config.color }}>{config.icon}</span>
-                  <span style={{ color: config.color }}>{config.label}</span>
-                  <span className="text-white/60">({count})</span>
-                </div>
-              )
-            })}
+            )}
           </div>
         </div>
 
