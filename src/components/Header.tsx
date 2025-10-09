@@ -87,6 +87,26 @@ export default function Header() {
                                     Trump Timeline
                                 </Link>
                             </DropdownMenuItem>
+                            <DropdownMenuItem asChild className="focus:outline-none">
+                                <Link href="/analytics/war-timeline-bubble" className="text-dark-100 hover:text-accent cursor-pointer focus:outline-none">
+                                    War Timeline (Bubble)
+                                </Link>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem asChild className="focus:outline-none">
+                                <Link href="/analytics/war-timeline-metro" className="text-dark-100 hover:text-accent cursor-pointer focus:outline-none">
+                                    War Timeline (Metro)
+                                </Link>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem asChild className="focus:outline-none">
+                                <Link href="/analytics/war-timeline-radar" className="text-dark-100 hover:text-accent cursor-pointer focus:outline-none">
+                                    War Timeline (Radar)
+                                </Link>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem asChild className="focus:outline-none">
+                                <Link href="/analytics/war-timeline-sonar" className="text-dark-100 hover:text-accent cursor-pointer focus:outline-none">
+                                    War Timeline (Sonar)
+                                </Link>
+                            </DropdownMenuItem>
                         </DropdownMenuContent>
                     </DropdownMenu>
                 </div>
@@ -168,6 +188,26 @@ export default function Header() {
                                             <DropdownMenuItem asChild>
                                                 <Link href="/analytics/trump-timeline" className="text-dark-100 hover:text-accent cursor-pointer">
                                                     Trump Timeline
+                                                </Link>
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem asChild>
+                                                <Link href="/analytics/war-timeline-bubble" className="text-dark-100 hover:text-accent cursor-pointer">
+                                                    War Timeline (Bubble)
+                                                </Link>
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem asChild>
+                                                <Link href="/analytics/war-timeline-metro" className="text-dark-100 hover:text-accent cursor-pointer">
+                                                    War Timeline (Metro)
+                                                </Link>
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem asChild>
+                                                <Link href="/analytics/war-timeline-radar" className="text-dark-100 hover:text-accent cursor-pointer">
+                                                    War Timeline (Radar)
+                                                </Link>
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem asChild>
+                                                <Link href="/analytics/war-timeline-sonar" className="text-dark-100 hover:text-accent cursor-pointer">
+                                                    War Timeline (Sonar)
                                                 </Link>
                                             </DropdownMenuItem>
                                         </DropdownMenuContent>
@@ -254,6 +294,26 @@ export default function Header() {
                                             <DropdownMenuItem asChild>
                                                 <Link href="/analytics/trump-timeline" className="text-dark-100 hover:text-accent cursor-pointer">
                                                     Trump Timeline
+                                                </Link>
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem asChild>
+                                                <Link href="/analytics/war-timeline-bubble" className="text-dark-100 hover:text-accent cursor-pointer">
+                                                    War Timeline (Bubble)
+                                                </Link>
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem asChild>
+                                                <Link href="/analytics/war-timeline-metro" className="text-dark-100 hover:text-accent cursor-pointer">
+                                                    War Timeline (Metro)
+                                                </Link>
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem asChild>
+                                                <Link href="/analytics/war-timeline-radar" className="text-dark-100 hover:text-accent cursor-pointer">
+                                                    War Timeline (Radar)
+                                                </Link>
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem asChild>
+                                                <Link href="/analytics/war-timeline-sonar" className="text-dark-100 hover:text-accent cursor-pointer">
+                                                    War Timeline (Sonar)
                                                 </Link>
                                             </DropdownMenuItem>
                                         </DropdownMenuContent>
