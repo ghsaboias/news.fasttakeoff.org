@@ -16,6 +16,7 @@ interface TimelineEvent {
   location: string
   theater: 'ukraine-russia' | 'israel-palestine' | 'syria'
   reportId: string
+  channelId: string
   channelName: string
 }
 
@@ -83,6 +84,7 @@ export async function GET(request: NextRequest) {
       location: row.city || 'Unknown',
       theater: CHANNEL_TO_THEATER[row.channel_name || ''] || 'ukraine-russia',
       reportId: row.report_id,
+      channelId: row.channel_id || '',
       channelName: row.channel_name || 'Unknown'
     }));
 

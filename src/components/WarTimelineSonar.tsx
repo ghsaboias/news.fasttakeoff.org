@@ -14,6 +14,7 @@ interface TimelineEvent {
   location: string
   theater: 'ukraine-russia' | 'israel-palestine' | 'syria'
   reportId: string
+  channelId: string
   channelName: string
   scheduledEvent?: string
 }
