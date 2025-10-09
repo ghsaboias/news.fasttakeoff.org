@@ -119,8 +119,8 @@ export default function WarTimelineSonar() {
 
       <div className="max-w-7xl mx-auto relative">
         {/* Command Header */}
-        <div className="mb-6 bg-gradient-to-r from-slate-900 to-slate-800 border border-cyan-500/30 rounded-lg p-4 shadow-[0_0_30px_rgba(6,182,212,0.2)]">
-          <div className="flex items-center justify-between mb-3">
+        <div className="mb-6 bg-gradient-to-r from-slate-900 to-slate-800 border border-cyan-500/30 rounded-lg p-6 shadow-[0_0_30px_rgba(6,182,212,0.2)]">
+          <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-3">
               <div className="relative">
                 <div className="w-10 h-10 rounded-full bg-cyan-500/20 border-2 border-cyan-500 flex items-center justify-center">
@@ -142,7 +142,7 @@ export default function WarTimelineSonar() {
           </div>
 
           {/* Date Navigation */}
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between mb-5">
             <div className="flex items-center gap-2">
               <Button
                 onClick={() => navigateDate(-1)}
@@ -183,7 +183,7 @@ export default function WarTimelineSonar() {
           </div>
 
           {/* Theater status indicators */}
-          <div className="flex gap-4 text-xs font-mono">
+          <div className="flex gap-4 text-xs font-mono pt-1">
             {Object.entries(theaterConfig).map(([key, config]) => {
               const count = eventsByTheater[key]?.length || 0
               return (
