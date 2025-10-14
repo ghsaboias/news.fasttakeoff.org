@@ -1,221 +1,210 @@
-import { CACHE, TIME } from '@/lib/config';
-import { CachedMktNews, MktNewsMessage } from '@/lib/types/mktnews';
+import { TIME } from '@/lib/config';
+import { MktNewsMessage } from '@/lib/types/mktnews';
 import { Cloudflare } from '../../../worker-configuration';
-import { CacheManager } from '../cache-utils';
 
 export class MktNewsService {
-    public env: Cloudflare.Env;
-    private cacheManager: CacheManager;
+  public env: Cloudflare.Env;
 
-    constructor(env: Cloudflare.Env) {
-        this.env = env;
-        if (!env.MKTNEWS_CACHE) {
-            throw new Error('Missing required KV namespace: MKTNEWS_CACHE');
-        }
-        this.cacheManager = new CacheManager(env);
+  constructor(env: Cloudflare.Env) {
+    this.env = env;
+    if (!env.FAST_TAKEOFF_NEWS_DB) {
+      throw new Error('Missing required D1 database: FAST_TAKEOFF_NEWS_DB');
+    }
+  }
+
+  /**
+   * Update/refresh MktNews messages
+   * In the new architecture, Pi pushes data directly via /api/mktnews/ingest
+   * This method is a no-op kept for backwards compatibility with cron jobs
+   */
+  async updateMessages(): Promise<void> {
+    console.log('[MKTNEWS] updateMessages called - using D1 storage (no action needed)');
+    // Messages are now stored in D1 via ingest endpoint
+    // No cleanup needed - we keep messages indefinitely
+  }
+
+  /**
+   * Get all cached MktNews messages from D1
+   */
+  async getCachedMessages(): Promise<MktNewsMessage[]> {
+    try {
+      const result = await this.env.FAST_TAKEOFF_NEWS_DB.prepare(`
+        SELECT raw_data
+        FROM mktnews_messages
+        ORDER BY received_at DESC
+      `).all();
+
+      if (!result.success) {
+        console.error('[MKTNEWS] Failed to fetch messages from D1:', result.error);
+        return [];
+      }
+
+      // Parse raw_data JSON for each message
+      const messages = result.results.map((row) => {
+        return JSON.parse((row as { raw_data: string }).raw_data) as MktNewsMessage;
+      });
+
+      return messages;
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      console.error('[MKTNEWS] Error fetching messages from D1:', errorMessage);
+      return [];
+    }
+  }
+
+  /**
+   * Ingest new messages from Pi (public method for API endpoint)
+   */
+  async ingestMessages(newMessages: MktNewsMessage[]): Promise<number> {
+    console.log(`[MKTNEWS] Ingesting ${newMessages.length} messages from Pi into D1`);
+
+    let insertedCount = 0;
+    let skippedCount = 0;
+
+    for (const message of newMessages) {
+      try {
+        // Prepare values with proper escaping
+        const messageId = message.data.id;
+        const mid = message.data.mid;
+        const type = message.type;
+        const action = message.data.action;
+        const category = JSON.stringify(message.data.category);
+        const title = message.data.data.title || '';
+        const content = message.data.data.content || '';
+        const pic = message.data.data.pic || '';
+        const important = message.data.important;
+        const timestamp = message.timestamp;
+        const time = message.data.time;
+        const receivedAt = message.received_at;
+        const rawData = JSON.stringify(message);
+
+        await this.env.FAST_TAKEOFF_NEWS_DB.prepare(`
+          INSERT OR IGNORE INTO mktnews_messages (
+            message_id, mid, type, action, category, title, content, pic,
+            important, timestamp, time, received_at, raw_data
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `).bind(
+          messageId, mid, type, action, category, title, content, pic,
+          important, timestamp, time, receivedAt, rawData
+        ).run();
+
+        insertedCount++;
+      } catch (error) {
+        skippedCount++;
+        console.error(`[MKTNEWS] Failed to insert message ${message.data.id}:`, error);
+      }
     }
 
-    /**
-     * Update/refresh MktNews messages (now uses push-based architecture)
-     * In the new architecture, Pi pushes data directly via /api/mktnews/ingest
-     * This method now performs cache maintenance and cleanup
-     */
-    async updateMessages(): Promise<void> {
-        console.log('[MKTNEWS] Starting cache maintenance...');
+    console.log(`[MKTNEWS] Successfully ingested ${insertedCount} messages (${skippedCount} skipped/duplicates)`);
+    return insertedCount;
+  }
 
-        try {
-            // Get current cached messages
-            const cached = await this.getCachedMessages();
+  /**
+   * Deduplicate messages by ID
+   */
+  public deduplicateMessages(messages: MktNewsMessage[]): MktNewsMessage[] {
+    const seen = new Set<string>();
+    const deduped: MktNewsMessage[] = [];
 
-            if (!cached?.messages || cached.messages.length === 0) {
-                console.log('[MKTNEWS] No cached messages found - waiting for Pi to push data');
-                return;
-            }
-
-            // Perform cache maintenance: remove old messages (older than 30 days)
-            const cutoffTime = Date.now() - TIME.daysToMs(30); // 30 days in milliseconds
-            const recentMessages = cached.messages.filter(msg =>
-                new Date(msg.received_at).getTime() > cutoffTime
-            );
-
-            // Only update cache if we filtered out old messages
-            if (recentMessages.length < cached.messages.length) {
-                console.log(`[MKTNEWS] Cache cleanup: ${cached.messages.length} -> ${recentMessages.length} messages`);
-
-                // Sort by timestamp (newest first)
-                recentMessages.sort((a, b) =>
-                    new Date(b.received_at).getTime() - new Date(a.received_at).getTime()
-                );
-
-                await this.cacheMessages(recentMessages);
-                console.log(`[MKTNEWS] Cache cleanup completed`);
-            } else {
-                console.log(`[MKTNEWS] Cache is clean - ${cached.messages.length} recent messages`);
-            }
-
-            // Update last maintenance timestamp
-            await this.updateLastCheckTimestamp();
-
-        } catch (error) {
-            const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-            console.error(`[MKTNEWS] Cache maintenance failed:`, errorMessage);
-            throw error;
-        }
+    for (const message of messages) {
+      if (!seen.has(message.data.id)) {
+        seen.add(message.data.id);
+        deduped.push(message);
+      }
     }
 
+    return deduped;
+  }
 
+  /**
+   * Get messages for a specific timeframe
+   */
+  async getMessagesForTimeframe(hours: number): Promise<MktNewsMessage[]> {
+    try {
+      const cutoffTime = new Date(Date.now() - TIME.hoursToMs(hours)).toISOString();
+      console.log(`[MKTNEWS] Filtering for messages after: ${cutoffTime}`);
 
-    /**
-     * Get the last maintenance timestamp from cache
-     */
-    private async getLastCheckTimestamp(): Promise<number> {
-        const cached = await this.cacheManager.get<{ timestamp: number }>('MKTNEWS_CACHE', 'last-check');
-        if (cached?.timestamp) {
-            return cached.timestamp;
-        }
+      const result = await this.env.FAST_TAKEOFF_NEWS_DB.prepare(`
+        SELECT raw_data
+        FROM mktnews_messages
+        WHERE received_at > ?
+        ORDER BY received_at DESC
+      `).bind(cutoffTime).all();
 
-        // Default to 1 hour ago if no previous maintenance
-        return Date.now() - TIME.ONE_HOUR_MS;
+      if (!result.success) {
+        console.error('[MKTNEWS] Failed to fetch messages from D1:', result.error);
+        return [];
+      }
+
+      const messages = result.results.map((row) => {
+        return JSON.parse((row as { raw_data: string }).raw_data) as MktNewsMessage;
+      });
+
+      console.log(`[MKTNEWS] Found ${messages.length} messages in ${hours}h timeframe`);
+      return messages;
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      console.error('[MKTNEWS] Error fetching messages from D1:', errorMessage);
+      return [];
     }
+  }
 
-    /**
-     * Update the last maintenance timestamp
-     */
-    private async updateLastCheckTimestamp(): Promise<void> {
-        await this.cacheManager.put('MKTNEWS_CACHE', 'last-check', {
-            timestamp: Date.now(),
-            updatedAt: new Date().toISOString()
-        }, CACHE.TTL.MESSAGES);
+  /**
+   * Get recent messages (last 2 hours by default)
+   */
+  async getRecentMessages(hours: number = 2): Promise<MktNewsMessage[]> {
+    return this.getMessagesForTimeframe(hours);
+  }
+
+  /**
+   * Get statistics about messages in D1
+   */
+  async getStats(): Promise<{
+    totalMessages: number;
+    lastMessage: string | null;
+    oldestMessage: string | null;
+    importantMessages: number;
+  }> {
+    try {
+      // Get total count and important count
+      const countResult = await this.env.FAST_TAKEOFF_NEWS_DB.prepare(`
+        SELECT
+          COUNT(*) as total,
+          SUM(CASE WHEN important = 1 THEN 1 ELSE 0 END) as important_count
+        FROM mktnews_messages
+      `).first();
+
+      // Get last message timestamp
+      const lastMessageResult = await this.env.FAST_TAKEOFF_NEWS_DB.prepare(`
+        SELECT received_at
+        FROM mktnews_messages
+        ORDER BY received_at DESC
+        LIMIT 1
+      `).first();
+
+      // Get oldest message timestamp
+      const oldestMessageResult = await this.env.FAST_TAKEOFF_NEWS_DB.prepare(`
+        SELECT received_at
+        FROM mktnews_messages
+        ORDER BY received_at ASC
+        LIMIT 1
+      `).first();
+
+      return {
+        totalMessages: (countResult?.total as number) || 0,
+        lastMessage: (lastMessageResult?.received_at as string) || null,
+        oldestMessage: (oldestMessageResult?.received_at as string) || null,
+        importantMessages: (countResult?.important_count as number) || 0
+      };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      console.error('[MKTNEWS] Error getting stats from D1:', errorMessage);
+      return {
+        totalMessages: 0,
+        lastMessage: null,
+        oldestMessage: null,
+        importantMessages: 0
+      };
     }
-
-    /**
-     * Get cached MktNews messages
-     */
-    async getCachedMessages(): Promise<CachedMktNews | null> {
-        return await this.cacheManager.get<CachedMktNews>('MKTNEWS_CACHE', 'messages');
-    }
-
-    /**
-     * Cache MktNews messages
-     */
-    private async cacheMessages(messages: MktNewsMessage[]): Promise<void> {
-        const data: CachedMktNews = {
-            messages,
-            cachedAt: new Date().toISOString(),
-            messageCount: messages.length,
-            lastMessageTimestamp: messages[0]?.received_at || new Date().toISOString(),
-        };
-
-        await this.cacheManager.put('MKTNEWS_CACHE', 'messages', data, CACHE.TTL.MESSAGES);
-    }
-
-    /**
-     * Ingest new messages from Pi (public method for API endpoint)
-     */
-    async ingestMessages(newMessages: MktNewsMessage[]): Promise<number> {
-        console.log(`[MKTNEWS] Ingesting ${newMessages.length} messages from Pi`);
-
-        // Get existing cached messages
-        const cached = await this.getCachedMessages();
-        const existingMessages = cached?.messages || [];
-
-        // Merge and deduplicate messages
-        const allMessages = this.deduplicateMessages([...newMessages, ...existingMessages]);
-
-        // Keep only recent messages (last 30 days)
-        const cutoffTime = Date.now() - TIME.daysToMs(30); // 30 days in milliseconds
-        const recentMessages = allMessages.filter(msg =>
-            new Date(msg.received_at).getTime() > cutoffTime
-        );
-
-        // Sort by timestamp (newest first)
-        recentMessages.sort((a, b) =>
-            new Date(b.received_at).getTime() - new Date(a.received_at).getTime()
-        );
-
-        // Cache the updated messages
-        await this.cacheMessages(recentMessages);
-
-        console.log(`[MKTNEWS] Successfully cached ${recentMessages.length} messages`);
-        return recentMessages.length;
-    }
-
-    /**
-     * Deduplicate messages by ID
-     */
-    public deduplicateMessages(messages: MktNewsMessage[]): MktNewsMessage[] {
-        const seen = new Set<string>();
-        const deduped: MktNewsMessage[] = [];
-
-        for (const message of messages) {
-            if (!seen.has(message.data.id)) {
-                seen.add(message.data.id);
-                deduped.push(message);
-            }
-        }
-
-        return deduped;
-    }
-
-    /**
-     * Get messages for a specific timeframe
-     */
-    async getMessagesForTimeframe(hours: number): Promise<MktNewsMessage[]> {
-        const cached = await this.getCachedMessages();
-        if (!cached?.messages) {
-            console.log(`[MKTNEWS] No cached messages found`);
-            return [];
-        }
-
-        console.log(`[MKTNEWS] Total cached messages: ${cached.messages.length}`);
-
-        const cutoffTime = Date.now() - TIME.hoursToMs(hours);
-        console.log(`[MKTNEWS] Filtering for messages after: ${new Date(cutoffTime).toISOString()}`);
-
-        const filteredMessages = cached.messages.filter(msg => {
-            const messageTime = new Date(msg.received_at).getTime();
-            const isInTimeframe = messageTime > cutoffTime;
-            return isInTimeframe;
-        });
-
-        console.log(`[MKTNEWS] Found ${filteredMessages.length} messages in ${hours}h timeframe`);
-        return filteredMessages;
-    }
-
-    /**
-     * Get recent messages (last 2 hours by default)
-     */
-    async getRecentMessages(hours: number = 2): Promise<MktNewsMessage[]> {
-        return this.getMessagesForTimeframe(hours);
-    }
-
-    /**
-     * Get statistics about cached messages
-     */
-    async getStats(): Promise<{
-        totalMessages: number;
-        lastMessage: string | null;
-        oldestMessage: string | null;
-        importantMessages: number;
-    }> {
-        const cached = await this.getCachedMessages();
-        if (!cached?.messages || cached.messages.length === 0) {
-            return {
-                totalMessages: 0,
-                lastMessage: null,
-                oldestMessage: null,
-                importantMessages: 0
-            };
-        }
-
-        const messages = cached.messages;
-        const importantCount = messages.filter(msg => msg.data.important === 1).length;
-
-        return {
-            totalMessages: messages.length,
-            lastMessage: messages[0]?.received_at || null,
-            oldestMessage: messages[messages.length - 1]?.received_at || null,
-            importantMessages: importantCount
-        };
-    }
-} 
+  }
+}

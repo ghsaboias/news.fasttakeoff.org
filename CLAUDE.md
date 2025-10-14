@@ -7,7 +7,8 @@
 - `public/`: Static assets.
 - `tests/`: Vitest tests (`tests/**/*.test.ts`) with `tests/setup.ts`.
 - `scripts/`: Local utilities and model/scoring tools.
-- Root config: `wrangler.toml` (Cloudflare Worker + KV/R2), `eslint.config.mjs`, `vitest.config.ts`, `tailwind.config.js`.
+- `migrations/`: D1 database migrations (numbered SQL files, e.g., `0010_create_mktnews_tables.sql`).
+- Root config: `wrangler.toml` (Cloudflare Worker + KV/R2/D1), `eslint.config.mjs`, `vitest.config.ts`, `tailwind.config.js`.
 
 ## Build, Test, and Development
 - `bun run dev`: Next dev server at `localhost:3000`.
@@ -162,6 +163,8 @@ Quick Rules
 ### Database Schema
 - **Reports table columns**: `id` (INTEGER PK), `report_id` (TEXT), `headline` (not `title`), `channel_id`, `channel_name`, `generation_trigger`, `window_start_time`, `window_end_time`, `message_count`, `message_ids` (TEXT), `generated_at` (TEXT), `body`, `city`, `user_generated`, `timeframe`, `cache_status`, etc.
 - **Message storage**: Messages are stored in D1 (`messages` table) keyed by `message_id` and `channel_id`
+- **MktNews tables**: `mktnews_messages` (financial flash news with indefinite retention) and `mktnews_summaries` (hourly AI summaries). See MktNews System section for details.
+- **Power Network tables**: `power_network_entities`, `power_network_relationships`, `power_network_financials` (live stock prices updated daily)
 - **Local vs production**: Ensure local D1 has been populated (e.g., via `scripts/backfill`) before testing dynamic flows
 
 ### Key Patterns
@@ -244,3 +247,50 @@ npx wrangler d1 execute FAST_TAKEOFF_NEWS_DB --remote --command "SELECT 'entitie
 # Trigger financial data update manually
 curl -X POST "https://news.fasttakeoff.org/api/trigger-cron" -H "Authorization: Bearer manual-cron-trigger-secret-e1d5b8c7a9f0" -d '{"task": "FINANCIAL_DATA_QUEUE"}'
 ```
+
+## MktNews System
+
+**Data Storage**: MktNews flash messages and AI-generated summaries are stored in D1 for indefinite retention (migrated from KV).
+
+**Database Tables:**
+- **mktnews_messages**: Financial flash news from MktNews WebSocket stream
+  - Stores: message_id, title, content, importance, timestamp, received_at, raw_data (JSON)
+  - Indexed by: received_at, timestamp, important flag
+  - Indefinite retention (no automatic cleanup)
+
+- **mktnews_summaries**: Hourly AI-generated market summaries
+  - Stores: summary_id, summary (Markdown), generated_at, message_count, timeframe
+  - Generated every hour covering past 60 minutes
+  - Uses previous 3 summaries as context for continuity
+
+**Data Flow:**
+1. **Raspberry Pi** pushes messages via WebSocket → `/api/mktnews/ingest`
+2. **MktNewsService** stores in D1 (`mktnews_messages` table)
+3. **Cron (hourly)** generates AI summaries from last 60min of messages
+4. **MktNewsSummaryService** stores summaries in D1 (`mktnews_summaries` table)
+
+**Key Services:**
+- `src/lib/data/mktnews-service.ts` - Message ingestion and retrieval from D1
+- `src/lib/data/mktnews-summary-service.ts` - Hourly summary generation using AI
+
+**Commands:**
+```bash
+# Check MktNews data status
+npx wrangler d1 execute FAST_TAKEOFF_NEWS_DB --remote --command "SELECT 'messages', COUNT(*) FROM mktnews_messages UNION ALL SELECT 'summaries', COUNT(*) FROM mktnews_summaries"
+
+# View recent messages
+npx wrangler d1 execute FAST_TAKEOFF_NEWS_DB --remote --command "SELECT message_id, title, important, received_at FROM mktnews_messages ORDER BY received_at DESC LIMIT 10"
+
+# View recent summaries
+npx wrangler d1 execute FAST_TAKEOFF_NEWS_DB --remote --command "SELECT summary_id, timeframe, message_count, generated_at FROM mktnews_summaries ORDER BY generated_at DESC LIMIT 5"
+
+# Trigger manual summary generation
+curl -X POST "http://localhost:8787/api/trigger-cron" -H "Authorization: Bearer $(grep CRON_SECRET .dev.vars | cut -d'"' -f2)" -d '{"task": "MKTNEWS_SUMMARY"}'
+```
+
+**Migration Notes:**
+- Historical KV data can be backfilled using `node scripts/backfill-mktnews-to-d1.js` (optimized with batched inserts - 100 messages per batch)
+- Migration script features: idempotent (INSERT OR IGNORE), resumable, ~70 seconds for 5,000+ messages
+- Old KV namespaces (MKTNEWS_CACHE, MKTNEWS_SUMMARIES_CACHE) are deprecated but still exist
+- Once D1 migration is verified, KV namespaces can be deleted
+- Migration SQL schema: `migrations/0010_create_mktnews_tables.sql`
