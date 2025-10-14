@@ -1,19 +1,16 @@
 {
   "mcpServers": {
     "cloudflare-graphql": {
-      "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-cloudflare"],
-      "disabled": false
+      "url": "https://graphql.mcp.cloudflare.com/sse",
+      "transport": "sse"
     },
     "cloudflare-bindings": {
-      "command": "npx", 
-      "args": ["-y", "@modelcontextprotocol/server-cloudflare-bindings"],
-      "disabled": false
+      "url": "https://bindings.mcp.cloudflare.com/sse",
+      "transport": "sse"
     },
     "workers-builds": {
-      "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-workers-builds"],
-      "disabled": false
+      "url": "https://builds.mcp.cloudflare.com/sse",
+      "transport": "sse"
     }
   }
 }
