@@ -13,7 +13,7 @@ export async function GET() {
 <body>
     <h1>410 - Content Expired</h1>
     <p>This news report has expired and is no longer available.</p>
-    <p>News content on this site is only available for 30 days.</p>
+    <p>News content on this site is archived indefinitely.</p>
     <a href="/current-events">View Current News</a>
 </body>
 </html>`,

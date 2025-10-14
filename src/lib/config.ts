@@ -114,14 +114,14 @@ export const DISCORD = {
 // Cache configuration in seconds
 export const CACHE = {
     TTL: {
-        REPORTS: 365 * 24 * 60 * 60, // 365 days
+        REPORTS: 100 * 365 * 24 * 60 * 60, // 100 years (effectively permanent)
         CHANNELS: 12 * 60 * 60, // 12 hours
         MESSAGES: 2592000, // 30 days
         FEEDS: 30 * 24 * 60 * 60, // 30 days
         ENTITIES: 24 * 60 * 60, // 24 hours
     },
     RETENTION: {
-        REPORTS: 365 * 24 * 60 * 60, // 1 year
+        REPORTS: 100 * 365 * 24 * 60 * 60, // 100 years (effectively permanent)
         ENTITIES: 7 * 24 * 60 * 60, // 7 days
     },
     REFRESH: {
