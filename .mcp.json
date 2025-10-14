@@ -1,0 +1,19 @@
+{
+  "mcpServers": {
+    "cloudflare-graphql": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-cloudflare"],
+      "disabled": false
+    },
+    "cloudflare-bindings": {
+      "command": "npx", 
+      "args": ["-y", "@modelcontextprotocol/server-cloudflare-bindings"],
+      "disabled": false
+    },
+    "workers-builds": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-workers-builds"],
+      "disabled": false
+    }
+  }
+}
