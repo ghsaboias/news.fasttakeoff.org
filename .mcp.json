@@ -2,15 +2,33 @@
   "mcpServers": {
     "cloudflare-graphql": {
       "command": "npx",
-      "args": ["mcp-remote", "https://graphql.mcp.cloudflare.com/sse"]
+      "args": [
+        "mcp-remote",
+        "https://graphql.mcp.cloudflare.com/sse"
+      ]
     },
     "cloudflare-bindings": {
       "command": "npx",
-      "args": ["mcp-remote", "https://bindings.mcp.cloudflare.com/sse"]
+      "args": [
+        "mcp-remote",
+        "https://bindings.mcp.cloudflare.com/sse"
+      ]
     },
     "workers-builds": {
       "command": "npx",
-      "args": ["mcp-remote", "https://builds.mcp.cloudflare.com/sse"]
+      "args": [
+        "mcp-remote",
+        "https://builds.mcp.cloudflare.com/sse"
+      ]
+    },
+    "playwright": {
+      "type": "stdio",
+      "command": "npx",
+      "args": [
+        "-y",
+        "@playwright/mcp@latest"
+      ],
+      "env": {}
     }
   }
 }
