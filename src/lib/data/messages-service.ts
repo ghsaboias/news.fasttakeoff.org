@@ -260,6 +260,105 @@ export class MessagesService {
         }
     }
 
+    /**
+     * Process a single channel - extract messages and cache them
+     */
+    private async processChannel(
+        channel: { id: string; name: string },
+        local: boolean,
+        last6Hours: Date
+    ): Promise<{ name: string; raw: number; bot: number; since: string }> {
+        const cached = await this.getAllCachedMessagesForChannel(channel.id);
+        // Base since from cache or 6h ago if nothing cached
+        const sinceCandidate = cached?.lastMessageTimestamp ? new Date(cached.lastMessageTimestamp) : last6Hours;
+        // If running locally, cap lookback to at most 6h; in prod, do not cap
+        const since = local && sinceCandidate.getTime() < last6Hours.getTime() ? last6Hours : sinceCandidate;
+        const discordEpoch = 1420070400000; // 2015-01-01T00:00:00.000Z
+        const snowflake = BigInt(Math.floor(since.getTime() - discordEpoch)) << BigInt(22); // Shift 22 bits for worker/thread IDs
+        const urlBase = `${API.DISCORD.BASE_URL}/channels/${channel.id}/messages?limit=${DISCORD.MESSAGES.BATCH_SIZE}`;
+        let after = snowflake.toString();
+        const allMessages: EssentialDiscordMessage[] = [];
+        let channelRawCount = 0;
+
+        while (true) {
+            const url = `${urlBase}&after=${after}`;
+
+            // Add timeout to prevent hanging
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => {
+                console.error(`[MESSAGES] Discord API timeout for channel ${channel.name}`);
+                controller.abort();
+            }, 15000); // 15 second timeout
+
+            try {
+                const response = await fetch(url, {
+                    headers: {
+                        Authorization: this.env.DISCORD_TOKEN || '',
+                        'User-Agent': API.DISCORD.USER_AGENT,
+                        'Content-Type': 'application/json',
+                    },
+                    signal: controller.signal
+                });
+
+                clearTimeout(timeoutId);
+
+                if (!response.ok) {
+                    const errorBody = await response.text();
+                    console.error(`[MESSAGES] Discord API Error Details:`);
+                    console.error(`  Channel: ${channel.name} (${channel.id})`);
+                    console.error(`  Status: ${response.status}`);
+                    console.error(`  Status Text: ${response.statusText}`);
+                    console.error(`  Headers: ${JSON.stringify(Object.fromEntries(response.headers.entries()))}`);
+                    console.error(`  Error Body: ${errorBody}`);
+                    console.error(`  Request URL: ${url}`);
+                    throw new Error(`[MESSAGES] Discord API error for ${channel.id}: ${response.status} - ${errorBody}`);
+                }
+
+                const messages = await response.json() as DiscordMessage[];
+                if (!messages.length) break; // No more messages to fetch
+
+                channelRawCount += messages.length;
+                // Transform to essential messages first, then filter for bot messages
+                const essentialMessages = messages.map(msg => {
+                    const result = this.messageTransformer.transform(msg);
+                    return result.success ? result.transformed! : null;
+                }).filter((msg): msg is EssentialDiscordMessage => msg !== null);
+                const botMessages = MessageFilterService.byBot(essentialMessages);
+                allMessages.push(...botMessages);
+                console.log(`[MESSAGES] Channel ${channel.name}: ${botMessages.length} bot messages, total ${allMessages.length} - OLDEST: ${messages[0].timestamp}`);
+
+                after = messages[0].id; // Use the newest message ID for the next batch
+
+                // Add random delay between pagination requests (1-3 seconds)
+                if (messages.length > 0) {
+                    const paginationDelay = this.getRandomDelay(1000, 3000);
+                    await this.sleep(paginationDelay);
+                }
+            } catch (error) {
+                clearTimeout(timeoutId);
+                if (error instanceof Error && error.name === 'AbortError') {
+                    console.error(`[MESSAGES] Discord API timeout for channel ${channel.name}`);
+                    throw new Error(`Discord API timeout for channel ${channel.name}`);
+                }
+                throw error;
+            }
+        }
+
+        if (allMessages.length > 0) {
+            const cachedMessages = cached?.messages || [];
+            const updated = [...new Map([...cachedMessages, ...allMessages].map(m => [m.id, m])).values()]
+                .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+            await this.cacheMessages(channel.id, updated);
+        }
+
+        return {
+            name: channel.name,
+            raw: channelRawCount,
+            bot: allMessages.length,
+            since: since.toISOString()
+        };
+    }
+
     async updateMessages(local: boolean = false): Promise<void> {
         console.log(`[MESSAGES] Starting updateMessages...`);
 
@@ -278,106 +377,36 @@ export class MessagesService {
                 let totalBotMessages = 0;
                 const channelResults: Array<{ name: string, raw: number, bot: number, since: string }> = [];
 
-                for (const channel of channels) {
-                    const cached = await this.getAllCachedMessagesForChannel(channel.id);
-                    // Base since from cache or 6h ago if nothing cached
-                    const sinceCandidate = cached?.lastMessageTimestamp ? new Date(cached.lastMessageTimestamp) : last6Hours;
-                    // If running locally, cap lookback to at most 6h; in prod, do not cap
-                    const since = local && sinceCandidate.getTime() < last6Hours.getTime() ? last6Hours : sinceCandidate;
-                    const discordEpoch = 1420070400000; // 2015-01-01T00:00:00.000Z
-                    const snowflake = BigInt(Math.floor(since.getTime() - discordEpoch)) << BigInt(22); // Shift 22 bits for worker/thread IDs
-                    const urlBase = `${API.DISCORD.BASE_URL}/channels/${channel.id}/messages?limit=${DISCORD.MESSAGES.BATCH_SIZE}`;
-                    let after = snowflake.toString();
-                    const allMessages: EssentialDiscordMessage[] = [];
-                    let channelRawCount = 0;
+                // Process channels in batches to avoid D1 query limits
+                const batchSize = 5; // Process 5 channels at a time
+                console.log(`[MESSAGES] Processing ${channels.length} channels in batches of ${batchSize}`);
 
-                    while (true) {
-                        const url = `${urlBase}&after=${after}`;
+                for (let i = 0; i < channels.length; i += batchSize) {
+                    const batch = channels.slice(i, i + batchSize);
+                    console.log(`[MESSAGES] Processing batch ${Math.floor(i / batchSize) + 1}/${Math.ceil(channels.length / batchSize)} (${batch.length} channels)`);
 
-                        // Add timeout to prevent hanging
-                        const controller = new AbortController();
-                        const timeoutId = setTimeout(() => {
-                            console.error(`[MESSAGES] Discord API timeout for channel ${channel.name}`);
-                            controller.abort();
-                        }, 15000); // 15 second timeout
+                    const batchPromises = batch.map(channel => this.processChannel(channel, local, last6Hours));
+                    const results = await Promise.allSettled(batchPromises);
 
-                        try {
-                            const response = await fetch(url, {
-                                headers: {
-                                    Authorization: this.env.DISCORD_TOKEN || '',
-                                    'User-Agent': API.DISCORD.USER_AGENT,
-                                    'Content-Type': 'application/json',
-                                },
-                                signal: controller.signal
-                            });
-
-                            clearTimeout(timeoutId);
-
-                            if (!response.ok) {
-                                const errorBody = await response.text();
-                                console.error(`[MESSAGES] Discord API Error Details:`);
-                                console.error(`  Channel: ${channel.name} (${channel.id})`);
-                                console.error(`  Status: ${response.status}`);
-                                console.error(`  Status Text: ${response.statusText}`);
-                                console.error(`  Headers: ${JSON.stringify(Object.fromEntries(response.headers.entries()))}`);
-                                console.error(`  Error Body: ${errorBody}`);
-                                console.error(`  Request URL: ${url}`);
-                                throw new Error(`[MESSAGES] Discord API error for ${channel.id}: ${response.status} - ${errorBody}`);
+                    results.forEach((result, idx) => {
+                        if (result.status === 'fulfilled') {
+                            const channelResult = result.value;
+                            totalRawMessages += channelResult.raw;
+                            totalBotMessages += channelResult.bot;
+                            channelResults.push(channelResult);
+                            if (channelResult.bot > 0) {
+                                fetchedAny = true;
                             }
-
-                            const messages = await response.json() as DiscordMessage[];
-                            if (!messages.length) break; // No more messages to fetch
-
-                            channelRawCount += messages.length;
-                            // Transform to essential messages first, then filter for bot messages
-                            const essentialMessages = messages.map(msg => {
-                                const result = this.messageTransformer.transform(msg);
-                                return result.success ? result.transformed! : null;
-                            }).filter((msg): msg is EssentialDiscordMessage => msg !== null);
-                            const botMessages = MessageFilterService.byBot(essentialMessages);
-                            allMessages.push(...botMessages);
-                            console.log(`[MESSAGES] Channel ${channel.name}: ${botMessages.length} bot messages, total ${allMessages.length} - OLDEST: ${messages[0].timestamp}`);
-
-                            after = messages[0].id; // Use the newest message ID for the next batch
-
-                            // Add random delay between pagination requests (1-3 seconds)
-                            if (messages.length > 0) {
-                                const paginationDelay = this.getRandomDelay(1000, 3000);
-                                await this.sleep(paginationDelay);
-                            }
-                        } catch (error) {
-                            clearTimeout(timeoutId);
-                            if (error instanceof Error && error.name === 'AbortError') {
-                                console.error(`[MESSAGES] Discord API timeout for channel ${channel.name}`);
-                                throw new Error(`Discord API timeout for channel ${channel.name}`);
-                            }
-                            throw error;
+                        } else {
+                            console.error(`[MESSAGES] Batch processing failed for channel ${batch[idx].name}:`, result.reason);
                         }
-                    }
-
-                    totalRawMessages += channelRawCount;
-                    totalBotMessages += allMessages.length;
-                    channelResults.push({
-                        name: channel.name,
-                        raw: channelRawCount,
-                        bot: allMessages.length,
-                        since: since.toISOString()
                     });
 
-                    if (allMessages.length > 0) {
-                        fetchedAny = true;
-                        const cachedMessages = cached?.messages || [];
-                        const updated = [...new Map([...cachedMessages, ...allMessages].map(m => [m.id, m])).values()]
-                            .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
-                        await this.cacheMessages(channel.id, updated);
-                    }
-
-                    // Add random delay between channels (3-7 seconds)
-                    const channelIndex = channels.findIndex(c => c.id === channel.id);
-                    if (channelIndex < channels.length - 1) { // Don't delay after the last channel
-                        const channelDelay = this.getRandomDelay(3000, 7000);
-                        console.log(`[MESSAGES] Waiting ${channelDelay}ms before next channel...`);
-                        await this.sleep(channelDelay);
+                    // Add delay between batches (not after last batch)
+                    if (i + batchSize < channels.length) {
+                        const batchDelay = this.getRandomDelay(2000, 4000);
+                        console.log(`[MESSAGES] Waiting ${batchDelay}ms before next batch...`);
+                        await this.sleep(batchDelay);
                     }
                 }
 
