@@ -35,8 +35,9 @@ describe('Configuration', () => {
       expect(CACHE.TTL.CHANNELS).toBeGreaterThan(3600); // At least 1 hour
       expect(CACHE.TTL.MESSAGES).toBeGreaterThan(3600); // At least 1 hour
 
-      // Reports TTL must be 365 days (in seconds)
-      expect(CACHE.TTL.REPORTS).toBe(TIME.YEAR_365_SEC);
+      // Reports TTL must be within 32-bit signed int limit (KV constraint)
+      expect(CACHE.TTL.REPORTS).toBeLessThanOrEqual(2147483647);
+      expect(CACHE.TTL.REPORTS).toBe(2147483647); // Max safe value for KV
     });
 
     it('should have refresh thresholds less than TTL', () => {
