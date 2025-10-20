@@ -107,36 +107,6 @@ During major events (war outbreak, breaking news):
 - Store secrets in `.env.local`/`.dev.vars`; never commit secrets. Cloudflare bindings are in `wrangler.toml` (KV, R2, D1, crons).
 - After changing env/bindings, run `npx wrangler types` to regenerate `worker-configuration.d.ts` and re-verify `bun run preview:patch` locally.
 
-
-## Newsletter Generation Flow
-
-**Data Source**: D1 database query for top story per channel from past 24 hours, ranked by message engagement
-
-**Files**
-- `newsletter/server.js` - Express server, runs script via POST `/api/generate-newsletter`, returns data
-- `newsletter/index.html` - Clean UI at `localhost:3001/`, handles all newsletter controls
-- `scripts/generate-newsletter-data.js` - Fetches from D1 (not KV), includes full content + truncated versions
-
-**Flow**
-1. Start server: `cd newsletter && bun start`
-2. Open `localhost:3001/`
-3. Click "🔄 Get Newsletter Data" → loads D1 stories (top per channel, past 24h)
-4. **Remove unwanted stories** - click "✕ Remove" button on any story
-5. **Adjust content length** - dropdown per story: Brief (150 chars) / Medium (300 chars) / Full content
-6. **Select images** - click images to select/deselect (toggle), galleries open by default
-7. Click "📧 Export Final Newsletter HTML" → clean export (removes all UI controls and empty placeholders)
-
-**Key Features:**
-- **D1 Integration**: Fresh stories from database, not cached KV data
-- **Smart Selection**: One top story per channel based on engagement (message count)
-- **Content Controls**: Adjustable story length without re-generation
-- **Image Toggle**: Click selected images to deselect them
-- **Clean Export**: Final HTML contains no UI elements or empty placeholders
-- **Daily Focus**: Automatically fetches past 24 hours for daily newsletter workflow
-
-## Screenshot Generation
-For newsletter workflow: take screenshots of rendered HTML newsletter files to help analyze and review the newsletter layout and content.
-
 ## Cron Job Monitoring
 Current implementation uses KV (`CRON_STATUS_CACHE`) for live status monitoring via SSE dashboard at `/admin`.
 
