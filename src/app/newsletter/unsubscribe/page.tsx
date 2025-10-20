@@ -50,7 +50,7 @@ function UnsubscribeContent() {
       } else {
         setError(data.error || 'Failed to unsubscribe. Please try again.');
       }
-    } catch (err) {
+    } catch {
       setError('Something went wrong. Please try again later.');
     } finally {
       setIsSubmitting(false);
@@ -103,7 +103,7 @@ function UnsubscribeContent() {
           <div className="text-yellow-500 text-5xl mb-4">📧</div>
           <h1 className="text-2xl font-bold text-white mb-2">Unsubscribe from Newsletter</h1>
           <p className="text-zinc-400">
-            We're sorry to see you go. You'll stop receiving newsletters from Fast Takeoff News.
+            We&apos;re sorry to see you go. You&apos;ll stop receiving newsletters from Fast Takeoff News.
           </p>
         </div>
 
