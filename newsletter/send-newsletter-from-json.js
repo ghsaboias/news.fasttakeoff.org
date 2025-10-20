@@ -109,6 +109,8 @@ for (const subscriber of subscribers) {
   );
 
   try {
+    console.log(`🔄 Attempting to send to ${email}...`);
+
     const response = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: {
@@ -123,7 +125,10 @@ for (const subscriber of subscribers) {
       }),
     });
 
+    console.log(`📡 Response status: ${response.status} ${response.statusText}`);
+
     const data = await response.json();
+    console.log(`📦 Response data:`, JSON.stringify(data, null, 2));
 
     if (response.ok) {
       console.log(`✅ Sent to ${email} (ID: ${data.id})`);

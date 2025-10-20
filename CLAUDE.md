@@ -129,8 +129,11 @@ During major events (war outbreak, breaking news):
 **How it works**:
 - Script reads `subscribers.json` and HTML template
 - Replaces `{{UNSUBSCRIBE_TOKEN}}` with each subscriber's unique token
-- Sends via Resend API with 100ms rate limiting
+- Sends via Resend API with 600ms rate limiting (Resend allows 2 req/sec)
 - Each subscriber gets working one-click unsubscribe: `https://news.fasttakeoff.org/api/newsletter/unsubscribe?token=UNIQUE_TOKEN`
+
+**Known Issues**:
+- **Oct 20, 2025**: AWS outage (US-EAST-1 DNS/DynamoDB) caused intermittent SES failures globally, affecting Resend. Emails may return 200 OK but never reach Resend's servers. If sends fail silently (no POST in Resend logs), retry later when AWS stabilizes.
 
 ## Cron Job Monitoring
 Current implementation uses KV (`CRON_STATUS_CACHE`) for live status monitoring via SSE dashboard at `/admin`.
