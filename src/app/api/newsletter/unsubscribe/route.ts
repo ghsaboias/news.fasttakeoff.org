@@ -115,24 +115,19 @@ export async function POST(request: NextRequest) {
 }
 
 // Handle GET request for token-based unsubscribe (from email links)
+// Redirects to the unsubscribe page for better UX
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const token = searchParams.get('token');
 
     if (!token) {
-      return NextResponse.json(
-        { error: 'Token is required' },
-        { status: 400 }
-      );
+      // Redirect to unsubscribe page without token (will show error)
+      return NextResponse.redirect(new URL('/newsletter/unsubscribe', request.url));
     }
 
-    // Use the POST handler logic
-    return await POST(new NextRequest(request.url, {
-      method: 'POST',
-      body: JSON.stringify({ token }),
-      headers: { 'Content-Type': 'application/json' }
-    }));
+    // Redirect to unsubscribe page with token
+    return NextResponse.redirect(new URL(`/newsletter/unsubscribe?token=${token}`, request.url));
 
   } catch (error) {
     console.error('Unsubscribe GET error:', error);

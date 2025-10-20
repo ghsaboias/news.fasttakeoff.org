@@ -104,3 +104,6 @@ newsletter-data.json
 
 # Discord messages migration analysis (contains production data)
 messages_d1_migration/
+
+# Newsletter subscriber data (contains emails and tokens)
+newsletter/subscribers.json

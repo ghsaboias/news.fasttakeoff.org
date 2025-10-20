@@ -107,6 +107,31 @@ During major events (war outbreak, breaking news):
 - Store secrets in `.env.local`/`.dev.vars`; never commit secrets. Cloudflare bindings are in `wrangler.toml` (KV, R2, D1, crons).
 - After changing env/bindings, run `npx wrangler types` to regenerate `worker-configuration.d.ts` and re-verify `bun run preview:patch` locally.
 
+## Newsletter Sending
+
+**Email Domain**: `newsletter@news.fasttakeoff.org` (verified on Resend)
+**Subscription System**: D1 table `newsletter_subscriptions` with unique `verification_token` per subscriber
+
+**Workflow**:
+1. Export active subscribers from remote D1:
+   ```bash
+   npx wrangler d1 execute FAST_TAKEOFF_NEWS_DB --remote \
+     --command "SELECT email, verification_token FROM newsletter_subscriptions WHERE status = 'active'" \
+     --json > newsletter/subscribers.json
+   ```
+
+2. Send newsletter with personalized unsubscribe links:
+   ```bash
+   cd newsletter
+   RESEND_API_KEY=xxx node send-newsletter-from-json.js subscribers.json NEWSLETTER.html "Subject Line"
+   ```
+
+**How it works**:
+- Script reads `subscribers.json` and HTML template
+- Replaces `{{UNSUBSCRIBE_TOKEN}}` with each subscriber's unique token
+- Sends via Resend API with 100ms rate limiting
+- Each subscriber gets working one-click unsubscribe: `https://news.fasttakeoff.org/api/newsletter/unsubscribe?token=UNIQUE_TOKEN`
+
 ## Cron Job Monitoring
 Current implementation uses KV (`CRON_STATUS_CACHE`) for live status monitoring via SSE dashboard at `/admin`.
 
