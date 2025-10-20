@@ -133,8 +133,8 @@ for (const subscriber of subscribers) {
       failCount++;
     }
 
-    // Rate limiting: wait 100ms between emails to avoid hitting Resend limits
-    await new Promise(resolve => setTimeout(resolve, 100));
+    // Rate limiting: wait 600ms between emails (Resend allows 2 req/sec)
+    await new Promise(resolve => setTimeout(resolve, 600));
 
   } catch (error) {
     console.error(`❌ Error sending to ${email}:`, error.message);
