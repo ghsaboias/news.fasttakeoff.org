@@ -100,8 +100,9 @@ During major events (war outbreak, breaking news):
 
 ## Deployment Process
 - **DO NOT use `bun run deploy` manually** - this is for emergency/manual deployments only
-- **Normal deployment**: `git push origin master` - automatic deployment happens via Cloudflare Pages
+- **Normal deployment**: `git push origin master` - automatic deployment via Cloudflare Workers Builds
 - **Manual deployment** (emergency only): `bun run deploy` - bypasses git and deploys current working directory
+- **Monitoring**: Check build status with workers-builds MCP or `npx wrangler deployments list`
 
 ## Security & Configuration
 - Store secrets in `.env.local`/`.dev.vars`; never commit secrets. Cloudflare bindings are in `wrangler.toml` (KV, R2, D1, crons).
@@ -153,8 +154,40 @@ Quick Rules
 - Never leave variables unused
 - Wrangler commands never use ":", that's old syntax. npx wrangler kv:key list is now npx wrangler kv key list
 
-## Known Issues
-- **Homepage skeleton loading (Sep 2025 - PATCHED):** Homepage was statically generated at build time with empty data due to missing Cloudflare environment during build phase. Current patch uses `dynamic = 'force-dynamic'` which fixes loading but disables all caching (renders on every request). **TODO**: Implement proper ISR solution that works with Cloudflare bindings during build phase.
+## Server-Side Rendering & SEO
+
+**Architecture**: Next.js 15 on Cloudflare Workers via OpenNext (@opennextjs/cloudflare v1.11.0)
+
+**SSR Pattern (SEO-optimized pages)**:
+```tsx
+// page.tsx (Server Component)
+export const dynamic = 'force-dynamic' // Required for Cloudflare bindings access
+
+export default async function Page() {
+  const { env } = await getCacheContext()
+  const data = await fetchFromD1(env) // Server-side data fetch
+  return <ClientComponent initialData={data} /> // Pass as props
+}
+
+// ClientComponent.tsx
+'use client'
+export default function ClientComponent({ initialData }) {
+  // Use initialData immediately (no loading state)
+  // Optional: Fetch on client-side navigation
+}
+```
+
+**Current Status**:
+- ✅ Homepage - passes initialReports, initialExecutiveOrders, initialExecutiveSummary
+- ✅ Report Detail - passes initialReport, initialMessages, previousReportId, nextReportId
+- ✅ Channel Detail - passes reports, channel
+- ✅ Executive Order Detail - passes initialOrder
+
+**Why `dynamic = 'force-dynamic'`**:
+- Cloudflare bindings (KV, D1, R2) unavailable during build
+- Forces SSR on every request in Worker runtime
+- Still SEO-friendly (crawlers get full HTML)
+- Alternative: `revalidate = 300` uses Cache API for ISR
 
 ## Data Architecture & Debugging
 

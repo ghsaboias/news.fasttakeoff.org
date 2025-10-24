@@ -16,7 +16,7 @@ A Next.js application aggregating executive orders from the Federal Register API
 - **Language**: TypeScript 5.x
 - **Styling**: Tailwind CSS 3.4.14 with custom theming (src/app/globals.css), shadcn/ui components
 - **UI Primitives**: Radix UI (@radix-ui/react-\*) for accordion, dialog, select, etc. (often via shadcn/ui)
-- **Deployment**: Cloudflare Workers (wrangler.toml), built with OpenNextJS (@opennextjs/cloudflare)
+- **Deployment**: Cloudflare Workers (wrangler.toml), built with OpenNextJS (@opennextjs/cloudflare v1.11.0)
 - **Authentication**: Clerk (@clerk/nextjs)
 - **Payments**: Stripe (via API, for subscriptions)
 - **External APIs**:
@@ -559,7 +559,7 @@ Generates .open-next/ artifacts and deploys via wrangler.
 - **/sign-up**: User sign-up page (Clerk).
 - **/privacy-policy**: Application's privacy policy.
 - **/rss**: RSS feed endpoint for syndication.
-- **/**: Home page featuring an animated hero section, and previews of the latest news reports and executive orders. This page is client-rendered and fetches its data on the client side.
+- **/**: Home page featuring an animated hero section, and previews of the latest news reports and executive orders. Server-rendered with initial data passed to client components (SEO-optimized).
 
 #### Brazil News Display
 
@@ -706,7 +706,7 @@ The "Current Events" section provides insights into real-time information aggreg
 - **Main View (`/current-events`)**: Displays a dashboard of the latest generated reports, with one card per active Discord channel. This view allows users to search for specific topics across all reports and sort channels by activity, recency of reports, or channel name. Each card links to a channel-specific view.
 - **Channel Detail View (`/current-events/[channelId]`)**: Shows a chronological timeline of all reports generated for a specific Discord channel, grouped by date. Each report in the timeline links to its detailed view.
 - **Report Detail View (`/current-events/[channelId]/[reportId]`)**: This is the most granular view, presenting:
-  - The full content of a specific generated report (headline, city, body).
+  - The full content of a specific generated report (headline, city, body). Server-rendered with initial data for SEO.
   - **AI-Powered Translation**: Users can translate the report content into multiple languages (English, Spanish, French, German, Portuguese) using an AI translation service (via `/api/translate`).
   - **Source Messages**: An accordion section displays the original Discord messages that were used as sources for generating the report. Each message (`MessageItem.tsx`) can show its content, embeds (titles, descriptions, fields, author), and media attachments (images/videos displayed using `MediaPreview.tsx`).
 
