@@ -48,7 +48,11 @@ const fetchSummary = async (selectedKey: string, topicId?: string): Promise<Summ
     return response.json();
 };
 
-export default function SummaryDisplay() {
+interface SummaryDisplayProps {
+    initialSummary?: SummaryResult | null;
+}
+
+export default function SummaryDisplay({ initialSummary }: SummaryDisplayProps) {
     const [selectedKey, setSelectedKey] = useState<string>('current');
     const [activeTopic, setActiveTopic] = useState<keyof typeof BRAZIL_NEWS_TOPICS>('geral');
 
@@ -57,7 +61,14 @@ export default function SummaryDisplay() {
     );
 
     const { data: result, loading, error, request: requestSummary } = useApi<SummaryResult>(
-        () => fetchSummary(selectedKey, activeTopic),
+        () => {
+            // Use initial data if available and matches current selection
+            if (initialSummary && activeTopic === 'geral' && selectedKey === 'current') {
+                return Promise.resolve(initialSummary);
+            }
+            // Fallback: fetch on topic switch or history selection
+            return fetchSummary(selectedKey, activeTopic);
+        },
         { manual: true }
     );
 

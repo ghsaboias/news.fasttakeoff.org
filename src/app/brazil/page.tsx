@@ -1,17 +1,10 @@
-import dynamic from 'next/dynamic';
+import { FeedsService } from '@/lib/data/feeds-service';
+import { SummaryResult } from '@/lib/types/feeds';
+import { getCacheContext } from '@/lib/utils';
+import SummaryDisplay from './SummaryDisplay';
 
-// Dynamically import the Brazil summary display component
-const SummaryDisplay = dynamic(() => import('./SummaryDisplay'), {
-    loading: () => (
-        <div className="flex items-center justify-center p-8">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-            <span className="ml-2">Loading Brazil news...</span>
-        </div>
-    ),
-    ssr: true // Keep SSR for content
-});
-
-export const revalidate = 3600; // Revalidate every hour
+// Force dynamic rendering to ensure Cloudflare bindings are available
+export const dynamic = 'force-dynamic';
 
 export async function generateMetadata() {
     return {
@@ -24,9 +17,24 @@ export async function generateMetadata() {
 }
 
 export default async function BrazilPage() {
+    const { env } = await getCacheContext();
+
+    let initialSummary: SummaryResult | null = null;
+
+    // Fetch default summary (geral topic) server-side for SEO
+    if (env) {
+        try {
+            const feedsService = new FeedsService(env);
+            initialSummary = await feedsService.getOrCreateSummary('geral');
+        } catch (error) {
+            console.error('[Brazil Page] Failed to fetch initial summary:', error);
+            // Continue without initial data - client will fetch
+        }
+    }
+
     return (
         <div className="px-4 flex flex-col items-center w-[90vw]">
-            <SummaryDisplay />
+            <SummaryDisplay initialSummary={initialSummary} />
         </div>
     );
 } 
