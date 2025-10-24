@@ -22,10 +22,16 @@ export const ReportPanel: React.FC<ReportPanelProps> = ({ report, onClose }) => 
 
     return (
         <div className="bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-l border-border h-full w-full p-4 overflow-y-auto overscroll-contain flex flex-col gap-4">
-            <div className="flex justify-between items-start gap-2">
-                <h2 className="text-xl font-semibold text-primary">{report.headline}</h2>
-                <Button variant="ghost" size="sm" onClick={onClose} className="shrink-0 h-6 w-6">
-                    <X className="h-3 w-3 text-background" />
+            <div className="flex justify-between items-start gap-3">
+                <h2 className="text-xl font-semibold text-primary pr-2">{report.headline}</h2>
+                <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={onClose}
+                    className="shrink-0 h-8 w-8 -mt-1 -mr-1 hover:bg-muted"
+                >
+                    <X className="h-4 w-4 text-muted-foreground hover:text-foreground" />
+                    <span className="sr-only">Close</span>
                 </Button>
             </div>
 

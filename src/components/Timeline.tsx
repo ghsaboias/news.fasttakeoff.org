@@ -94,10 +94,10 @@ DayMarker.displayName = 'DayMarker';
 
 const TimeMarker = memo(({ marker }: { marker: { position: number; timeStr: string } }) => (
   <div
-    className="absolute top-0 bottom-0 flex flex-col items-center"
-    style={{ left: `${marker.position}%`, transform: 'translateX(-50%)' }}
+    className="absolute top-0 flex flex-col items-center pointer-events-none"
+    style={{ left: `${marker.position}%`, transform: 'translateX(-50%)', height: 'calc(100% + 1.5rem)' }}
   >
-    <div className="w-px h-full bg-border/50"></div>
+    <div className="w-px h-3 bg-border/50"></div>
     <div className="text-xs text-muted-foreground/70 mt-1">
       {marker.timeStr}
     </div>
@@ -134,7 +134,7 @@ const useTimelineCalculations = (startTime: Date, endTime: Date, currentStart: D
 };
 
 // Optimized marker generation with string pre-formatting
-const useOptimizedMarkers = (startTime: Date, endTime: Date, totalDuration: number, totalDurationInverse: number) => {
+const useOptimizedMarkers = (startTime: Date, endTime: Date, totalDuration: number, totalDurationInverse: number, containerWidth?: number) => {
   // Memoize day markers with pre-formatted strings
   const dayMarkers = useMemo(() => {
     const markers = [];
@@ -168,13 +168,19 @@ const useOptimizedMarkers = (startTime: Date, endTime: Date, totalDuration: numb
     return markers;
   }, [startTime, endTime, totalDurationInverse]);
 
-  // Memoize time markers with pre-formatted strings
+  // Memoize time markers with pre-formatted strings - adaptive to container width
   const timeMarkers = useMemo(() => {
     const markers = [];
-    const sixHours = 6 * 60 * 60 * 1000;
 
-    // Start from the first 6-hour boundary after startTime
-    const startHour = Math.ceil(startTime.getHours() / 6) * 6;
+    // Determine interval based on container width and total duration
+    // For narrow containers (< 600px) or long durations (> 5 days), use 12-hour intervals
+    const durationDays = totalDuration / (1000 * 60 * 60 * 24);
+    const useWideInterval = (containerWidth && containerWidth < 600) || durationDays > 5;
+    const intervalHours = useWideInterval ? 12 : 6;
+    const intervalMs = intervalHours * 60 * 60 * 1000;
+
+    // Start from the first interval boundary after startTime
+    const startHour = Math.ceil(startTime.getHours() / intervalHours) * intervalHours;
     const markerStart = new Date(startTime);
     markerStart.setHours(startHour, 0, 0, 0);
 
@@ -191,11 +197,11 @@ const useOptimizedMarkers = (startTime: Date, endTime: Date, totalDuration: numb
           timeStr: `${currentMarker.getHours().toString().padStart(2, '0')}:00`
         });
       }
-      currentMarker = new Date(currentMarker.getTime() + sixHours);
+      currentMarker = new Date(currentMarker.getTime() + intervalMs);
     }
 
     return markers;
-  }, [startTime, endTime, totalDurationInverse]);
+  }, [startTime, endTime, totalDurationInverse, totalDuration, containerWidth]);
 
   return { dayMarkers, timeMarkers };
 };
@@ -211,6 +217,7 @@ export const Timeline: React.FC<TimelineProps> = memo(({
 }) => {
   // Cache DOM references to avoid repeated queries
   const timelineTrackRef = useRef<HTMLDivElement>(null);
+  const [containerWidth, setContainerWidth] = React.useState<number | undefined>(undefined);
 
   const {
     timeStamps,
@@ -220,11 +227,29 @@ export const Timeline: React.FC<TimelineProps> = memo(({
     totalDurationInverse
   } = useTimelineCalculations(startTime, endTime, currentStart, currentEnd);
 
+  // Track container width changes with ResizeObserver
+  useEffect(() => {
+    if (!timelineTrackRef.current) return;
+
+    const observer = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        setContainerWidth(entry.contentRect.width);
+      }
+    });
+
+    observer.observe(timelineTrackRef.current);
+    // Set initial width
+    setContainerWidth(timelineTrackRef.current.offsetWidth);
+
+    return () => observer.disconnect();
+  }, []);
+
   const { dayMarkers, timeMarkers } = useOptimizedMarkers(
     startTime,
     endTime,
     totalDuration,
-    totalDurationInverse
+    totalDurationInverse,
+    containerWidth
   );
 
   // Use instant DOM updates for zero-lag performance
@@ -395,7 +420,7 @@ export const Timeline: React.FC<TimelineProps> = memo(({
         {/* Timeline track with enhanced markers */}
         <div
           ref={timelineTrackRef}
-          className={cn("timeline-track relative h-3 bg-muted rounded-full overflow-visible mb-2", disabled && "pointer-events-none")}
+          className={cn("timeline-track relative h-3 bg-muted rounded-full overflow-visible mb-7", disabled && "pointer-events-none")}
         >
           {/* Time markers (6-hour intervals) */}
           {timeMarkers.map((marker, index) => (
