@@ -567,9 +567,14 @@ const NewsGlobe: React.FC = () => {
                 </div>
             </div>
 
-            {/* Timeline at the bottom */}
+            {/* Timeline at the bottom - slides left when panel opens */}
             {timeRange && currentTimeWindow && (
-                <div className="absolute bottom-0 left-0 right-0 z-30">
+                <div
+                    className="absolute bottom-0 left-0 z-30 transition-all duration-500 ease-in-out"
+                    style={{
+                        right: selectedReport ? '40%' : '0' // Match panel width (w-2/5 = 40%)
+                    }}
+                >
                     <Timeline
                         startTime={timeRange.start}
                         endTime={timeRange.end}

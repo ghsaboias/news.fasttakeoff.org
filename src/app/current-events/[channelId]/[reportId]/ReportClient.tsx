@@ -15,7 +15,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { LocalDateTimeFull } from "@/components/utils/LocalDateTime";
 import { useApi, useTranslateReport, type LanguageCode } from "@/lib/hooks";
 import type { EssentialDiscordMessage } from "@/lib/utils/message-transformer";
-import { ReportResponse } from "@/lib/types/reports";
+import { Report, ReportResponse } from "@/lib/types/reports";
 import {
     ArrowLeft,
     Check,
@@ -45,17 +45,39 @@ const fetchReportAndMessages = async (channelId: string, reportId: string): Prom
     return response.json();
 };
 
-export default function ReportClient() {
+interface ReportClientProps {
+    initialReport?: Report;
+    initialMessages?: EssentialDiscordMessage[];
+    previousReportId?: string | null;
+    nextReportId?: string | null;
+}
+
+export default function ReportClient({
+    initialReport,
+    initialMessages = [],
+    previousReportId: initialPreviousReportId,
+    nextReportId: initialNextReportId
+}: ReportClientProps = {}) {
     const params = useParams();
     const channelId = Array.isArray(params.channelId) ? params.channelId[0] : params.channelId;
     const reportId = Array.isArray(params.reportId) ? params.reportId[0] : params.reportId;
 
     const fetcher = useCallback(() => {
+        // Use initial data if available (SSR)
+        if (initialReport) {
+            return Promise.resolve({
+                report: initialReport,
+                messages: initialMessages,
+                previousReportId: initialPreviousReportId,
+                nextReportId: initialNextReportId,
+            });
+        }
+        // Fallback for client-side navigation
         if (!channelId || !reportId) {
             return Promise.reject(new Error("Channel ID or Report ID is missing"));
         }
         return fetchReportAndMessages(channelId, reportId);
-    }, [channelId, reportId]);
+    }, [initialReport, initialMessages, initialPreviousReportId, initialNextReportId, channelId, reportId]);
 
     const { data, loading: isLoading, error } = useApi<ReportResponse>(
         fetcher,

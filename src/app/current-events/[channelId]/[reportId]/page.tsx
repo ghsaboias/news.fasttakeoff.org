@@ -178,13 +178,30 @@ export default async function ReportDetailPage({ params }: { params: Promise<{ c
     const reportService = factory.createReportService();
     const channelsService = factory.createChannelsService();
 
-    // Get the specific report using KV-first strategy
-    const report = await reportService.getReportById(reportId);
+    // Fetch report and messages together (same as API route)
+    const { report, messages } = await reportService.getReportAndMessages(channelId, reportId);
     const channels = await channelsService.getChannels();
     const channel = channels.find(c => c.id === channelId);
 
     if (!report || !channel) {
         notFound(); // 404 for content that never existed
+    }
+
+    // Calculate previous/next report IDs for navigation (same logic as API route)
+    const allReports = await reportService.getAllReportsForChannel(channelId);
+    const currentIndex = allReports.findIndex(r => r.reportId === reportId);
+
+    let previousReportId: string | null = null;
+    let nextReportId: string | null = null;
+
+    if (currentIndex !== -1) {
+        // Reports are sorted descending (newest first)
+        if (currentIndex > 0) {
+            nextReportId = allReports[currentIndex - 1].reportId;
+        }
+        if (currentIndex < allReports.length - 1) {
+            previousReportId = allReports[currentIndex + 1].reportId;
+        }
     }
 
     // Content never expires - keep all reports indefinitely
@@ -244,7 +261,12 @@ export default async function ReportDetailPage({ params }: { params: Promise<{ c
                     {JSON.stringify(structuredData)}
                 </script>
             )}
-            <ReportClient />
+            <ReportClient
+                initialReport={report}
+                initialMessages={messages}
+                previousReportId={previousReportId}
+                nextReportId={nextReportId}
+            />
         </>
     );
 }
