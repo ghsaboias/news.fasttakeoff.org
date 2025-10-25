@@ -749,9 +749,12 @@ The Instagram service uses a modern, integrated approach for image generation:
 
 The application utilizes Cloudflare Workers' scheduled events (cron jobs) for background tasks, managed in `src/lib/cron.ts`. The `wrangler.toml` file defines the specific cron patterns:
 
-- **Hourly Message Updates**: Fetches new messages from Discord channels. Triggered by the cron pattern `"0 * * * *"` (at the start of every hour).
-- **Hourly Report Generation & Social Media Posting**: Generates fresh news reports from collected messages and subsequently posts the top report to Twitter, Instagram, and Facebook. Triggered by the cron pattern `"2 * * * *"` (at 2 minutes past every hour).
-- **Manual Triggers**: The cron handler also supports specific string identifiers (e.g., `MESSAGES`, `REPORTS_2H`) for on-demand triggering of these tasks, likely via direct Worker invocation or other scheduled configurations.
+- **Message Updates**: Fetches new messages from Discord channels and writes to D1. Triggered by the cron pattern `"0,30 * * * *"` (top of hour and half past). Uses D1 batch inserts (BATCH_SIZE=100) for ~100x speedup (~1-2 seconds vs ~110 seconds).
+- **Window Evaluation**: Evaluates channels and generates reports based on activity patterns. Triggered by the cron pattern `"15,45 * * * *"` (quarter past and quarter to). Uses bulk D1 queries (2 queries vs ~40-50) to minimize subrequests (~80% reduction).
+- **Other Tasks**: Executive order document fetching (EO_DOCUMENTS), MktNews summaries (MKTNEWS_SUMMARY), financial data updates (FINANCIAL_DATA_QUEUE) on various schedules.
+- **Manual Triggers**: The cron handler also supports specific string identifiers (e.g., `MESSAGES`, `WINDOW_EVALUATION`) for on-demand triggering of these tasks via `/api/trigger-cron`.
+
+**Why Split Schedules**: Each Cloudflare Worker invocation has a 1,000 subrequest quota. By splitting MESSAGES and WINDOW_EVALUATION into separate cron triggers, each task gets its own quota, avoiding 'Too many API requests by single worker invocation' errors.
 
 ### Caching
 
