@@ -312,8 +312,8 @@ export class ReportService {
             
             // Fallback to D1 database
             const reportQuery = `
-                SELECT * FROM reports 
-                WHERE channel_id = ? AND id = ? 
+                SELECT * FROM reports
+                WHERE channel_id = ? AND report_id = ?
                 LIMIT 1
             `;
             
@@ -328,7 +328,7 @@ export class ReportService {
             
             // Convert D1 row to Report format
             const report: Report = {
-                reportId: reportResult.id as string,
+                reportId: reportResult.report_id as string,
                 headline: reportResult.headline as string,
                 body: reportResult.body as string,
                 city: reportResult.city as string || '',

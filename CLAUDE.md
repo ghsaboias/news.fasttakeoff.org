@@ -54,9 +54,11 @@ Based on 7-day rolling averages from D1 database (`window-evaluation-service.ts`
 - **Low Activity** (<3 msgs/report): Generate when ≥1 message OR after 180min max
 
 ### Evaluation Process
-- Runs every 15 minutes via cron (`*/15 * * * *` in `wrangler.toml`)
+- Runs at 15 and 45 minutes past the hour via cron (`15,45 * * * *` in `wrangler.toml`)
+- Split from MESSAGES cron to avoid subrequest quota limits (each gets 1,000 quota)
 - `WindowEvaluationService.evaluateAllChannels()` checks all active channels
 - Processes channels in batches of 3 to avoid system overload
+- Uses bulk D1 queries (2 queries vs ~40-50) to minimize subrequests (~80% reduction)
 - Uses `ReportService.createDynamicReport()` when `FEATURE_FLAGS.DYNAMIC_REPORTS_ENABLED`
 
 ### Overlap Prevention
