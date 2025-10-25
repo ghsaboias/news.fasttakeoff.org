@@ -227,7 +227,7 @@
     - image-service.ts
     - message-filter-service.ts
     - report-ai.ts
-    - report-cache.ts
+    - report-cache-d1.ts
     - report-utils.ts
     - twitter-utils.ts
   - .DS_Store
@@ -2318,7 +2318,7 @@ export class MessagesService
 ## src/lib/data/report-service.ts
 
 ```typescript
-Imports: @/lib/config, @/lib/types/reports, @/lib/types/discord, @/lib/types/entities, @/lib/types/social-media, ../../../worker-configuration, ../facebook-service, ../instagram-service, ../twitter-service, ../utils/entity-extraction, ../utils/fact-check-service, ../utils/report-ai, ../utils/report-cache, ./channels-service, ./messages-service
+Imports: @/lib/config, @/lib/types/reports, @/lib/types/discord, @/lib/types/entities, @/lib/types/social-media, ../../../worker-configuration, ../facebook-service, ../instagram-service, ../twitter-service, ../utils/entity-extraction, ../utils/fact-check-service, ../utils/report-ai, ../utils/report-cache-d1, ./channels-service, ./messages-service
 export class ReportService
   createDynamicReport(channelId: string, windowStart: Date, windowEnd: Date): Promise<{ report: Report | null; messages: DiscordMessage[]; }>
 /**
@@ -3294,21 +3294,6 @@ export interface ReportContext {  channelId: string;  channelName: string;  mess
 }
 export class ReportAI
   generate(messages: DiscordMessage[], previousReports: Report[], context: ReportContext, env: Cloudflare.Env): Promise<Report>
-```
-
-## src/lib/utils/report-cache.ts
-
-```typescript
-Imports: @/lib/config, @/lib/types/reports, @/lib/utils, ../../../worker-configuration, ../cache-utils
-export class ReportCache
-  store(channelId: string, timeframe: string, reports: Report[], env: Cloudflare.Env): Promise<void>
-  get(channelId: string, timeframe: string, env: Cloudflare.Env): Promise<Report[] | null>
-  getPreviousReports(channelId: string, timeframe: string, env: Cloudflare.Env): Promise<Report[]>
-  batchGet(keys: string[], env: Cloudflare.Env): Promise<Map<string, Report[] | null>>
-  getAllReports(env: Cloudflare.Env, limit?: number): Promise<Report[]>
-  getAllReportsForChannel(channelId: string, env: Cloudflare.Env): Promise<Report[]>
-  storeHomepageReports(reports: Report[], env: Cloudflare.Env): Promise<void>
-  getHomepageReports(env: Cloudflare.Env): Promise<Report[] | null>
 ```
 
 ## src/lib/utils/report-utils.ts

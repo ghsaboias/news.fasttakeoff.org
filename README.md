@@ -67,7 +67,7 @@ The application's core data handling is managed by services and transformers wit
 - **`src/lib/data/executive-orders.ts`**: Fetches lists of executive orders and individual order details from the Federal Register API. Implements caching for individual orders and mechanisms to look up orders by number.
 - **`src/lib/data/report-service.ts` (`ReportService`)**: Core service that orchestrates the generation of news reports. It retrieves messages, prepares prompts for the AI, calls the AI provider, processes the response, and caches the generated reports. It also handles social media posting through integration with Twitter, Instagram, and Facebook services.
 - **`src/lib/utils/report-ai.ts` (`ReportAI`)**: Handles AI interactions for report generation, including prompt preparation, API calls, and response processing.
-- **`src/lib/utils/report-cache.ts` (`ReportCache`)**: Manages report caching operations using Cloudflare KV storage, including storage, retrieval, and cleanup of generated reports.
+- **`src/lib/utils/report-cache-d1.ts` (`ReportCacheD1`)**: Manages report caching operations using D1 database as the source of truth with KV for performance optimization, including storage, retrieval, and cleanup of generated reports.
 - **`src/lib/transformers/executive-orders.ts`**: Transforms raw executive order data fetched from the Federal Register API into a structured `ExecutiveOrder` type used throughout the application, simplifying data handling in the frontend and other services.
 
 ### Common Utilities & API Helpers
@@ -420,7 +420,7 @@ src/
 │   │   └── rss-service.ts           # RSS feed fetching
 │   ├── utils/            # Utility services
 │   │   ├── report-ai.ts             # AI integration for reports
-│   │   ├── report-cache.ts          # Report caching logic
+│   │   ├── report-cache-d1.ts       # Report caching logic (D1 + KV)
 │   │   ├── report-utils.ts          # Report-related utilities
 │   │   ├── twitter-utils.ts         # Twitter-specific utilities
 │   │   └── source-attribution/      # Source attribution system

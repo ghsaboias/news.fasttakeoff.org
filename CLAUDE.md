@@ -83,7 +83,7 @@ During major events (war outbreak, breaking news):
 - **Indentation**: 2 spaces; prefer early returns and small pure functions.
 - **Components**: PascalCase `.tsx` (e.g., `NewsGlobe.tsx`).
 - **Hooks**: `useX` camelCase in `src/lib/hooks/`.
-- **Utils/Services**: kebab-case files (e.g., `report-cache.ts`).
+- **Utils/Services**: kebab-case files (e.g., `report-cache-d1.ts`).
 - **Imports**: Use `@/` alias for `src`.
 - **Linting**: Fix issues or disable rules narrowly with justification. Use `cn` from `src/lib/utils.ts` for Tailwind class composition.
 
