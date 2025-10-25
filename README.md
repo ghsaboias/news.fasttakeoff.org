@@ -104,8 +104,10 @@ The system uses **activity-driven windows** instead of fixed intervals for more 
 - Ensures fresh content in each report without duplication
 
 **Evaluation Schedule:**
-- Runs every 15 minutes via cron (`*/15 * * * *`)
+- Runs at 15 and 45 minutes past the hour via cron (`15,45 * * * *`)
+- Split from MESSAGES cron to avoid subrequest quota limits (each gets 1,000 quota)
 - Processes channels in batches of 3 to avoid system overload
+- Uses bulk D1 queries (2 queries vs ~40-50) to minimize subrequests (~80% reduction)
 - Stores evaluation metrics for monitoring dashboard
 
 **Example Scenarios:**
