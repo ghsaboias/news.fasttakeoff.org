@@ -210,6 +210,31 @@ export default function ClientComponent({ initialData }) {
 - View evaluation metrics in `REPORTS_CACHE` under keys like `window_eval_metrics:2025-09-08`
 - Monitor overlap prevention via console logs: `[WINDOW_EVAL] Skipping report for channelId: X% overlap with recent report`
 - Dynamic reports have `generation_trigger = 'dynamic'` in database vs `'scheduled'` for fixed intervals
+
+### Cron Task Schedules & Performance
+
+**Task Schedules** (split to avoid 1,000 subrequest quota limit per invocation):
+- **MESSAGES**: `0,30 * * * *` (top of hour, half past) - Fetches Discord messages and writes to D1
+- **WINDOW_EVALUATION**: `15,45 * * * *` (quarter past, quarter to) - Evaluates channels and generates reports
+- **Other tasks**: EO_DOCUMENTS, MKTNEWS_SUMMARY, FINANCIAL_DATA_QUEUE (various schedules)
+
+**Performance Optimizations**:
+- **MESSAGES cron**: Uses D1 batch inserts (BATCH_SIZE=100) for ~100x speedup
+  - Before: ~110 seconds per run (SLOW_TASK warnings)
+  - After: ~1-2 seconds for typical message volumes
+  - Implementation: `D1MessagesService.batchCreateMessages()`
+
+- **WINDOW_EVALUATION cron**: Uses bulk D1 queries to minimize subrequests
+  - Before: ~40-50 individual D1 queries per evaluation
+  - After: 2 bulk queries using SQL IN clauses (~80% reduction)
+  - Metrics: `bulkQueriesUsed`, `subrequestsSaved` logged with `[WINDOW_EVAL_BULK]` prefix
+  - Expected: Handles ~16 channels without hitting subrequest limits
+
+**Monitoring**:
+- View cron status: `/admin` dashboard (SSE-powered live metrics)
+- Check logs: `npx wrangler tail news-fasttakeoff-org --format pretty`
+- Metrics stored in KV: `CRON_STATUS_CACHE`
+
 ### Production KV Namespaces
 - **REPORTS_CACHE**: `1907c22aa1e24a0e98f995ffcbb7b9aa`
 
