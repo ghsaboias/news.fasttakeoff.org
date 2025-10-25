@@ -214,10 +214,10 @@ const CRON_TASKS: Record<string, CronTaskFunction> = {
 
     },
 
-    // Every 30 minutes
-    "*/30 * * * *": async (env: Cloudflare.Env, scheduledTime?: number, ctx?: ExecutionContext) => {
+    // Every 30 minutes - MESSAGES only (0:00, 0:30, 1:00...)
+    "0,30 * * * *": async (env: Cloudflare.Env, scheduledTime?: number, ctx?: ExecutionContext) => {
         if (env.DISCORD_DISABLED) {
-            console.warn('[CRON] DISCORD_DISABLED is set – skipping MESSAGES update and window evaluation');
+            console.warn('[CRON] DISCORD_DISABLED is set – skipping MESSAGES update');
             return;
         }
         const factory = ServiceFactory.getInstance(env);
@@ -227,7 +227,14 @@ const CRON_TASKS: Record<string, CronTaskFunction> = {
             env,
             ctx
         });
+    },
 
+    // Every 30 minutes - WINDOW_EVALUATION only (0:15, 0:45, 1:15...)
+    "15,45 * * * *": async (env: Cloudflare.Env, scheduledTime?: number, ctx?: ExecutionContext) => {
+        if (env.DISCORD_DISABLED) {
+            console.warn('[CRON] DISCORD_DISABLED is set – skipping window evaluation');
+            return;
+        }
         // Dynamic window evaluation - generate reports based on real-time activity
         const windowEvaluationService = new WindowEvaluationService(env);
         await logRun('WINDOW_EVALUATION', () => windowEvaluationService.evaluateAllChannels(), {

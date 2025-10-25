@@ -8,13 +8,15 @@ compatibility_flags = [
 
 [triggers]
 # Dynamic report system based on channel activity patterns
-# Every 15 minutes for message fetching and dynamic window evaluation
-# Every 2 hours for feeds summaries and social media posting  
+# Every 30 minutes for message fetching (0:00, 0:30, 1:00...)
+# Every 30 minutes for dynamic window evaluation (0:15, 0:45, 1:15...)
+# Every 2 hours for feeds summaries and social media posting
 # Every 2 hours for executive summary generation
 # Every 1 hour for MktNews summary and cache maintenance
 crons = [
     "0 */2 * * *",    # Feeds summaries, social media posting, and executive summary generation
-    "*/30 * * * *",   # Message updates and dynamic window evaluation
+    "0,30 * * * *",   # Message updates (split to avoid subrequest limits)
+    "15,45 * * * *",  # Dynamic window evaluation (split to avoid subrequest limits)
     "0 * * * *",      # MktNews summary and cache maintenance (hourly)
     "0 0 * * *"       # Daily financial data collection (midnight UTC)
 ]
