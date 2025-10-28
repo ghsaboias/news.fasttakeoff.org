@@ -7,6 +7,7 @@ import { MktNewsService } from './data/mktnews-service';
 import { MktNewsSummaryService } from './data/mktnews-summary-service';
 import { ServiceFactory } from './services/ServiceFactory';
 import { WindowEvaluationService } from './data/window-evaluation-service';
+import { WindService } from './data/wind-service';
 
 interface ScheduledEvent {
     scheduledTime: number;
@@ -261,8 +262,19 @@ const CRON_TASKS: Record<string, CronTaskFunction> = {
         });
     },
 
-    // Daily financial data collection (midnight UTC)
+    // Daily financial data collection and wind data update (midnight UTC)
     "0 0 * * *": async (env: Cloudflare.Env, scheduledTime?: number, ctx?: ExecutionContext) => {
+        // Fetch and store global wind data for globe visualization
+        await logRun('WIND_DATA', async () => {
+            const windService = new WindService(env);
+            await windService.updateWindData();
+        }, {
+            timeoutMs: TASK_TIMEOUTS.WIND_DATA,
+            env,
+            ctx
+        });
+
+        // Queue financial data collection
         await logRun('FINANCIAL_DATA_QUEUE', async () => {
             const companies = await loadPowerNetworkCompanies(env);
 
@@ -349,6 +361,12 @@ async function handleManualTrigger(trigger: string, env: Cloudflare.Env, ctx?: E
 
         'MKTNEWS_SUMMARY': () => logRun('MKTNEWS_SUMMARY', () => (new MktNewsSummaryService(env)).generateAndCacheSummary(60), {
             timeoutMs: TASK_TIMEOUTS.MKTNEWS_SUMMARY,
+            env,
+            ctx
+        }),
+
+        'WIND_DATA': () => logRun('WIND_DATA', () => (new WindService(env)).updateWindData(), {
+            timeoutMs: TASK_TIMEOUTS.WIND_DATA,
             env,
             ctx
         }),

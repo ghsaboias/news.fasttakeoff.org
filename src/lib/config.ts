@@ -671,6 +671,7 @@ export const TASK_TIMEOUTS = {
   EXECUTIVE_SUMMARY: 180000, // 3 minutes
   REPORTS: 300000,         // 5 minutes
   FEEDS: 240000,           // 4 minutes
+  WIND_DATA: 180000,       // 3 minutes (API fetching + D1 storage)
 } as const;
 
 // Centralized KV operation timeouts (milliseconds)

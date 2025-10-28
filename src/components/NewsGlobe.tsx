@@ -3,12 +3,14 @@
 import { ReportPanel } from '@/components/ReportPanel';
 import { Timeline } from '@/components/Timeline';
 import { Skeleton } from '@/components/ui/skeleton';
+import { WindParticles } from '@/components/WindParticles';
 import { Html, Line, OrbitControls, Sphere } from '@react-three/drei';
 import { Canvas, ThreeEvent, useFrame } from '@react-three/fiber';
 import Image from 'next/image';
 import Link from 'next/link';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Color, Vector3, Mesh } from 'three';
+import { WindDataPoint } from '@/lib/types/weather';
 
 // --- Theme Configuration (Simplified from example) ---
 const cyberTheme = {
@@ -205,12 +207,14 @@ const Globe = React.memo<{
     timelineFilter?: TimelineFilter;
     onReportsLoaded?: (reports: NewsMarkerData[]) => void;
     onReportsMeta?: (start: Date, end: Date) => void;
-}>(function Globe({ onSelectReport, timelineFilter, onReportsLoaded, onReportsMeta }) {
+    showWind?: boolean;
+}>(function Globe({ onSelectReport, timelineFilter, onReportsLoaded, onReportsMeta, showWind = true }) {
     const globeRef = useRef<Mesh>(null!);
     const [countryBordersData, setCountryBordersData] = useState<GeoJsonFeatureCollection | null>(null);
     const [coastlinesData, setCoastlinesData] = useState<GeoJsonFeatureCollection | null>(null);
     const [newsItems, setNewsItems] = useState<NewsMarkerData[]>([]);
     const [isFetchingGeoData, setIsFetchingGeoData] = useState<boolean>(true); // Track GeoJSON loading
+    const [windData, setWindData] = useState<WindDataPoint[]>([]); // Wind data for particles
 
     useEffect(() => {
         const fetchGeoData = async () => {
@@ -351,8 +355,26 @@ const Globe = React.memo<{
             }
         };
 
+        const fetchWindData = async () => {
+            try {
+                const response = await fetch('/api/wind-data');
+                if (!response.ok) {
+                    console.error(`Failed to fetch wind data: ${response.status}`);
+                    return;
+                }
+                const data = await response.json();
+                if (data.points && Array.isArray(data.points)) {
+                    setWindData(data.points);
+                    console.log(`[GLOBE] Loaded ${data.points.length} wind data points`);
+                }
+            } catch (error) {
+                console.error('Error fetching wind data:', error);
+            }
+        };
+
         fetchGeoData(); // Fetch borders/coastlines
         fetchAndProcessNews(); // Start fetching news in parallel
+        fetchWindData(); // Fetch wind data for particles
     }, [onReportsLoaded, onReportsMeta]); // Run once on mount
 
     useFrame(() => {
@@ -443,6 +465,13 @@ const Globe = React.memo<{
                     lineWidth={1} // Slightly thicker for coastlines
                 />
             )}
+            {windData.length > 0 && (
+                <WindParticles
+                    windData={windData}
+                    globeRadius={globeRadius}
+                    visible={showWind}
+                />
+            )}
             <OrbitControls enableZoom={true} enablePan={true} minDistance={2.2} maxDistance={15} />
         </>
     );
@@ -456,6 +485,7 @@ const NewsGlobe: React.FC = () => {
     // removed: initialized flag (unused)
     const [userAdjustedWindow, setUserAdjustedWindow] = useState<boolean>(false);
     const [timelineReady, setTimelineReady] = useState<boolean>(false);
+    const [showWind, setShowWind] = useState<boolean>(true);
 
     const handleSelectReport = React.useCallback((report: NewsMarkerData) => {
         setSelectedReport(report);
@@ -529,6 +559,19 @@ const NewsGlobe: React.FC = () => {
                 <Image src="/images/brain_transparent.png" alt="Return to homepage" width={32} height={32} />
             </Link>
 
+            {/* Wind toggle button */}
+            <button
+                onClick={() => setShowWind(!showWind)}
+                className={`absolute top-5 right-5 z-10 px-4 py-2 rounded-md font-medium transition-all duration-300 ${
+                    showWind
+                        ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/50 hover:bg-cyan-500/30'
+                        : 'bg-gray-800/20 text-gray-400 border border-gray-600/50 hover:bg-gray-800/30'
+                } ${selectedReport ? 'md:opacity-100 opacity-0' : 'opacity-100'}`}
+                title={showWind ? 'Hide wind visualization' : 'Show wind visualization'}
+            >
+                {showWind ? 'Wind: ON' : 'Wind: OFF'}
+            </button>
+
             <div className="flex w-full h-full">
                 <div
                     className="relative w-full transition-transform duration-500 ease-in-out"
@@ -540,6 +583,7 @@ const NewsGlobe: React.FC = () => {
                             timelineFilter={timelineFilter}
                             onReportsLoaded={handleReportsLoaded}
                             onReportsMeta={handleReportsMeta}
+                            showWind={showWind}
                         />
                     </Canvas>
                 </div>
