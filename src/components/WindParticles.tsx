@@ -215,37 +215,44 @@ export function WindParticles({ windData, globeRadius, visible = true }: Props) 
       // Get head position (most recent)
       const headIdx = i * (trailLength + 1);
 
-      // Shift trail positions backward (from tail to head)
-      for (let j = trailLength; j > 0; j--) {
-        const currentIdx = headIdx + j;
-        const prevIdx = headIdx + j - 1;
-
-        positions[currentIdx * 3] = positions[prevIdx * 3];
-        positions[currentIdx * 3 + 1] = positions[prevIdx * 3 + 1];
-        positions[currentIdx * 3 + 2] = positions[prevIdx * 3 + 2];
-      }
-
-      // Update head position with velocity
+      // Update head position with velocity FIRST
       positions[headIdx * 3] += velocities[i * 3];
       positions[headIdx * 3 + 1] += velocities[i * 3 + 1];
       positions[headIdx * 3 + 2] += velocities[i * 3 + 2];
 
-      // Keep particle on sphere surface (constrain to radius) - CRITICAL FIX
-      // Always normalize first, then scale to target radius
+      // Constrain head to sphere surface
       const pos = new THREE.Vector3(
         positions[headIdx * 3],
         positions[headIdx * 3 + 1],
         positions[headIdx * 3 + 2]
       );
-
-      // Normalize to get direction, then set exact radius
       pos.normalize();
       const targetRadius = globeRadius + 0.1;
-
-      // Update ONLY the head position to stay on sphere
       positions[headIdx * 3] = pos.x * targetRadius;
       positions[headIdx * 3 + 1] = pos.y * targetRadius;
       positions[headIdx * 3 + 2] = pos.z * targetRadius;
+
+      // Shift trail positions backward AND constrain each segment to sphere
+      for (let j = trailLength; j > 0; j--) {
+        const currentIdx = headIdx + j;
+        const prevIdx = headIdx + j - 1;
+
+        // Copy previous position
+        positions[currentIdx * 3] = positions[prevIdx * 3];
+        positions[currentIdx * 3 + 1] = positions[prevIdx * 3 + 1];
+        positions[currentIdx * 3 + 2] = positions[prevIdx * 3 + 2];
+
+        // CRITICAL: Constrain trail segment to sphere surface
+        const trailPos = new THREE.Vector3(
+          positions[currentIdx * 3],
+          positions[currentIdx * 3 + 1],
+          positions[currentIdx * 3 + 2]
+        );
+        trailPos.normalize();
+        positions[currentIdx * 3] = trailPos.x * targetRadius;
+        positions[currentIdx * 3 + 1] = trailPos.y * targetRadius;
+        positions[currentIdx * 3 + 2] = trailPos.z * targetRadius;
+      }
 
       // Calculate fade based on age
       const ageFade = ages[i] > fadeStartAge
