@@ -677,7 +677,7 @@ export const TASK_TIMEOUTS = {
 export const KV_TIMEOUTS = {
   SINGLE_OPERATION: 5000,   // get, put, delete, list
   BATCH_OPERATION: 7500,    // batchGet (1.5x single operation)
-  CRON_STATUS: 5000,        // Critical cron status operations
+  CRON_STATUS: 10000,       // Cron status operations (increased for reliability during peak load)
 } as const;
 
 // Legacy types removed - use dynamic windows with explicit start/end times
