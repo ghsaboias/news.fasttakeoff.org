@@ -669,7 +669,7 @@ export const TASK_TIMEOUTS = {
   MKTNEWS: 60000,          // 1 minute
   MKTNEWS_SUMMARY: 90000,  // 1.5 minutes
   EXECUTIVE_SUMMARY: 180000, // 3 minutes
-  REPORTS: 300000,         // 5 minutes
+  REPORTS: 420000,         // 7 minutes
   FEEDS: 240000,           // 4 minutes
 } as const;
 
