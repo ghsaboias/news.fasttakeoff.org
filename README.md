@@ -1,6 +1,6 @@
 # Fast Takeoff News
 
-A Next.js application aggregating executive orders from the Federal Register API and generating real-time reports from Discord channel messages. Written in TypeScript, it uses Tailwind CSS for styling, Radix UI for components, and deploys via Cloudflare Workers with KV caching. I patched the Cloudflare Worker to expose a _scheduled_ route in order to trigger report generation with cron jobs. I use open-next to adapt the Next.js build for Cloudflare's runtime.
+A Next.js application aggregating executive orders from the Federal Register API and generating real-time reports from Discord channel messages. Written in TypeScript, it uses Tailwind CSS for styling, Radix UI for components, and deploys via Cloudflare Workers with KV caching. The worker extends OpenNext with `scheduled()` and `queue()` handlers for cron-triggered report generation and financial data processing.
 
 [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/ghsaboias/news.fasttakeoff.org)
 

@@ -1,4 +1,4 @@
-main = ".open-next/worker.js"
+main = "worker.ts"
 name = "news-fasttakeoff-org"
 compatibility_date = "2025-03-11"
 compatibility_flags = [

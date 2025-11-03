@@ -250,7 +250,7 @@
 ## wrangler.toml
 
 ```toml
-main = ".open-next/worker.js"
+main = "worker.ts"
 name = "news-fasttakeoff-org"
 compatibility_date = "2025-03-11"
 compatibility_flags = [
@@ -281,10 +281,10 @@ directory = ".open-next/assets"
     "start": "next start",
     "lint": "next lint",
     "preview": "opennextjs-cloudflare build && wrangler dev",
-    "preview:patch": "opennextjs-cloudflare build && node patch-worker.js",
-    "preview:patch:test": "opennextjs-cloudflare build && node patch-worker.js && wrangler dev --test-scheduled",
-    "preview:patch:test:clean": "rm -rf .wrangler/state && opennextjs-cloudflare build && node patch-worker.js && wrangler dev --test-scheduled",
-    "deploy": "opennextjs-cloudflare build && node patch-worker.js && wrangler deploy",
+    "preview:patch": "opennextjs-cloudflare build && wrangler dev",
+    "preview:patch:test": "opennextjs-cloudflare build && wrangler dev --test-scheduled",
+    "preview:patch:test:clean": "rm -rf .wrangler/state && opennextjs-cloudflare build && wrangler dev --test-scheduled",
+    "deploy": "opennextjs-cloudflare build && wrangler deploy",
 ```
 
 ## tsconfig.json
