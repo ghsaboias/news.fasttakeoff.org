@@ -3,7 +3,7 @@
 ## Project Structure & Modules
 - `src/app`: Next.js App Router pages and API routes.
 - `src/components`: Reusable UI (shadcn/Radix-based) in PascalCase files.
-- `src/lib`: Core logic — `data/` services (Discord, feeds, EOs), `utils/`, `transformers/`, `types/` (domain-organized).
+- `src/lib`: Core logic — `data/` services (Discord, feeds, EOs), `utils/`, `transformers/`, `types/` (domain-organized), `prompts/` (AI prompt templates).
 - `public/`: Static assets.
 - `tests/`: Vitest tests (`tests/**/*.test.ts`) with `tests/setup.ts`.
 - `scripts/`: Local utilities and model/scoring tools.
@@ -316,7 +316,7 @@ npx wrangler d1 execute FAST_TAKEOFF_NEWS_DB --remote --command "SELECT report_i
 - Use `windowDuration` (hours) or explicit `windowStart`/`windowEnd` for new code
 - All reports now use dynamic windows regardless of generation method
 
-**Key Files**: `src/lib/config.ts` (PROMPT_TEMPLATE), `src/lib/utils/report-ai.ts` (createWindowAwarePrompt)
+**Key Files**: `src/lib/prompts/report-generation.ts` (PROMPT_TEMPLATE), `src/lib/utils/report-ai.ts` (createWindowAwarePrompt), `src/lib/config.ts` (imports prompts)
 
 ## Power Network System
 
