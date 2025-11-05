@@ -296,10 +296,7 @@ export class ReportService {
             // First try to get report from KV cache
             const cacheKey = `report:${reportId}:full`;
             const cachedReport = await this.cacheManager.get('REPORTS_CACHE', cacheKey);
-            if (!cachedReport) {
-                console.log(`[REPORTS] Individual report cache miss: ${reportId}`);
-            }
-            
+
             if (cachedReport) {
                 const report = cachedReport as Report;
                 // Get associated messages
@@ -391,8 +388,6 @@ export class ReportService {
         }
 
         // Cache miss: search through D1 by scanning channels
-        console.log(`[REPORTS] Searching D1 for report ${reportId}`);
-        
         // Get all channels to search through
         const channels = await this.channelsService.getChannels();
         
@@ -408,7 +403,6 @@ export class ReportService {
             }
         }
 
-        console.log(`[REPORTS] Report ${reportId} not found in any channel`);
         return null;
     }
 

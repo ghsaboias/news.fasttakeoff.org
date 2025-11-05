@@ -323,8 +323,6 @@ export class ReportCacheD1 {
                 JSON.stringify(topReports),
                 { expirationTtl: 3600 } // 1 hour backup
             );
-
-            console.log(`[REPORTS] Cached ${topReports.length} reports for homepage in KV (no TTL, manual invalidation)`);
         } catch (error) {
             console.error('[REPORTS] Failed to cache homepage reports in KV:', error);
         }
@@ -346,7 +344,6 @@ export class ReportCacheD1 {
                 }
             }
 
-            console.log('[REPORTS] No homepage reports found in KV cache');
             return null;
         } catch (error) {
             console.warn('[REPORTS] Failed to get homepage reports from KV:', error);
@@ -461,8 +458,6 @@ export class ReportCacheD1 {
                 JSON.stringify(report),
                 { expirationTtl: 14400 } // 4 hours TTL
             );
-
-            console.log(`[REPORTS] Cached individual report: ${report.reportId}`);
         } catch (error) {
             console.error(`[REPORTS] Failed to cache individual report ${report.reportId}:`, error);
         }
@@ -483,7 +478,6 @@ export class ReportCacheD1 {
                 return report;
             }
 
-            console.log(`[REPORTS] Individual report cache miss: ${reportId}`);
             return null;
         } catch (error) {
             console.warn(`[REPORTS] Failed to get individual report ${reportId} from cache:`, error);
