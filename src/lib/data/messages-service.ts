@@ -211,37 +211,20 @@ export class MessagesService {
     }
 
     /**
-     * Write new messages to D1 database (dual-write helper)
-     * Only writes messages that don't already exist in D1
+     * Write messages to D1 database using INSERT OR IGNORE
+     * Database-level duplicate handling via UNIQUE constraint on message_id
      * Uses batch inserts for 100x performance improvement
      */
     private async writeToD1(messages: EssentialDiscordMessage[], channelId: string): Promise<void> {
         if (!messages.length) return;
 
         try {
-            // Get existing message IDs from D1 to avoid duplicates
-            const messageIds = messages.map(m => m.id);
-            const existing = await this.d1Service.getMessagesByIds(messageIds);
-            const existingIds = new Set(existing.map(m => m.id));
-
-            // Filter to only new messages
-            const newMessages = messages.filter(m => !existingIds.has(m.id));
-
-            if (newMessages.length === 0) {
-                console.log(`[DUAL_WRITE] No new messages for channel ${channelId} (${messages.length} already in D1)`);
-                return;
-            }
-
-            console.log(`[DUAL_WRITE] Writing ${newMessages.length} new messages to D1 for channel ${channelId}`);
-
-            // Batch insert all new messages (100x faster than individual inserts)
-            await this.d1Service.batchCreateMessages(newMessages);
-
-            console.log(`[DUAL_WRITE] Successfully wrote ${newMessages.length} messages to D1`);
+            // Batch insert with INSERT OR IGNORE - database handles duplicates
+            await this.d1Service.batchCreateMessages(messages);
 
         } catch (error) {
-            console.error('[DUAL_WRITE] Error during D1 batch write operation:', error);
-            // Don't throw - KV write should still succeed even if D1 fails
+            console.error(`[D1_WRITE] Error during batch write for channel ${channelId}:`, error);
+            throw error;
         }
     }
 

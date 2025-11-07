@@ -13,6 +13,10 @@ export class ChannelsService {
     apiCallCount = 0;
     callStartTime = Date.now();
 
+    // In-memory cache for channel list (reduces KV reads within same worker execution)
+    private channelListCache: { channels: DiscordChannel[]; fetchedAt: number } | null = null;
+    private readonly MEMORY_CACHE_TTL_MS = 30 * 60 * 1000; // 30 minutes
+
     constructor(cacheManager: CacheManager, env: Cloudflare.Env) {
         this.env = env;
         this.cache = cacheManager;
@@ -120,13 +124,24 @@ export class ChannelsService {
     }
 
     async getChannels(): Promise<DiscordChannel[]> {
+        const now = Date.now();
+
+        // Check in-memory cache first (fastest path, no KV read)
+        if (this.channelListCache && now - this.channelListCache.fetchedAt < this.MEMORY_CACHE_TTL_MS) {
+            return this.channelListCache.channels;
+        }
+
+        // Memory cache miss - proceed with KV cache and API
         const key = `channels:guild:${this.env.DISCORD_GUILD_ID}`;
         const cached = await this.cache.get<{ channels: DiscordChannel[], fetchedAt: string }>('CHANNELS_CACHE', key);
 
         // If Discord is disabled, serve cached channels only
         if (this.env.DISCORD_DISABLED) {
             if (cached?.channels) {
-                return this.filterChannels(cached.channels);
+                const filtered = this.filterChannels(cached.channels);
+                // Store in memory for next call
+                this.channelListCache = { channels: filtered, fetchedAt: now };
+                return filtered;
             }
             console.warn('[CHANNELS] DISCORD_DISABLED is set and no cached channels available');
             return [];
@@ -137,7 +152,10 @@ export class ChannelsService {
             if (age > CACHE.REFRESH.CHANNELS) {
                 this.cache.refreshInBackground(key, 'CHANNELS_CACHE', () => this.fetchAllChannelsFromAPI(), CACHE.TTL.CHANNELS);
             }
-            return this.filterChannels(cached.channels);
+            const filtered = this.filterChannels(cached.channels);
+            // Store in memory for next call
+            this.channelListCache = { channels: filtered, fetchedAt: now };
+            return filtered;
         }
 
         const rawChannels = await this.fetchAllChannelsFromAPI();
@@ -145,6 +163,9 @@ export class ChannelsService {
         console.log(`[CHANNELS] After filtering: ${filteredChannels.length} channels (from ${rawChannels.length} raw)`);
         console.log(`[CHANNELS] Filtered channel names: ${filteredChannels.map(c => c.name).join(', ')}`);
         await this.cache.put('CHANNELS_CACHE', key, { channels: filteredChannels, fetchedAt: new Date().toISOString() }, CACHE.TTL.CHANNELS);
+
+        // Store in memory for next call
+        this.channelListCache = { channels: filteredChannels, fetchedAt: now };
         return filteredChannels;
     }
 

@@ -57,7 +57,7 @@ export class D1MessagesService {
     };
 
     const stmt = this.db.prepare(`
-      INSERT INTO messages (
+      INSERT OR IGNORE INTO messages (
         message_id, channel_id, content, timestamp,
         author_username, author_discriminator, author_global_name,
         referenced_message_content, embeds, attachments, reaction_summary,
@@ -98,7 +98,7 @@ export class D1MessagesService {
 
       const statements = batch.map(message => {
         return this.db.prepare(`
-          INSERT INTO messages (
+          INSERT OR IGNORE INTO messages (
             message_id, channel_id, content, timestamp,
             author_username, author_discriminator, author_global_name,
             referenced_message_content, embeds, attachments, reaction_summary,
