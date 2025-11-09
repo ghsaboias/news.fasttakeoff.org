@@ -2,6 +2,7 @@ import { CacheManager } from '@/lib/cache-utils';
 import { CACHE, TIME } from '@/lib/config';
 import { OpenAIResponse } from '@/lib/types/external-apis';
 import { FeedItem, SelectedStory, SummaryInputData, SummaryResult, UnselectedStory } from '@/lib/types/feeds';
+import { parseAIJSON } from '@/lib/utils/json-parser';
 import { Cloudflare } from '../../../worker-configuration';
 import { getAIAPIKey, getAIProviderConfig } from '../ai-config';
 import { AI } from '../config';
@@ -101,9 +102,9 @@ async function curateArticlesBatch(articles: FeedItem[], env: Cloudflare.Env, to
                 outputLength: content.length
             });
             
-            let llmResponse;
+            let llmResponse: { selectedStories: SelectedStory[]; unselectedStories: UnselectedStory[] };
             try {
-                llmResponse = JSON.parse(content);
+                llmResponse = parseAIJSON<{ selectedStories: SelectedStory[]; unselectedStories: UnselectedStory[] }>(content);
             } catch (parseError) {
                 console.error(`[FEEDS_CURATION] Failed to parse AI JSON response (attempt ${attempts + 1}/${maxAttempts}):`, parseError);
                 throw new Error('Invalid JSON format received from curation AI');

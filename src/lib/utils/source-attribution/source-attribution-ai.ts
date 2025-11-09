@@ -3,6 +3,7 @@ import { AI } from '@/lib/config';
 import type { EssentialDiscordMessage } from '@/lib/utils/message-transformer';
 import { Report, ReportSourceAttribution, SourceAttribution } from '@/lib/types/reports';
 import { formatSingleMessage } from '@/lib/utils/report-utils';
+import { parseAIJSON } from '@/lib/utils/json-parser';
 import { Cloudflare } from '../../../../worker-configuration';
 
 /**
@@ -144,7 +145,7 @@ ${formatted}
 
         let parsedData: { attributions: Partial<SourceAttribution>[] };
         try {
-            parsedData = JSON.parse(content);
+            parsedData = parseAIJSON(content);
         } catch (parseError) {
             console.error('[SOURCE_ATTRIBUTION] Failed to parse AI JSON response:', parseError);
             console.error('[SOURCE_ATTRIBUTION] Raw AI response:', content);

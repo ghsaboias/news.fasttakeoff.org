@@ -3,6 +3,7 @@ import { AI } from '@/lib/config';
 import type { EssentialDiscordMessage } from './message-transformer';
 import { OpenAIResponse } from '@/lib/types/external-apis';
 import { Report } from '@/lib/types/reports';
+import { parseAIJSON } from '@/lib/utils/json-parser';
 import { Cloudflare } from '../../../worker-configuration';
 import { createPrompt, isReportTruncated, formatPreviousReportForContext, formatSingleMessage, formatHumanReadableTimestamp } from './report-utils';
 
@@ -86,7 +87,18 @@ export class ReportAI {
             }
 
             const data = await response.json() as OpenAIResponse;
-            const llmResponse = JSON.parse(data.choices[0].message.content);
+
+            // Define expected response structure with both case variants
+            interface ReportResponse {
+                headline?: string;
+                Headline?: string;
+                city?: string;
+                City?: string;
+                body?: string;
+                Body?: string;
+            }
+
+            const llmResponse = parseAIJSON<ReportResponse>(data.choices[0].message.content);
 
             // Validate required fields - handle both lowercase and capitalized field names
             const rawHeadline = llmResponse.headline || llmResponse.Headline;

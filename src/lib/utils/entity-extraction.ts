@@ -1,6 +1,7 @@
 import { getAIAPIKey, getAIProviderConfig } from '@/lib/ai-config';
 import { AI } from '@/lib/config';
 import { EntityExtractionResult, ExtractedEntity } from '@/lib/types/entities';
+import { parseAIJSON } from '@/lib/utils/json-parser';
 import { Cloudflare } from '../../../worker-configuration';
 import { EntityCache } from './entity-cache';
 
@@ -174,7 +175,7 @@ export class EntityExtractor {
 
         let extractionData: { entities?: ExtractedEntity[] };
         try {
-            extractionData = JSON.parse(content);
+            extractionData = parseAIJSON(content);
         } catch (parseError) {
             console.error(`[ENTITIES] Failed to parse entity extraction JSON response:`, parseError);
             console.error(`[ENTITIES] Raw response: "${content}"`);

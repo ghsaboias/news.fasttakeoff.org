@@ -1,4 +1,5 @@
 import { getAIAPIKey, getAIProviderConfig } from '@/lib/ai-config';
+import { parseAIJSON } from '@/lib/utils/json-parser';
 import { NextResponse } from 'next/server';
 
 interface TranslationRequest {
@@ -92,7 +93,7 @@ async function translateContent(content: Omit<TranslationRequest, 'targetLang'>,
             throw new Error('Invalid response format from AI API');
         }
 
-        const translatedContent = JSON.parse(data.choices[0].message.content) as TranslationResponse;
+        const translatedContent = parseAIJSON<TranslationResponse>(data.choices[0].message.content);
 
         if (!translatedContent.body) {
             throw new Error('Translation response missing required field: body');
