@@ -3,7 +3,6 @@ export { useCanvasCamera } from './useCanvasCamera';
 export { useClickOutside } from './useClickOutside';
 export { useEntityRelevance } from './useEntityRelevance';
 export { useFilters } from './useFilters';
-export { useForceSimulation } from './useForceSimulation';
 export { useGraphData } from './useGraphData';
 export { useLiveFinancialData } from './useLiveFinancialData';
 export { useMobileBreakpoint } from './useMobileBreakpoint';
