@@ -182,13 +182,15 @@ const CRON_TASKS: Record<string, CronTaskFunction> = {
         await logRun('FEEDS_GERAL', () => feedsService.createFreshSummary('geral', ['CNN-Brasil', 'BBC-Brasil', 'G1 - Política', 'G1 - Economia', 'UOL']), {
             timeoutMs: TASK_TIMEOUTS.FEEDS,
             env,
-            ctx
+            ctx,
+            failFast: false  // Don't block other tasks if RSS feeds fail
         });
 
         await logRun('FEEDS_MERCADO', () => feedsService.createFreshSummary('mercado', ['Investing.com Brasil - Empresas', 'Investing.com Brasil - Mercado']), {
             timeoutMs: TASK_TIMEOUTS.FEEDS,
             env,
-            ctx
+            ctx,
+            failFast: false  // Don't block other tasks if RSS feeds fail
         });
 
         // Generate executive summary

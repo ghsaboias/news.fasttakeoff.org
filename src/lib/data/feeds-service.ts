@@ -263,8 +263,13 @@ export async function summarizeFeeds(feedIds: string[], env: Cloudflare.Env, top
     // Calculate timestamp for 2 hours ago
     const twoHoursAgo = Date.now() - TIME.TWO_HOURS_MS;
 
-    // Fetch all articles from the last 2 hours in parallel
-    const articlePromises = feedIds.map(feedId => getFeedItems(feedId, twoHoursAgo));
+    // Fetch all articles from the last 2 hours in parallel (graceful degradation per feed)
+    const articlePromises = feedIds.map(feedId =>
+        getFeedItems(feedId, twoHoursAgo).catch(err => {
+            console.warn(`[FEEDS] Skipping ${feedId}:`, err.message);
+            return [];
+        })
+    );
     const articlesArrays = await Promise.all(articlePromises);
     const allArticles = articlesArrays.flat();
 
