@@ -45,6 +45,10 @@ export const AI_PROVIDERS: Record<string, AIProviderConfig> = {
         endpoint: 'https://openrouter.ai/api/v1/chat/completions',
         models: [
             {
+                id: 'x-ai/grok-4.1-fast',
+                displayName: 'Grok 4.1 Fast (OpenRouter)',
+            },
+            {
                 id: 'google/gemini-2.5-flash-lite',
                 displayName: 'Gemini 2.5 Flash Lite (OpenRouter)',
             },
@@ -367,6 +371,10 @@ export const ENTITY_COLORS: { [key: string]: string } = {
     person: '#4a90e2',   // Blue
     company: '#7ed321',  // Green
     fund: '#e67e22',     // Orange
+
+    // AI timeline types (lowercase)
+    organization: '#7ed321',  // Green
+    technology: '#9b59b6',    // Purple
 
     PERSON: '#4a90e2',
     ORGANIZATION: '#7ed321',
