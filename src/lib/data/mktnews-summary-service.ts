@@ -214,6 +214,7 @@ export class MktNewsSummaryService {
           ],
           temperature: 0.3,
           max_tokens: AI.MKTNEWS_SUMMARIES.OUTPUT_BUFFER,
+          reasoning: { effort: "none" },
         }),
         signal: controller.signal,
       });

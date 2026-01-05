@@ -161,7 +161,8 @@ export class EntityExtractor {
                             additionalProperties: false
                         }
                     }
-                }
+                },
+                reasoning: { effort: "none" },
             }),
         });
 

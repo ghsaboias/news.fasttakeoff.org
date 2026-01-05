@@ -849,6 +849,7 @@ export class TwitterService {
     async postSingleTweet(report: Report): Promise<string> {
         const text = await this.prepareHeadlineForTwitter(report);
 
+        // Single tweet only (no reply) - used for small events (<10 messages)
         // First, attempt OAuth2 (bearer) text post if a valid token is available.
         // If the token is missing/expired or Twitter rejects the auth (401/403 Unsupported Authentication),
         // fall back to OAuth1-signed v2 post which we know works in production.
@@ -861,14 +862,7 @@ export class TwitterService {
             console.log(`[TWITTER] Posting single tweet via OAuth2 (${countTwitterCharacters(text)} chars): "${text.substring(0, 50)}..."`);
             const mainTweetResponse = await this.postSingleTweetInternal(text, accessToken);
             const mainTweetId = mainTweetResponse.data.id;
-            console.log(`[TWITTER] Successfully posted main tweet for report ${report.reportId}. Tweet ID: ${mainTweetId}`);
-
-            // Post reply with first paragraph + link
-            const reportUrl = `${URLs.WEBSITE_URL}/current-events/${report.channelId}/${report.reportId}`;
-            const firstParagraph = this.extractFirstParagraph(report.body, reportUrl);
-            const replyText = firstParagraph ? this.formatSecondTweet(firstParagraph, reportUrl) : `Read the full report:\n\n${reportUrl}`;
-            console.log(`[TWITTER] Posting reply with content (${countTwitterCharacters(replyText)} chars)`);
-            await this.postSingleTweetInternal(replyText, accessToken, mainTweetId);
+            console.log(`[TWITTER] Successfully posted single tweet for report ${report.reportId}. Tweet ID: ${mainTweetId}`);
 
             return mainTweetId;
         } catch (e) {
@@ -882,14 +876,7 @@ export class TwitterService {
             try {
                 const mainTweetResponse = await this.postTweetOAuth1(text);
                 const mainTweetId = mainTweetResponse.data.id;
-                console.log(`[TWITTER] Successfully posted main tweet via OAuth1 for report ${report.reportId}. Tweet ID: ${mainTweetId}`);
-
-                // Post reply with first paragraph + link
-                const reportUrl = `${URLs.WEBSITE_URL}/current-events/${report.channelId}/${report.reportId}`;
-                const firstParagraph = this.extractFirstParagraph(report.body, reportUrl);
-                const replyText = firstParagraph ? this.formatSecondTweet(firstParagraph, reportUrl) : `Read the full report:\n\n${reportUrl}`;
-                console.log(`[TWITTER] Posting reply with content via OAuth1 (${countTwitterCharacters(replyText)} chars)`);
-                await this.postTweetOAuth1(replyText, mainTweetId);
+                console.log(`[TWITTER] Successfully posted single tweet via OAuth1 for report ${report.reportId}. Tweet ID: ${mainTweetId}`);
 
                 return mainTweetId;
             } catch (e2) {

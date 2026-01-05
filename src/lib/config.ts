@@ -285,6 +285,7 @@ export const FEATURE_FLAGS = {
     DYNAMIC_REPORTS_PRIMARY: false, // Start false, gradually increase
     FIXED_REPORTS_FALLBACK: true,
     SKIP_SOCIAL_POSTING: false, // Set to true to skip social media posting in cron jobs
+    SKIP_INSTAGRAM_POSTING: true, // Instagram tokens expired - skip until re-authenticated
 };
 
 export const RSS_FEEDS: Record<string, string> = {

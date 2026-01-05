@@ -147,14 +147,15 @@ export async function fixHeadlineCapitalization(headline: string, env: Cloudflar
                 body: JSON.stringify({
                     model: aiConfig.model,
                     messages: [
-                        { 
-                            role: 'system', 
-                            content: 'Convert to sentence case. Do not use title case.' 
+                        {
+                            role: 'system',
+                            content: 'Convert to sentence case. Do not use title case.'
                         },
                         { role: 'user', content: headline }
                     ],
                     temperature: 0.1,
                     max_tokens: 100,
+                    reasoning: { effort: "none" },
                 }),
                 signal: controller.signal,
             });

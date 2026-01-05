@@ -265,6 +265,7 @@ export class ExecutiveSummaryService {
                     ],
                     temperature: 0.7,
                     max_tokens: AI.EXECUTIVE_SUMMARIES.OUTPUT_BUFFER,
+                    reasoning: { effort: "none" },
                 }),
                 signal: controller.signal
             });

@@ -74,7 +74,8 @@ export class ReportAI {
                     messages: [{ role: 'user', content: prompt }],
                     temperature: 0.7,
                     max_tokens: 1024,
-                    response_format: { type: "json_object" }
+                    response_format: { type: "json_object" },
+                    reasoning: { effort: "none" }
                 }),
                 signal: controller.signal
             });

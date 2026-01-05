@@ -83,7 +83,8 @@ async function curateArticlesBatch(articles: FeedItem[], env: Cloudflare.Env, to
                     model: aiConfig.model,
                     messages: [{ role: 'user', content: prompt }],
                     temperature: 0.7,
-                    response_format: { type: "json_object" }
+                    response_format: { type: "json_object" },
+                    reasoning: { effort: "none" },
                 }),
             });
 
@@ -184,7 +185,8 @@ Content: ${story.originalSnippet}
                     model: aiConfig.model,
                     messages: [{ role: 'user', content: prompt }],
                     temperature: 0.5, // Lower temperature for more consistent summaries
-                    response_format: { type: "text" } // We want formatted text, not JSON
+                    response_format: { type: "text" }, // We want formatted text, not JSON
+                    reasoning: { effort: "none" },
                 }),
             });
 

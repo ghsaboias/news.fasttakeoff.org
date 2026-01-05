@@ -4,6 +4,7 @@ import { Report } from '@/lib/types/reports';
 import { ReportRow } from '@/lib/types/database';
 import { Cloudflare } from '../../../worker-configuration';
 import { CacheManager } from '../cache-utils';
+import { FEATURE_FLAGS } from '../config';
 import { FacebookService } from '../facebook-service';
 import { InstagramService } from '../instagram-service';
 import { TwitterService } from '../twitter-service';
@@ -428,14 +429,19 @@ export class ReportService {
     private async _postTopReportToSocialMedia(generatedReports: Report[]): Promise<void> {
         if (generatedReports.length > 0) {
             const topReport = generatedReports.sort((a, b) => (b.messageCount || 0) - (a.messageCount || 0))[0];
-            console.log(`[REPORTS] Posting top report: ${topReport.channelName} with ${topReport.messageCount} sources.`);
+            const isBigEvent = (topReport.messageCount || 0) >= 10;
+            console.log(`[REPORTS] Posting top report: ${topReport.channelName} with ${topReport.messageCount} sources (bigEvent: ${isBigEvent}).`);
 
-            // Post to Instagram
-            try {
-                await this.instagramService.postNews(topReport);
-                console.log(`[REPORTS] Successfully posted report ${topReport.reportId} to Instagram.`);
-            } catch (err: unknown) {
-                console.error(`[REPORTS] Failed to post report ${topReport.reportId} to Instagram:`, err);
+            // Post to Instagram (skip if flag enabled - tokens expired)
+            if (!FEATURE_FLAGS.SKIP_INSTAGRAM_POSTING) {
+                try {
+                    await this.instagramService.postNews(topReport);
+                    console.log(`[REPORTS] Successfully posted report ${topReport.reportId} to Instagram.`);
+                } catch (err: unknown) {
+                    console.error(`[REPORTS] Failed to post report ${topReport.reportId} to Instagram:`, err);
+                }
+            } else {
+                console.log('[REPORTS] Instagram posting skipped (SKIP_INSTAGRAM_POSTING flag enabled)');
             }
 
             // Post to Facebook
@@ -446,9 +452,9 @@ export class ReportService {
                 console.error(`[REPORTS] Failed to post report ${topReport.reportId} to Facebook:`, err);
             }
 
-            // Post to Twitter (headline with image; threaded if threshold hit)
+            // Post to Twitter: big events get image + thread, small events get single text tweet
             try {
-                await this.twitterService.postTweet(topReport, true);
+                await this.twitterService.postTweet(topReport, isBigEvent);
             } catch (err: unknown) {
                 console.error(`[REPORTS] Failed to post tweet for report ${topReport.reportId} to Twitter:`, err);
             }

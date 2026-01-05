@@ -131,7 +131,8 @@ ${formatted}
                             additionalProperties: false
                         }
                     }
-                }
+                },
+                reasoning: { effort: "none" },
             }),
         });
 
