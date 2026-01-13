@@ -236,15 +236,20 @@ export class MessagesService {
         local: boolean,
         last6Hours: Date
     ): Promise<{ name: string; raw: number; bot: number; since: string }> {
-        const cached = await this.getAllCachedMessagesForChannel(channel.id);
-        // Base since from cache or 6h ago if nothing cached
-        const sinceCandidate = cached?.lastMessageTimestamp ? new Date(cached.lastMessageTimestamp) : last6Hours;
+        const latestMessage = await this.d1Service.getLatestMessageCursor(channel.id);
+        // Base since from latest message or 6h ago if nothing cached
+        const sinceCandidate = latestMessage ? new Date(latestMessage.timestamp) : last6Hours;
         // If running locally, cap lookback to at most 6h; in prod, do not cap
         const since = local && sinceCandidate.getTime() < last6Hours.getTime() ? last6Hours : sinceCandidate;
         const discordEpoch = 1420070400000; // 2015-01-01T00:00:00.000Z
-        const snowflake = BigInt(Math.floor(since.getTime() - discordEpoch)) << BigInt(22); // Shift 22 bits for worker/thread IDs
         const urlBase = `${API.DISCORD.BASE_URL}/channels/${channel.id}/messages?limit=${DISCORD.MESSAGES.BATCH_SIZE}`;
-        let after = snowflake.toString();
+        let after: string;
+        if (latestMessage && since.getTime() === sinceCandidate.getTime()) {
+            after = latestMessage.messageId;
+        } else {
+            const snowflake = BigInt(Math.floor(since.getTime() - discordEpoch)) << BigInt(22); // Shift 22 bits for worker/thread IDs
+            after = snowflake.toString();
+        }
         const allMessages: EssentialDiscordMessage[] = [];
         let channelRawCount = 0;
 
@@ -313,10 +318,7 @@ export class MessagesService {
         }
 
         if (allMessages.length > 0) {
-            const cachedMessages = cached?.messages || [];
-            const updated = [...new Map([...cachedMessages, ...allMessages].map(m => [m.id, m])).values()]
-                .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
-            await this.cacheMessages(channel.id, updated);
+            await this.cacheMessages(channel.id, allMessages);
         }
 
         return {

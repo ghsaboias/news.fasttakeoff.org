@@ -26,6 +26,11 @@ export interface D1MessageRow {
   updated_at?: number;
 }
 
+export interface D1MessageCursor {
+  messageId: string;
+  timestamp: string;
+}
+
 export class D1MessagesService {
   private db: Cloudflare.Env['FAST_TAKEOFF_NEWS_DB'];
 
@@ -121,7 +126,17 @@ export class D1MessagesService {
         );
       });
 
-      await this.db.batch(statements);
+      const results = await this.db.batch(statements);
+      let inserted = 0;
+      for (const result of results) {
+        inserted += result.meta?.changes ?? 0;
+      }
+      const attempted = batch.length;
+      const duplicates = attempted - inserted;
+      if (duplicates > 0) {
+        const channelId = batch[0]?.channel_id ?? 'unknown';
+        console.log(`[D1_WRITE] Channel ${channelId}: attempted ${attempted}, inserted ${inserted}, duplicates ${duplicates}`);
+      }
     }
   }
 
@@ -248,6 +263,31 @@ export class D1MessagesService {
     
     const result = await stmt.bind(channelId).first();
     return (result?.timestamp as string) || null;
+  }
+
+  /**
+   * Get latest message ID + timestamp for a channel (for incremental fetch cursor)
+   */
+  async getLatestMessageCursor(channelId: string): Promise<D1MessageCursor | null> {
+    const stmt = this.db.prepare(`
+      SELECT message_id, timestamp
+      FROM messages
+      WHERE channel_id = ?
+      ORDER BY timestamp DESC, CAST(message_id AS INTEGER) DESC
+      LIMIT 1
+    `);
+
+    const result = await stmt.bind(channelId).first<{
+      message_id: string;
+      timestamp: string;
+    }>();
+
+    if (!result) return null;
+
+    return {
+      messageId: result.message_id,
+      timestamp: result.timestamp,
+    };
   }
 
   /**
