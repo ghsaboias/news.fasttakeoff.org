@@ -6,10 +6,10 @@ import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { fetchExecutiveOrders } from "@/lib/data/executive-orders";
-import { useApi } from "@/lib/hooks";
 import { ExecutiveOrder } from "@/lib/types/executive-orders";
 import { getStartDate } from "@/lib/utils";
-import { useCallback, useMemo, useState } from "react";
+import { useState } from "react";
+import useSWR from "swr";
 
 export default function ClientExecutiveOrders({ initialOrders }: { initialOrders: ExecutiveOrder[] }) {
     const [searchQuery, setSearchQuery] = useState("");
@@ -17,14 +17,19 @@ export default function ClientExecutiveOrders({ initialOrders }: { initialOrders
     const ordersPerPage = 6;
     const startDate = getStartDate(0.3);
 
-    const fetcher = useCallback(() => fetchExecutiveOrders(1, startDate), [startDate]);
-
-    const { data: fetchedOrders, loading } = useApi<{ orders: ExecutiveOrder[] }>(
-        fetcher,
-        { manual: initialOrders.length > 0 }
+    // SWR with SSR fallback - no loading flash when initial data exists
+    const { data: fetchedOrders, isLoading } = useSWR<{ orders: ExecutiveOrder[] }>(
+        ['executive-orders', startDate],
+        () => fetchExecutiveOrders(1, startDate),
+        {
+            fallbackData: initialOrders.length > 0 ? { orders: initialOrders } : undefined,
+            revalidateOnMount: initialOrders.length === 0,
+            revalidateOnFocus: false,
+        }
     );
 
-    const executiveOrders = useMemo(() => fetchedOrders?.orders || initialOrders, [fetchedOrders, initialOrders]);
+    const executiveOrders = fetchedOrders?.orders || initialOrders;
+    const loading = isLoading && !executiveOrders.length;
 
     const filteredOrders = executiveOrders.filter((order) =>
         order.title.toLowerCase().includes(searchQuery.toLowerCase()) ||

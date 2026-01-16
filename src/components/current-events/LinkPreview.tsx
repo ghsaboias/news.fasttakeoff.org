@@ -1,10 +1,11 @@
 "use client"
 
-import { useApi } from "@/lib/hooks";
+import { fetcher } from "@/lib/fetcher";
 import { LinkPreview as LinkPreviewType } from "@/lib/types/external-apis";
 import { ExternalLink } from "lucide-react";
 import Image from "next/image";
 import { useMemo } from "react";
+import useSWR from "swr";
 
 interface LinkPreviewProps {
     url: string;
@@ -12,9 +13,10 @@ interface LinkPreviewProps {
 }
 
 export default function LinkPreview({ url, className = "" }: LinkPreviewProps) {
-    const { data: preview, loading, error } = useApi<LinkPreviewType>(
-        () => fetch(`/api/link-preview?url=${encodeURIComponent(url)}`).then(res => res.json()),
-        { manual: false }
+    const { data: preview, isLoading: loading, error } = useSWR<LinkPreviewType>(
+        `/api/link-preview?url=${encodeURIComponent(url)}`,
+        fetcher,
+        { revalidateOnFocus: false }
     );
 
     const displayUrl = useMemo(() => {

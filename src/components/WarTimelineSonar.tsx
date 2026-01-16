@@ -3,6 +3,7 @@
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
+import { fetcher } from '@/lib/fetcher'
 import { AlertTriangle, ChevronLeft, ChevronRight, MapPin, Radio } from 'lucide-react'
 import { useState } from 'react'
 import useSWR from 'swr'
@@ -18,8 +19,6 @@ interface TimelineEvent {
   channelName: string
   scheduledEvent?: string
 }
-
-const fetcher = (url: string) => fetch(url).then(r => r.json())
 
 const theaterConfig = {
   'ukraine-russia': {

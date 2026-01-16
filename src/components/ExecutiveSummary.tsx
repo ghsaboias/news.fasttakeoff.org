@@ -1,9 +1,10 @@
 'use client';
 
 import ReactMarkdown from '@/components/ui/dynamic-markdown';
-import { useExecutiveSummary } from '@/lib/hooks/useExecutiveSummary';
+import { fetcherWithMessages } from '@/lib/fetcher';
 import { ExecutiveSummary as ExecutiveSummaryType } from '@/lib/types/reports';
-import React, { useMemo, useCallback } from 'react';
+import React, { useMemo } from 'react';
+import useSWR from 'swr';
 
 interface ExecutiveSummaryProps {
     className?: string;
@@ -43,16 +44,21 @@ function parseMainSummarySections(summary: string) {
     return sections;
 }
 
+const fetcher = fetcherWithMessages({
+    404: 'No executive summary available yet. Check back later.',
+});
+
 function ExecutiveSummary({ className = '', initialSummary }: ExecutiveSummaryProps) {
-    const { summary: clientSummary, loading, error, refetch } = useExecutiveSummary();
-
-    // Use server-side data if available, otherwise fall back to client-side data
-    const summary = initialSummary || clientSummary;
-
-    // Memoize the refetch callback
-    const handleRetry = useCallback(() => {
-        refetch();
-    }, [refetch]);
+    // SWR with SSR fallback data - no loading flash, optional background revalidation
+    const { data: summary, error, isLoading, mutate } = useSWR<ExecutiveSummaryType>(
+        '/api/executive-summary',
+        fetcher,
+        {
+            fallbackData: initialSummary ?? undefined,
+            revalidateOnMount: !initialSummary,  // Only fetch if no SSR data
+            revalidateOnFocus: false,            // Don't refetch on tab focus
+        }
+    );
 
     // Memoize mini summary sections
     const miniSummaryContent = useMemo(() => {
@@ -161,7 +167,7 @@ function ExecutiveSummary({ className = '', initialSummary }: ExecutiveSummaryPr
         );
     }, [summary?.summary]);
 
-    if (loading && !initialSummary) {
+    if (isLoading && !summary) {
         return (
             <div className={`bg-dark-800 shadow-dark p-6 ${className}`}>
                 <div className="animate-pulse">
@@ -175,7 +181,7 @@ function ExecutiveSummary({ className = '', initialSummary }: ExecutiveSummaryPr
         );
     }
 
-    if (error && !initialSummary) {
+    if (error && !summary) {
         return (
             <div className={`bg-dark-800 shadow-dark p-6 ${className}`}>
                 <div className="text-center">
@@ -187,7 +193,7 @@ function ExecutiveSummary({ className = '', initialSummary }: ExecutiveSummaryPr
                     <h3 className="text-lg font-medium text-dark-100 mb-2">No Summary Available</h3>
                     <p className="text-dark-400 mb-4">{error.message}</p>
                     <button
-                        onClick={handleRetry}
+                        onClick={() => mutate()}
                         className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-industrial-gradient hover:shadow-industrial focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-industrial-500"
                     >
                         Try Again

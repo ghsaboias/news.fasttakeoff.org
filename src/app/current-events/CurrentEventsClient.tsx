@@ -12,34 +12,34 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-import { useApi } from "@/lib/hooks";
+import { fetcher } from "@/lib/fetcher";
 import { Report } from "@/lib/types/reports";
 import { FilterX } from "lucide-react";
 import { useMemo, useState } from "react";
+import useSWR from "swr";
 
 export interface Props {
     reports: Report[];
     isLoading?: boolean;
 }
 
-const fetchReports = async (): Promise<Report[]> => {
-    const response = await fetch('/api/reports?limit=100');
-    if (!response.ok) {
-        throw new Error('Failed to fetch reports');
-    }
-    return response.json();
-}
-
 export default function CurrentEventsClient({ reports: initialReports, isLoading = false }: Props) {
     const [searchQuery, setSearchQuery] = useState("");
     const [sortBy, setSortBy] = useState<"name" | "recent" | "activity">("recent");
 
-    const { data: fetchedReports, loading: fallbackLoading } = useApi<Report[]>(fetchReports, {
-        manual: initialReports.length > 0,
-    });
+    // SWR with SSR fallback - no loading flash when initial data exists
+    const { data: fetchedReports, isLoading: fallbackLoading } = useSWR<Report[]>(
+        '/api/reports?limit=100',
+        fetcher,
+        {
+            fallbackData: initialReports.length > 0 ? initialReports : undefined,
+            revalidateOnMount: initialReports.length === 0,
+            revalidateOnFocus: false,
+        }
+    );
 
-    const reportData = useMemo(() => fetchedReports || initialReports, [fetchedReports, initialReports]);
-    const loading = fallbackLoading || isLoading;
+    const reportData = fetchedReports || initialReports;
+    const loading = (fallbackLoading && !reportData.length) || isLoading;
 
     const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const query = e.target.value;

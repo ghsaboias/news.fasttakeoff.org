@@ -2,11 +2,11 @@
 
 import { Skeleton } from '@/components/ui/skeleton';
 import { ENTITY_COLORS, ENTITY_LABELS } from '@/lib/config';
-import { useApi } from '@/lib/hooks';
 import { GraphData, GraphLink, GraphNode, TransformedGraphData } from '@/lib/types/entities';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRef, useState } from 'react';
+import useSWR from 'swr';
 import {
     useCanvasCamera,
     useFilters,
@@ -20,8 +20,8 @@ import { useBasicForceSimulation } from '../../../lib/hooks/useBasicForceSimulat
 
 const ENTITY_TYPES = Object.keys(ENTITY_LABELS);
 
-const fetchGraphData = async (): Promise<TransformedGraphData> => {
-    const response = await fetch('/api/entities?format=graph');
+const fetchGraphData = async (url: string): Promise<TransformedGraphData> => {
+    const response = await fetch(url);
     if (!response.ok) {
         throw new Error(`Failed to fetch graph data: ${response.statusText}`);
     }
@@ -47,14 +47,21 @@ export default function EntityGraphClient() {
     const [showTopConnected, setShowTopConnected] = useState(false);
 
     // Data & layout
-    const { data: graphData, loading, error } = useApi<TransformedGraphData>(fetchGraphData);
+    const { data: graphData, isLoading: loading, error } = useSWR<TransformedGraphData>(
+        '/api/entities?format=graph',
+        fetchGraphData,
+        { revalidateOnFocus: false }
+    );
 
     const isMobile = useMobileBreakpoint(768);
     const { filters, searchTerm, setSearchTerm, toggleFilter } = useFilters(ENTITY_TYPES);
 
+    // Provide empty fallback for hooks when data is loading
+    const safeGraphData = graphData ?? { entities: {}, relationships: [] };
+
     // Nodes & physics
-    const { nodesRef } = useNodes(graphData, isMobile);
-    const tick = useBasicForceSimulation(nodesRef, graphData?.relationships, isMobile);
+    const { nodesRef } = useNodes(safeGraphData, isMobile);
+    const tick = useBasicForceSimulation(nodesRef, safeGraphData.relationships, isMobile);
 
     // Camera & interaction
     const { cameraRef, onWheel, onPanStart, onPanMove, onPanEnd, onTouchStart, onTouchMove, onTouchEnd, centerOnNode } = useCanvasCamera();

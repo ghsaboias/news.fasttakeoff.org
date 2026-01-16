@@ -4,12 +4,12 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useApi } from "@/lib/hooks";
-import { Loader2 } from 'lucide-react';
+import { fetcher } from "@/lib/fetcher";
 import { ApiErrorResponse } from "@/lib/types/external-apis";
 import { FactCheckResult } from "@/lib/types/reports";
-import { AlertTriangle, CheckCircle, Info, XCircle } from "lucide-react";
+import { AlertTriangle, CheckCircle, Info, Loader2, XCircle } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
+import useSWR from "swr";
 import LinkPreview from "./LinkPreview";
 
 interface FactCheckDisplayProps {
@@ -65,9 +65,10 @@ export default function FactCheckDisplay({ reportId, className, onDemandTrigger 
     const [isTriggering, setIsTriggering] = useState(false);
     const [triggerError, setTriggerError] = useState<string | null>(null);
 
-    const { data: factCheck, loading, error, request } = useApi<FactCheckResult>(
-        () => fetch(`/api/fact-check?reportId=${reportId}`).then(res => res.json()),
-        { manual: false }
+    const { data: factCheck, isLoading: loading, error, mutate } = useSWR<FactCheckResult>(
+        `/api/fact-check?reportId=${reportId}`,
+        fetcher,
+        { revalidateOnFocus: false }
     );
 
     const hasValidFactCheck = useMemo(() => {
@@ -99,7 +100,7 @@ export default function FactCheckDisplay({ reportId, className, onDemandTrigger 
             }
 
             // Refetch the data to get the updated fact-check results
-            await request();
+            await mutate();
         } catch (error) {
             const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
             setTriggerError(errorMessage);
@@ -107,7 +108,7 @@ export default function FactCheckDisplay({ reportId, className, onDemandTrigger 
         } finally {
             setIsTriggering(false);
         }
-    }, [reportId, isTriggering, request]);
+    }, [reportId, isTriggering, mutate]);
 
     if (loading) {
         return (
