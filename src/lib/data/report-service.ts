@@ -474,11 +474,16 @@ export class ReportService {
     async postTopDynamicReport(lookbackHours: number = 2): Promise<void> {
         try {
             // Query D1 for dynamic reports from the last N hours
+            // Order by velocity (messages per hour) instead of raw count
+            // This prioritizes fast-developing "breaking" stories over slow-accumulating ones
+            // e.g., 6 msgs in 30 min (12/hr) beats 8 msgs in 3 hrs (2.7/hr)
             const query = `
-                SELECT * FROM reports 
-                WHERE generation_trigger = 'dynamic' 
+                SELECT *,
+                    message_count / MAX(0.5, (julianday(window_end_time) - julianday(window_start_time)) * 24) as velocity
+                FROM reports
+                WHERE generation_trigger = 'dynamic'
                   AND datetime(generated_at) >= datetime('now', '-${lookbackHours} hours')
-                ORDER BY message_count DESC 
+                ORDER BY velocity DESC
                 LIMIT 1
             `;
             
@@ -491,8 +496,9 @@ export class ReportService {
 
             // Convert D1 row to Report object using existing pattern
             const topReport = ReportCache.rowToReport(result);
-            
-            console.log(`[REPORTS] Found top dynamic report: ${topReport.channelName} with ${topReport.messageCount} sources from ${topReport.generatedAt}`);
+            const velocity = (result as ReportRow & { velocity?: number }).velocity?.toFixed(1) ?? 'N/A';
+
+            console.log(`[REPORTS] Found top dynamic report: ${topReport.channelName} with ${topReport.messageCount} sources (${velocity} msgs/hr) from ${topReport.generatedAt}`);
             
             // Use existing social media posting logic
             await this._postTopReportToSocialMedia([topReport]);

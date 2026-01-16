@@ -107,3 +107,6 @@ messages_d1_migration/
 
 # Newsletter subscriber data (contains emails and tokens)
 newsletter/subscribers.json
+
+# Local data directory
+/data/
