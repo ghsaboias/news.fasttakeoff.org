@@ -3,7 +3,7 @@ import { Cloudflare, KVNamespace } from '../../worker-configuration';
 import { TIME, URLs } from './config';
 import { OpenRouterImageService } from './openrouter-image-service';
 import { getOrCreateBackgroundUrl } from './utils/background-image-cache';
-import { countTwitterCharacters, truncateForTwitter, fixHeadlineCapitalization } from './utils/twitter-utils';
+import { countTwitterCharacters, truncateForTwitter, fixHeadlineCapitalization, preparePostForX } from './utils/twitter-utils';
 
 const TWITTER_API_URL = 'https://api.twitter.com/2/tweets';
 // OAuth1-signed v2 tweets endpoint (api.x.com recommended for OAuth1 usage)
@@ -106,6 +106,7 @@ export class TwitterService {
 
     /**
      * Fixes headline capitalization and formats for Twitter posting
+     * @deprecated Use preparePostForX instead
      */
     private async prepareHeadlineForTwitter(report: Report): Promise<string> {
         const fixed = await fixHeadlineCapitalization(report.headline, this.env);
@@ -808,7 +809,7 @@ export class TwitterService {
      * Posts a single tweet with headline only (no link)
      */
     async postSingleTweet(report: Report): Promise<string> {
-        const text = await this.prepareHeadlineForTwitter(report);
+        const text = await preparePostForX(report.headline, report.body, this.env);
 
         // Single tweet only (no reply) - used for small events (<10 messages)
         // First, attempt OAuth2 (bearer) text post if a valid token is available.
@@ -905,7 +906,7 @@ export class TwitterService {
             const reportUrl = `${URLs.WEBSITE_URL}/current-events/${report.channelId}/${report.reportId}`;
 
             // Tweet 1: Headline only (no link)
-            const tweet1Text = await this.prepareHeadlineForTwitter(report);
+            const tweet1Text = await preparePostForX(report.headline, report.body, this.env);
 
             console.log(`[TWITTER] Posting first tweet (${countTwitterCharacters(tweet1Text)} chars): "${tweet1Text.substring(0, 50)}..."`);
             const tweet1Response = await this.postSingleTweetInternal(tweet1Text, accessToken);
@@ -952,7 +953,7 @@ export class TwitterService {
             const mediaId = await this.uploadMedia(imageBuffer);
 
             // Step 3: Post tweet with media (headline only, no link)
-            const text = await this.prepareHeadlineForTwitter(report);
+            const text = await preparePostForX(report.headline, report.body, this.env);
 
             console.log(`[TWITTER] Posting single tweet with image via OAuth1 (${countTwitterCharacters(text)} chars): "${text.substring(0, 50)}..."`);
 
@@ -994,7 +995,7 @@ export class TwitterService {
             const reportUrl = `${URLs.WEBSITE_URL}/current-events/${report.channelId}/${report.reportId}`;
 
             // Tweet 1: Headline only + image (no link)
-            const tweet1Text = await this.prepareHeadlineForTwitter(report);
+            const tweet1Text = await preparePostForX(report.headline, report.body, this.env);
 
             console.log(`[TWITTER] Posting first tweet with image via OAuth1 (${countTwitterCharacters(tweet1Text)} chars): "${tweet1Text.substring(0, 50)}..."`);
             const tweet1Response = await this.postTweetOAuth1(tweet1Text, undefined, [mediaId]);
@@ -1041,7 +1042,7 @@ export class TwitterService {
         // Test capitalization fix
         const originalHeadline = report.headline;
         const fixedHeadline = await fixHeadlineCapitalization(report.headline, this.env);
-        const mainTweet = await this.prepareHeadlineForTwitter(report);
+        const mainTweet = await preparePostForX(report.headline, report.body, this.env);
         
         // Prepare reply with first paragraph + link
         const firstParagraph = this.extractFirstParagraph(report.body, reportUrl);

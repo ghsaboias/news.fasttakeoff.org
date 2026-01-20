@@ -178,4 +178,73 @@ export async function fixHeadlineCapitalization(headline: string, env: Cloudflar
         console.error('[TWITTER] Failed to fix headline capitalization:', error);
         return headline; // Fallback to original
     }
-} 
+}
+
+/**
+ * Prepares an optimized post for X using LLM to extract the most engaging content
+ * @param headline - The report headline
+ * @param body - The report body
+ * @param env - Cloudflare environment for API keys
+ * @returns Promise<string> - Optimized post text (≤280 chars)
+ */
+export async function preparePostForX(headline: string, body: string, env: Cloudflare.Env): Promise<string> {
+    const prompt = `Write a tweet that makes people stop scrolling. Extract the most surprising or consequential detail. No hashtags, no emojis. Under 280 chars.
+
+Headline: ${headline}
+Body: ${body}`;
+
+    try {
+        const { getAIAPIKey, getAIProviderConfig } = await import('@/lib/ai-config');
+
+        const aiConfig = getAIProviderConfig();
+        const apiKey = getAIAPIKey(env);
+        const apiUrl = aiConfig.endpoint;
+
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 15000);
+
+        try {
+            const response = await fetch(apiUrl, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${apiKey}`,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    model: aiConfig.model,
+                    messages: [
+                        { role: 'user', content: prompt }
+                    ],
+                    temperature: 0.3,
+                    max_tokens: 100,
+                    reasoning: { effort: "none" },
+                }),
+                signal: controller.signal,
+            });
+
+            clearTimeout(timeoutId);
+
+            if (!response.ok) {
+                throw new Error(`AI API error: ${response.status}`);
+            }
+
+            const data = await response.json() as { choices: Array<{ message: { content: string } }> };
+            const post = data.choices[0]?.message?.content?.trim() || '';
+
+            // Validate length
+            if (!post || countTwitterCharacters(post) > 280) {
+                console.warn(`[TWITTER] LLM post invalid or too long (${countTwitterCharacters(post)} chars), falling back to headline`);
+                return fixHeadlineCapitalization(headline, env);
+            }
+
+            console.log(`[TWITTER] Prepared post for X (${countTwitterCharacters(post)} chars): "${post.substring(0, 50)}..."`);
+            return post;
+        } catch (error) {
+            clearTimeout(timeoutId);
+            throw error;
+        }
+    } catch (error) {
+        console.error('[TWITTER] Failed to prepare post for X:', error);
+        return fixHeadlineCapitalization(headline, env);
+    }
+}
