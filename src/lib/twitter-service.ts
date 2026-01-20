@@ -98,66 +98,27 @@ export class TwitterService {
     }
 
     /**
-     * Creates a single location hashtag from report data.
-     * Preference: city; if unavailable, attempt a coarse fallback from channel name.
+     * Strips wire-service prefixes that hurt engagement
      */
-    private buildLocationHashtag(report: Report): string | null {
-        const makeHash = (raw: string): string | null => {
-            const trimmed = raw.trim();
-            if (!trimmed) return null;
-            // Remove non-letters/digits and spaces; keep Unicode letters/digits
-            const compact = trimmed.replace(/[^\p{L}\p{N}]+/gu, '');
-            if (!compact) return null;
-            return `#${compact}`;
-        };
-
-        // 1) Prefer city when available
-        if (report.city) {
-            const fromCity = makeHash(report.city);
-            if (fromCity) return fromCity;
-        }
-
-        // 2) Minimal fallback from channel name → broad geography
-        const channel = (report.channelName || '').toLowerCase();
-        if (channel.includes('ukraine')) return '#Ukraine';
-        if (channel.includes('israel') || channel.includes('palestin')) return '#Gaza';
-        if (channel.includes('china') || channel.includes('taiwan')) return '#Taiwan';
-        if (channel.includes('sudan')) return '#Sudan';
-        if (channel.includes('united-kingdom') || channel.includes('ireland')) return '#UK';
-        if (channel.includes('continental-europe')) return '#Europe';
-        if (channel.includes('south-central-africa')) return '#Africa';
-        if (channel.includes('arabian-peninsula')) return '#Gulf';
-
-        return null;
-    }
-
-    /**
-     * Appends a hashtag if it fits within 280 chars.
-     */
-    private appendHashtagIfFits(baseText: string, hashtag: string | null): string {
-        if (!hashtag) return baseText;
-        const candidate = `${baseText} ${hashtag}`;
-        return countTwitterCharacters(candidate) <= 280 ? candidate : baseText;
+    private stripNewsPrefix(headline: string): string {
+        return headline.replace(/^(Breaking|Developing|Update):\s*/i, '');
     }
 
     /**
      * Fixes headline capitalization and formats for Twitter posting
      */
     private async prepareHeadlineForTwitter(report: Report): Promise<string> {
-        const fixedHeadline = await fixHeadlineCapitalization(report.headline, this.env);
-        const locationTag = this.buildLocationHashtag(report);
-        return this.appendHashtagIfFits(fixedHeadline, locationTag);
+        const fixed = await fixHeadlineCapitalization(report.headline, this.env);
+        return this.stripNewsPrefix(fixed);
     }
 
     /**
      * Determines if this report qualifies as a "big event" for threaded posting.
-     * Updated rule: Based on activity density - high message count in short time window
+     * Disabled: X algorithm's AuthorDiversityScorer penalizes same-author replies
      */
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     private isBigEvent(report: Report): boolean {
-        const count = typeof report.messageCount === 'number' ? report.messageCount : 0;
-        
-        // Simple threshold: 10+ messages triggers threading
-        return count >= 10;
+        return false;
     }
 
     /**
