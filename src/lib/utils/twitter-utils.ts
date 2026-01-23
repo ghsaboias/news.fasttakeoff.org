@@ -180,18 +180,51 @@ export async function fixHeadlineCapitalization(headline: string, env: Cloudflar
     }
 }
 
+// Schema for structured X post output
+const X_POST_SCHEMA = {
+    name: 'x_post',
+    strict: true,
+    schema: {
+        type: 'object',
+        properties: {
+            post: {
+                type: 'string',
+                description: 'The post text, under 280 characters'
+            }
+        },
+        required: ['post'],
+        additionalProperties: false
+    }
+};
+
+interface XPostResponse {
+    post: string;
+}
+
 /**
  * Prepares an optimized post for X using LLM to extract the most engaging content
+ * Uses structured output to guarantee clean response format
  * @param headline - The report headline
  * @param body - The report body
  * @param env - Cloudflare environment for API keys
  * @returns Promise<string> - Optimized post text (≤280 chars)
  */
 export async function preparePostForX(headline: string, body: string, env: Cloudflare.Env): Promise<string> {
-    const prompt = `Write a tweet that makes people stop scrolling. Extract the most surprising or consequential detail. No hashtags, no emojis. Under 280 chars.
+    // Decode HTML entities in body before sending to LLM
+    const decodedBody = body
+        .replace(/&amp;/g, '&')
+        .replace(/&lt;/g, '<')
+        .replace(/&gt;/g, '>')
+        .replace(/&quot;/g, '"')
+        .replace(/&#39;/g, "'");
 
-Headline: ${headline}
-Body: ${body}`;
+    // Strip wire-service prefixes from headline before LLM sees it
+    const cleanHeadline = headline.replace(/^(Breaking|Developing|Update):\s*/i, '');
+
+    const prompt = `Write a post for this news. Focus on the most surprising or consequential detail. No hashtags, no emojis. Under 280 chars.
+
+Headline: ${cleanHeadline}
+Body: ${decodedBody}`;
 
     try {
         const { getAIAPIKey, getAIProviderConfig } = await import('@/lib/ai-config');
@@ -216,8 +249,13 @@ Body: ${body}`;
                         { role: 'user', content: prompt }
                     ],
                     temperature: 0.3,
-                    max_tokens: 100,
+                    max_tokens: 150,
                     reasoning: { effort: "none" },
+                    response_format: {
+                        type: 'json_schema',
+                        json_schema: X_POST_SCHEMA
+                    },
+                    plugins: [{ id: 'response-healing' }]
                 }),
                 signal: controller.signal,
             });
@@ -228,8 +266,23 @@ Body: ${body}`;
                 throw new Error(`AI API error: ${response.status}`);
             }
 
-            const data = await response.json() as { choices: Array<{ message: { content: string } }> };
-            const post = data.choices[0]?.message?.content?.trim() || '';
+            const data = await response.json() as { choices: Array<{ message: { content: string }, finish_reason: string }> };
+            const content = data.choices[0]?.message?.content;
+            const finishReason = data.choices[0]?.finish_reason;
+
+            if (!content) {
+                throw new Error('Empty response from AI');
+            }
+
+            // Check for truncation
+            if (finishReason === 'length') {
+                console.warn('[TWITTER] Response truncated, falling back to headline');
+                return fixHeadlineCapitalization(headline, env);
+            }
+
+            // Parse structured response
+            const parsed: XPostResponse = JSON.parse(content);
+            const post = parsed.post?.trim() || '';
 
             // Validate length
             if (!post || countTwitterCharacters(post) > 280) {
